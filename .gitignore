@@ -1,0 +1,21 @@
+# Local/editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Runtime state and secrets
+data/
+backups/
+*.log
+secrets.*
+config/client_session_key.aes
+.env
+.env.*
+
+# Build caches and dependencies
+node_modules/
+.stack-work/
+backend/**/.hie/
+frontend/dist/
+*.tmp
