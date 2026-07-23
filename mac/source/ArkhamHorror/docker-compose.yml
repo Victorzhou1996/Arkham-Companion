@@ -1,0 +1,64 @@
+services:
+  # redis:
+  #   image: redis:latest
+  #   ports:
+  #     - "6379:6379"
+  #   command: redis-server
+  #   volumes:
+  #     - redis-data:/data
+  db:
+    image: postgres:14.6-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=arkham_pg_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_DB=arkham-horror-backend
+    ports:
+      # Bind to localhost only to prevent external access
+      - "127.0.0.1:5433:5432"
+    user: postgres
+    cap_drop:
+      - ALL
+    mem_limit: 512M
+    cpus: '0.5'
+    volumes:
+      - pgdata:/var/lib/postgresql/data:rw
+      - ./setup.sql:/docker-entrypoint-initdb.d/create_tables.sql:ro
+    secrets:
+      - postgres_password
+  web:
+    image: "halogenandtoast/arkham-horror:latest"
+    build:
+      context: .
+      args:
+        - GHC_VERSION=9.12.2
+    # ASSET_HOST is auto-detected by web-entrypoint.sh:
+    #   unset (default): uses local images if present, CDN otherwise
+    # To override, uncomment one of the lines below:
+    # environment:
+    #   - ASSET_HOST=                                 # force local images
+    #   - ASSET_HOST=https://assets.arkhamhorror.app # force CDN
+    #   - REDIS_CONN=redis://redis:6379
+    secrets:
+      - postgres_password
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      - ./frontend/public/img:/opt/arkham/src/frontend/dist/img
+  fetch-images:
+    profiles: ["fetch-images"]
+    image: amazon/aws-cli
+    volumes:
+      - ./frontend/public/img:/workspace/frontend/public/img
+      - ./scripts/fetch-assets.sh:/workspace/scripts/fetch-assets.sh:ro
+    entrypoint: ["/bin/bash", "/workspace/scripts/fetch-assets.sh"]
+    command: en
+volumes:
+ pgdata:
+# Docker secret for Postgres password
+secrets:
+  postgres_password:
+    file: ./config/postgres_password.txt
+ # redis-data:

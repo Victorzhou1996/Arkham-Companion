@@ -1,0 +1,33 @@
+module Arkham.Treachery.Cards.WrackedByNightmares (wrackedByNightmares) where
+
+import Arkham.Ability
+import Arkham.Helpers.Modifiers
+import Arkham.Matcher
+import Arkham.Source
+import Arkham.Treachery.Cards qualified as Cards
+import Arkham.Treachery.Import.Lifted
+
+newtype WrackedByNightmares = WrackedByNightmares TreacheryAttrs
+  deriving anyclass IsTreachery
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+wrackedByNightmares :: TreacheryCard WrackedByNightmares
+wrackedByNightmares = treachery WrackedByNightmares Cards.wrackedByNightmares
+
+instance HasModifiersFor WrackedByNightmares where
+  getModifiersFor (WrackedByNightmares attrs) =
+    inThreatAreaGets attrs [ControlledAssetsCannotReady]
+
+instance HasAbilities WrackedByNightmares where
+  getAbilities (WrackedByNightmares a) = [restricted a 1 OnSameLocation doubleActionAbility]
+
+instance RunMessage WrackedByNightmares where
+  runMessage msg t@(WrackedByNightmares attrs) = runQueueT $ case msg of
+    Revelation iid (isSource attrs -> True) -> do
+      selectEach (assetControlledBy iid) $ push . Exhaust . toTarget
+      placeInThreatArea attrs iid
+      pure t
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      toDiscardBy iid (attrs.ability 1) attrs
+      pure t
+    _ -> WrackedByNightmares <$> liftRunMessage msg attrs

@@ -1,0 +1,49 @@
+module Arkham.Asset.Assets.MirandaKeeper (mirandaKeeper) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Import.Lifted
+import Arkham.Effect.Builder
+import Arkham.Helpers.Location (withLocationOf)
+import Arkham.Helpers.Modifiers (ModifierType (..))
+import Arkham.Matcher
+import Arkham.Script (yourNextSkillTest)
+import Arkham.Token qualified as Token
+import Arkham.Scenarios.TheMidwinterGala.Helpers
+
+newtype MirandaKeeper = MirandaKeeper AssetAttrs
+  deriving anyclass IsAsset
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+mirandaKeeper :: AssetCard MirandaKeeper
+mirandaKeeper = ally MirandaKeeper Cards.mirandaKeeper (2, 2)
+
+instance HasModifiersFor MirandaKeeper where
+  getModifiersFor (MirandaKeeper a) = handleSpellbound a
+
+instance HasAbilities MirandaKeeper where
+  getAbilities (MirandaKeeper a) =
+    [ restricted a 1 ControlsThis $ FastAbility (assetUseCost a Token.Supply 1)
+    , controlled a 2 (TokensOnLocation YourLocation Token.Antiquity (atLeast 1))
+        $ freeReaction (SkillTestResult #after You AnySkillTest (SuccessResult $ atLeast 2))
+    ]
+
+instance RunMessage MirandaKeeper where
+  runMessage msg a@(MirandaKeeper attrs) = runQueueT $ case msg of
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      withLocationOf iid \lid -> placeTokens (attrs.ability 1) lid Token.Antiquity 1
+      withSource (attrs.ability 1) $ withYou iid $ effect iid do
+        during yourNextSkillTest
+        removeOn #round
+        apply $ AnySkillValue 2
+      pure a
+    UseThisAbility iid (isSource attrs -> True) 2 -> do
+      withLocationOf iid \lid -> removeTokens (attrs.ability 2) lid Token.Antiquity 1
+      gainResources iid (attrs.ability 2) 2
+      pure a
+    Flip _ ScenarioSource (isTarget attrs -> True) -> do
+      pure $ MirandaKeeper $ attrs & flippedL .~ True & visibleL .~ False & setMeta True
+    Flip _ _ (isTarget attrs -> True) -> do
+      let flipped = not $ view flippedL attrs
+      pure $ MirandaKeeper $ attrs & flippedL .~ flipped & visibleL .~ True & setMeta False
+    _ -> MirandaKeeper <$> liftRunMessage msg attrs

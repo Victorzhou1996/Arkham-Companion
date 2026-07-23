@@ -1,0 +1,92 @@
+module Arkham.Investigator.Cards.LolaHayesParallel (lolaHayesParallel) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Assets
+import Arkham.ClassSymbol
+import Arkham.Helpers.Modifiers
+import Arkham.I18n
+import Arkham.Investigator.Cards qualified as Cards
+import Arkham.Investigator.Import.Lifted
+import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
+
+newtype LolaHayesParallel = LolaHayesParallel InvestigatorAttrs
+  deriving anyclass IsInvestigator
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+  deriving stock Data
+
+lolaHayesParallel :: InvestigatorCard LolaHayesParallel
+lolaHayesParallel =
+  investigator LolaHayesParallel Cards.lolaHayesParallel
+    $ Stats {health = 6, sanity = 6, willpower = 3, intellect = 3, combat = 3, agility = 3}
+
+instance HasModifiersFor LolaHayesParallel where
+  getModifiersFor (LolaHayesParallel attrs) = do
+    mLeadingLady <- getMeta attrs "leadingLady"
+    let role = toResultDefault Neutral attrs.meta
+    modifySelf attrs $ case mLeadingLady of
+      Nothing ->
+        [ CannotPlay $ not_ $ mapOneOf CardWithClass $ nub [Neutral, role]
+        , CannotCommitCards $ not_ $ mapOneOf CardWithClass $ nub [Neutral, role]
+        ]
+      Just cid ->
+        [ CannotPlay $ not_ $ oneOf $ CardWithId cid
+            : map CardWithClass (nub [Neutral, role])
+        , CannotCommitCards $ not_ $ oneOf $ CardWithId cid
+            : map CardWithClass (nub [Neutral, role])
+        ]
+    msamuel <-
+      selectOne $ inHandOf NotForPlay attrs.id <> basic (cardIs Assets.samuelBlakeObsessiveProducer)
+    for_ msamuel \samuel ->
+      modified_
+        samuel.id
+        attrs
+        [CannotPlay $ not_ $ mapOneOf CardWithClass $ nub [Neutral, role]]
+
+instance HasAbilities LolaHayesParallel where
+  getAbilities (LolaHayesParallel a) =
+    [ selfAbility
+        a
+        1
+        (not_ $ exists $ inHandOf NotForPlay a.id <> basic (cardIs Assets.samuelBlakeObsessiveProducer))
+        $ forced
+        $ TurnBegins #when You
+    ]
+
+instance HasChaosTokenValue LolaHayesParallel where
+  getChaosTokenValue iid ElderSign (LolaHayesParallel attrs) | iid == toId attrs = do
+    pure $ ChaosTokenValue ElderSign (PositiveModifier 2)
+  getChaosTokenValue _ token _ = pure $ ChaosTokenValue token mempty
+
+switchRole :: ReverseQueue m => InvestigatorAttrs -> m ()
+switchRole attrs = do
+  let currentRole = toResultDefault Neutral attrs.meta
+  let roles = filter (`notElem` [Mythos, currentRole]) [minBound .. maxBound]
+  msamuel <- select $ assetIs Assets.samuelBlakeObsessiveProducer
+  chooseOneM attrs.id $ for_ roles \role ->
+    labeled (tshow role) do
+      investigatorSpecific attrs.id "setRole" role
+      for_ msamuel \samuel ->
+        when (role /= currentRole) $ assignHorror attrs.id samuel 1
+
+instance RunMessage LolaHayesParallel where
+  runMessage msg i@(LolaHayesParallel attrs) = runQueueT $ case msg of
+    ForInvestigator iid BeginGame | iid == attrs.id -> do
+      attrs' <- liftRunMessage msg attrs
+      pure $ LolaHayesParallel $ attrs' & setMeta Neutral
+    UseThisAbility _ (isSource attrs -> True) 1 -> do
+      switchRole attrs
+      pure i
+    ElderSignEffect iid | attrs `is` iid -> do
+      ok <- selectNone $ inHandOf NotForPlay iid <> basic (cardIs Assets.samuelBlakeObsessiveProducer)
+      when ok do
+        chooseOneM iid do
+          labeled "Switch Role" $ switchRole attrs
+          withI18n skip_
+      pure i
+    InvestigatorSpecific iid "switchRole" _ | iid == attrs.id -> do
+      switchRole attrs
+      pure i
+    InvestigatorSpecific iid "setRole" role | iid == attrs.id -> do
+      pure $ overAttrs (setMeta role) i
+    _ -> LolaHayesParallel <$> liftRunMessage msg attrs

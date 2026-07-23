@@ -1,0 +1,22 @@
+{
+    "skillTestTitle": "Test de Compétence",
+    "toBeCommitted": "À attribuer",
+    "committedCards": "Cartes attribuées",
+    "toBeCommittedNote": "Cards are not committed until you click the token above and your skill value may not show the bonuses added until then.",
+
+    "waitingForMorePlayers": "En attente d'autres joueurs",
+    "showInviteLink": "Invitez en communiquant cette URL :",
+
+    "gameOver": "Partie terminée",
+    "watchReplay": "Voir le Replay",
+
+    "submit": "Soumettre",
+    "sancel": "Annuler",
+    "close": "Fermer",
+
+    "outOfSyncHint": "Votre partie est désynchronisée, tentez de vous reconnecter…",
+
+    "error": "Erreur",
+    "errorContent": "Ceci est probablement un bug, SVP faites un signalement",
+    "fileBug": "Signaler un bug"
+}

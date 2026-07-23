@@ -1,0 +1,47 @@
+{
+  "heading": "Scenario VI",
+  "intro": {
+    "title": "冒险VI：雾中之光",
+    "body": "<p>你到达猎鹰岬门房的时候，天上弥漫着深红色的浓雾。唯有头顶悬崖上的灯塔发出的亮光刺透迷雾。你想到印斯茅斯如今的情况，不禁好奇这样的讯号是为谁发出。这般恶劣的天气，你怀疑压根儿就不会有船出海。</p><p>Somewhere inside is the evidence you found weeks ago. You suspect that Oceiros—the man who captured you and left you in that pit to die—also resides within. “Are you ready?” Agent Harper asks. “We have no real escape route here, should things go south. Be prepared for anything.”</p><p>You nod. It’s too late to turn back now. Steadily, you make your way toward the cliffs. One way or another, this ends today.</p>"
+  },
+  "flashback12": {
+    "title": "记忆闪回XII",
+    "body": "<div class='blue'><h1>记忆闪回XII</h1><p>You peer up at 猎鹰岬 lighthouse, but from much farther below. You are aboard Mr. Moore’s fishing vessel, during your voyage to Devil Reef several weeks earlier. The ship sways back and forth as angry waves thrash against its hull. “’Fraid it’s gon’ be a bit rocky,” the ship captain shouts over the crashing of the tumultuous sea. “Weather’s been awful wild of late. Strange tides an’ stranger winds.”</p><p>But still you stare up at the ominous lighthouse, its beacon a guiding light, a warning sign, or both. Curious what knowledge he might have, you ask Mr. Moore about the lighthouse. “That ol’ thing? Been there longer’n Innsmouth itself. Marsh family’s kept it runnin’ as long as I remember. Oceiros is keeper now. Strange fella, that Oceiros. They say the only place in town he visits is the Order o’ Dagon hall by 新格林教堂.” He shakes his head.</p><p>You wonder if there are more secrets inside that lighthouse than meets the eye. Mr. Moore seems to note your curiosity. “I’ve heard them Marshes’ve carved out caverns beneath the lighthouse goin’ all the way down to sea level an’ beyond,” he claims. “Dunno if that’s true, but sometimes when I’m out ta sea I’ve seen groups of ‘em up by the cliffside, all wavin’ an’ kneelin’ like they’re prayin’ or something. Never really paid it much mind, but...” his voice grows quieter. “Jus’ thought you oughta know.”</p><p>You nod and thank him. If what he’s saying is true, perhaps you should give this lighthouse a visit. You make a mental note to research more about 猎鹰岬 once you return to town.</p><p>When your mind snaps back to the present, you recall the legwork you’d done after your expedition to Devil Reef, and the information you found on the vast network of tunnels beneath the lighthouse...</p><hr /><p class='basic'>In your Campaign Log, under “Memories Recovered,” record *与摩尔船长的一次对话.*</p><p class='basic'>Choose and remove one of the following chaos tokens from the chaos bag for the remainder of the campaign ({'{'}cultist{'}'}, {'{'}tablet{'}'}, or {'{'}elderThing{'}'}).</p><p class='basic'>The lead investigator gains 1 {'{'}perPlayer{'}'} clues from the token pool.</p></div>"
+  },
+  "flashback13": {
+    "title": "记忆闪回XIII",
+    "body": "<div class='blue'><h1>记忆闪回XIII</h1><p>You speak with one of the many sailors who frequent a ramshackle tavern by the docks of Innsmouth, somewhere in the southeastern slums of the decrepit seaport. He’s found his own little corner of the pub in which to hide and drown himself in alcohol. So much the better—you’d prefer to keep your investigation quiet.</p><p>You jot down notes as the drunken man rambles on about the creatures he’s seen swimming off the coast and prowling around the reefs. “Deep Ones,” he names them. “Caught one in my net once,” he blabbers through slurred speech. “She an’ her eggs—tha’s right!—’er eggs, bigger’n your fist, an’ squirmin’ an’ wrigglin’, too!”</p><p>Absorbed in the ritual of telling a tale for his fellow sailors, he elaborates: “She had one of ’em in her arms. Tiny little devil, with bulgin’, hateful eyes. Couldn’t stand the sight of it. I threw the net o’er as soon as I realized what I’d caught, an’ came right back ’ere. If I had my way I’d never sail ’gain.”</p><p>你脑子里仔细琢磨着这些信息。要是这男人没说假话，这些生物的生命周期和鱼相似。那么，你在城镇中所见鬼鬼祟祟的怪异混血生物究竟有何目的？它们会不会只是你受惊之后想象的产物？还是说，关于这种生命周期，你错过了什么更为邪恶的部分？</p><hr /><p class='basic'>In your Campaign Log, under “Memories Recovered,” record *the lifecycle of a “Deep One.”*</p><p class='basic'>Choose and remove one of the following chaos tokens from the chaos bag for the remainder of the campaign ({'{'}cultist{'}'}, {'{'}tablet{'}'}, or {'{'}elderThing{'}'}).</p></div>"
+  },
+  "resolutions": {
+    "resolution1": {
+      "title": "结局 1",
+      "body": "<p>你精疲力竭地瘫倒在岩石海岸上。你望着天空的时候，海浪冲打着你的脚踝。云层后的深红色预示着所有人类的不祥未来。你试着回想是为何，但脑子一阵剧痛炸响。日月已排成一线。远处传来雷鸣的巨响。可憎的洋面上盘旋翻滚着阵阵漩涡般的黑云。这到底意味着什么？达贡密教背后究竟有着怎样的真相？魔鬼礁石背后的真相？黑暗又一次夺走了你的意识。</p>"
+    },
+    "resolution2": {
+      "title": "结局 2",
+      "body": "<p>你逃进猎鹰岬旁漆黑的树林之时，身体已被疲惫和绝望吞没。你知道现在停下十分危险，但你已快站立不住。你抵在附近的一棵树上，抬头望着天空。云层后的深红色预示着所有人类的不祥未来。你试着回想是为何，但脑子一阵剧痛炸响。日月已排成一线。远处传来雷鸣的巨响。可憎的洋面上盘旋翻滚着阵阵漩涡般的黑云。这到底意味着什么？达贡密教背后究竟有着怎样的真相？魔鬼礁石背后的真相？黑暗又一次夺走了你的意识。</p>"
+    },
+    "resolution3": {
+      "title": "结局 3",
+      "body": "<p>水面一路升到洞窟的天顶，你惊恐万分。这里再没有空气可以呼吸了。你感到水流将你越拖越深，而在深处，眼睛肿胀发亮的深潜者正在等候。你绝望地游到了灯塔地下室的顶门。你唯一的希望就是把它撞开，爬到上面的楼里。那里还有甜美的氧气。你用尽全部力气挤、推，希望着、想象着、祈祷着终有一刻自己的力量能弹开这道门。你的肺好像就要爆炸。不！这不可能就这么结束！你挣扎求存，但锁纹丝不动。你的肺渴求空气，屈服了。冰冷的咸水瞬间灌满了你的喉咙。你能记得的最后一件事，就是带蹼的手掌抓住了你的脚踝。</p>"
+    },
+    "resolution4": {
+      "title": "结局 4",
+      "body": "<p>Coming here was a terrible mistake. 猎鹰岬 is no simple lighthouse, but a headquarters for the Order of Dagon, even more hostile and deadly than the town of Innsmouth you left behind. With danger at every turn and the hateful lighthouse keeper hot on your tail, you leave the secrets of the lighthouse behind and flee into the dark woods.</p><p>By the time you are too deep into the treeline to see the lighthouse beacon, you are utterly exhausted. You know it is too dangerous to stop moving, but you can hardly stand. You brace yourself against a nearby tree and stare up into the sky. Behind the clouds, deep crimson hues spell an ominous end for all of humankind. Your skull pounds as you struggle to remember why. The moon and sun slide into alignment. A thunderous crash resounds in the distance. Dark, churning clouds swirl and seethe above the hateful ocean. What does it all mean? What is the truth behind the 达贡密教? The truth hidden in Devil Reef? Darkness overtakes you once more.</p>"
+    }
+  },
+  "tokens": {
+    "easyStandard": {
+      "skull": "-1. 如果你所在地点已淹没，再抽出一个混乱标记。",
+      "cultist": "-2. 如果你检定失败，本次检定结束后，提升你所在地点的淹没等级。",
+      "tablet": "-3. 如果你检定失败且你所在地点已淹没，受到1点伤害。",
+      "elderThing": "-4. 如果你检定失败，最近的未与调查员交战的准备敌人朝你所在地点移动一次。该敌人本次移动期间失去冷漠。"
+    },
+    "hardExpert": {
+      "skull": "-2. 如果你所在地点已淹没，再抽出一个混乱标记。",
+      "cultist": "-2. 如果你检定失败，本次检定结束后，提升你所在地点的淹没等级(如果你不能，改为受到1点恐惧)。",
+      "tablet": "-3. 如果你检定失败且你所在地点已淹没，受到2点伤害。",
+      "elderThing": "-4. 最近的未与调查员交战的准备敌人朝你所在地点移动一次。该敌人本次移动期间失去冷漠。"
+    }
+  }
+}

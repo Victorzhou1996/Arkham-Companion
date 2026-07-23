@@ -1,0 +1,485 @@
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { handleI18n } from '@/arkham/i18n';
+import type { Game } from '@/arkham/types/Game';
+import { QuestionType } from '@/arkham/types/Question';
+import { Done, CardLabel, ChaosTokenLabel, Label, MessageType, PortraitLabel, TooltipLabel, ScenarioLabel } from '@/arkham/types/Message';
+import { imgsrc, formatContent } from '@/arkham/helpers';
+import { chaosTokenImage } from '@/arkham/types/ChaosToken';
+import StoryEntry from '@/arkham/components/StoryEntry.vue';
+import PickSupplies from '@/arkham/components/PickSupplies.vue';
+import PickDestiny from '@/arkham/components/PickDestiny.vue';
+import ChoiceModal from '@/arkham/components/ChoiceModal.vue';
+import FormattedEntry from '@/arkham/components/FormattedEntry.vue';
+import * as ArkhamGame from '@/arkham/types/Game';
+import WorldMap from '@/arkham/components/TheScarletKeys/WorldMap.vue';
+
+export interface Props {
+  game: Game
+  playerId: string
+}
+
+const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
+const props = defineProps<Props>()
+const emit = defineEmits(['choose'])
+const question = computed(() => props.game.question[props.playerId])
+const { t } = useI18n()
+const cardLabelImage = (cardCode: string) => {
+  return imgsrc(`cards/${cardCode.replace('c', '')}.avif`);
+}
+const label = function(body: string) {
+  if (body.startsWith("$")) {
+    return formatContent(handleI18n(body.slice(1), t))
+  }
+  return formatContent(body)
+}
+
+const portraitLabelImage = (investigatorId: string) => {
+  const player = props.game.investigators[investigatorId]
+
+  if (player.form.tag === 'YithianForm') {
+    return imgsrc(`portraits/${investigatorId.replace('c', '')}.jpg`)
+  }
+
+  if (player.form.tag === 'HomunculusForm') {
+    return imgsrc(`portraits/${investigatorId.replace('c', '')}.jpg`)
+  }
+
+  return imgsrc(`portraits/${player.cardCode.replace('c', '')}.jpg`)
+}
+
+const portraitChoices = computed(() => {
+  if (!question.value) return
+
+  if (!['QuestionLabel', 'ChooseOne'].includes(question.value.tag)) {
+    return []
+  }
+
+  if (question.value.tag !== 'ChooseOne' && question.value.question.tag !== 'ChooseOne') {
+    return []
+  }
+
+  if (question.value.tag === 'ChooseOne') {
+    return question.value.choices.flatMap<[PortraitLabel, number]>((c, idx) => c.tag === MessageType.PORTRAIT_LABEL ? [[c, idx]] : [])
+  }
+
+  return question.value.question.choices.flatMap<[PortraitLabel, number]>((c, idx) => c.tag === MessageType.PORTRAIT_LABEL ? [[c, idx]] : [])
+})
+
+const labelChoices = computed(() => {
+  if (!question.value) return
+
+  if (question.value.tag === 'QuestionLabel') {
+    if (!['ChooseOne', 'ChooseUpToN', 'ChooseN'].includes(question.value.question.tag)) {
+      return []
+    }
+
+    return question.value.question.choices.flatMap<[Label | TooltipLabel | ChaosTokenLabel | CardLabel | Done, number]>((c, idx) => {
+      if ([MessageType.LABEL, MessageType.INFO, MessageType.TOOLTIP_LABEL, MessageType.CARD_LABEL, MessageType.DONE, MessageType.CHAOS_TOKEN_LABEL].includes(c.tag)) {
+        return [[c, idx]]
+      } else {
+        return []
+      }
+    })
+  }
+
+  if (['ChooseOne', 'ChooseUpToN', 'ChooseN'].includes(question.value.tag)) {
+    return question.value.choices.flatMap<[Label | TooltipLabel | CardLabel | ChaosTokenLabel | Done, number]>((c, idx) => {
+      if ([MessageType.LABEL, MessageType.TOOLTIP_LABEL, MessageType.CHAOS_TOKEN_LABEL, MessageType.CARD_LABEL, MessageType.DONE].includes(c.tag)) {
+        return [[c, idx]]
+      } else {
+        return []
+      }
+    })
+  }
+})
+
+const questionImage = computed(() => {
+
+  if (question.value.tag !== 'QuestionLabel') {
+    return null
+  }
+
+  if(question.value.card) {
+    return cardLabelImage(question.value.card)
+  }
+
+  return null
+})
+
+const choose = (idx: number) => emit('choose', idx)
+
+const flippableCard = (cardCode: string) => {
+  return {
+    cardCode,
+    doubleSided: true,
+    classSymbols: [],
+    cardType: 'UnknownType',
+    art: cardCode.replace('c', ''),
+    level: 0,
+    traits: [],
+    name: "",
+    skills: [],
+    cost: null,
+    otherSide: `${cardCode}b`
+  }
+}
+
+const scenarioChoices = computed(() => {
+  if (!question.value) return []
+
+  if (question.value.tag === 'QuestionLabel') {
+    if (!['ChooseOne', 'ChooseUpToN', 'ChooseN'].includes(question.value.question.tag)) {
+      return []
+    }
+
+    return question.value.question.choices.flatMap<[ScenarioLabel, number]>((c, idx) => {
+      if (c.tag === MessageType.SCENARIO_LABEL) {
+        return [[c, idx]]
+      } else {
+        return []
+      }
+    })
+  }
+
+  if (['ChooseOne', 'ChooseUpToN', 'ChooseN'].includes(question.value.tag)) {
+    return question.value.choices.flatMap<[ScenarioLabel, number]>((c, idx) => {
+      if (c.tag === MessageType.SCENARIO_LABEL) {
+        return [[c, idx]]
+      } else {
+        return []
+      }
+    })
+  }
+
+  return []
+})
+
+const scenarioBoxImage = (scenarioId: string) => {
+  return imgsrc(`boxes/${scenarioId}.jpg`)
+}
+</script>
+
+<template>
+  <template v-if="question && question.tag === QuestionType.READ">
+    <StoryEntry
+      :game="game"
+      :playerId="playerId"
+      :question="question"
+      @choose="choose"
+    />
+  </template>
+  <div class="question-label" v-else-if="question && question.tag === 'QuestionLabel'">
+    <div v-if="questionImage" class="question-image">
+      <img :src="questionImage" class="card" />
+    </div>
+    <div class="question-content">
+      <h2 v-html="label(question.label)"></h2>
+
+      <div class="portrait-choices" v-if="portraitChoices.length > 0">
+        <template v-for="[choice, index] in portraitChoices" :key="index">
+          <template v-if="choice.tag === MessageType.PORTRAIT_LABEL">
+            <a href='#' @click.prevent="choose(index)">
+              <img class="portrait card active no-overlay active" :src="portraitLabelImage(choice.investigatorId)"/>
+            </a>
+          </template>
+        </template>
+      </div>
+
+      <div class="scenario-choices" v-if="scenarioChoices.length > 0">
+        <template v-for="[choice, index] in scenarioChoices" :key="index">
+          <button class="scenario-tile button" @click="choose(index)">
+            <img :src="scenarioBoxImage(choice.scenarioId)" :alt="`Scenario ${choice.scenarioId}`" />
+            <span v-html="label(choice.label)"></span>
+          </button>
+        </template>
+      </div>
+
+      <div class="label-choices" v-if="labelChoices.length > 0">
+        <div class="card-labels" v-if="labelChoices.some(([choice, _]) => choice.tag === MessageType.CARD_LABEL)">
+          <template v-for="[choice, index] in labelChoices" :key="index">
+            <template v-if="choice.tag === MessageType.CARD_LABEL">
+              <a href='#' @click.prevent="choose(index)">
+                <CardImage v-if="choice.flippable" :card="flippableCard(choice.cardCode)" />
+                <img v-else class="card no-overlay" :src="cardLabelImage(choice.cardCode)"/>
+              </a>
+            </template>
+          </template>
+        </div>
+        <div class="token-labels" v-if="labelChoices.some(([choice, _]) => choice.tag === MessageType.CHAOS_TOKEN_LABEL)">
+          <template v-for="[choice, index] in labelChoices" :key="index">
+            <div v-if="choice.tag === MessageType.CHAOS_TOKEN_LABEL">
+              <img class="token front" :src="chaosTokenImage(choice.face)" @click="choose(index)">
+            </div>
+          </template>
+        </div>
+        <div class="other-labels" v-for="[choice, index] in labelChoices" :key="index">
+          <template v-if="choice.tag === MessageType.TOOLTIP_LABEL">
+            <button @click="choose(index)" v-tooltip="choice.tooltip">{{label(choice.label)}}</button>
+          </template>
+          <template v-if="choice.tag === MessageType.LABEL">
+            <button @click="choose(index)"><span v-html="formatContent(label(choice.label))"></span></button>
+          </template>
+          <template v-if="choice.tag === MessageType.INFO">
+            <FormattedEntry :entry="entry" v-for="entry in choice.flavor.body" />
+          </template>
+          <template v-if="choice.tag === MessageType.DONE">
+            <button @click="choose(index)">{{$t(choice.label)}}</button>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="question-label" v-else-if="question && question.tag === 'PickCampaignSpecific'">
+    <WorldMap v-if="question.contents[0] === 'embark'" :game="game" :playerId="playerId" :mapData="question.contents[1]" @choose="choose" :embark="true" />
+  </div>
+
+  <div class="question-label" v-else-if="question && question.tag === 'PickSupplies'">
+    <PickSupplies :game="game" :playerId="playerId" :question="question" @choose="choose" />
+  </div>
+  <div class="question-label" v-else-if="question && question.tag === 'PickDestiny'">
+    <PickDestiny :game="game" :playerId="playerId" :question="question" @choose="choose" />
+  </div>
+  <template v-else-if="choices.length > 0">
+    <div class="choices box">
+      <div class="card-labels" v-if="labelChoices.some(([choice, _]) => choice.tag === MessageType.CARD_LABEL)">
+        <template v-for="[choice, index] in labelChoices" :key="index">
+          <template v-if="choice.tag === MessageType.CARD_LABEL">
+            <a href='#' @click.prevent="choose(index)">
+              <CardImage v-if="choice.flippable" :card="flippableCard(choice.cardCode)" />
+              <img v-else class="card no-overlay" :src="cardLabelImage(choice.cardCode)"/>
+            </a>
+          </template>
+        </template>
+      </div>
+      <div class="token-labels" v-if="labelChoices.some(([choice, _]) => choice.tag === MessageType.CHAOS_TOKEN_LABEL)">
+        <template v-for="[choice, index] in labelChoices" :key="index">
+          <div v-if="choice.tag === MessageType.CHAOS_TOKEN_LABEL">
+            <img class="token front" :src="chaosTokenImage(choice.face)" @click="choose(index)">
+          </div>
+        </template>
+      </div>
+
+      <template v-for="(choice, index) in choices" :key="index">
+        <div v-if="choice.tag === 'Done'">
+          <button @click="choose(index)">{{label(choice.label)}}</button>
+        </div>
+        <div v-if="choice.tag === 'Label'" class="choice-label">
+          <button @click="choose(index)"><span v-html="formatContent(label(choice.label))"></span></button>
+        </div>
+      </template>
+
+      <div class="portrait-choices" v-if="portraitChoices.length > 0">
+        <template v-for="[choice, index] in portraitChoices" :key="index">
+          <template v-if="choice.tag === MessageType.PORTRAIT_LABEL">
+            <a href='#' @click.prevent="choose(index)">
+              <img class="portrait card active" :src="portraitLabelImage(choice.investigatorId)"/>
+            </a>
+          </template>
+        </template>
+      </div>
+    </div>
+  </template>
+
+  <ChoiceModal
+    :game="game"
+    :playerId="playerId"
+    :noStory="true"
+    v-else-if="!question || (question.tag !== 'PickSupplies' && question.tag !== 'PickDestiny')"
+    @choose="$emit('choose', $event)"
+  />
+</template>
+
+<style scoped>
+.question-content {
+  width: 60%;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  color: white;
+  border-radius: 15px;
+  &:has(h2) { padding: 0; }
+}
+.question-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  background: #26283B;
+}
+
+p {
+  color: #666;
+  font-size: 2em;
+}
+
+button {
+  border: 0;
+  margin: 0 10px;
+  padding: 10px;
+  text-transform: uppercase;
+  background-color: #532e61;
+  font-weight: bold;
+  border-radius: 0.6em;
+  color: #EEE;
+  font: Arial, sans-serif;
+  &:hover {
+    background-color: #311b3e;
+  }
+}
+
+.card {
+  border-radius: 15px;
+}
+
+.label-choices {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px;
+}
+
+.card-labels {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.token-labels {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 10px;
+  place-content: center;
+  width: 100%;
+  container-type: inline-size;
+
+  img {
+    width: clamp(50px, 20cqw, 175px);
+    border-radius: 100vw;
+    border: 2px solid var(--select);
+    cursor: pointer;
+  }
+}
+
+.other-labels {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.card {
+  width: calc(var(--card-width) * 2);
+}
+
+.question-label:not(:has(> .question-image)) {
+  h2 {
+    padding: 10px 20px;
+  }
+}
+.question-label:has(> .question-image) {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  align-self: center;
+  height: fit-content;
+  gap: 10px;
+  border-radius: 15px;
+  h2 {
+    color: white;
+    text-transform: uppercase;
+    font-size: 1.8em;
+    background: var(--neutral-extra-dark);
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    font-family: Teutonic, sans-serif;
+    padding: 10px 20px;
+  }
+  > .question-image {
+    img  {
+      width: calc(var(--card-width) * 4);
+    }
+  }
+  > .question-content {
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 10px;
+    padding-bottom: 10px;
+    .portrait-choices {
+      align-content: center;
+      justify-items: flex-start;
+      flex: 1;
+      display: flex;
+      align-self: center;
+      gap: 10px;
+    }
+  }
+  button {
+    width: 100%;
+  }
+}
+
+.active {
+  border: 1px solid var(--select);
+}
+
+.scenario-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.scenario-tile {
+  border: 0;
+  padding: 0;
+  background: var(--neutral-dark);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  outline: 2px solid transparent;
+  transition: outline-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+  border: 1px solid rgb(255 255 255 / 10%);
+  display: flex;
+  flex-direction: column;
+  span {
+    padding: 10px;
+  }
+}
+
+.scenario-tile img {
+  width: 100%;
+  display: block;
+  transition: filter 220ms ease, transform 220ms ease;
+}
+
+.scenario-tile:hover {
+  outline-color: var(--select, #6E8644);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+  transform: scale(1.02);
+}
+
+.scenario-tile:hover img {
+  filter: none;
+  transform: scale(1.02);
+}
+
+.scenario-choices:hover:has(.scenario-tile:hover) .scenario-tile:not(:hover) img {
+  filter: grayscale(80%);
+}
+
+.scenario-tile:focus-visible {
+  outline-color: var(--select, #6E8644);
+}
+</style>

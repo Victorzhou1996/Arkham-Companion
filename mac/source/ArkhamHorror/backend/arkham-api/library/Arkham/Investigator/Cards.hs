@@ -1,0 +1,778 @@
+{- HLINT ignore "Use camelCase" -}
+module Arkham.Investigator.Cards where
+
+import Arkham.Prelude
+
+import Arkham.Card.CardCode
+import Arkham.Card.CardDef
+import Arkham.Card.CardType
+import Arkham.ClassSymbol
+import Arkham.Name
+import Arkham.Trait hiding (Supply)
+
+investigator :: CardCode -> Name -> ClassSymbol -> [Trait] -> CardDef
+investigator cardCode name classSymbol traits =
+  (emptyCardDef cardCode name InvestigatorType)
+    { cdClassSymbols = singleton classSymbol
+    , cdCardTraits = setFromList traits
+    , cdUnique = True
+    , cdLevel = Nothing
+    }
+
+allInvestigatorCards :: Map CardCode CardDef
+allInvestigatorCards =
+  mapFromList
+    $ concatMap
+      toCardCodePairs
+      [ rolandBanks
+      , daisyWalker
+      , skidsOToole
+      , agnesBaker
+      , wendyAdams
+      , zoeySamaras
+      , rexMurphy
+      , jennyBarnes
+      , jimCulver
+      , ashcanPete
+      , markHarrigan
+      , minhThiPhan
+      , sefinaRousseau
+      , akachiOnyele
+      , williamYorick
+      , lolaHayes
+      , leoAnderson
+      , ursulaDowns
+      , finnEdwards
+      , fatherMateo
+      , calvinWright
+      , carolynFern
+      , joeDiamond
+      , prestonFairmont
+      , dianaStanley
+      , ritaYoung
+      , marieLambeau
+      , tommyMuldoon
+      , mandyThompson
+      , tonyMorgan
+      , lukeRobinson
+      , patriceHathaway
+      , sisterMary
+      , amandaSharpe
+      , trishScarborough
+      , dexterDrake
+      , silasMarsh
+      , danielaReyes
+      , normanWithers
+      , montereyJack
+      , lilyChen
+      , bobJenkins
+      , carsonSinclair
+      , vincentLee
+      , kymaniJones
+      , aminaZidane
+      , darrellSimmons
+      , charlieKane
+      , wilsonRichards
+      , kateWinthrop
+      , alessandraZorzi
+      , kohakuNarukami
+      , hankSamson
+      , hankSamsonB
+      , marionTavares
+      , luciusGalloway
+      , agathaCrane_Seeker
+      , agathaCrane_Mystic
+      , michaelMcGlen
+      , gloriaGoldberg
+      , georgeBarnaby
+      , lostHomunculus
+      , danielaReyes2
+      , joeDiamond2
+      , trishScarborough2
+      , dexterDrake2
+      , isabelleBarnes
+      , nathanielCho
+      , harveyWalters
+      , winifredHabbamock
+      , andrePatel
+      , jacquelineFine
+      , stellaClark
+      , subject5U21
+      , daisyWalkerParallel
+      , skidsOTooleParallel
+      , agnesBakerParallel
+      , rolandBanksParallel
+      , wendyAdamsParallel
+      , ashcanPeteParallel
+      , jimCulverParallel
+      , zoeySamarasParallel
+      , montereyJackParallel
+      , rexMurphyParallel
+      , fatherMateoParallel
+      , jennyBarnesParallel
+      , lolaHayesParallel
+      , tommyMuldoon2
+      ]
+
+allEncounterInvestigatorCards :: Map CardCode CardDef
+allEncounterInvestigatorCards =
+  mapFromList
+    $ concatMap
+      toCardCodePairs
+      [bodyOfAYithian, gavriellaMizrah, jeromeDavids, valentinoRivas, pennyWhite]
+
+withAlternate :: CardCode -> CardDef -> CardDef
+withAlternate ccode = withAlternates [ccode]
+
+withAlternates :: [CardCode] -> CardDef -> CardDef
+withAlternates ccodes def = def {cdAlternateCardCodes = ccodes}
+
+rolandBanks :: CardDef
+rolandBanks =
+  withAlternates ["01501", "98004"]
+    $ investigator
+      "01001"
+      ("Roland Banks" <:> "The Fed")
+      Guardian
+      [Agency, Detective]
+
+daisyWalker :: CardDef
+daisyWalker =
+  withAlternate "01502"
+    $ investigator
+      "01002"
+      ("Daisy Walker" <:> "The Librarian")
+      Seeker
+      [Miskatonic]
+
+skidsOToole :: CardDef
+skidsOToole =
+  withAlternate "01503"
+    $ investigator
+      "01003"
+      ("\"Skids\" O'Toole" <:> "The Ex-Con")
+      Rogue
+      [Criminal]
+
+agnesBaker :: CardDef
+agnesBaker =
+  withAlternate "01504"
+    $ investigator "01004" ("Agnes Baker" <:> "The Waitress") Mystic [Sorcerer]
+
+wendyAdams :: CardDef
+wendyAdams =
+  withAlternate "01505"
+    $ investigator "01005" ("Wendy Adams" <:> "The Urchin") Survivor [Drifter]
+
+zoeySamaras :: CardDef
+zoeySamaras =
+  investigator
+    "02001"
+    ("Zoey Samaras" <:> "The Chef")
+    Guardian
+    [Believer, Hunter]
+
+rexMurphy :: CardDef
+rexMurphy =
+  investigator "02002" ("Rex Murphy" <:> "The Reporter") Seeker [Reporter]
+
+jennyBarnes :: CardDef
+jennyBarnes =
+  withAlternate "98001" $ investigator "02003" ("Jenny Barnes" <:> "The Dilettante") Rogue [Drifter]
+
+jimCulver :: CardDef
+jimCulver =
+  investigator "02004" ("Jim Culver" <:> "The Musician") Mystic [Performer]
+
+ashcanPete :: CardDef
+ashcanPete =
+  investigator "02005" ("\"Ashcan\" Pete" <:> "The Drifter") Survivor [Drifter]
+
+markHarrigan :: CardDef
+markHarrigan =
+  investigator "03001" ("Mark Harrigan" <:> "The Soldier") Guardian [Veteran]
+
+minhThiPhan :: CardDef
+minhThiPhan =
+  investigator "03002" ("Minh Thi Phan" <:> "The Secretary") Seeker [Assistant]
+
+sefinaRousseau :: CardDef
+sefinaRousseau =
+  investigator "03003" ("Sefina Rousseau" <:> "The Painter") Rogue [Artist]
+
+akachiOnyele :: CardDef
+akachiOnyele =
+  investigator "03004" ("Akachi Onyele" <:> "The Shaman") Mystic [Sorcerer]
+
+williamYorick :: CardDef
+williamYorick =
+  investigator
+    "03005"
+    ("William Yorick" <:> "The Gravedigger")
+    Survivor
+    [Warden]
+
+lolaHayes :: CardDef
+lolaHayes =
+  investigator "03006" ("Lola Hayes" <:> "The Actress") Neutral [Performer]
+
+leoAnderson :: CardDef
+leoAnderson =
+  investigator
+    "04001"
+    ("Leo Anderson" <:> "The Expedition Leader")
+    Guardian
+    [Veteran, Wayfarer]
+
+ursulaDowns :: CardDef
+ursulaDowns =
+  investigator "04002" ("Ursula Downs" <:> "The Explorer") Seeker [Wayfarer]
+
+finnEdwards :: CardDef
+finnEdwards =
+  investigator "04003" ("Finn Edwards" <:> "The Bootlegger") Rogue [Criminal]
+
+fatherMateo :: CardDef
+fatherMateo =
+  investigator
+    "04004"
+    ("Father Mateo" <:> "The Priest")
+    Mystic
+    [Believer, Warden]
+
+calvinWright :: CardDef
+calvinWright =
+  investigator
+    "04005"
+    ("Calvin Wright" <:> "The Haunted")
+    Survivor
+    [Cursed, Drifter]
+
+bodyOfAYithian :: CardDef
+bodyOfAYithian =
+  ( investigator
+      "04244"
+      ("Body of a Yithian" <:> "Captive in Another Form")
+      Neutral
+      [Monster, Yithian]
+  )
+    { cdUnique = False
+    }
+
+carolynFern :: CardDef
+carolynFern =
+  withAlternate "98010"
+    $ investigator
+      "05001"
+      ("Carolyn Fern" <:> "The Psychologist")
+      Guardian
+      [Medic]
+
+joeDiamond :: CardDef
+joeDiamond =
+  investigator
+    "05002"
+    ("Joe Diamond" <:> "The Private Investigator")
+    Seeker
+    [Detective]
+
+prestonFairmont :: CardDef
+prestonFairmont =
+  investigator
+    "05003"
+    ("Preston Fairmont" <:> "The Millionaire")
+    Rogue
+    [SilverTwilight, Socialite]
+
+dianaStanley :: CardDef
+dianaStanley =
+  investigator
+    "05004"
+    ("Diana Stanley" <:> "The Redeemed Cultist")
+    Mystic
+    [Cultist, SilverTwilight]
+
+ritaYoung :: CardDef
+ritaYoung =
+  investigator
+    "05005"
+    ("Rita Young" <:> "The Athlete")
+    Survivor
+    [Miskatonic]
+
+marieLambeau :: CardDef
+marieLambeau =
+  withAlternate "99001"
+    $ investigator
+      "05006"
+      ("Marie Lambeau" <:> "The Entertainer")
+      Mystic
+      [Performer, Sorcerer]
+
+gavriellaMizrah :: CardDef
+gavriellaMizrah =
+  investigator
+    "05046"
+    ("Gavriella Mizrah" <:> "Private Security")
+    Neutral
+    [Veteran]
+
+jeromeDavids :: CardDef
+jeromeDavids =
+  investigator
+    "05047"
+    ("Jerome Davids" <:> "Josef's Secretary")
+    Neutral
+    [Assistant, SilverTwilight]
+
+valentinoRivas :: CardDef
+valentinoRivas =
+  investigator
+    "05048"
+    ("Valentino Rivas" <:> "Wealthy Philanthropist")
+    Neutral
+    [SilverTwilight, Socialite]
+
+pennyWhite :: CardDef
+pennyWhite =
+  investigator
+    "05049"
+    ("Penny White" <:> "Josef's Housekeeper")
+    Neutral
+    [Assistant]
+
+tommyMuldoon :: CardDef
+tommyMuldoon =
+  investigator
+    "06001"
+    ("Tommy Muldoon" <:> "The Rookie Cop")
+    Guardian
+    [Police, Warden]
+
+mandyThompson :: CardDef
+mandyThompson =
+  investigator
+    "06002"
+    ("Mandy Thompson" <:> "The Researcher")
+    Seeker
+    [Assistant, Scholar]
+
+tonyMorgan :: CardDef
+tonyMorgan =
+  investigator
+    "06003"
+    ("Tony Morgan" <:> "The Bounty Hunter")
+    Rogue
+    [Criminal, Hunter]
+
+lukeRobinson :: CardDef
+lukeRobinson =
+  investigator
+    "06004"
+    ("Luke Robinson" <:> "The Dreamer")
+    Mystic
+    [Dreamer, Drifter, Wayfarer]
+
+patriceHathaway :: CardDef
+patriceHathaway =
+  investigator
+    "06005"
+    ("Patrice Hathaway" <:> "The Violinist")
+    Survivor
+    [Performer, Cursed]
+
+sisterMary :: CardDef
+sisterMary =
+  investigator
+    "07001"
+    ("Sister Mary" <:> "The Nun")
+    Guardian
+    [Believer, Blessed]
+
+amandaSharpe :: CardDef
+amandaSharpe =
+  investigator
+    "07002"
+    ("Amanda Sharpe" <:> "The Student")
+    Seeker
+    [Miskatonic, Scholar]
+
+trishScarborough :: CardDef
+trishScarborough =
+  investigator
+    "07003"
+    ("Trish Scarborough" <:> "The Spy")
+    Rogue
+    [Agency, Detective]
+
+dexterDrake :: CardDef
+dexterDrake =
+  withAlternate "98016"
+    $ investigator
+      "07004"
+      ("Dexter Drake" <:> "The Magician")
+      Mystic
+      [Sorcerer, Veteran]
+
+silasMarsh :: CardDef
+silasMarsh =
+  withAlternate "98013"
+    $ investigator
+      "07005"
+      ("Silas Marsh" <:> "The Sailor")
+      Survivor
+      [Drifter]
+
+danielaReyes :: CardDef
+danielaReyes =
+  investigator
+    "08001"
+    ("Daniela Reyes" <:> "The Mechanic")
+    Guardian
+    [Entrepreneur]
+
+normanWithers :: CardDef
+normanWithers =
+  withAlternate "98007"
+    $ investigator
+      "08004"
+      ("Norman Withers" <:> "The Astronomer")
+      Seeker
+      [Miskatonic]
+
+montereyJack :: CardDef
+montereyJack =
+  investigator
+    "08007"
+    ("Monterey Jack" <:> "The Archaeologist")
+    Rogue
+    [Wayfarer]
+
+lilyChen :: CardDef
+lilyChen =
+  investigator
+    "08010"
+    ("Lily Chen" <:> "The Martial Artist")
+    Mystic
+    [Chosen, Warden]
+
+bobJenkins :: CardDef
+bobJenkins =
+  investigator
+    "08016"
+    ("Bob Jenkins" <:> "The Salesman")
+    Survivor
+    [Entrepreneur]
+
+carsonSinclair :: CardDef
+carsonSinclair =
+  investigator
+    "09001"
+    ("Carson Sinclair" <:> "The Butler")
+    Guardian
+    [Assistant]
+
+vincentLee :: CardDef
+vincentLee =
+  investigator
+    "09004"
+    ("Vincent Lee" <:> "The Doctor")
+    Seeker
+    [Medic]
+
+kymaniJones :: CardDef
+kymaniJones =
+  investigator
+    "09008"
+    ("Kymani Jones" <:> "The Security Consultant")
+    Rogue
+    [Criminal]
+
+aminaZidane :: CardDef
+aminaZidane =
+  investigator
+    "09011"
+    ("Amina Zidane" <:> "The Operator")
+    Mystic
+    [Chosen, Cursed]
+
+darrellSimmons :: CardDef
+darrellSimmons =
+  investigator
+    "09015"
+    ("Darrell Simmons" <:> "The Photographer")
+    Survivor
+    [Reporter]
+
+charlieKane :: CardDef
+charlieKane =
+  investigator
+    "09018"
+    ("Charlie Kane" <:> "The Politician")
+    Neutral
+    [Civic, Socialite]
+
+wilsonRichards :: CardDef
+wilsonRichards =
+  investigator
+    "10001"
+    ("Wilson Richards" <:> "The Handyman")
+    Guardian
+    [Drifter]
+
+kateWinthrop :: CardDef
+kateWinthrop =
+  investigator
+    "10004"
+    ("Kate Winthrop" <:> "The Scientist")
+    Seeker
+    [Miskatonic, Scholar]
+
+alessandraZorzi :: CardDef
+alessandraZorzi =
+  investigator
+    "10009"
+    ("Alessandra Zorzi" <:> "The Countess")
+    Rogue
+    [Drifter, Socialite]
+
+kohakuNarukami :: CardDef
+kohakuNarukami =
+  investigator
+    "10012"
+    ("Kōhaku Narukami" <:> "The Folklorist")
+    Mystic
+    [Scholar, Blessed, Cursed]
+
+hankSamson :: CardDef
+hankSamson =
+  investigator
+    "10015"
+    ("Hank Samson" <:> "The Farmhand")
+    Survivor
+    [Assistant, Warden]
+
+hankSamsonB :: CardDef
+hankSamsonB =
+  investigator
+    "10016a"
+    ("Hank Samson" <:> "The Farmhand")
+    Survivor
+    [Assistant, Resolute]
+
+marionTavares :: CardDef
+marionTavares =
+  investigator
+    "11001"
+    ("Marion Tavares" <:> "The Trawler")
+    Guardian
+    [Drifter, Entrepreneur]
+
+luciusGalloway :: CardDef
+luciusGalloway =
+  investigator
+    "11004"
+    ("Lucius Galloway" <:> "The Poet")
+    Seeker
+    [Scholar, Dreamer]
+
+agathaCrane_Seeker :: CardDef
+agathaCrane_Seeker =
+  investigator
+    "11007"
+    ("Agatha Crane" <:> "The Parapsychologist")
+    Seeker
+    [Miskatonic, Scholar]
+
+agathaCrane_Mystic :: CardDef
+agathaCrane_Mystic =
+  investigator
+    "11008"
+    ("Agatha Crane" <:> "The Parapsychologist")
+    Mystic
+    [Miskatonic, Scholar]
+
+michaelMcGlen :: CardDef
+michaelMcGlen =
+  investigator
+    "11011"
+    ("Michael McGlen" <:> "The Gangster")
+    Rogue
+    [Criminal, Hunter]
+
+gloriaGoldberg :: CardDef
+gloriaGoldberg =
+  withAlternate "98019"
+    $ investigator
+      "11014"
+      ("Gloria Goldberg" <:> "The Writer")
+      Mystic
+      [Clairvoyant]
+
+georgeBarnaby :: CardDef
+georgeBarnaby =
+  investigator
+    "11017"
+    ("George Barnaby" <:> "The Lawyer")
+    Survivor
+    [Civic, Drifter]
+
+lostHomunculus :: CardDef
+lostHomunculus =
+  investigator
+    "11068b"
+    ("Lost Humonculus" <:> "The Forgotten Child")
+    Mystic
+    [Construct, Scion]
+
+danielaReyes2 :: CardDef
+danielaReyes2 =
+  investigator
+    "12001"
+    ("Daniela Reyes" <:> "The Mechanic")
+    Guardian
+    [Warden, Worker]
+
+joeDiamond2 :: CardDef
+joeDiamond2 =
+  investigator
+    "12004"
+    ("Joe Diamond" <:> "The Private Investigator")
+    Seeker
+    [Detective]
+
+trishScarborough2 :: CardDef
+trishScarborough2 =
+  investigator
+    "12007"
+    ("Trish Scarborough" <:> "The Former Spy")
+    Rogue
+    [Agency, Criminal]
+
+dexterDrake2 :: CardDef
+dexterDrake2 =
+  investigator
+    "12010"
+    ("Dexter Drake" <:> "The Magician")
+    Mystic
+    [Performer, Sorcerer]
+
+isabelleBarnes :: CardDef
+isabelleBarnes =
+  investigator
+    "12013"
+    ("Isabelle Barnes" <:> "The Returned")
+    Survivor
+    [Chosen, Hunter]
+
+nathanielCho :: CardDef
+nathanielCho =
+  investigator
+    "60101"
+    ("Nathaniel Cho" <:> "The Boxer")
+    Guardian
+    [Criminal, Warden]
+
+harveyWalters :: CardDef
+harveyWalters =
+  investigator
+    "60201"
+    ("Harvey Walters" <:> "The Professor")
+    Seeker
+    [Miskatonic]
+
+winifredHabbamock :: CardDef
+winifredHabbamock =
+  investigator
+    "60301"
+    ("Winifred Habbamock" <:> "The Aviatrix")
+    Rogue
+    [Criminal]
+
+andrePatel :: CardDef
+andrePatel =
+  investigator
+    "60351"
+    ("André Patel" <:> "The Film Star")
+    Rogue
+    [Performer]
+
+jacquelineFine :: CardDef
+jacquelineFine =
+  investigator
+    "60401"
+    ("Jacqueline Fine" <:> "The Psychic")
+    Mystic
+    [Clairvoyant]
+
+stellaClark :: CardDef
+stellaClark =
+  investigator
+    "60501"
+    ("Stella Clark" <:> "The Letter Carrier")
+    Survivor
+    [Chosen, Civic]
+
+subject5U21 :: CardDef
+subject5U21 =
+  investigator
+    "89001"
+    ("Subject 5U-21" <:> "The Anomaly")
+    Neutral
+    [Manifold]
+
+daisyWalkerParallel :: CardDef
+daisyWalkerParallel =
+  investigator "90001" ("Daisy Walker" <:> "The Librarian") Seeker [Miskatonic]
+
+skidsOTooleParallel :: CardDef
+skidsOTooleParallel =
+  investigator "90008" ("\"Skids\" O'Toole" <:> "The Ex-Con") Rogue [Criminal]
+
+agnesBakerParallel :: CardDef
+agnesBakerParallel =
+  investigator "90017" ("Agnes Baker" <:> "The Waitress") Mystic [Sorcerer]
+
+rolandBanksParallel :: CardDef
+rolandBanksParallel =
+  investigator "90024" ("Roland Banks" <:> "The Fed") Guardian [Agency, Detective]
+
+wendyAdamsParallel :: CardDef
+wendyAdamsParallel =
+  investigator "90037" ("Wendy Adams" <:> "The Urchin") Survivor [Drifter, Blessed, Cursed]
+
+ashcanPeteParallel :: CardDef
+ashcanPeteParallel =
+  investigator "90046" ("\"Ashcan\" Pete" <:> "The Drifter") Survivor [Drifter]
+
+jimCulverParallel :: CardDef
+jimCulverParallel =
+  investigator "90049" ("Jim Culver" <:> "The Musician") Mystic [Performer, Cursed]
+
+zoeySamarasParallel :: CardDef
+zoeySamarasParallel =
+  investigator "90059" ("Zoey Samaras" <:> "The Chef") Guardian [Believer, Hunter]
+
+montereyJackParallel :: CardDef
+montereyJackParallel =
+  investigator "90062" ("Monterey Jack" <:> "The Archeologist") Rogue [Wayfarer]
+
+rexMurphyParallel :: CardDef
+rexMurphyParallel =
+  investigator "90078" ("Rex Murphy" <:> "The Reporter") Seeker [Reporter, Cursed]
+
+fatherMateoParallel :: CardDef
+fatherMateoParallel =
+  investigator "90081" ("Father Mateo" <:> "The Priest") Mystic [Believer, Warden]
+
+jennyBarnesParallel :: CardDef
+jennyBarnesParallel =
+  investigator "90084" ("Jenny Barnes" <:> "The Dilettante") Rogue [Drifter, Socialite]
+
+lolaHayesParallel :: CardDef
+lolaHayesParallel =
+  investigator "90087" ("Lola Hayes" <:> "The Actress") Neutral [Performer]
+
+tommyMuldoon2 :: CardDef
+tommyMuldoon2 =
+  investigator "60151" ("Tommy Muldoon" <:> "The Officer") Guardian [Police]

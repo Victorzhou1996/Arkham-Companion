@@ -1,0 +1,59 @@
+{
+  "about": "關於",
+  "activeGames": "進行中的遊戲",
+  "cancel": "取消",
+  "cards": "卡牌",
+  "continue": "繼續",
+  "debugGame": "調試遊戲",
+  "doDeleteGame": "你確定要刪除這場遊戲嗎？",
+  "email": "郵箱",
+  "finishedGames": "已完成的遊戲",
+  "forgotPassword": "忘記密碼",
+  "home": "主頁",
+  "invalidEmailOrPassword": "無效的郵箱或密碼",
+  "language": "語言",
+  "logIn": "登錄",
+  "myDecks": "我的牌組",
+  "newGame": "新遊戲",
+  "newPassword": "新密碼",
+  "password": "密碼",
+  "passwordResetRequested": "密碼重置已請求",
+  "passwordUpdatedSuccessfully": "密碼已成功更新",
+  "register": "注冊",
+  "resetPassword": "重置密碼",
+  "settings": "設置",
+  "updatePassword": "更新密碼",
+  "username": "用戶名",
+  "usernameOrEmailAlreadyTaken": "用戶名或電子郵件已被使用",
+  "label": {
+    "drawTopCardOfEncounterDeck": "抽取遭遇牌堆頂部的卡牌",
+    "takeControlOfKey": "控制鑰匙"
+  },
+  "tooltips": {
+    "takeControlOfKey": "獲得{key}鑰匙的控制權"
+  },
+  "shuffleRemainder": "將剩餘的遭遇排混洗，形成遭遇牌庫。",
+  "readyToBegin": "你現在可以開始遊戲了。",
+
+  "Yes": "是",
+  "No": "否",
+
+
+  "Parley": "談判",
+  "Resign": "撤退",
+  "Investigate": "調查",
+  "Evade": "躲避",
+  "Fight": "攻擊",
+  "Engage": "交戰",
+  "Forced": "強制",
+  "Delayed": "延時效果",
+  "Objective": "目標",
+  "Haunted": "鬧鬼",
+  
+  "Results": "結局",
+  "Story": "故事",
+  "ChooseOne": "選擇一項",
+  "Choose": "選擇",
+  "setup": "設置",
+  "addToken": "向混亂袋中加入一個 {'{'}{token}{'}'} 混亂標記，並持續到劇本結束。"
+}

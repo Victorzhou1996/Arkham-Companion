@@ -1,0 +1,31 @@
+module Arkham.Asset.Assets.Becky (becky) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Runner
+import Arkham.Fight
+import Arkham.Helpers.Modifiers
+import Arkham.Prelude
+
+-- N.B: The constant ability is handled on Tommy Muldoon
+
+newtype Becky = Becky AssetAttrs
+  deriving anyclass (IsAsset, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+becky :: AssetCard Becky
+becky = asset Becky Cards.becky
+
+instance HasAbilities Becky where
+  getAbilities (Becky a) = [restricted a 1 ControlsThis $ fightAction $ assetUseCost a Ammo 1]
+
+instance RunMessage Becky where
+  runMessage msg a@(Becky attrs) = case msg of
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      let source = toAbilitySource attrs 1
+      sid <- getRandom
+      chooseFight <- toMessage <$> mkChooseFight sid iid source
+      enabled <- skillTestModifiers sid source iid [DamageDealt 1, SkillModifier #combat 2]
+      pushAll [enabled, chooseFight]
+      pure a
+    _ -> Becky <$> runMessage msg attrs

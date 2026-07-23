@@ -1,0 +1,63 @@
+{
+  "heading": "Scenario II",
+  "tokens": {
+    "easyStandard": {
+      "skull": "-X. X为你所在地点的高度",
+      "cultist": "-1. 如果你检定失败，在这次检定结束后移动到你下方紧挨着的地点。",
+      "tablet": "-3. 如果你检定失败，失去你对一个 _探险_ 支持的控制，并将其放在你所在地点。",
+      "elderthing": "-4. 如果你检定失败，最近的 _古老者_ 敌人向你移动一次。如果其与你交战，其攻击。"
+    },
+    "hardExpert": {
+      "skull": "-X. X为你所在地点的高度加2",
+      "cultist": "-1. 在这次检定结束后移动到你下方紧挨着的地点。",
+      "tablet": "-4. 如果你检定失败，失去你对一个 _探险_ 支持的控制，并将其放在你所在地点。",
+      "elderthing": "-5. 如果你检定失败，最近的 _古老者_ 敌人向你移动一次。如果其与你交战，其攻击。"
+    }
+  },
+  "intro1": {
+    "title": "冒险II：失落之峰",
+    "body": "<p>_Intro 1_: The wind howls as your party prepares for the long journey ahead. There is very little conversation. Even if you could hear each other’s muffled voices through your earmuffs and scarves, what would you say? The silence of your shared terror is loud enough.</p><p>你的目的地在前方数英里开外。锯齿状山峰隐约显现在远方的地平线上，奚落着你。你在心里对自己的处境列了一个清单……</p>"
+  },
+  "intro2": {
+    "title": "冒险II：失落之峰",
+    "body": "<p>_Intro 2_: 你在冰雪中跋涉了好几个小时。幸运的是，你没有再遇到前两天的生物，这让你思考那是否只是某种残酷的幻景。但当你走近锯齿状雪山的底部时，你发现了另一种完全不同的生物。</p><p>它被冻结着半埋在雪里，像一个令人毛骨悚然的路标指引着你前进。它的身体形状像鼓，有厚厚的皮和一对撕裂的皮翼。一个海星形状的附属器官从它的上半部分伸出雪中，长有五只死眼和一组五颜六色的纤毛。五组触须则都冻在冰里。看到这东西，你感受到的寒意比南极的天气更冷。</p><p>There can be no doubt: this is one of the “Elder Things” that Professor Dyer and 丹佛斯 encountered the last time they ventured into the heart of Antarctica. But what killed it? Surely it was not just the cold?</p><p class='basic right'>Proceed to _Setup_.</p>"
+  },
+  "interlude": {
+    "title": "冒险幕间故事：悲剧袭来",
+    "instructions1": "<p class='basic'>找出剧本日志中“探险队”部分，名字旁没有打勾的所有存活探险队成员(包括那些当前处于调查员控制下的)，并随机选择其中一名。如果没有这样的探险队成员，则跳过本幕间故事的剩余部分。</p>",
+    "paragraph1": "<p>这一切都发生在眨眼之间。在同伴被抓住之前，你只来得及尖叫一声对方的名字。它千变万化的身体缠在你同伴身上。你的同伴挣扎着想逃脱，但毫无希望。.</p>",
+    "cookie": "<p>_If the victim is James “Cookie” Fredericks_:</p><p>The hardened veteran spits out a curse and manages to slip his right arm out of the thing’s grasp. It’s enough for him to take a single shot with his colt. The gunshot thunders across the mountain and rips through the thing’s grotesque, formless mass.</p><p class='basic'>对星之恐怖造成2点伤害。</p>",
+    "paragraph2": "<p>然后，它毫不犹豫地把卷须插进受害者的身体，把后者就像一块生肉似的当场撕碎。喷出的血把雪染成了红色。它毫不客气地把你同伴的残骸扔到地上，然后把注意力转向你。.</p>",
+    "instructions2": "<p class='basic'>In the “Expedition Team” section of the Campaign Log, cross off the chosen character’s name. If they were in play, they are defeated and removed from the game.</p></div>"
+  },
+  "resolutions": {
+    "noResolution": {
+      "title": "未达成结局",
+      "body": "<div class='resolution'><p><b>如果未能达成任何结局（所有调查员都被击败）：</p> 你穿越山峰的剩余旅程伴随着挥之不去的冰雪和恐惧。你越爬越高，逼着自己挺进从未想过的极限。然而，山顶依然遥不可及。随着夜幕降临，天气变得更加恶劣，绝望迫使你寻找其他地方求生。</p></div>"
+    },
+    "resolution1": {
+      "title": "结局 1",
+      "body": "<div class='resolution'><p><b>Resolution 1:</b> The view from the summit is breathtaking, but you are in no mood to enjoy the spectacle. Sprawled before you, on the other side of these accursed peaks, lies the city described in Dyer’s report. Its haunting visage is unmistakable. Dozens of conical and pyramidal buildings of dark slate and sandstone are honeycombed throughout the region like a labyrinth of perfect geometric shapes. Though weathered by the ages, the city still stands, hidden by the jagged peaks and the heavy snow.</p><p>For a while, you stand in silence and take in the wondrous sight. If it weren’t for the many trials you faced along the way, it would be a moment of triumph. But after the sacrifices made to get here, the victory rings hollow.</p><p>A freezing wind blows across the peaks. The air is too thin for you to linger here. After a moment’s rest, you begin the long trek down into the alien city. You will have to make camp before you reach the bottom. With any luck, you’ll be hidden from the dreadful creatures that dwell there…</p><ul><li>In your Campaign Log, record *the team climbed to the summit*.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>For each _Expedition_ asset in the victory display, an investigator may choose to add that asset to their deck. It does not count toward their deck size. For each _Expedition_ asset added to an investigator’s deck this way, that investigator earns 1 bonus experience.</li><li>For each _Expedition_ asset that is not in the victory display, cross off its title in the “已回收的补给品” section of the Campaign Log.</li><li> In the “Expedition Team” section of the Campaign Log, record the amount of damage and horror on each partner asset in play.</li><li>Proceed to _幕间故事II：无尽夜晚_.</li></ul></div>"
+    },
+    "resolution2": {
+      "title": "结局 2",
+      "body": "<div class='resolution'><p><b>Resolution 2:</b> Just as you are beginning to lose hope, you find a dark cave embedded in the mountainside. The wind howls outside the cave entrance, bringing with it a sudden deluge of snow. You’re not sure what would be worse—a slow death trapped inside an icy cavern, or an equally slow one failing to reach the summit. But when one of your companions switches on their flashlight, you realize there may be a third option.</p><p>The walls of this narrow tunnel are covered in strange hieroglyphs, the likes of which you’ve never seen. The ancient writings of an alien language, you presume. Possibly even that of the Elder Things who once called this region home. More importantly, the cavern continues deeper and deeper into the side of the mountain, far beyond the reach of your light.</p><p>你们投票后决定继续前进，希望隧道能把你带到另一个出口。令你惊讶的是，旅程相当顺利，除了始终存在着的黑暗，还有可怕呻吟的回声和下面深处什么东西那低沉的声音在不停磨损着你的理智。几个小时过去了，直到最后，非常幸运，你看到远处有光。</p><p>You emerge once more onto the side of the mountain, this time to a breathtaking vista. Sprawled before you lies the city described in Dyer’s report. Its haunting visage is unmistakable. Dozens of conical and pyramidal buildings of dark slate and sandstone are honeycombed throughout the region like a labyrinth of perfect geometric shapes. Though weathered by the ages, the city still stands, hidden by the jagged peaks and the heavy snow.</p><p>For a while, you stand in silence and take in the wondrous sight. Somehow, you have managed to find a way through the mountain. If it weren’t for the many trials you faced along the way, it would be a moment of triumph. But after the sacrifices made to get here, the victory rings hollow. After a moment’s rest, you begin the long trek down into the alien city. You will have to make camp before you reach the bottom. With any luck, you’ll be hidden from the dreadful creatures that dwell there…</p><ul><li>In your Campaign Log, record *队伍找到另一条路穿过山脉。*</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>Cross off each card title in the “已回收的补给品” section of the Campaign Log.</li><li>In the “Expedition Team” section of the Campaign Log, record the amount of damage and horror on each partner asset in play.</li><li>Proceed to _幕间故事II：无尽夜晚._</li></ul></div>"
+    }
+  },
+  "eliyah": {
+    "alive": "<p>_If 伊里亚·阿什瓦克 is alive and 木制雪橇 is listed under “已回收的补给品:_”</p><p>“It is not large or sturdy enough to carry all of us,” Eliyah explains as he hauls the last crate of supplies onto the old sledge, “but it should be able to carry our provisions and equipment, at least.” He makes sure the lines are taut and all of the dogs’ harnesses are properly fastened before giving Anyu, at the head of the pack, a scratch behind her ears. “Not looking forward to having to lug this thing up those mountains, but…we’ll cross that bridge when we get to it. All right, girl. You ready?” Anyu barks once. “Yeah, I know you are.”</p><p class='basic'>调查员没有承受任何不良效果。</p>",
+    "otherwise": "<p>_否则：_</p><p>你呻吟着把一个装满装备又大又重的背包扛到背上。你肯定不想带着额外的40磅重量徒步穿越雪地，但这已无法避免。你不知道要花多久才能到你要去的地方，而如果你想活下去，背包里的一切都是必需的。.</p><p class='basic'>向混乱袋中添加一个 {'{'}frost{'}'} 标记。</p>"
+  },
+  "claypool": {
+    "alive": "<p>_如果艾弗里·克莱普尔活着：_</p><p>“Weather might look clear right now,” Claypool explains, “but it could turn on a dime. We’ll be on ice for most of the journey, so be on the lookout for cracks. We need ice about 60 centimeters thick in order to walk across, so stay behind me at all times and I’ll use this augur to make sure it’s safe.” He holds up a spiral-tipped drilling device and leads the way.</p><p class='basic'>调查员没有承受任何不良效果。</p>",
+    "otherwise": "<p>_否则：_</p><p> 当天空看起来很晴朗的时候，你冒险外出，但只过了一个小时，天气就突然变坏了。大雪已经够糟糕的了，但真正让你慢下来的是冰。没有克莱普尔的安全指引，你必须缓慢小心地前进以确保你能活着到达山脉。.</p><p class='basic'>要幺向混乱袋中添加一个 {'{'}frost{'}'} 标记, 或者每位调查员承受一点物理创伤。</p>"
+  },
+  "takada": {
+    "alive": "<p>_如果高田弘子活着：_</p><p>As you set out, you hear Takada singing something under her breath—just quiet enough that you can’t tell what it is. One of the others, however, seems to recognize it. “That song again,” they say. “Heard you singing it on the Theodosia on the way over.”</p><p>Takada sighs. “It is a song my father taught me. Helps me pass the time,” she explains.</p><p>You ask if she would like to teach it to you, and she gives you the first smile you’ve seen from her since the trek began. “Yes. Yes, I would.” You spend the remainder of the journey singing and bonding together, whittling the time away.</p><p class='basic'>调查员没有承受任何不良效果。</p>",
+    "otherwise": "<p>_Otherwise:_</p><p>队伍在难以忍受的寂静中忍受着寒冷前进。每一步都是孤独的，也是痛苦的。</p><p class='basic'>Either add 1 {'{'}frost{'}'} token to the chaos bag, or each investigator suffers 1 mental trauma.</p>"
+  },
+  "theMountainPass": {
+    "scouted": "<p>_If the investigators scouted the mountain pass:_</p><p>你找出昨晚你和埃尔斯沃思侦察时发现的那条安全信道，引导其他队员过去。当你接近山麓时，陡峭的悬崖挡住了寒风。你开始向山顶攀登，这条捷径让你们进展迅速……</p><p class='basic'>冒险设置期间，在你揭示起始地点时，使其线索值减半(向上取整)。</p>",
+    "otherwise": "<p>_Otherwise:_</p><p>通向锯齿状山脉的丘陵冻土带是很难穿越的地形。即使你已经准备好了雪地鞋和保暖的衣服来御寒，行路仍然缓慢而艰难。狂风在每一个拐角都与你搏斗，强到足以把你吹倒。但是你依然继续前进，毫不动摇。</p><p class='basic'>调查员没有承受任何不良效果。</p>"
+  }
+}

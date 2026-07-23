@@ -1,0 +1,83 @@
+{
+  "heading": "Scenario III",
+  "tokens": {
+    "easyStandard": {
+      "skull": "-X. 其中X为场上单张敌人上最多毁灭标记的数量。",
+      "cultist": "-2. 如果你失败，在最近的敌人上放置1个毁灭标记。",
+      "tablet": "-2. 随机丢弃你手牌中的1张卡牌。",
+      "elderThing": "-2. 如果你失败且你所在地点有敌人，受到1点恐惧。"
+    },
+    "hardExpert": {
+      "skull": "-X. 其中X为场上敌人毁灭标记的总数量。",
+      "cultist": "-4. 在最近的敌人上放置1个毁灭标记。",
+      "tablet": "-4. 随机丢弃你手牌中的1张卡牌。",
+      "elderThing": "-4. 如果你你所在地点有敌人，受到1点恐惧。"
+    }
+  },
+  "xp": {
+    "resolution4": "调查员洞察了《黄衣之王》背后的阴谋。"
+  },
+  "intro": {
+    "title": "冒险III：往事回声",
+    "body": "<p>当你驾车从阿卡姆城雨中的街道开过，前往下一个目的地时，你的脑袋隐隐作痛。“陌生人”的威胁时而在你的脑海中浮现，你不由得时常看后视镜，以为镜中会出现那个男子，面戴毫无表情的面具，阴魂不散。相反，你从镜中只看见雾蒙蒙的夜空，天上没有星星，街道也空无一人。</p><p>Your thoughts once again wander, as they have often in the past few hours, to <span class='basic'>The King in Yellow</span> and to the city of Carcosa and its inhabitants. What was the message hidden inside that awful play, the meaning within its madness? A lone detail worms its way to the forefront of your thoughts, one made apparent by the discussions you’d overheard at Ms. Dumaine’s estate—that tonight’s performance of <span class='basic'>The King in Yellow</span> was not the first Arkham had seen of the foul play. There had been at least one other performance, directed by the same man: Nigel Engram.</p><p>There is one place in Arkham where records are often kept of important events occuring within the city: the Historical Society’s manor house in Southside. If there are any records of the previous show of <span class='basic'>The King in Yellow</span>, the Historical Society may have held onto them. Perhaps there you will find answers to the questions that burn in your mind.</p>",
+    "proceedToSebastiensInformation": "<div class='right'>进入 _塞巴斯蒂安·莫罗提供的资讯_。</div>",
+    "otherwise": "<div class='right'>否则，跳到 _冒险设置_.</div>",
+    "sebastiensInformation": "<p>_塞巴斯蒂安·莫罗提供的资讯_: 你想起塞巴斯蒂安在晚宴上对你说的话。数十年前，早在沃德剧院建成之前，《黄衣之王》就曾在阿卡姆上演。据他说，没什么人记得这件事也不足为奇——事实上，他们今晚的一部分目标就是将《黄衣之王》推广给更多观众认识。历史协会可能有保留上一版演出的相关记录，况且那场演出之后也发生了种种 与今晚相似的事件。或许会有一些剪报或其他报导，记载过去发生了什么事。</p><ul><li>设置游戏时，在入口大厅放置入场后，在其上放置1{'{'}perPlayer{'}'}个线索。</li></ul><div class='right'>进入 _设置_.</div>"
+  },
+  "setup": {
+    "gatherSets": "收齐下列遭遇组所有卡牌: *往事回声*、*黄色印记使徒*、*妄想*、*午夜假面*、*上锁的门*、以及*黑暗异教徒*。这些遭遇组的图示为:<section class='encounter-sets'><img src='{setImgPath}/echoes-of-the-past.png' /><img src='{setImgPath}/cult-of-the-yellow-sign.png' /><img src='{setImgPath}/delusions.png' /><img src='{setImgPath}/midnight-masks.png' /><img src='{setImgPath}/locked-doors.png' /><img src='{setImgPath}/dark-cult.png' /></section>找出午夜假面遭遇组时，只从该遭遇组拿取2张错误指示和3张追猎鬼影，不要拿取地点、场景、密谋和冒险参考卡。",
+    "chooseLocations": "从_*一楼*_、_*二楼*_和_*三楼*_的历史协会地点中各随机选择1张移出游戏，不要查看它们的已揭示面。",
+    "placeLocations": "将以下地点放置入场: 入口大厅，2张宁静的走廊，剩下的6个历史协会地点(见下页建议位置)。每位调查员从入口大厅开始游戏。",
+    "setAside": "将下列卡牌放在一边，位于游戏场外：隐藏的图书馆，附身宣誓者，皮博迪先生，槛褛披风，黑玛瑙扣环。",
+    "changes": {
+      "instructions": "根据玩家人数进行以下设置:",
+      "exactly1": "如果只有1位玩家，不作改动。",
+      "exactly2": "如果有2位玩家，从已找出的遭遇组中找出1张卡尔克萨探求者。该卡生成在_*三楼*_历史协会地点。",
+      "exactly3": "如果有3位玩家，从已找出的遭遇组中找出2张卡尔克萨探求者。这2张卡分别生成在2个不同的_*三楼*_历史协会地点。",
+      "exactly4": "如果有4位玩家，从已找出的遭遇组中找出3张卡尔克萨探求者。这3张卡分别生成在不同的_*二楼*_或_*三楼*_历史协会地点。"
+    },
+    "fledTheDinnerParty": "Check 冒险日志. *If you fled the dinner party*: 你到达历史协会时，时间还很充裕；每位调查员可以在本局游戏的第一个回合执行1个额外的行动。"
+  },
+  "resolutions": {
+    "xp": {
+      "bonus": "洞察了《黄衣之王》背后的阴谋"
+    },
+    "noResolution": {
+      "title": "未达成任何结局",
+      "body": "<div class='resolution'>_If no resolution was reached (each investigator resigned or was defeated)_: 你勉强保全身体与心灵未受损伤，逃出了那幢建筑，来到安全的地方。 Read _Resolution 4_.</div>"
+    },
+    "resolution1": {
+      "title": "结局1",
+      "body": "<div class='resolution'><p>_Resolution 1_: 《黄衣之王》事件中出现了这件东西，那一定不是偶然。你心中笃信，你发现的东西十分重要，于是你决定在之后的调查中带上它。你找到的最近一份有关《黄衣之王》早年演出的记录，是丹尼尔‧契斯特菲尔德的精神评估报告，他是一名舞台工作人员，在最后一场演出结束后失去理智。他似乎在演出结束之后就被送进了疯人院，或许他现在还在那儿……</p><ul><li>In your 冒险日志, record that *you took the onyx clasp*. Mark one _确信_ in your 冒险日志. For the remainder of the campaign, one investigator must include the Clasp of Black Onyx weakness in their deck. This card does not count toward that investigator’s deck size.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>If Sebastien Moreau (*Savage Hysteria*) is in the victory display, record his name in your 冒险日志, under “贵宾遇害.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}cultist{'}'} tokens to the chaos bag.</li></ul></div>"
+    },
+    "resolution2": {
+      "title": "结局2",
+      "body": "<div class='resolution'><p>_Resolution 2_: This investigation would make anybody paranoid. Attributing some greater meaning to everything you find can be a dangerous proposition. You’re sure that this clasp is meaningless, perhaps even a prop from the original play. You leave it behind and continue your investigation. The last record you find related to the original production of The King in Yellow is a psychiatric evaluation of one Daniel Chesterfield, a stagehand who lost his wits after the final show. It seems he was admitted to the asylum after the production ended. Perhaps he’s still there...</p><ul><li>In your 冒险日志, record that *you left the onyx clasp behind*. Mark one _疑惑_ in your 冒险日志.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>If Sebastien Moreau (*Savage Hysteria*) is in the victory display, record his name in your 冒险日志, under “贵宾遇害.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}tablet{'}'} tokens to the chaos bag.</li></ul></div>"
+    },
+    "resolution3": {
+      "title": "结局3",
+      "body": "<div class='resolution'><p>_Resolution 3_: The figure collapses to the ground, its warped, melting body writhing in agony. It wheezes and cries out, a yellow glow emanating from inside its mouth and behind its eyes. “Daniel,” the thing says in its cracking voice. “Seek Daniel... Daniel Chesterfield, the stagehand, he remembers!” Deep inside the man’s words, there is another voice behind it, whispering faintly in a melodic language. “Find him... He too has spoken the oath... The oath that doomed us all...!” With those final words, the skin melts off the man’s bones, and he rattles to the floor.</p><ul><li>In your 冒险日志, record that *you destroyed the oathspeaker*. Any one investigator may choose to add The Tattered Cloak to their deck. This card does not count toward that investigator’s deck size.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>If Sebastien Moreau (Savage Hysteria) is in the victory display, record his name in your 冒险日志, under “贵宾遇害.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}tablet{'}'} tokens to the chaos bag.</li></ul></div>"
+    },
+    "resolution4": {
+      "title": "结局4",
+      "body": "<div class='resolution'><p>_Resolution 4_: 今晚发生的事情让你筋疲力竭。你在历史协会这幢宅邸里一无所获，调查进度停滞不前。不论那群入侵者是谁，他们要寻找的东西肯定与你要找的一样。你心烦意乱。只想就近找张床铺躺下——好在老马旅社和历史协会相距不远。你抵达旅社的时候天已破晓，前门的把手和门廊前的羊齿草上都挂着晨露。幸运的是今天正好有个空房间供你入住，随后你很快便沉沉睡去。</p><p>Suddenly, you are falling. Above and all around you, a blinding radiance flares like an inferno. Your head twinges with pain and your vision swims with brilliant colors. Your skin is singed by the flames. Below you, the abyss opens and swallows you whole. You then find yourself in a dank, windowless cell, filled with a putrid stench. A man is huddled in a corner of the room, shivering from the cold, or from the hopelessness of his situation, or perhaps both. “No mask,” he mutters over and over, “no mask, no mask...” You take a few tentative steps forward, but before you can reach him, the metal slot on his cell door slides open, and you hear an orderly call to him. “Daniel, it’s time,” he says. “Daniel, wake up. Wake up, Daniel.” Then, you awaken.</p><ul><li>In your 冒险日志, record that *the followers of the sign have found the way forward*.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. Each investigator earns 1 bonus experience as they gain insight into the machinations of The King in Yellow.<ul><li>_Experience_: {xp}</li></ul></li><li>If Sebastien Moreau (Savage Hysteria) is in the victory display, record his name in your 冒险日志, under “贵宾遇害.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 1 {'{'}cultist{'}'} token, 1 {'{'}tablet{'}'} token, and 1 {'{'}elderThing{'}'} token to the chaos bag.</li></ul></div>"
+    }
+  },
+  "label": {
+    "theOath": {
+      "r1": "这可是重大发现！我们应该拿走它。(->结局1)",
+      "r2": "这只是个无聊的小配饰，而且我们也不应该偷历史协会的东西。把它留下(->结局2)"
+    },
+    "ledAstray": {
+      "placeClue": "Place 1 of your clues on a Cultist enemy"
+    }
+  },
+  "tooltips": {
+    "entryHall": {
+      "resign": "你逃走了，把过去的谜团留给那些神秘的异教徒。"
+    },
+    "historicalSocietyReadingRoom": {
+      "investigate": "{'{'}action{'}'}: _调查_。如果你成功，不发现线索，改为选择1个有毁灭标记的敌人。拿取该敌人上的1个毁灭标记，将其翻面为线索，并放置到你的调查员上。(团队每轮限制1次)"
+    }
+  }
+}

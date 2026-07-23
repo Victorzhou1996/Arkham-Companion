@@ -1,0 +1,12 @@
+**/node_modules
+**/.stack-work
+**/.stack-work-devel
+**/yesod-devel
+**/.git
+**/*.hi
+**/*.o
+**/.DS_Store
+**/*.swp
+**/*.dump-hi
+**/*.hie
+**/public/img

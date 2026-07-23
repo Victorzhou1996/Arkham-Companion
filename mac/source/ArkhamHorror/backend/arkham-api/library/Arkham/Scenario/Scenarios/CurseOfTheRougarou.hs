@@ -1,0 +1,211 @@
+module Arkham.Scenario.Scenarios.CurseOfTheRougarou (curseOfTheRougarou) where
+
+import Arkham.Act.Cards qualified as Acts
+import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Asset.Cards qualified as Assets
+import Arkham.Attack
+import Arkham.CampaignLogKey
+import Arkham.ChaosToken
+import Arkham.Classes
+import Arkham.Difficulty
+import Arkham.EncounterSet qualified as EncounterSet
+import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.ForMovement
+import Arkham.Helpers.FlavorText
+import Arkham.Helpers.Investigator
+import Arkham.Helpers.Query
+import Arkham.Helpers.Scenario
+import Arkham.Matcher hiding (RevealLocation)
+import Arkham.Message.Lifted hiding (setActDeck, setAgendaDeck)
+import Arkham.Message.Lifted.Log
+import Arkham.Modifier
+import Arkham.Prelude
+import Arkham.Resolution
+import Arkham.Scenario.Import.Lifted hiding (chooseOne, story)
+import Arkham.Scenarios.CurseOfTheRougarou.Helpers
+import Arkham.Trait hiding (Cultist, ElderThing)
+import Arkham.Treachery.Cards qualified as Treacheries
+import Data.Maybe (fromJust)
+
+newtype CurseOfTheRougarou = CurseOfTheRougarou ScenarioAttrs
+  deriving stock Generic
+  deriving anyclass (IsScenario, HasModifiersFor)
+  deriving newtype (Show, ToJSON, FromJSON, Entity, Eq)
+
+curseOfTheRougarou :: Difficulty -> CurseOfTheRougarou
+curseOfTheRougarou difficulty =
+  sideStory
+    CurseOfTheRougarou
+    "81001"
+    "Curse of the Rougarou"
+    difficulty
+    [ "     .       unhallowed1      newOrleans1       ."
+    , "unhallowed2 unhallowedBayou newOrleansBayou newOrleans2"
+    , "riverside2 riversideBayou wildernessBayou wilderness2"
+    , "     .       riverside1      wilderness1       ."
+    ]
+
+instance HasChaosTokenValue CurseOfTheRougarou where
+  getChaosTokenValue iid chaosTokenFace (CurseOfTheRougarou attrs) = case chaosTokenFace of
+    Skull -> do
+      isBayou <- selectAny $ LocationWithTrait Bayou <> locationWithInvestigator iid
+      pure
+        $ if isBayou
+          then toChaosTokenValue attrs Skull 4 6
+          else toChaosTokenValue attrs Skull 2 3
+    Cultist -> pure $ toChaosTokenValue attrs Cultist 2 3
+    Tablet -> pure $ ChaosTokenValue Tablet ZeroModifier
+    ElderThing -> pure $ ChaosTokenValue ElderThing (NegativeModifier 4)
+    otherFace -> getChaosTokenValue iid otherFace attrs
+
+instance RunMessage CurseOfTheRougarou where
+  runMessage msg s@(CurseOfTheRougarou attrs) = runQueueT $ scenarioI18n $ case msg of
+    PreScenarioSetup -> scope "intro" do
+      flavor $ h "title" >> p "body"
+      pure s
+    Setup -> runScenarioSetup CurseOfTheRougarou attrs $ do
+      setup $ ul do
+        li "gatherSets"
+        li "setAsideEncounterSets"
+        li "placeLocations"
+        li "setAside"
+        unscoped $ li "shuffleRemainder"
+      gather EncounterSet.TheBayou
+
+      result <- shuffleM $ keys locationsByTrait
+      let
+        trait = fromJust . headMay . drop 1 $ result
+        rest = drop 2 result
+
+      setAside [Assets.ladyEsprit, Assets.bearTrap, Assets.fishingNet]
+      setAside $ concatMap (\t -> findWithDefault [] t locationsByTrait) rest
+
+      startingLocationsWithLabel <- locationsWithLabels trait $ findWithDefault [] trait locationsByTrait
+
+      let
+        ((bayouLabel, bayou), others) =
+          case break (elem Bayou . toTraits . snd) startingLocationsWithLabel of
+            (as, x : bs) -> (x, as <> bs)
+            _ -> error "handled"
+
+      start <- place bayou
+      startAt start
+      push $ SetLocationLabel start bayouLabel
+
+      for_ others $ \(label, card) -> do
+        locationId <- place card
+        push $ SetLocationLabel locationId label
+
+      setAgendaDeck
+        [ Agendas.aCreatureOfTheBayou
+        , Agendas.theRougarouFeeds
+        , Agendas.theCurseSpreads
+        ]
+      setActDeck [Acts.findingLadyEsprit, Acts.huntingTheRougarou]
+    StandaloneSetup -> do
+      let
+        tokens =
+          if isEasyStandard attrs
+            then
+              [ PlusOne
+              , PlusOne
+              , Zero
+              , Zero
+              , Zero
+              , MinusOne
+              , MinusOne
+              , MinusOne
+              , MinusTwo
+              , MinusTwo
+              , MinusThree
+              , MinusThree
+              , MinusFour
+              , MinusFour
+              , MinusFive
+              , MinusSix
+              , Skull
+              , Skull
+              , Cultist
+              , Cultist
+              , Tablet
+              , ElderThing
+              , AutoFail
+              , ElderSign
+              ]
+            else
+              [ PlusOne
+              , Zero
+              , Zero
+              , Zero
+              , MinusOne
+              , MinusOne
+              , MinusOne
+              , MinusTwo
+              , MinusTwo
+              , MinusThree
+              , MinusThree
+              , MinusFour
+              , MinusFour
+              , MinusFive
+              , MinusFive
+              , MinusSix
+              , MinusEight
+              , Skull
+              , Skull
+              , Skull
+              , Cultist
+              , Cultist
+              , Tablet
+              , ElderThing
+              , AutoFail
+              , ElderSign
+              ]
+      s <$ push (SetChaosTokens tokens)
+    ResolveChaosToken _ Cultist iid -> do
+      rougarouAtYourLocation <- selectAny $ enemyIs Enemies.theRougarou <> enemyAtLocationWith iid
+      pushWhen rougarouAtYourLocation (DrawAnotherChaosToken iid)
+      pure s
+    ResolveChaosToken _ Tablet iid -> do
+      drawAnotherChaosToken iid
+      pure s
+    ResolveChaosToken _ ElderThing iid -> do
+      if isEasyStandard attrs
+        then do
+          mrougarou <- selectOne $ enemyIs Enemies.theRougarou <> enemyAtLocationWith iid
+          for_ mrougarou \eid -> push $ EnemyWillAttack $ enemyAttack eid attrs iid
+        else do
+          lid <- getJustLocation iid
+          connectedLocationIds <- select $ AccessibleFrom NotForMovement $ LocationWithId lid
+          mrougarou <-
+            selectOne
+              $ enemyIs Enemies.theRougarou
+              <> EnemyAt (oneOf $ map LocationWithId $ lid : connectedLocationIds)
+          for_ mrougarou \eid -> push $ EnemyWillAttack $ enemyAttack eid attrs iid
+      pure s
+    FailedSkillTest iid _ _ (ChaosTokenTarget token) _ _ -> do
+      when (token.face == Tablet) (roundModifier TabletEffect iid CannotMove)
+      pure s
+    ScenarioResolution NoResolution -> scope "resolutions" do
+      resolution "noResolution"
+      liftRunMessage (ScenarioResolution $ Resolution 1) s
+    ScenarioResolution (Resolution 1) -> scope "resolutions" do
+      record TheRougarouContinuesToHauntTheBayou
+      resolutionWithXp "resolution1" $ allGainXp' attrs
+      endOfScenario
+      pure s
+    ScenarioResolution (Resolution 2) -> scope "resolutions" do
+      lead <- getLead
+      record TheRougarouIsDestroyed
+      resolutionWithXp "resolution2" $ allGainXp' attrs
+      removeCampaignCard Treacheries.curseOfTheRougarou
+      addCampaignCardToDeckChoice [lead] DoNotShuffleIn Assets.ladyEsprit
+      endOfScenario
+      pure s
+    ScenarioResolution (Resolution 3) -> scope "resolutions" do
+      lead <- getLead
+      record TheRougarouEscapedAndYouEmbracedTheCurse
+      resolutionWithXp "resolution3" $ allGainXp' attrs
+      addCampaignCardToDeck lead DoNotShuffleIn Assets.monstrousTransformation
+      endOfScenario
+      pure s
+    _ -> CurseOfTheRougarou <$> liftRunMessage msg attrs

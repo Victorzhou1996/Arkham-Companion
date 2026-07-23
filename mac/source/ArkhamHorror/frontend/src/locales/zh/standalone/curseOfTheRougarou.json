@@ -1,0 +1,20 @@
+{
+  "tokens": {
+    "easyStandard": {
+      "skull": "-2 (如果你位于河口地点，改为-4)。",
+      "cultist": "-2. 如果狼人位于你所在地点，再抽出1个标记。",
+      "tablet": "再抽出1个标记。如果你失败，你不能移动，直到本轮结束。",
+      "elderThing": "-4. 如果狼人位于你所在地点，其攻击你。"
+    },
+    "hardExpert": {
+      "skull": "-3 (如果你位于河口地点，改为-6)。",
+      "cultist": "-3. 如果狼人位于你所在地点，再抽出1个标记。",
+      "tablet": "再抽出1个标记。如果你失败，你不能移动，直到本轮结束。",
+      "elderThing": "-4. 如果狼人位于你所在地点或一个连接地点，其攻击你"
+    }
+  },
+  "remembered": {
+    "foundAnAncientBindingStone": "找到一块古代的约束之石",
+    "foundAStrangeDoll": "找到一个奇怪的玩偶"
+  }
+}

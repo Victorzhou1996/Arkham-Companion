@@ -1,0 +1,43 @@
+module Arkham.Asset.Assets.RavenousControlledHunger (ravenousControlledHunger) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Import.Lifted
+import Arkham.Asset.Types (getController)
+import Arkham.Card
+import Arkham.Card.PlayerCard
+import Arkham.Helpers.Modifiers
+import Arkham.Matcher
+import Arkham.Projection
+
+newtype RavenousControlledHunger = RavenousControlledHunger AssetAttrs
+  deriving anyclass IsAsset
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+ravenousControlledHunger :: AssetCard RavenousControlledHunger
+ravenousControlledHunger = asset RavenousControlledHunger Cards.ravenousControlledHunger
+
+instance HasModifiersFor RavenousControlledHunger where
+  getModifiersFor (RavenousControlledHunger a) = do
+    n <- fieldMap AssetCardsUnderneath (min 5 . length) a.id
+    controllerGets a [SkillModifier sType n | sType <- [minBound ..]]
+
+instance HasAbilities RavenousControlledHunger where
+  getAbilities (RavenousControlledHunger a) = [restrictedAbility a 1 (ControlsThis <> criteria) $ ForcedAbility AnyWindow]
+   where
+    criteria = if length (assetCardsUnderneath a) < 5 then Never else NoRestriction
+
+instance RunMessage RavenousControlledHunger where
+  runMessage msg a@(RavenousControlledHunger attrs) = runQueueT $ case msg of
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      push $ Flip iid (attrs.ability 1) (toTarget attrs)
+      pure a
+    Flip _ _ (isTarget attrs -> True) -> do
+      let
+        ravenousUncontrolledHunger =
+          PlayerCard
+            $ lookupPlayerCard Cards.ravenousUncontrolledHunger (toCardId attrs)
+        subjectId = getController attrs
+      push $ ReplaceInvestigatorAsset subjectId attrs.id ravenousUncontrolledHunger
+      pure $ RavenousControlledHunger $ attrs & flippedL .~ True
+    _ -> RavenousControlledHunger <$> liftRunMessage msg attrs

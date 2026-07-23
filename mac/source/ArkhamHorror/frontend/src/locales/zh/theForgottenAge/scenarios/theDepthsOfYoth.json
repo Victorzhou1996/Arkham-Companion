@@ -1,0 +1,111 @@
+{
+  "heading": "Scenario VII",
+  "tokens": {
+    "easyStandard": {
+      "skull": "-X. 其中X为当前深度等级。",
+      "cultist": "再抽一个标记。如果你失败，在你所在地点或连接地点的每个 _蛇族_ 敌人治愈2点伤害。",
+      "tablet": "再抽一个标记。如果你失败，在你所在地点放置1个线索(从供应堆拿取)。",
+      "elderThing": "-2. 如果胜利牌区内有3点或更多的复仇点数时，改为你本次检定自动失败。"
+    },
+    "hardExpert": {
+      "skull": "-X. 其中X为当前深度等级。如果你失败，受到1点恐惧。",
+      "cultist": "再抽一个标记。如果你失败，在你所在地点或连接地点的每个 _蛇族_ 敌人治愈2点伤害。",
+      "tablet": "再抽一个标记。如果你失败，在你所在地点放置1个线索(从供应堆拿取)。",
+      "elderThing": "-4. 如果胜利牌区内有3点或更多的复仇点数时，改为你本次检定自动失败。"
+    }
+  },
+  "xp": {
+    "depth": "深度等级"
+  },
+  "intro": {
+    "title": "冒险VII：幽嘶深渊",
+    "intro1": {
+      "body": "<p>_Intro 1_: 在醒来之后过了几个小时，你艰难的向下行进终于获得了回报。你在阶梯上每前进一步，从阶梯底部发出的红色光芒都变得更加明亮。终于你来到了一块石质平层，狭窄的隧道两旁的墙壁豁然开朗，进入了一片无比庞大的洞穴迷宫。整个洞穴里遍布着一座庞大城市的遗迹，你从未见过如此景象。这些精美的石质建筑现已荒废多年，但你能感觉到此地有着一段历史，比你想象要更加深远。在你四下环视，想要向伊塔卡提问时，你发现她双眼里闪烁着微弱的黄光，她的瞳孔收缩并且变得狭窄。“幽嘶……瓦卢西亚最后的庇护所……”她低声缓慢地说。</p><p>Just then, a terrifying roar echoes throughout the cavern. The walls and floor shake with tremendous force, and the red glow that permeates the area brightens. A flood of hisses emerges from the tunnels all around you. Ichtaca walks to the edge of a nearby precipice and looks out over the vast depths. “He is here. I feel his presence. The Father of the Serpents… Yig.”</p>",
+      "forgingYourOwnPath": "Check Campaign Log. If you are forging your own path, proceed to _Intro 2_.",
+      "faithIsRestored": "If Ichtaca’s faith is restored, skip to _Intro 3_.",
+      "otherwise": "Otherwise, skip to _Intro 4_."
+    },
+    "intro2": "<p>_Intro 2_: 你如今发觉伊塔卡暗怀鬼胎。亚历山卓亦然，他们二人为了自己的目的而利用你，对你隐瞒着实情。你出其不意地抓住她，举起武器并逼问她的真实目的。“伊格命令把那件遗物带到联结点。”她紧张地回答道。她双眼中的光芒愈发明亮，而她的皮肤开始被鳞片所覆盖。你的双眼眯了起来，将她逼到悬崖边上，确保她无法逃脱。“那件遗物不能落到兄弟会手里：这是千真万确的……必须用它来恢复瓦卢西亚的荣光。伊格发来呼唤，而我必须应答。”你还没来得及反应，她纵身一跃，跳下深渊。</p><p class='basic right'>In your Campaign Log, record that *伊塔卡与你为敌。*</p><p class='basic right'>Add 1 {'{'}elderThing{'}'} token to the chaos bag for the remainder of the campaign.</p><p class='basic right'>Skip to _Setup_.</p>",
+    "intro3": "<p>_Intro 3_: You approach Ichtaca and rest a hand on her shoulder. Your companion takes a deep breath and turns to face you. Her eyes are cast downward in shame, and they have returned to their normal color. “I…I’m sorry. I have brought you to your ruin. He called out to me, long ago, told me of my heritage, of my people. I did his bidding willingly.” She clenches her fists, her gaze meeting yours. “But now I realize I was wrong. Humanity deserves its time on Earth. You may have inherited it from far more powerful forces, but it is humanity’s time, not theirs.” You don’t completely understand what she is saying, but you understand the implication. Whatever Ichtaca truly is, she is on your side. A calm silence lingers between you, an unspoken bond that joins you as one. “We must get to the Nexus and prevent the serpents from recovering the relic,” she explains after a few moments, breaking the silence. You nod in agreement.</p><p>Skip to _Setup_.</p>",
+    "intro4": {
+      "body": "<p>_Intro 4_: 你迟疑了，不确定接下来要做什么。伊塔卡真实的动机是什么？她为什么带你来到这个地方？你还没来得及反应，她便拉弓引箭，箭尖直指你的心脏。“感谢你一路以来的协助。”伊塔卡简短地说道，“但我们是时候分别了。伊格发来呼唤，而我必须应答。”她黄色的双眼眯了起来，愈发明亮地闪烁。</p><p class='basic right'>In your Campaign Log, record that *Ichtaca is set against you*. If Ichtaca is part of an investigator’s deck, remove her from that investigator’s deck for the remainder of the campaign.</p>",
+      "theRelicIsMissing": "Check Campaign Log. *If the relic is missing*, proceed to _Intro 5_.",
+      "foundTheMissingRelic": "*If the investigators found the missing relic*, skip to _Intro 6_."
+    },
+    "intro5": "<p>_Intro 5_: “你必须立即离开这个地方。这不是一场人类的战争。而是‘我族’的。现在计划将要完成，我们不能让你或兄弟会阻挠我们的计划。”她的手摇晃了片刻，双眼再次开始闪烁。你看得出有什么东西正在撕扯着她，压迫着她的意识。最后，她再次开口：“在我改变主意之前，马上离开。要是你还想活命，就别跟着我。我不会再给你第二次机会。”伊塔卡很快离开，她双眼紧盯着你，直到她走出你的视线范围。你感觉自己别无选择，只能跟着她无视她的警告。如果你不这么做，谁又来拯救人类呢？</p><p class='basic right'>Skip to _Setup_.</p>",
+    "intro6": "<p>_Intro 6_: ““放下武器。”伊塔卡的背叛使你胸口一阵刺痛，你心中满是慎怒和失望。你脑海中闪过逃跑的想法，但你见识过她的高超箭术，在她的精准箭法之下，你没跑几步就会被弓箭射死。你别无选择，只好服从。你身上的武器一个个地落到地面上。“很好。现在把遗物交给我。”你痛苦地向前走了几步，将遗物交给了伊塔卡。</p><p class='basic right'>Check your supplies. If any investigator has a pocketknife, that investigator reads _Intro 7_. Otherwise, skip to _Intro 8_.</p>",
+    "intro7": "<p>_Intro 7_: 就在伊塔卡伸手要拿遗物的时候，你拔出了自己藏着的折叠小刀，出其不意地刺向她。刀刃深深地刺穿了她的小臂。血液飞溅到你的胸膛上，她忍受着疼痛，按着自己的手臂，趔趄着走了几步。她的脚踝绊到了悬崖边的一块石头，随即她便从悬崖边缘摔了下去，她的尖叫声与她下落的身躯一同离你远去。刚才发生的事情令你震惊，但你没时间平复自己的心情，因为又一声震耳欲聋的咆哮响彻整座洞窟，地面随之剧震。你收起自己的行李，继续向下深入。</p><p class='basic right'>Skip to _Setup_.</p>",
+    "intro8": "<p>_Intro 8_: 伊塔卡拿到了遗物。你看见她手背的皮肤逐渐变得僵硬，生出鳞片。你后退了几步，怒火使你把指节攥得发白。“在我改变主意之前，走吧。”她说道，“要是你还想活命，就别跟着我。我不会再给你第二次机会。”伊塔卡很快离开，她双眼紧盯着你，直到她走出你的视线范围。你感觉自己别无选择，只能跟着她，无视她的警告。如果你不这么做，谁又来拯救人类呢？</p><p class='basic right'>In your Campaign Log, cross off the investigators found the missing relic and record 遗物已丢失。 If Relic of Ages is part of an investigator’s deck, remove it from that investigator’s deck for the remainder of the campaign.</p><p class='basic right'>Proceed to _Setup_.</p>"
+  },
+  "setup": {
+    "gatherSets": "Gather all cards from the following encounter sets: *The Depths of Yoth*, *Agents of Yig*, *Yig’s Venom*, *Expedition*, *Forgotten Ruins*, and *Poison*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/the-depths-of-yoth.png' /><img src='{setImgPath}/agents-of-yig.png' /><img src='{setImgPath}/yigs-venom.png' /><img src='{setImgPath}/expedition.png' /><img src='{setImgPath}/forgotten-ruins.png' /><img src='{setImgPath}/poison.png' /></section>",
+    "yigsFury": {
+      "description": "Check the number of tally marks under “Yig’s Fury” in your Campaign Log.",
+      "tally0": "If there are 0 tally marks, search the gathered encounter cards for Yig and each copy of Pit Warden. Remove those cards from the game.",
+      "tally1to5": "If there are 1–5 tally marks, no changes are made.",
+      "tally6to10": "If there are 6–10 tally marks, remove agenda 1a from the game. The game begins at agenda 2a.",
+      "tally11to14": "If there are 11–14 tally marks, remove agendas 1a and 2a from the game. The game begins at agenda 3a.",
+      "tally15to17": "If there are 15–17 tally marks, remove agendas 1a, 2a, and 3a from the game. The game begins at agenda 4a.",
+      "tally18to20": "If there are 18–20 tally marks, remove agendas 1a, 2a, 3a, and 4a from the game. The game begins at agenda 5a.",
+      "tally21OrMore": "If there are 21 or more tally marks, remove agendas 1a, 2a, 3a, 4a, and 5a from the game. The game begins at agenda 6a."
+    },
+    "placeLocations": "将所有10张单面地点放在一边，位于场外。随机从上述地点(除幽嘶的阶梯以外)中抽取1个地点，将该地点放置入场。每位调查员从抽取的地点开始游戏。",
+    "theHarbinger": {
+      "description": "Check Campaign Log. If the Harbinger is still alive, search the collection for the Harbinger of Valusia and set it aside. Place damage on it equal to the amount of damage recorded in parentheses in your Campaign Log.",
+      "agenda5or6": "If it is agenda 5a or 6a, move that the set-aside Harbinger of Valusia enemy to the pursuit area. (See “追击,” below.)"
+    },
+    "yig": {
+      "description": "将伊格敌人放在一边，位于场外。",
+      "agenda6": "If it is agenda 6a, move that the set-aside Yig enemy to the pursuit area."
+    },
+    "explorationDeck": "构建探索牌堆。从放在一边的剩余单面地点中拿取幽嘶的阶梯和另外4张单面地点，将其一同混洗形成探索牌堆。",
+    "currentDepth": "在冒险参考卡的“当前深度”下方放置1个资源标记。在本场冒险接下来的时间里，“当前深度”下方的资源数量表示着当前深度等级。(见下文，“深度等级”。)",
+    "setOutOfPlay": "Set the Relic of Ages (*Repossess the Past*) aside, out of play.",
+    "poisoned": "将不在调查员牌组中的所有中毒弱点卡放在一边。"
+  },
+  "depthLevel": {
+    "title": "深度等级",
+    "body": "<p class='basic'>在本场冒险中，冒险辅助卡“当前深度”下方的资源数量表示着当前深度等级。随着调查员完成场景1，更加深入地进入幽嘶，在当前深度等级上放置资源，继续游戏直到调查员到达某个深度等级或被击败。在幽嘶下降到的深度越深，危险也更为致命，但你本场冒险也将获得更好的结局。</p><p class='basic'>当前深度等级本身没有效果；但是，某些遭遇卡的效果根据当前深度等级，可能会改变或变得更强。</p>"
+  },
+  "pursuit": {
+    "title": "追击",
+    "body": "<p class='basic'>Some cards in this scenario reference an area called the “pursuit area.” The pursuit area is an out-of-play area next to the act and agenda deck which enemies can enter and leave via card effects. Generally speaking, enemies in play will move to the pursuit area whenever the investigators reach the next depth level. _Although the pursuit area is out of play, whenever an enemy moves to the pursuit area, it keeps all tokens and attachments_.</p><p class='basic'>Enemies in the pursuit area are considered to be “in pursuit.” Enemies that are in pursuit are considered to be out of play, and cannot be affected by player cards or investigator actions. However, enemies that are in pursuit can re‑enter play by a variety of card abilities.</p>"
+  },
+  "remembered": {
+    "collectedAStrangeLiquid": "Collected a Strange Liquid"
+  },
+  "label": {
+    "perilsOfYoth": {
+      "fail": "Set Perils of Yoth aside, out of play. (*This exploration fails.*)",
+      "continue": "Set Perils of Yoth aside, out of play: take horror or damage equal to the current depth level; and continue exploring as if you had not drawn Perils of Yoth."
+    },
+    "endlessCaverns": {
+      "scout": "Choose the group's scout"
+    },
+    "horrificDescent": {
+      "description": "Check your supplies. If an investigator has a canteen, that investigator must decide:",
+      "collect": "*This could be useful*. Remember that you have \"collected a strange liquid.\"",
+      "doNotCollect": "*I'm not going anywhere near that*. 你未受到负面效果。"
+    }
+  },
+  "resolutions": {
+    "xp": {
+      "depth": "深度等级"
+    },
+    "label": {
+      "stickyGoop": "Check your supplies. If any investigator has sticky goop and an investigator “collected a strange liquid,” the liquid from the fountain disolves the viscous substance, revealing a solid object beneath the ooze. Record “Key of Eztli” in any one investigator’s supplies."
+    },
+    "noResolution": {
+      "title": "No Resolution",
+      "body": "_If no resolution was reached (each investigator resigned or was defeated)_: Read _Resolution 1_."
+    },
+    "resolution1": {
+      "title": "Resolution 1",
+      "body": "<p>_Resolution 1_: 在历经几个小时之后，你只是触及了这个广无边际的地下世界的表层。人类就算想花上几百年来摸清这些隧道，也没法完成这项任务。无论你在深渊下探的速度有多快，蛇族都能紧咬着你不放。它们将你视作家园的入侵者，而且对于这地狱一般的诸多隧道，它们要比你更加熟悉。随着你的伤口渐渐拖慢你的脚步，恐慌动摇着你的每一项抉择，看来你是一定要死在这群生物手中了。绝望渗入你的脑海中。你正穿过一个洞穴时，其中有着许多长长的石桥，桥身横跨下方巨大而幽黑的裂口，就在此时你眼看着要被蛇群追上了。蛇人从裂口两边包围了你，他们的长矛将你逼到了岌岌可危的桥边。你脚踝边上的一颗小石头进裂并脱落，落入下方漆黑的虚空之中。你听不见它落到裂口地面的声音。这次没希望逃脱了——你别无选择，只得接受命运。一根根予尖向你更近一步，使你迫近桥边。你闭上双眼，掉了下去。</p><ul><li>In your Campaign Log, record that *the investigators fell into the depths*. Check the current depth level when the scenario ended.<ul><li>If the current depth level is 1, the fall is fatal, and the darkness of N’kai devours the shattered corpses. Each investigator is killed. The investigators lose the campaign.</li><li>If the current depth level is 2, each investigator suffers 2 physical trauma and searches the collection for a random basic Injury weakness, adding it to their deck. If this trauma causes all investigators to be killed, the investigators lose the campaign.</li><li>If the current depth level is 3, each investigator suffers 1 physical trauma. If this trauma causes all investigators to be killed, the investigators lose the campaign.</li><li>If the current depth level is 4, you suffer no ill effects.</li></ul></li><li>If the Harbinger of Valusia entered play during this scenario:<ul><li>If it is in the victory display, cross out “the Harbinger is still alive” in your Campaign Log.</li><li>If it is still in play or is set aside, next to “the Harbinger is still alive” in your Campaign Log, record in parentheses how much damage is on the Harbinger of Valusia, replacing the number that was previously in parentheses.</li></ul></li><li>For each vengeance point in the victory display, record one tally mark under “Yig’s Fury” in your Campaign Log.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. 每位调查员获得额外的经验值，数量等于当前深度等级。</li></ul>"
+    },
+    "resolution2": {
+      "title": "Resolution 2",
+      "body": "<p>_Resolution 2_: 尽管你面前横亘重重困难，不管怎样，你还是到达了目的地。自从你进入幽嘶以来，一直萦绕的标志性红光已经消去，取而代之的是无法穿透的漆黑。一定是离联结点近了……你可以感觉得到。</p><ul><li>In your Campaign Log, record that *the Nexus is near*.</li><li>If the Harbinger of Valusia entered play during this scenario:<ul><li>If it is in the victory display, cross out “the Harbinger is still alive” in your Campaign Log.</li><li>If it is still in play or is set aside, next to “the Harbinger is still alive” in your Campaign Log, record in parentheses how much damage is on the Harbinger of Valusia, replacing the number that was previously in parentheses.</li></ul></li><li>For each vengeance point in the victory display, record one tally mark under “Yig’s Fury” in your Campaign Log.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. 每位调查员获得额外的经验值，数量等于当前深度等级。</li></ul>"
+    }
+  }
+}

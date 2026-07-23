@@ -1,0 +1,41 @@
+{
+  "heading": "冒险IX",
+  "tokens": {
+    "easyStandard": {
+      "skull": "-X . 其中X为带有毁灭标记的地点数。",
+      "elderThing": "-4. 如果你失败，将1个毁灭标记放到你所在地点。"
+    },
+    "hardExpert": {
+      "skull": "-X . 其中X为地点带有的毁灭标记总数。",
+      "elderThing": "-6. 将1个毁灭标记放到你所在地点。"
+    }
+  },
+  "intro": {
+    "title": "Secret 秘密冒险IX：时间倒流",
+    "forcedToWaitForSupplies": "Check Campaign Log. *If the investigators were forced to wait for additional supplies*, read _Intro 1_.",
+    "clearedAPathToTheEztliRuins": "*If the investigators cleared a path to the Eztli ruins*, skip to _Intro 2_.",
+    "intro1": "<p>_Intro 1:_</p><p>You stand in front of the main temple of the Eztli, sweat pouring down your skin due to the hot, damp jungle air. Stunned, you examine your surroundings. José and Maria stand next to you, gaping in wonder at the temple’s sophisticated architecture. Their packs are bulging with the extra supplies they were able to acquire from Alejandro’s contacts in Mexico City. Alejandro himself stands at the rear of the group, grinning.</p><p>你的意识被拉回如此久远的地方，使你的大脑无力承受，痛苦不已。你的身体摇摇晃晃，竭力想要让自己站稳脚跟，避免脱力倒下。虽然你已经改写了命运，但你真正的任务仍然等待着你去完成。在其他探险队员扎营，准备探索遗迹时，你为了完成自己的目的而悄悄溜走，离开了亚历山卓和你的其他队员。他们不会理解，因为他们未曾见过你所见的事物。</p><p class='basic right'>在冒险日志中，划掉前3个条目后面的所有条目。</p><p class='basic right'>被划掉的条目视为被你的行为撤回。</p><p class='basic right'>Proceed to _Setup_.</p>",
+    "intro2": "<p>_Intro 2:_</p><p>You stand near the main temple of the Eztli, sweat pouring down your skin due to the hot, damp jungle air. Stunned, you examine your surroundings. Several tents are set up in the clearing in front of the temple. José stands guard along the border of your camp, and you can see Maria packing equipment and provisions into her backpack, getting ready for her journey to the northern edge of the jungle, as you had instructed. Alejandro sits on a log in the center of the camp, decrypting the inscription he found near the temple’s entryway.</p><p>的意识被拉回如此久远的地方，使你的大脑无力承受，痛苦不已。你的身体摇摇晃晃，竭力想要让自己站稳脚跟，避免脱力倒下。虽然你已经改写了命运，但你真正的任务仍然等待着你去完成。在其他探险队员准备探索遗迹时，你为了完成自己的目的而悄悄溜走，离开了亚历山卓和你的其他队员。他们不会理解，因为他们未曾见过你所见的事物。</p><p class='basic right'>在冒险日志中，划掉前3个条目后面的所有条目。</p><p class='basic right'>被划掉的条目视为被你的行为撤回。</p><p class='basic right'>Proceed to _Setup_.</p>"
+  },
+  "setup": {
+    "gatherSets": "Gather all cards from the following encounter sets: *时间倒流*, *The Doom of Eztli*, *Agents of Yig*, *Yig’s Venom*, *Temporal Flux*, *Deadly Traps*, *Forgotten Ruins*, *Poison*, and *Chilling Cold*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/turn-back-time.png' /><img src='{setImgPath}/the-doom-of-eztli.png' /><img src='{setImgPath}/agents-of-yig.png' /><img src='{setImgPath}/yigs-venom.png' /><img src='{setImgPath}/temporal-flux.png' /><img src='{setImgPath}/deadly-traps.png' /><img src='{setImgPath}/forgotten-ruins.png' /><img src='{setImgPath}/poison.png' /><img src='{setImgPath}/chilling-cold.png' /></section>",
+    "actDeck": "When building the act deck, use the three new act cards provided in the *时间倒流* encounter set instead of the original act deck from *The Doom of Eztli*. The *时间倒流* encounter set can be identified by this icon: <section class='encounter-sets'><img src='{setImgPath}/turn-back-time.png' /></section>",
+    "relicOfAgesRepossessThePast": "Remove the Relic of Ages (*Repossess the Past*) from its owner’s deck and set it aside, out of play.",
+    "relicOfAgesADeviceOfSomeSort": "Remove the Relic of Ages (*…A Device, of Some Sort*) from the game.",
+    "placeLocations": "将遗迹入口放置入场。每位调查员从遗迹入口开始游戏。",
+    "explorationDeck": "Create the exploration deck. This is done by taking the five single-sided _Ancient_ locations and shuffling them together, along with one copy each of the following treachery cards: Ill Omen, Deep Dark, Final Mistake, Entombed, and Crypt Chill.",
+    "setAside": "将瓦卢西亚的预示者敌人卡、时间石室地点卡放在一边，位于场外。",
+    "chaosBag": "Add 1 {'{'}elderThing{'}'} token to the chaos bag, for the remainder of the campaign.",
+    "poisoned": "将不在调查员牌组中的所有中毒弱点卡放在一边。"
+  },
+  "resolutions": {
+    "noResolution": {
+      "title": "No Resolution",
+      "body": "<p>_If no resolution was reached (each investigator resigned or was defeated)_: 随着你的失败，时间线冲突的矛盾使你遭受后果。不管你做了什么，未来的种种事件都没能改写。你总能找到遗物，总是没能保护好它，而联结点定会变得衰弱。</p><p>你知道现世不会一成不变，但或许这不是世界末日。终究时间只是一种维度：一种人类几乎不了解的维度。我们经历时间，但却看不见它；有办法测量，但却无法改变它。所以当第四维度被切分为成千上百个位面时，会发生什么？我们人类的孱弱思维无法理解其后果，但宇宙仍然存在，其无限延伸的边界不再受时间的桎梏。<ul><li>In your Campaign Log, record that *时间线被解开。*</li><li>Each investigator is driven insane.</li><li>The investigators lose the campaign.</li></ul>"
+    },
+    "resolution1": {
+      "title": "Resolution 1",
+      "body": "<p>_Resolution 1:_</p><p class='anke'>Thursday, December 17th, 1925</p><p>我决定在我写完这本日志，将1925年夏天真实发生的种种事件记录完毕时，将这本日志锁在我的保险箱里，再没别人知晓，也不会有人知晓这一切。我不希望时间的流逝将这些事件通通抹去，所以只能想办法保留自己的记录。说到底，这些并不是我的记忆，而是“另一个我”的记忆：那个为了拯救人类而勇闯时空的我。</p><p>It is difficult to explain how we did what we did. After all that happened—Ichtaca, Alejandro, the city of the Yithians, Yoth—it turns out the true doom of humanity had occurred much, much earlier: when we first left to find the Eztli. We brought all of these events upon ourselves. In order to prevent this calamity, we had to seal the relic away forever. I remember these events as though I myself had experienced them, though for me, the expedition had gone much differently. We reached the central chamber of the Eztli ruins, but it was sealed shut, and nothing—not even the TNT that José had brought from the trucks—could breach the entrance. Although we returned to Arkham with proof that the Eztli existed, no other expedition would ever find them or their ruins again. My other self perished in those ruins—but I remember. Somehow, I remember everything.</p><ul><li>In your Campaign Log, record that *the investigators sealed the Relic of Ages forever*.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.</li><li>The investigators win the campaign!</li></ul>"
+    }
+  }
+}

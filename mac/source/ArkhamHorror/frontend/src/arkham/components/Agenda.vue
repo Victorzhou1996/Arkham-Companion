@@ -1,0 +1,307 @@
+<script lang="ts" setup>
+import { TokenType } from '@/arkham/types/Token';
+import { ComputedRef, computed, ref } from 'vue';
+import { useDebug } from '@/arkham/debug';
+import { useI18n } from 'vue-i18n';
+import { imgsrc, groupBy } from '@/arkham/helpers';
+import { type Game } from '@/arkham/types/Game';
+import { type Card, cardImage } from '@/arkham/types/Card'
+import * as ArkhamGame from '@/arkham/types/Game';
+import { AbilityLabel, AbilityMessage, type Message } from '@/arkham/types/Message';
+import { MessageType } from '@/arkham/types/Message';
+import AbilityButton from '@/arkham/components/AbilityButton.vue';
+import PoolItem from '@/arkham/components/PoolItem.vue';
+import Treachery from '@/arkham/components/Treachery.vue';
+import Event from '@/arkham/components/Event.vue';
+import Enemy from '@/arkham/components/Enemy.vue';
+import * as Arkham from '@/arkham/types/Agenda';
+
+const props = defineProps<{
+  agenda: Arkham.Agenda
+  game: Game
+  cardsUnder: Card[]
+  cardsNextTo: Card[]
+  playerId: string
+}>()
+
+const emit = defineEmits<{
+  show: [cards: ComputedRef<Card[]>, title: string, isDiscards: boolean]
+  choose: [value: number]
+}>()
+
+const id = computed(() => props.agenda.id)
+const debug = useDebug()
+
+const canViewUnder = computed(() => {
+  if (debug.active) return true
+  const { scenario } = props.game
+  if (!scenario) return true
+  if (scenario.id === 'c02195') return false
+  return true
+})
+
+const { t } = useI18n()
+
+const image = computed(() => {
+  if (props.agenda.flipped) {
+    if (["c03276a", "c03279a"].includes(id.value)) {
+      return imgsrc(`cards/${id.value.replace(/^c/, '')}b.avif`);
+    }
+    return imgsrc(`cards/${id.value.replace(/^c/, '').replace(/a$/, '')}b.avif`);
+  }
+  return imgsrc(`cards/${id.value.replace(/^c/, '')}.avif`);
+})
+
+const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
+
+const viewingUnder = ref(false)
+const viewUnderLabel = computed(() => viewingUnder.value ? "Close" : t('cardsUnderneath', { count: props.cardsUnder.length }))
+
+function canInteract(c: Message): boolean {
+  return c.tag === MessageType.TARGET_LABEL && c.target.contents === id.value
+}
+
+const interactAction = computed(() => choices.value.findIndex(canInteract));
+
+function isAbility(v: Message): v is AbilityLabel {
+  if (v.tag !== MessageType.ABILITY_LABEL) {
+    return false
+  }
+
+  const { source } = v.ability
+
+  if (source.sourceTag === 'ProxySource') {
+    if ("contents" in source.source) {
+      return source.source.contents === id.value
+    }
+  } else if (source.tag === 'AgendaSource') {
+    if ("contents" in source) {
+      return source.contents === id.value
+    }
+  }
+
+  return false
+}
+
+const abilities = computed(() => {
+  return choices.value
+    .reduce<AbilityMessage[]>((acc, v, i) => {
+      if (isAbility(v)) {
+        return [...acc, { contents: v, displayAsAction: false, index: i }]
+      }
+
+      return acc
+    }, [])
+})
+
+const cardsUnder = computed(() => props.cardsUnder)
+const showCardsUnderAgenda = () => emit('show', cardsUnder, 'Cards Under Agenda', false)
+
+const nextToTreacheries = computed(() => Object.values(props.game.treacheries).
+  filter((t) => t.placement.tag === "NextToAgenda").
+  map((t) => t.id))
+
+const nextToEvents = computed(() => Object.values(props.game.events).
+  filter((t) => t.placement.tag === "NextToAgenda").
+  map((t) => t.id))
+
+const attachedEnemies = computed(() => Object.values(props.game.enemies).
+  filter((t) => t.placement.tag === "AttachedToAgenda").
+  map((t) => t.id))
+
+const groupedTreacheries = computed(() => Object.entries(groupBy([...props.agenda.treacheries, ...nextToTreacheries.value], (t) => props.game.treacheries[t].cardCode)))
+
+const isVertical = computed(() => {
+  const cardCode = props.agenda.flipped ? id.value.replace(/a?$/, 'b') : id.value
+  return ["c01121b", "c03241b", "c06169b", "c50026b", "c07164b", "c07165b", "c07199b", "c82002b", "c90033b", "c90066b"].includes(cardCode) 
+})
+
+const eclipses = computed(() => props.agenda.tokens[TokenType.Eclipse])
+</script>
+
+<template>
+  <div class="agenda-container">
+    <div class="agenda-card">
+      <img
+      :class="{ 'agenda--can-progress': interactAction !== -1, 'card--sideways': !isVertical }"
+        class="card card--agenda"
+        @click="$emit('choose', interactAction)"
+        :src="image"
+      />
+      <div class="pool" v-if="!agenda.flipped">
+        <template v-if="debug.active">
+          <button @click="debug.send(game.id, {tag: 'RemoveTokens', contents: [{'tag': 'GameSource'}, {'tag': 'AgendaTarget', 'contents': id}, 'Doom', 1]})">-</button>
+        </template>
+
+        <PoolItem
+          type="doom"
+          :amount="agenda.doom"
+        />
+        <PoolItem class="eclipse" v-if="eclipses" type="resource" :amount="eclipses" />
+
+        <template v-if="debug.active">
+          <button
+            @click.exact="debug.send(game.id, {tag: 'PlaceTokens', contents: [{'tag': 'GameSource'}, {'tag': 'AgendaTarget', 'contents': id}, 'Doom', 1]})"
+            @click.shift="debug.send(game.id, {tag: 'PlaceTokens', contents: [{'tag': 'GameSource'}, {'tag': 'AgendaTarget', 'contents': id}, 'Doom', 5]})"
+          >+</button>
+        </template>
+      </div>
+    </div>
+    <img
+      v-for="(card, idx) in cardsNextTo"
+      class="card card--sideways"
+      :key="idx"
+      :src="imgsrc(cardImage(card))"
+    />
+    <AbilityButton
+      v-for="ability in abilities"
+      :key="ability.index"
+      :ability="ability.contents"
+      :data-image="image"
+      :game="game"
+      class="sideways"
+      @click="$emit('choose', ability.index)"
+      />
+    <Enemy
+      v-for="enemyId in attachedEnemies"
+      :enemy="game.enemies[enemyId]"
+      :game="game"
+      :playerId="playerId"
+      @choose="$emit('choose', $event)"
+    />
+    <Event
+      v-for="eventId in nextToEvents"
+      :event="game.events[eventId]"
+      :game="game"
+      :playerId="playerId"
+      @choose="$emit('choose', $event)"
+    />
+    <div v-if="groupedTreacheries.length > 0" class="treacheries">
+      <div v-for="([cCode, treacheries], idx) in groupedTreacheries" :key="cCode" class="treachery-group" :style="{ zIndex: (groupedTreacheries.length - idx) * 10 }">
+        <div v-for="treacheryId in treacheries" class="treachery-card" :key="treacheryId" >
+          <Treachery
+            :treachery="game.treacheries[treacheryId]"
+            :game="game"
+            :playerId="playerId"
+            @choose="$emit('choose', $event)"
+            :overlay-delay="310"
+          />
+        </div>
+      </div>
+    </div>
+
+    <button v-if="cardsUnder.length > 0 && canViewUnder" class="view-cards-under-button" @click="showCardsUnderAgenda">{{viewUnderLabel}}</button>
+    <button v-else-if="cardsUnder.length > 0" class="view-cards-under-button" disabled>{{viewUnderLabel}}</button>
+  </div>
+</template>
+
+<style scoped>
+.card {
+  width: var(--card-width);
+  box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+}
+
+.card--sideways {
+  width: auto;
+  height: var(--card-width);
+  max-width: max-content;
+}
+
+.card--agenda {
+  z-index: 100;
+}
+
+.agenda-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.agenda--can-progress {
+  border: 3px solid #ff00ff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.pool {
+  display: flex;
+  flex-direction: row;
+  height: 2em;
+  justify-content: flex-start;
+  button {
+    height: min-content;
+    align-self: center;
+  }
+}
+
+.button{
+  margin-top: 2px;
+  border: 0;
+  color: #fff;
+  border-radius: 4px;
+  border: 1px solid #ff00ff;
+}
+
+.agenda :deep(.treachery) {
+  object-fit: cover;
+  object-position: 0 -74px;
+  height: 68px;
+  margin-top: 2px;
+}
+
+.treacheries {
+  position:relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.treachery-group {
+  display: flex;
+  gap: 5px;
+  flex-direction: row;
+  margin-top: -50px;
+  /*position: inherit;*/
+  transition: margin-top 0.3s;
+  position: relative;
+
+  &:hover {
+    margin-top: 0px;
+    .treachery-card {
+      margin-left: 0;
+    }
+  }
+}
+
+.treachery {
+  box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.45);
+}
+
+.treachery-card {
+  margin-left: -50px;
+  transition: margin-left 0.3s;
+  &:first-of-type {
+    margin-left: 0;
+  }
+}
+
+.agenda-card {
+  > img {
+    box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.8);
+  }
+  z-index: 100;
+  position: relative;
+  .pool {
+    z-index: 101;
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
+
+.agenda-container :deep(.card--sideways) {
+  width: auto;
+  height: var(--card-width);
+  aspect-ratio: var(--card-sideways-aspect);
+}
+</style>

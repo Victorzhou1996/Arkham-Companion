@@ -1,0 +1,63 @@
+module Arkham.Investigator.Cards.MontereyJackParallel (montereyJackParallel) where
+
+import Arkham.Ability
+import Arkham.Capability
+import {-# SOURCE #-} Arkham.GameEnv
+import Arkham.Helpers.Location (withLocationOf)
+import Arkham.Helpers.Modifiers (getAdditionalSearchTargets)
+import Arkham.Investigator.Cards qualified as Cards
+import Arkham.Investigator.Import.Lifted
+import Arkham.Location.Types (Field (..))
+import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
+import Arkham.Modifier
+import Arkham.Projection
+import Arkham.Strategy
+
+newtype MontereyJackParallel = MontereyJackParallel InvestigatorAttrs
+  deriving anyclass (IsInvestigator, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+  deriving stock Data
+
+montereyJackParallel :: InvestigatorCard MontereyJackParallel
+montereyJackParallel =
+  investigator MontereyJackParallel Cards.montereyJackParallel
+    $ Stats {health = 8, sanity = 6, willpower = 1, intellect = 4, combat = 2, agility = 5}
+
+instance HasAbilities MontereyJackParallel where
+  getAbilities (MontereyJackParallel a) =
+    [ playerLimit PerRound
+        $ restricted a 1 (Self <> can.search.deck You)
+        $ freeReaction
+        $ DiscoveringLastClue #after You (YourLocation <> LocationWithShroud (atLeast 1))
+    ]
+
+instance HasChaosTokenValue MontereyJackParallel where
+  getChaosTokenValue iid ElderSign (MontereyJackParallel attrs) | iid == toId attrs = do
+    pure $ ChaosTokenValue ElderSign (PositiveModifier 1)
+  getChaosTokenValue _ token _ = pure $ ChaosTokenValue token mempty
+
+instance RunMessage MontereyJackParallel where
+  runMessage msg i@(MontereyJackParallel attrs) = runQueueT $ case msg of
+    ElderSignEffect (is attrs -> True) -> do
+      n <- selectCount $ assetControlledBy attrs.id <> oneOf [#charm, #relic]
+      gainResources attrs.id (source_ #elderSign) n
+      pure i
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      withLocationOf iid $ field LocationShroud >=> traverse_ \x -> do
+        let match = PlayableCardWithCostReduction NoAction x $ basic $ #asset <> oneOf [#charm, #relic]
+        search iid (attrs.ability 1) iid [fromTopOfDeck x] match (defer attrs IsNotDraw)
+      pure i
+    SearchFound iid (isTarget attrs -> True) _ cards | notNull cards -> do
+      additionalTargets <- getAdditionalSearchTargets iid
+      chooseNM iid (1 + additionalTargets) $ targets cards $ handleTarget iid (attrs.ability 1)
+      pure i
+    SearchFound iid (isTarget attrs -> True) _ [] -> do
+      chooseOneM iid $ labeled "No Card Founds" nothing
+      pure i
+    HandleTargetChoice iid (isAbilitySource attrs 1 -> True) (CardIdTarget cid) -> do
+      withLocationOf iid $ field LocationShroud >=> traverse_ \x -> do
+        costModifier (attrs.ability 1) cid (ReduceCostOf (CardWithId cid) x)
+        playCardPayingCost iid =<< getCard cid
+      pure i
+    _ -> MontereyJackParallel <$> liftRunMessage msg attrs

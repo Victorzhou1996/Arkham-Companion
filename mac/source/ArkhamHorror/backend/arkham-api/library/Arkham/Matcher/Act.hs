@@ -1,0 +1,30 @@
+{-# LANGUAGE TemplateHaskell #-}
+
+module Arkham.Matcher.Act where
+
+import Arkham.Act.Sequence
+import Arkham.Card.CardCode
+import Arkham.Id
+import Arkham.Matcher.Treachery
+import Arkham.Prelude
+import Data.Aeson.TH
+
+data ActMatcher
+  = ActWithId ActId
+  | AnyAct
+  | ActWithSide ActSide
+  | ActWithStep Int
+  | ActWithTreachery TreacheryMatcher
+  | ActWithDeckId Int
+  | NotAct ActMatcher
+  | ActOneOf [ActMatcher]
+  | ActCanWheelOfFortuneX
+  deriving stock (Show, Eq, Ord, Data)
+
+actIs :: HasCardCode a => a -> ActMatcher
+actIs = ActWithId . ActId . toCardCode
+
+newtype RemainingActMatcher = RemainingActMatcher {unRemainingActMatcher :: ActMatcher}
+  deriving stock (Show, Eq, Ord)
+
+$(deriveJSON defaultOptions ''ActMatcher)

@@ -1,0 +1,93 @@
+module Arkham.Asset.Assets.FluteOfTheOuterGods4 (fluteOfTheOuterGods4) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Import.Lifted
+import Arkham.Card
+import Arkham.DamageEffect
+import Arkham.Enemy.Types qualified as Enemy
+import Arkham.ForMovement
+import Arkham.Matcher
+import Arkham.Projection
+
+newtype FluteOfTheOuterGods4 = FluteOfTheOuterGods4 AssetAttrs
+  deriving anyclass (IsAsset, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+fluteOfTheOuterGods4 :: AssetCard FluteOfTheOuterGods4
+fluteOfTheOuterGods4 = asset FluteOfTheOuterGods4 Cards.fluteOfTheOuterGods4
+
+instance HasAbilities FluteOfTheOuterGods4 where
+  getAbilities (FluteOfTheOuterGods4 x) =
+    [ doesNotProvokeAttacksOfOpportunity
+        $ controlledAbility
+          x
+          1
+          ( oneOf
+              [ exists (EnemyAt YourLocation <> NonEliteEnemy <> EnemyCanEnter (ConnectedLocation NotForMovement))
+              , DifferentEnemiesExist
+                  (EnemyAt YourLocation <> NonEliteEnemy <> EnemyWithDamage (atLeast 1))
+                  (EnemyAt YourLocation <> EnemyCanBeDamagedBySource (x.ability 1))
+              ]
+          )
+        $ actionAbilityWithCost
+        $ exhaust x
+        <> ReleaseChaosTokensCost 1 #curse
+    ]
+
+instance RunMessage FluteOfTheOuterGods4 where
+  runMessage msg a@(FluteOfTheOuterGods4 attrs) = runQueueT $ case msg of
+    PaidForCardCost iid card payment | toCardId card == toCardId attrs -> do
+      let x = totalResourcePayment payment
+      curseTokens <- min x <$> selectCount (ChaosTokenFaceIs #curse)
+      chooseAmount iid ("Seal up to " <> tshow x <> " curse tokens") "{curse} tokens" 0 curseTokens attrs
+      pure a
+    ResolveAmounts iid (getChoiceAmount "{curse} tokens" -> x) (isTarget attrs -> True) -> do
+      curseTokens <- take x <$> select (ChaosTokenFaceIs #curse)
+      for_ curseTokens \token -> do
+        pushAll [SealChaosToken token, SealedChaosToken token (Just iid) (toTarget attrs)]
+      pure a
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      moveableEnemies <-
+        select
+          $ enemyAtLocationWith iid
+          <> NonEliteEnemy
+          <> EnemyCanEnter (ConnectedLocation NotForMovement)
+      damageableEnemies <-
+        select $ enemyAtLocationWith iid <> EnemyCanBeDamagedBySource (attrs.ability 1)
+      nonEliteEnemies <- case damageableEnemies of
+        [] -> pure []
+        [x] ->
+          select
+            $ at_ (locationWithInvestigator iid)
+            <> NonEliteEnemy
+            <> not_ (EnemyWithId x)
+            <> EnemyWithDamage (atLeast 1)
+        _ -> select $ EnemyAt YourLocation <> NonEliteEnemy <> EnemyWithNonZeroField Enemy.EnemyHealthDamage
+
+      let choices = nub $ moveableEnemies <> nonEliteEnemies
+
+      chooseOne
+        iid
+        [ targetLabel enemy [HandleTargetChoice iid (attrs.ability 1) (toTarget enemy)]
+        | enemy <- choices
+        ]
+
+      pure a
+    HandleTargetChoice iid (isAbilitySource attrs 1 -> True) (EnemyTarget eid) -> do
+      locations <- select $ LocationCanBeEnteredBy eid <> connectedFrom (locationWithInvestigator iid)
+      damage <- field Enemy.EnemyHealthDamage eid
+      damageableEnemies <-
+        select
+          $ at_ (locationWithInvestigator iid)
+          <> EnemyCanBeDamagedBySource (attrs.ability 1)
+          <> not_ (EnemyWithId eid)
+
+      chooseOne iid
+        $ [targetLabel location [EnemyMove eid location] | location <- locations]
+        <> [ targetLabel enemy [EnemyDamage enemy $ nonAttack (Just iid) eid damage]
+           | damage > 0
+           , enemy <- damageableEnemies
+           ]
+      pure a
+    _ -> FluteOfTheOuterGods4 <$> liftRunMessage msg attrs

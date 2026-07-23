@@ -1,0 +1,91 @@
+{
+  "heading": "Scenario III",
+  "label": {
+    "v1": "Proceed to _Setup (v. I)_",
+    "v2": "Proceed to _Setup (v. II)_",
+    "v3": "Proceed to _Setup (v. III)_"
+  },
+  "intro": {
+    "title": "冒险III：古老者之城",
+    "body": "<p>_导言_: 即使你从戴尔的报告中已经得知，你还是发现自己完全没有准备好面对南极中心的这座可怕而巨大的亵渎之城，以及它那属于异星的种种不可思议。巨大的塔楼、庙宇、桥梁和金字塔点缀着广阔的风景。在遍及四处的晨光中，这座由巨大结构和棱角分明的石块组成的无名迷宫向每个方向延伸数英里，无疑是真实的，但却让人难以置信。这毫无疑问是世间奇观。</p>"
+  },
+  "sinha": {
+    "alive": "<p>_如果玛拉·辛哈医生活着：_</p><p>“Remember, stay covered at all times. Where we are headed, the wind can flash freeze your skin almost instantly. And stay hydrated,” Dr. Sinha reminds you. “The air here is dryer than you think.” The remainder of the party nods in understanding. None of you have come this far just to catch hypothermia…but it’s almost as likely as death by anything else in this damnable place.<p class='basic'>调查员没有承受任何不良效果。</p>",
+    "otherwise": "<p>_否则:_</p><p>你听过很多次南极环境的危险，但没有辛哈医生，你在恶劣的天气中非常不利。她用专业知识弥补了对病人态度的不足。你真希望自己当时能救下她，但现在只能咬紧牙关，继续艰难前行，观察着同伴是否有体温过低的迹象。</p><p class='basic'>每位调查员将一张冻伤弱点加入自己牌组。这张卡牌不计入该调查员的牌组卡牌张数。"
+  },
+  "descend": "当你沿着环绕城市的山峰往下走，偷偷地越过城墙，斜坡被平缓的、较浅的山麓所取代，山麓上点缀着黑色原始的石制建筑。这些也许是塔楼或前哨，将城市的自然外墙与市郊连接起来。“我们应该搜查其中一个瞭望塔。”一名队员指着最近的建筑建议道。你点头赞同。戴尔的报告中提到，他观察到在这座城市一些建筑的墙壁上雕刻了大量的资讯，毕竟——也许你会在探索中偶然发现一幅地图或城市的示意图。",
+  "scoutedTheCityOutskirts": {
+    "yes": "<p>_If the investigators scouted the city outskirts:_</p><p>你叫其他人跟着你，而不是前往瞭望塔。回想起你和埃尔斯沃思前一天晚上侦查的路线，你带着队伍走向你们发现的半埋的建筑。到那儿去比瞭望塔花了更多时间，但是它提供了一条进入城市的捷径。</p><p class='basic'>During setup, after you reveal the starting location, the lead investigator discovers clue</p>",
+    "no": "<p>_Otherwise:_</p><p class='basic'>调查员没有承受任何不良效果。</p>"
+  },
+  "dyer": {
+    "alive": "<p>_如果威廉·戴尔教授活着：_</p><p>“Be careful,” the professor warns. You are keen to heed his wisdom, earned as it is through hard experience. “The glyphs inscribed here depict much about the history of this place. It is ancient. Far more ancient than anything our species has built.”</p><p>“What is your point?” someone chimes in.</p><p>“Do you know the old phrase, ‘the walls have ears and the doors have eyes?’” Dyer replies. “We have no idea what could be hiding within these walls. What dwells under the ice and stone. Be on alert…and do not let any voices but our own rattle in your skull. Do you understand?”</p><p>You nod in agreement, gulping down a wave of nausea. You cannot help but take the meaning of Dyer’s idiom literally.</p><p class='basic'>调查员没有承受任何不良效果。</p>",
+    "otherwise": "<p>_否则：_</p><p>当你进入塔内，寒冷逐渐消失，但从远处观察这座城市时感受到的不安却更为强烈。没有戴尔的智能引导，你觉得自己毫无准备。每一滴水、每一颗跳动的卵石、每一次屏住的呼吸，都让你的喉咙紧绷、心跳加速。过了不久你就听到墙里的窃窃私语——这声音不属于你，也不属于你的同伴。你越不想听，那些声音就越强烈。在你思想中响起的合唱。是警告吗？</p><p class='basic'>每位调查员将一张附身弱点加入自己牌组。这张卡牌不计入该调查员牌组的卡牌张数。</p>"
+  },
+  "cookie": {
+    "alive": "<p>_If James “Cookie” Fredericks is alive and 炸药 is listed under “已回收的补给品:”_</p><p>Unfortunately, as you attempt to leave the structure, you find the passage blocked by ice and rubble. Just as you are considering how to dig your way through, Cookie approachs with a few sticks of dynamite bundled together. “Oh, fer Chrissake. Move out of the way,” he grumbles, setting the sticks up and lighting the fuse without another warning. You and the others run around the corner, covering your ears and cursing under your breath. Seconds later, a tremendous explosion shakes the building to its foundations. When the dust settles, Cookie has made an easy exit for the party. “Sometimes, Cookie, I swear…” someone remarks.</p><p class='basic'>调查员没有承受任何不良效果。</p>",
+    "otherwise": "<p>_否则：_</p><p>不幸的是，当你试图离开建筑时，你发现信道被冰雪和碎石堵塞了。找到另一条出路所花的时间比你想像的要长得多，当你最终逃脱时，你已经暴露在恶劣环境中有一段时间了。</p><p class='basic'>在混乱袋里加入1个 {'{'}frost{'}'} 标记。</p>"
+  },
+  "entrance": "<p>这座黑曜石建筑那敞开的入口，就像凶猛的食肉动物对你张开了血盆大口。当你的眼睛适应了黑暗时，你的好奇心被深深的恐惧所取代。这座建筑那棱角分明的主厅就是个屠杀现场。血肉模糊的古老者尸体散落一地——成堆的灰色皮肉和黏糊糊的畸形器官，上面涂着厚厚的墨绿色液体。尸臭让你感到无比恶心。这些遗体并不久远。这次屠杀一定是最近发生的。</p><p>“究竟是什么东西做了这样的事？”一名队员打破了寂静。墙上的壁画吸引了你的注意，上面描绘的是你所知道的古老者种族卷入战争，对方是某个古老而可怕的敌人——不，不止一种。是许多种。你们不敢在这个屠杀现场待太久。捂住鼻子挡住恶臭，你们赶紧离开。</p>",
+  "trail": "<p>一条恶心的绿色血迹从山腰延伸出来，沿着一条平滑的小路滴落下来，这条小路仿佛是被一种酸性物质雕刻出来的。在相反的方向，山脊继续沿着城市的周边延续。在远处，你只能辨认出城市黑暗的、半被掩埋的部分，即使在仔细阅读了戴尔的笔记之后，它的结构布局对你来说还是完全陌生。最终，在城市的中心，一座巨大的金字塔和许多显眼的寺庙散布在各处，尽管历经千万年的风化，仍高耸入云。</p>",
+  "group1": "<h3>团队 1</h3>",
+  "group2": "<h3>团队 2</h3>",
+  "group3": "<h3>团队 3</h3>",
+  "votes": "探险队投票决定他们想要前往的方向。比较以下三组，查看哪一列仍然活着的团队成员最多。",
+  "vote": {
+    "kensler": "艾米·肯勒斯博士",
+    "sinha": "玛拉·辛哈医生",
+    "hiroko": "高田弘子",
+    "claypool": "艾弗里·克莱普尔",
+    "cookie": "詹姆斯·“曲奇”·弗雷德里克斯",
+    "danforth": "丹佛斯",
+    "eliyah": "伊里亚·阿什瓦克",
+    "ellsworth": "罗尔德·埃尔斯沃思",
+    "dyer": "威廉·戴尔教授",
+    "group1": "If the left column (Group One) has the most team members still alive, the group votes to venture into the heart of the city where lie its greatest structures. 该组中的所有伙伴在被调查员选择陪同的情况下，入场时拥有额外1使用。 Proceed to _Setup (v. I)_.",
+    "group2": "If the middle column (Group Two) has the most team members still alive, the group votes to travel along the mountain ridge, toward the region Dyer and 丹佛斯 never explored. 该组中的所有伙伴在被调查员选择陪同的情况下，入场时拥有额外1使用。 Proceed to _Setup (v. II)_.",
+    "group3": "If the right column (Group Three) has the most team members still alive, the group votes to follow the trail left behind by whatever creatures massacred the Elder Things. 该组中的所有伙伴在被调查员选择陪同的情况下，入场时拥有额外1使用。 Proceed to _Setup (v. III)_.",
+    "tied": "因为有2组以上平手，调查员队长投出打破平局的一票。 (*解决上述问题的时候，视为选择的团队中有最多仍然生还的成员*)"
+  },
+  "interlude": {
+    "instructions": "找出剧本日志中“探险队”部分，名字旁没有打勾的所有存活探险队成员(包括那些当前处于调查员控制下的)，并随机选择其中一名。如果没有这样的探险队成员，则跳过本幕间故事的剩余部分。",
+    "part1": "<p>等你注意到那低语对团队的影响时，已经太迟了。你的同伴不单单只是看着墙壁，还靠在墙上，把耳朵贴在上面，眼睛因狂喜而呆滞。走到门口时，你的同伴要幺没有注意到——要幺故意忽视——从裂缝中渗出的可怕的瘴气；那浓密的灰雾眼看就要把他们全部吞没。门刚一打开，你就喊出了警告，并且非常明白地在瘴气涌出的那一刻移开了视线。而你的队友看到了什么，你永远不会真正明白。你只是瞥见了住在彼端那不可言说的，无底的痛苦。</p>",
+    "danforth": "<p>_如果受害者是丹佛斯：_</p><p> The student opens his eyes wide, letting in every inch of the nightmarish sight. Every insidiuous whisper. Every shred of madness. The ice pick in his hand drops to the floor. “It is…beautiful,” he proclaims at last. “The black pit…the carven rim…the moon-ladder…” His words grow more and more feverish. “The original—the eternal—the undying!” A terrible smile spreads across his lips.</p><p class='basic'>控制丹佛斯的调查员发现最近的有线索的地点的一个线索(如果没有调查员控制丹佛斯，改为调查员队长发现线索)。</p>",
+    "part2": "<p>你的同伴僵立在门口，你说不清是因为纯粹的恐惧，还是受到某种未知力量的驱使。你和其他人朝着门口走去，移开了目光，确保自己不会遭受同样的命运。你将石门滑动关上，发出重重的砰的一声，将剩下的翻滚着的瘴气关在内部。门后的惊魂之景一被关上，你的同伴眼睛就翻白，瘫倒在地板上。</p><p>同伴的心脏还在继续跳动，但眼睛再也没有睁开过。</p><p class='basic'>在剧本日志中“探险队”部分，将选中角色的名字划掉。如果其在场上，其被击败并从游戏中移除。</p>"
+  },
+  "resolutions": {
+    "noResolution": {
+      "title": "没有结局",
+      "body": "<div class='resolution'><p>_如果没有完成结局 (每位调查员都被击败)_: 你受伤且疲惫不堪，躲在这座城市高耸的建筑中一个相对安全的地方。你唯一的希望是在这个异星生物的城市中避难，祈祷你的存在不会被仍然徘徊在它的街道和古老大厅里的居民注意到。</p><ul><li>推进至 结局 2.</li></ul></div>"
+    },
+    "resolution1": {
+      "title": "结局 1",
+      "body": "<div class='resolution'><p>_Resolution 1_: 当你的团队潜入秘密信道时，怪异的寂静迎接着你。你以为迎接你的是喧嚣和愤怒，但这种诡异的寂静几乎更糟糕。当你越来越深入这个秘密竖井时，你们全都沉默不语。你注意着光滑的墙壁、地板上奇异的标记，以及远处柔和的<b>滴答、滴答、滴答</b>的滴水声。</p><p>你在一片漆黑中持续走了几个小时，每一步都在质疑自己的判断。什么样的人才会心甘情愿地进入这样恐怖的鬼地方啊？你赌上名誉参加这次探险。然后你赌上性命在情况变糟的时候也不肯回头。现在你要赌上你全部的理智发现人类不该发现的秘密。</p><p>Is this bravery? Or the final mistake of a herd of fools, too stubborn to see that their own deaths lie at the end of this road? It matters not. You’ve come too far to turn back now. One way or another, you will get the answers you seek. The only question is whether you’ll live to tell the world what you found.</p><ul><li>In your Campaign Log, record *队伍找到隐秘隧道。*</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. Each investigator also earns 1 additional experience for each pair of chaos tokens spent during this scenario.<ul><li>_Experience_: {xp}</li></ul></li><li>In the “Expedition Team” section of the Campaign Log, record the amount of damage and horror on each partner asset in play.</li><li>Proceed to _幕间故事III：最后一夜._</li></ul></div>"
+    },
+    "resolution2": {
+      "title": "结局 2",
+      "body": "<div class='resolution'><p>_Resolution 2_: Hours pass. You dare not venture outside, but you explore every crevice of your sanctuary, hoping to find something to make this endeavor worthwhile. What you find instead is even harder to believe. In the icy sub-level of the structure, a sacred chamber houses a churning pool of kaleidoscopic miasma. Gray, swirling mist evaporates from its surface, familiar shapes and strange hallucinations materializing and vanishing within.</p><p>As if sensing your approach, the pool stops whirling and rises on its own, almost as if in greeting. Then, it coalesces into a shimmering glob of prismatic color and crawls along the floor, stopping when you stop, continuing along as you follow. It beckons you closer, guiding you. You glance at one another with trepidation. Is it trying to show you something? To take you somewhere? And if so…is it truly wise to follow?</p><p>Eventually, you come to an agreement. There is no use dawdling here, and the weather grows fouler with each passing minute. You decide to follow with caution, hoping perhaps it will lead you to answers. For hours you continue into the deep dark, questioning your judgment with each step. The ancient structure gives way to icy tunnels, walls smooth and slick with dark ichor, floor covered in bizarre markings of unknowable origin. Finally, the glob of miasma seeps back into the walls and disappears, leaving you alone with your doubts, your fears, and the impossibly long shaft breaching through the icy heart of Antarctica and into the depths beyond…</p><ul><li>In your Campaign Log, record 队伍被引导到隐秘隧道。</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. Each investigator also earns 1 additional experience for each pair of chaos tokens that were spent during this scenario.<ul><li>_Experience_: {xp}</li></ul></li><li>In the “Expedition Team” section of the Campaign Log, record the amount of damage and horror on each partner asset in play.</li><li>Proceed to _幕间故事III：最后一夜_.</li></ul></div>"
+    },
+    "xp": {
+      "bonus": "Each pair of chaos tokens spent during this scenario"
+    }
+  },
+  "remembered": {
+    "theTeamStudiedTheHistoryOfTheElderThings": "The team studied the history of the Elder Things.",
+    "theTeamDiscernedTheOriginOfTheShoggoths": "The team discerned the origin of the Shoggoths."
+  },
+  "tokens": {
+    "easyStandard": {
+      "skull": "–X. X is the number of keys you control.",
+      "cultist": "–2. If you fail, place a key you control on your location.",
+      "tablet": "–3. If a {'{'}frost{'}'} token was revealed during this test, you automatically fail, instead.",
+      "elderThing": "–4. If you fail, the nearest enemy moves once toward you. If it is engaged with you, it attacks."
+    },
+    "hardExpert": {
+      "skull": "–X. X is 2 plus the number of keys you control.",
+      "cultist": "–2. Place a key you control on your location.",
+      "tablet": "–4. If a {'{'}frost{'}'} token was revealed during this test, take 1 damage and you automatically fail, instead.",
+      "elderThing": "–5. If you fail, the nearest enemy moves once toward you. If it is engaged with you, it attacks."
+    }
+  }
+}

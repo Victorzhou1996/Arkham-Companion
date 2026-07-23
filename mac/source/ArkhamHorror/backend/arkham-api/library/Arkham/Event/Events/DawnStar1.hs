@@ -1,0 +1,58 @@
+module Arkham.Event.Events.DawnStar1 (dawnStar1, dawnStar1Effect) where
+
+import Arkham.Effect.Import
+import Arkham.Event.Cards qualified as Cards
+import Arkham.Event.Import.Lifted
+import Arkham.Helpers.Modifiers (ModifierType (..), modifySelect)
+import Arkham.Helpers.SkillTest (getSkillTestRevealedChaosTokens, withSkillTest)
+import Arkham.Matcher hiding (RevealChaosToken, SkillTestEnded)
+
+newtype DawnStar1 = DawnStar1 EventAttrs
+  deriving anyclass (IsEvent, HasModifiersFor, HasAbilities)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+dawnStar1 :: EventCard DawnStar1
+dawnStar1 = event DawnStar1 Cards.dawnStar1
+
+instance RunMessage DawnStar1 where
+  runMessage msg e@(DawnStar1 attrs) = runQueueT $ case msg of
+    PlayThisEvent iid (is attrs -> True) -> do
+      withSkillTest $ createCardEffect Cards.dawnStar1 (effectMetaTarget iid) attrs
+      pure e
+    _ -> DawnStar1 <$> liftRunMessage msg attrs
+
+newtype DawnStar1Effect = DawnStar1Effect EffectAttrs
+  deriving anyclass (HasAbilities, IsEffect)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+dawnStar1Effect :: EffectArgs -> DawnStar1Effect
+dawnStar1Effect = cardEffect DawnStar1Effect Cards.dawnStar1
+
+instance HasModifiersFor DawnStar1Effect where
+  getModifiersFor (DawnStar1Effect attrs) =
+    modifySelect attrs (ChaosTokenFaceIs #curse) [IgnoreChaosTokenModifier]
+
+instance RunMessage DawnStar1Effect where
+  runMessage msg e@(DawnStar1Effect attrs) = runQueueT $ case msg of
+    CreatedEffect eid _ _ _ | eid == attrs.id -> do
+      tokens <- count ((== #curse) . (.face)) <$> getSkillTestRevealedChaosTokens
+      doStep tokens msg
+      pure e
+    SkillTestEnded sid | isTarget sid attrs.target -> do
+      disableReturn e
+    DoStep n msg'@(CreatedEffect eid _ _ _) | eid == attrs.id && n > 0 -> do
+      for_ attrs.metaTarget \case
+        InvestigatorTarget iid -> do
+          chooseDamageEnemy iid attrs.source (locationWithInvestigator iid) AnyEnemy 1
+          doStep (n - 1) msg'
+        _ -> pure ()
+      pure e
+    After (RevealChaosToken _ _ token) | token.face == #curse -> do
+      for_ attrs.metaTarget \case
+        InvestigatorTarget iid ->
+          selectOneToHandle iid attrs
+            $ enemyAtLocationWith iid
+            <> EnemyCanBeDamagedBySource (toSource attrs)
+        _ -> pure ()
+      pure e
+    _ -> DawnStar1Effect <$> liftRunMessage msg attrs

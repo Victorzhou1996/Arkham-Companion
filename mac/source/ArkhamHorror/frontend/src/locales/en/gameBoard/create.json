@@ -1,0 +1,61 @@
+{
+    "newGame": "New Game",
+
+    "numberOfPlayers" : "Number of Players",
+    "withFriends": "With Friends",
+    "multihandedSolo": "Solo",
+    "switchingPerspectives": "Switching Perspectives",
+    "switchingPerspectivesDescription": "In multihanded solo, you’ll sometimes need to act from a specific investigator’s point of view. Use the <strong>eye</strong> icon in the player tabs to switch to that investigator’s perspective.",
+
+    "campaign": "Campaign",
+    "standalone": "Standalone",
+    "sideStory": "Side Story",
+
+    "alphaWarning": "This is currently being worked on. It likely doesn't work yet and you should not file bugs against it.",
+    "betaWarning": "This is ready for testing but expect your games to break frequently.",
+    "betaWarningScenario": "This scenario is ready for testing but expect your games to break frequently.",
+
+    "normal": "Normal",
+    "returnTo": "Return to...",
+    
+    "fullCampaign": "Full Campaign",
+    "partialCampaign": "Partial Campaign",
+    "multiplayerVariant": "Multiplayer Variant",
+    "campaignType": "Campaign Type",
+    "pickScenario": "Pick Scenario",
+
+    "difficulty": "Difficulty",
+    "Easy": "Easy",
+    "Standard": "Standard",
+    "Hard": "Hard",
+    "Expert": "Expert",
+
+    "includeTarotReadings": "Include Tarot Readings",
+
+    "gameName": "Game Name",
+    "create": "Create",
+
+    "chooseYourDeck": "Choose your deck{s}",
+    "tabooList": "Taboo List: {tabooList}",
+    "useExistingDeck": "Use Existing Deck",
+    "loadNewDeck": "Load New Deck",
+    "selectADeck": "-- Select a Deck --",
+    "deckUrlPlaceholder": "ArkhamDB or arkham.build deck url",
+    "choose": "Choose",
+
+    "variant": "Campaign Variant",
+    "fullCampaignOption": {
+      "theDreamEaters": "The Dream-Eaters<br><small>8-part campaign</small>",
+      "theDreamQuest": "The Dream-Quest<br><small>4-part campaign</small>",
+      "theWebOfDreams": "The Web of Dreams<br><small>4-part campaign</small>"
+    },
+
+    "recommendedOptions": "Recommended Options",
+
+    "recommendedOption": {
+      "PlayersDoNotControlStoryAssetClues": {
+        "title": "Players Do Not Control Story Asset Clues",
+        "description": "Since The Feast of Hemlock Vale players now control clues on assets they control, this has some weird interactions in this campaign so it is recommended to enable this option to exclude story assets from that rule."
+      }
+    }
+}
