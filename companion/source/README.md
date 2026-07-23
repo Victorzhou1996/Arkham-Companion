@@ -18,7 +18,8 @@ depend on the local game backend.
 - Import replacement images into the user's Application Support folder.
 - Resolve replacements before bundled images without modifying the app bundle.
 - Scan effective card image coverage against `card-image-index.json`.
-- Open the configured remote web game in the default browser.
+- Open the configured remote web game in Companion's dedicated tabbed window, without an address bar.
+- Keep deck-builder and external links in selectable top tabs while preserving the upgrade page in its original tab.
 - Serve bundled and replacement card images from `127.0.0.1:8688`.
 - Show local image request counts and the latest image source.
 - Provide a local verification page without starting a game backend.

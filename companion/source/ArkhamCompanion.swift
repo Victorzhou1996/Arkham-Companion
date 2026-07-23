@@ -414,13 +414,11 @@ private final class GameWebView: WKWebView {
 }
 
 @MainActor
-private final class GameBrowserWindowController: NSWindowController {
-  private let webView: GameWebView
+private final class GameBrowserWindowController: NSWindowController, WKUIDelegate, WKNavigationDelegate {
+  private let tabView = NSTabView()
+  private var tabItems: [ObjectIdentifier: NSTabViewItem] = [:]
 
   init(title: String, url: URL) {
-    let configuration = WKWebViewConfiguration()
-    configuration.websiteDataStore = .default()
-    webView = GameWebView(frame: .zero, configuration: configuration)
     let window = NSWindow(
       contentRect: NSRect(x: 0, y: 0, width: 1280, height: 820),
       styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -428,11 +426,12 @@ private final class GameBrowserWindowController: NSWindowController {
       defer: false
     )
     window.title = title
-    window.contentView = webView
+    tabView.tabViewType = .topTabsBezelBorder
+    window.contentView = tabView
     window.minSize = NSSize(width: 800, height: 560)
     window.center()
     super.init(window: window)
-    load(url)
+    _ = addTab(url: url, select: true)
   }
 
   required init?(coder: NSCoder) {
@@ -440,16 +439,60 @@ private final class GameBrowserWindowController: NSWindowController {
   }
 
   func open(_ url: URL) {
-    if webView.url != url {
-      load(url)
+    if let existing = tabItems.values.first(where: { ($0.view as? WKWebView)?.url == url }) {
+      tabView.selectTabViewItem(existing)
+    } else {
+      _ = addTab(url: url, select: true)
     }
     showWindow(nil)
     window?.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
   }
 
-  private func load(_ url: URL) {
-    webView.load(URLRequest(url: url, cachePolicy: .useProtocolCachePolicy))
+  private func addTab(
+    url: URL?,
+    select: Bool,
+    configuration: WKWebViewConfiguration? = nil
+  ) -> GameWebView {
+    let config = configuration ?? WKWebViewConfiguration()
+    config.websiteDataStore = .default()
+    let webView = GameWebView(frame: .zero, configuration: config)
+    webView.uiDelegate = self
+    webView.navigationDelegate = self
+
+    let item = NSTabViewItem(identifier: nil)
+    item.view = webView
+    item.label = "新标签页"
+    tabItems[ObjectIdentifier(webView)] = item
+    tabView.addTabViewItem(item)
+    if select { tabView.selectTabViewItem(item) }
+    if let url {
+      webView.load(URLRequest(url: url, cachePolicy: .useProtocolCachePolicy))
+    }
+    return webView
+  }
+
+  func webView(
+    _ webView: WKWebView,
+    createWebViewWith configuration: WKWebViewConfiguration,
+    for navigationAction: WKNavigationAction,
+    windowFeatures: WKWindowFeatures
+  ) -> WKWebView? {
+    addTab(url: nil, select: true, configuration: configuration)
+  }
+
+  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    guard let item = tabItems[ObjectIdentifier(webView)] else { return }
+    let title = webView.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+    item.label = title?.isEmpty == false ? String(title!.prefix(32)) : "Arkham Horror"
+  }
+
+  func webViewDidClose(_ webView: WKWebView) {
+    guard let item = tabItems.removeValue(forKey: ObjectIdentifier(webView)) else { return }
+    tabView.removeTabViewItem(item)
+    if tabView.numberOfTabViewItems == 0 {
+      window?.close()
+    }
   }
 }
 
