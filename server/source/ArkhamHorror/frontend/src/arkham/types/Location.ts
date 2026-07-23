@@ -1,0 +1,88 @@
+import * as JsonDecoder from 'ts.data.json';
+import { Card, cardDecoder } from '@/arkham/types/Card';
+import { ChaosToken, chaosTokenDecoder } from '@/arkham/types/ChaosToken';
+import { BreachStatus, breachStatusDecoder } from '@/arkham/types/Breach';
+import { Modifier, modifierDecoder } from '@/arkham/types/Modifier';
+import { ArkhamKey, arkhamKeyDecoder } from '@/arkham/types/Key';
+import { Seal, sealDecoder } from '@/arkham/types/Seal';
+import { Tokens, tokensDecoder } from '@/arkham/types/Token';
+import { Placement, placementDecoder } from '@/arkham/types/Placement';
+
+export type Brazier = 'Lit' | 'Unlit';
+
+export const brazierDecoder: JsonDecoder.Decoder<Brazier> = JsonDecoder.oneOf<Brazier>([
+  JsonDecoder.literal('Lit'),
+  JsonDecoder.literal('Unlit'),
+], 'Brazier');
+
+export type FloodLevel = "Unflooded" | "PartiallyFlooded" | "FullyFlooded"
+
+export const floodLevelDecoder: JsonDecoder.Decoder<FloodLevel> = JsonDecoder.oneOf<FloodLevel>([
+  JsonDecoder.literal('Unflooded'),
+  JsonDecoder.literal('PartiallyFlooded'),
+  JsonDecoder.literal('FullyFlooded'),
+], 'FloodLevel');
+
+export type Location = {
+  cardCode: string;
+  label: string;
+  id: string;
+  cardId: string;
+  tokens: Tokens;
+  shroud: number | null;
+  revealed: boolean;
+  investigators: string[];
+  enemies: string[];
+  treacheries: string[];
+  assets: string[];
+  events: string[];
+  scarletKeys: string[];
+  cardsUnderneath: Card[];
+  modifiers: Modifier[];
+  connectedLocations: string[];
+  placement: Placement | null;
+  brazier: Brazier | null;
+  breaches: BreachStatus | null;
+  floodLevel: FloodLevel | null;
+  keys: ArkhamKey[];
+  seals: Seal[];
+  sealedChaosTokens: ChaosToken[];
+  concealedCards: string[];
+}
+
+type GameValue = { tag: "Static", contents: number } | { tag: "PerPlayer", contents: number }
+
+export const gameValueDecoder = JsonDecoder.oneOf<GameValue>([
+  JsonDecoder.object({ tag: JsonDecoder.literal("Static"), contents: JsonDecoder.number() }, 'Static'),
+  JsonDecoder.object({ tag: JsonDecoder.literal("PerPlayer"), contents: JsonDecoder.number() }, 'PerPlayer')
+], 'GameValue')
+
+export const locationDecoder = JsonDecoder.object<Location>(
+  {
+    cardCode: JsonDecoder.string(),
+    label: JsonDecoder.string(),
+    id: JsonDecoder.string(),
+    cardId: JsonDecoder.string(),
+    tokens: tokensDecoder,
+    shroud: JsonDecoder.nullable(gameValueDecoder.map(v => v.contents)),
+    revealed: JsonDecoder.boolean(),
+    investigators: JsonDecoder.array<string>(JsonDecoder.string(), 'InvestigatorId[]'),
+    enemies: JsonDecoder.array<string>(JsonDecoder.string(), 'EnemyId[]'),
+    treacheries: JsonDecoder.array<string>(JsonDecoder.string(), 'TreacheryId[]'),
+    assets: JsonDecoder.array<string>(JsonDecoder.string(), 'AssetId[]'),
+    events: JsonDecoder.array<string>(JsonDecoder.string(), 'EventId[]'),
+    scarletKeys: JsonDecoder.array<string>(JsonDecoder.string(), 'ScarletKey[]'),
+    cardsUnderneath: JsonDecoder.array<Card>(cardDecoder, 'UnderneathCard[]'),
+    modifiers: JsonDecoder.array<Modifier>(modifierDecoder, 'Modifier[]'),
+    connectedLocations: JsonDecoder.array<string>(JsonDecoder.string(), 'LocationId[]'),
+    placement: JsonDecoder.nullable(placementDecoder),
+    brazier: JsonDecoder.nullable(brazierDecoder),
+    breaches: JsonDecoder.nullable(breachStatusDecoder),
+    floodLevel: JsonDecoder.nullable(floodLevelDecoder),
+    keys: JsonDecoder.array<ArkhamKey>(arkhamKeyDecoder, 'Key[]'),
+    seals: JsonDecoder.array<Seal>(sealDecoder, 'Seal[]'),
+    sealedChaosTokens: JsonDecoder.array<ChaosToken>(chaosTokenDecoder, 'ChaosToken[]'),
+    concealedCards: JsonDecoder.array<string>(JsonDecoder.string(), 'ConcealedCardId[]'),
+  },
+  'Location',
+);

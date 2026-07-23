@@ -1,0 +1,66 @@
+{
+  "heading": "Scenario VI",
+  "tokens": {
+    "easyStandard": {
+      "skull": "-X. 其中X为你与起始地点间的距离(最多5)。",
+      "cultist": "-2. 如果攻击中抽出本标记且本次技能检定成功，本次攻击造成的伤害降低1点。",
+      "tablet": "-2. 如果你所在地点有准备好的 _食尸鬼_ 或 _灵怪_ 敌人，它攻击你(如果有多个，选择1个)。",
+      "elderThing": "-3. 如果你失败，在遭遇牌堆和弃牌堆中查找并抽取1张 _食尸鬼_ 或 _灵怪_ 敌人。"
+    },
+    "hardExpert": {
+      "skull": "-X. 其中X为你与起始地点间的距离。",
+      "cultist": "-3. 如果攻击中抽出本标记且本次技能检定成功，本次攻击不造成伤害。",
+      "tablet": "-3. 如果你所在地点有 _食尸鬼_ 或 _灵怪_敌人，它准备并攻击你(如果有多个，选择1个)。",
+      "elderThing": "-4. 如果你失败，在遭遇牌堆和弃牌堆中查找并抽取1张 _食尸鬼_ 或 _灵怪_ 敌人。"
+    }
+  },
+  "label": {
+    "above": "置于上方",
+    "below": "置于下方",
+    "right": "置于右方",
+    "left": "置于左方"
+  },
+  "intro": {
+    "title": "冒险VI：苍白面具",
+    "readIntro1": "Check 冒险日志. *If you did not escape the gaze of the phantom*, or *if you were unable to find Nigel*: Read _Intro 1_.",
+    "readIntro2": "如果「找到奈杰尔的住宅」或「找到奈杰尔」: 跳到_引言2_。",
+    "intro1": "<p>_Intro 1_: 污秽霉变的空气里挟着灰尘，刺激着你的喉咙，把你从梦中拽醒。你躺在一块冰冷的石板上，四周是幽暗无光的地下信道。你怎么会来到这里的？“这里”又是什么地方？一股寒意流遍你的全身，让你毛发倒立。你站起身，打量着周遭的环境。你周围的墙壁和天花板上装饰着白骨，无论望向哪里，都能看到张口的颅骨在盯着你。</p><ul><li>Record in your 冒险日志 that *you awoke inside the catacombs*.</li></ul>",
+    "intro2": "<p>_Intro 2_: The contents of Nigel Engram’s home answer none of your questions about The King in Yellow, but do hint at where you should head next. The old, tattered map you found on his coffee table depicts a section of the infamous Catacombs of Paris. One particular room on the map has been circled with pen, and next to it is written: “The key to opening the Path lies here!” You swallow your fear and head immediately for the entrance to the catacombs underneath Rue de la Tombe‑Issoire.</p><ul><li>Record in your 冒险日志 that *you entered the catacombs on your own*.</li></ul>",
+    "proceedToHarukosInformation": "进入_石丸春子提供的资讯。_",
+    "otherwise": "否则，跳到_游戏设置_。",
+    "harukosInformation": "<p>_Haruko’s Information_: 你刚经过一道拱门，看见一个绵羊的头骨上蚀刻着一个熟悉的符号：许多同轴的半圆形成的圆环上排列着奇异的符文。图案下方有两条波纹状的线条，连到头骨的下颚。你认出了这是春子给你看过的图案。你好奇为什么它会出现在这里，于是对着这颗头骨仔细端详起来。你刚刚触碰到下颚骨，它的嘴突然张开了。白骨散落到地上，墙壁滑动，露出了一条新的道路。</p><ul><li>请记住“你开启了一条秘密信道。”</li></ul><p class='basic right'>Proceed to _Setup_.</p>"
+  },
+  "setup": {
+    "gatherSets": "收齐下列遭遇组所有卡牌: *苍白面具*、*如影随形*、*食尸鬼*、*寒冷刺骨*。这些遭遇组的图示为:<section class='encounter-sets'><img src='{setImgPath}/the-pallid-mask.png' /><img src='{setImgPath}/ghouls.png' /><img src='{setImgPath}/hauntings.png' /><img src='{setImgPath}/chilling-cold.png' /></section>",
+    "setAside": "找出暗影坟墓和堵塞信道(每张均为地下墓穴地点的已揭示面)。将这些卡牌放在一边，位于场外。",
+    "start": {
+      "instructions": "Check 冒险日志.",
+      "awoke": "如果「在地下墓穴醒来」: 随机选择1个地下墓穴地点，地下墓穴面朝上放置入场(场外的暗影坟墓和堵塞信道除外)。在本场冒险期间，该地点即为「起始地点」，并从资源堆拿1个资源作标记。_先不要将调查员放置于此_。",
+      "entered": "如果「自行进入地下墓穴」: 找出地狱之门(地下墓穴地点的已揭示面)，地下墓穴面朝上放置入场。在本场冒险期间，该地点即为「起始地点」，并从资源堆拿1个资源作标记。_先不要将调查员放置于此_。"
+    },
+    "catacombs": {
+      "instructions": "将所有其他地点放在一边，单独放作一堆并且命名为“地下墓穴牌堆”。要创建地下墓穴牌堆时按照以下步骤执行：",
+      "bottom": "将置于场外的暗影坟墓和堵塞信道、与3张其他地下墓穴地点卡牌一同混洗，组成地下墓穴牌堆底部的5张卡牌，地下墓穴面朝上放置。",
+      "top": "随后，将其他所有地下墓穴地点卡牌混洗后随机摆放在牌堆顶部。地下墓穴牌堆内的所有卡牌均应以地下墓穴面朝上放置，以使得玩家无法分辨地下墓穴地点卡牌的内容。"
+    },
+    "startAt": "每位调查员从起始地点开始游戏(注意，在地点翻至已揭示面时，先触发该地点上的强制效果)。如果「你开启了一条秘道」，选择1个与起始地点相邻的地下墓穴地点并翻开。",
+    "theManInThePallidMask": "苍白面具下的男子弱点的承受者从其牌组中找出该卡牌，然后将它放在一边，位于场外。"
+  },
+  "resolutions": {
+    "noResolution": {
+      "title": "未达成任何结局",
+      "body": "<div class='resolution'><p>_If no resolution was reached (each investigator was defeated)_: You are shaken awake by a police officer and lifted to your feet. You feel as though the weight of a train has slammed into your head. The pain is unbearable. The man shines a flashlight in your eyes and asks you several questions in French. Dazed as you are, you find it difficult to answer. He points toward the staircase nearby and pushes you away from the catacombs. You stumble onto the Rue de la Tombe‑Issoire and slowly make your way to a hotel where you can stay the night.</p><p>之后几天你一直在研究地下墓穴里的那个奇怪图文的含义，但你一无所获。你开始感觉这是白费力气。就快放弃的时候，你看见桌子上一本褪了色的黄色书本就躺在你手边。你惊讶地发现这是未删节版的《黄衣之王》剧本。书的封面上用黑色墨水画着同样的图文，就是这个图文让你几宿未眠却仍然无法解读。是谁放在这里的？它怎么会到你旅店房间里来的？但撇开这些不谈，你知道现在要做什么了。这部剧中藏着秘密——这个秘密一直就在剧中——而你却像一个傻瓜一样，出于迷信，始终避而不读它的第二幕。它只是文本，它不可能像那些你遇到过的生物和疯子那样伤害你。战栗之下，你翻到书本的第二部分，开始阅读。</p><ul><li>In your 冒险日志, record that *you know the site of the gate*.</li><li>每位调查员必须选择是否要阅读《黄衣之王》第二幕。至少一位调查员必须阅读第二幕。 In your 冒险日志, record the names of each investigator who chose to read Act II. Each investigator who read Act II searches the collection for a random basic _*Madness*_ or _*Pact*_ weakness, and adds it to their deck (does not count toward deck size). Each investigator who read Act II earns 2 additional experience as they gain insight into the machinations of the Tattered King.</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}elderThing{'}'} tokens to the chaos bag.</li><li>If Ishimaru Haruko (*Just Skin and Bones*) is in the victory display, record her name in your 冒险日志, under “贵宾遇害.”</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li></ul></div>"
+    },
+    "resolution1": {
+      "title": "结局1",
+      "body": "<div class='resolution'><p>_Resolution 1_: 这颗烧焦的颅骨里藏着所有的答案。你非常确定。你已经竭尽所能研究了颅骨上的图文，但答案始终是一个谜。你把这颗颅骨带给各界专家、密学家和教授看过。你甚至不止一次尝试与这颗颅骨对话。恼怒之下，你把顾骨放到床头柜上，决定好好睡上一觉，这还是你从地下墓穴出来以后第一次躺下休息。虽然你已入眠，但颅骨前额上蚀刻的图文却仍然徘徊在你眼前。</p><p>突然间，你灵光乍现，赶紧起身赶往罗浮宫，这座坐落在巴黎的著名博物馆里藏有数万件油画、绘画和考古发现。你花费了数日在博物馆中探索——每一件展品， 每一套收藏，每一幅艺术品中都可能藏有关于这个图文涵义的线索。终于你看到了它：这幅油画描绘了暴雨之下一座美丽的小岛。浪涛冲撃着外城墙，潮水随时会把整座岛屿淹没。耀眼的闪电映衬着城镇最高处修道院的塔楼。一道乌云形成的旋风在上空中翻腾。而你手中烧焦颅骨上的图文完美地重现出了修道院彩色玻璃上的图案。这幅作品的标题就叫：“道路终现”。</p><ul><li>In your 冒险日志, record that *you know the site of the gate*.</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}cultist{'}'} tokens to the chaos bag.</li><li>If Ishimaru Haruko (*Just Skin and Bones*) is in the victory display, record her name in your 冒险日志, under “贵宾遇害.”</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li></ul></div>"
+    },
+    "resolution2": {
+      "title": "结局2",
+      "body": "<div class='resolution'><p>_Resolution 2_: 你掉进了一个无尽而空虚的深渊。在你坠落的过程中甚至没有一丝空气拂过你的头发。这是一条剥离了现实的信道。终于，你穿过一道看不见的门径，进入了一片新的领域。在你的头顶和脚底是两条天际线，它们像是彼此扭曲的倒影一般。在中间，乌云形成的旋涡和汹涌的浪潮在回旋。你仔细研究这两边——看到了熟悉的城市和它奇怪的镜像。这是不是卡尔克萨之路？这是不是世界交汇，连接不同现实的信道？如果是，剩下的就是找到这座次元门在地球上的位置。你掉入了底下的旋涡。</p><p>警察把你摇醒，架了起来。你感觉自己的头好像被火车撞过一样，头疼欲裂。眼前的男子拿着手电筒照了照你的眼睛。并用法语问了你几个问题。你清醒过来，瞪大了双眼，一把抽出了被这个男子抓着的手臂，留下一脸惊愕的他。“我要马上走了！”</p><ul><li>In your 冒险日志, record that *you know the site of the gate*. Add two tally marks under “追踪陌生人.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}tablet{'}'} tokens to the chaos bag.</li><li>If Ishimaru Haruko (*Just Skin and Bones*) is in the victory display, record her name in your 冒险日志, under “贵宾遇害.”</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li></li></ul></div>"
+    },
+    "xp": {
+      "bonus": "窥见了褴褛之王的阴谋"
+    }
+  }
+}

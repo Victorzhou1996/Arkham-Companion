@@ -1,0 +1,92 @@
+{
+  "heading": "Scenario VIII",
+  "tokens": {
+    "easyStandard": {
+      "skull": "-2 (如果古代遗物位于你所在地点，改为-4)。",
+      "cultist": "-2. 如果你未成功并超过难度至少1点，在最近的 _异教徒_ 敌人上放置1个毁灭标记。",
+      "tablet": "-2. 如果你已中毒，本检定改为自动失败。",
+      "elderThing": "-2. 如果你失败，将遭遇弃牌堆顶上的第一张 _巫术_ 诡计卡洗入探索牌堆。"
+    },
+    "hardExpert": {
+      "skull": "-3 (如果古代遗物位于你所在地点，改为-5)。",
+      "cultist": "-3. 如果你未成功并超过难度至少1点，在每个 _异教徒_ 敌人上放置1个毁灭标记。",
+      "tablet": "-3. If you are poisoned, this test automatically fails instead. If you are not poisoned and you fail, put a set-aside 已中毒 weakness into play in your threat area.",
+      "elderThing": "-3. 将遭遇弃牌堆顶上的第一张 _巫术_ 诡计卡洗入探索牌堆。"
+    }
+  },
+  "xp": {
+    "resolution1": "修补了破碎的时间线，拯救地球免受灾难。"
+  },
+  "label": {
+    "yigsMercy": {
+      "refused": "Ichtaca refuses your plea",
+      "reject": "I could never turn my back on humanity",
+      "accept": "I accept"
+    },
+    "anotherWay": {
+      "reject": "I could never turn my back on humanity",
+      "accept": "I accept"
+    },
+    "unknowablePast": {
+      "reveal": "Reveal 4 chaos tokens. For each {'{'}skull{'}'}, {'{'}cultist{'}'}, {'{'}tablet{'}'}, {'{'}elderThing{'}'}, or {'{'}autoFail{'}'} symbol revealed, take 1 damage and 1 horror.",
+      "discard": "Choose and discard 1 card from your hand and shuffle Unknowable Past into the exploration deck. You cannot choose this option if Unknowable Past was drawn from the exploration deck."
+    },
+    "checkSupplies": "Check supplies"
+  },
+  "intro": {
+    "title": "冒险VIII：破碎永世",
+    "theBraziersAreLit": "Check Campaign Log. *If the braziers are lit*, proceed to _Intro 1_.",
+    "theBraziersRemainUnlit": "*If the braziers remain unlit*, skip to _Intro 2_.",
+    "intro1": "<p>_Intro 1_: 指引着你走过无数信道的银蓝色火焰，俨然已是你唯一抱有的希望。一个个火盆指引你前行。某些生物将这些设备设置在此处。这些设备的技术与你在昆扬洞穴里所见的一致，也与你初次找到遗物时所在的埃兹特里遗迹相同。但是，不管冒险深入地球内部的是谁，他肯定转身逃走了，因为最后一个火盆被推倒并且破坏，而你前方已看不见更多的火盆。庆幸的是，你不用在黑暗中久留了。几分钟之后，你面前出现一道巨大的石门：毫无疑问，这就是联结点的入口。</p><p class='basic right'>Skip to _Intro 3_.</p>",
+    "intro2": "<p>_Intro 2_: 面前再无光亮指引你，在意识清醒的每一秒里，你尽力把自己的身体靠在雕刻的石壁上，利用这冰冷的石壁来指引方向，避免迷失。在你前行的过程中，你的手指触碰到墙体上一道温热、光滑的凹槽：与长眠于埃兹特里遗迹的技术同出一辙。你显然并非第一个闯入这个地方的人。但是，不管在你之前来到此地的人是谁，他肯定没完成任务便逃走了，因为这信道既没有光亮来指引你的方向，有没有在你到达时怒发眩光。几个小时之后，你在黑暗中逐步前行，直到你面前出现一道巨大的石门：毫无疑问，这就是联结点的入口。</p><p class='basic right'>Each investigator begins this scenario with 2 fewer cards in his or her opening hand. Proceed to Intro 3.</p>",
+    "intro3": {
+      "body": "<p>_Intro 3_: 你单手循着石门上雕刻的线条探索。门上有一道铭文。铭文写的是警告，让你离开，开启这条通路将会迎来毁灭。四周的黑暗使你难以辨认铭文的语言，但你知道那不同于当代人类所说的任何一种语言。你不知道你是怎么读懂这铭文的。或许是你在伊斯人失落的城市——纳克特的经历所留下的记忆。或许你是个彻头彻尾的疯子，仅凭石壁上带有的凹痕便能读懂含意。毕竟，你已经有将近一个礼拜没有见过自然界的光亮。",
+      "foundTheMissingRelic": "*If the investigators found the missing relic*, proceed to _Intro 4_.",
+      "theRelicIsMissing": "*If the relic is missing*, skip to _Intro 5_."
+    },
+    "intro4": "<p>_Intro 4_: 当你到达时，这扇被封印的石门紧闭着，但就在你触碰的瞬间，遗物开始震动并发出响亮的嗡嗡声。石门上的凹痕开始闪烁着微光，石门突然自动开启。你紧紧握着遗物，迈进石门。</p><p class='basic right'>Skip to _Setup_.</p>",
+    "intro5": "<p>_Intro 5_: 在你到达时，石门早已敞开。石门上的凹痕以微弱的光芒亮了起来。兄弟会定是早就来到了这里，这时你已无暇多作准备。</p><p class='basic right'>Proceed to _Setup_.</p>"
+  },
+  "setup": {
+    "gatherSets": "Gather all cards from the following encounter sets: *Shattered Aeons*, *Pnakotic Brotherhood*, *Temporal Flux*, and *Ancient Evils*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/shattered-aeons.png' /><img src='{setImgPath}/pnakotic-brotherhood.png' /><img src='{setImgPath}/temporal-flux.png' /><img src='{setImgPath}/ancient-evils.png' /></section>",
+    "gatherSetsCultist": "If there are more {'{'}cultist{'}'} tokens in the chaos bag than {'{'}tablet{'}'} tokens, also gather the Dark Cult encounter set, indicated by this icon:<section class='encounter-sets'><img src='{setImgPath}/dark-cult.png' /></section>",
+    "gatherSetsTablet": "If there are more {'{'}tablet{'}'} tokens in the chaos bag than {'{'}cultist{'}'} tokens, also gather the Agents of Yig encounter set, indicated by this icon:<section class='encounter-sets'><img src='{setImgPath}/agents-of-yig.png' /></section>",
+    "gatherSetsEqual": "If there is an equal number of {'{'}cultist{'}'} and {'{'}tablet{'}'} tokens in the chaos bag, also gather both the Dark Cult and Agents of Yig encounter sets, indicated by these icons:<section class='encounter-sets'><img src='{setImgPath}/dark-cult.png' /><img src='{setImgPath}/agents-of-yig.png' /></section>",
+    "placeLocations": "将恩凯联结点放置入场。每位调查员从恩凯联结点开始游戏。",
+    "setAsideEnemies": "Set the 2 enemy cards depicted here aside, out of play: Ichtaca (*Scion of Yig*) and Alejandro Vela (*Or, Is He?*).",
+    "setAsideEnemiesNote": "<div class='columns' style='overflow: none;padding-bottom: 40px;'><div style='flex-basis: 20%;'>*Note: These cards are double-sided and have story cards on their other side. For the best experience, do not look at the other side unless an effect instructs you to do so.*</div><div style='flex:1; margin-top: 30px;' class='fan'><img src='{setImgPath}/../cards/04325.avif' /><img src='{setImgPath}/../cards/04326.avif' /></div></div>",
+    "setAside": "Set the following cards aside, out of play: Formless Spawn, Relic of Ages (*Unleash the Timestream*), A Pocket in Time, Act 4a—“Paradise Lost”, Act 4a—“Timelock”, and the 6 single- sided _Shattered_ locations.",
+    "explorationDeck": "构建探索牌堆。拿取3张剩余的单面地点，将这些地点与遭遇卡一同混洗形成探索牌堆，所混洗的遭遇卡为以下每种1张：时空撕裂、异界之间、远古恶魔。",
+    "yigsFury": "Check Campaign Log. For every 10 tally marks under “Yig’s Fury,” place the top card of the lead investigator’s deck in the victory display, facedown. For the remainder of the scenario, treat each of those cards as if it has _Vengeance 1_."
+  },
+  "storyCards": {
+    "title": "Story Cards",
+    "body": "Story cards are a new cardtype that appears in this Mythos Pack. These cards serve as an avenue for additional narrative and typically appear as the reverse side of another scenario card. When you are instructed to resolve a story card, simply read its story text and resolve its game text, if any."
+  },
+  "resolutions": {
+    "noResolution": {
+      "title": "No Resolution",
+      "body": "_If no resolution was reached (each investigator resigned or was defeated)_: Read _Resolution 4_."
+    },
+    "resolution1": {
+      "title": "Resolution 1",
+      "body": "<p>_Resolution 1_:</p><p class='anke'>Thursday, December 17th, 1925</p><p>对于1925年夏天发生的种种事件，我很难把自己的想法只字不落地表达出来。当然，我将自己的经历完完整整地告诉了哈伦，因为我认为只有哈伦会愿意为我的经历佐证，但我至今还没坐下来把它记在纸上。或许我宁愿这种种事件只是出于我的想像，而非真实。</p><p>说实话，我不知道我们是怎么活着走出丛林下方的洞穴的。光是前往那个幽深的地方，就是一场地狱般的考验。我有关返程的记忆杂乱无章，浑浑噩噩。我们在黑暗中不段攀升，像是爬了多年一般。我们吃完了食物，耗尽了补给品，丧失了心中的希望——但不知为何，我们找到了出路。</p><p>我们阻止了灾难，但获得的奖赏却只有嘲笑和愚弄。所有正规的新闻社或大学都不愿出版我们的发现，而我们遍体麟伤，饱经噩梦，自然也顾不上为此次探险保留任何证据。我真希望自己关于这种种事件的记忆能随着时日消去，但我永远无法忘记我们用自己的锥形身体探索的那座怪异城市，在闪耀着红光的幽嘶里追击我们的蛇群，还有居于地球深渊的无形巨怪……</p><p>或许这就是我害怕将我们的发现记录下来的原因——因为这些记忆将会凝结，随后蚀刻在我的脑海中，毕生困扰着我，使我终日陷于恐惧和沮丧之中。但我们的所见和经历，都必须让世界知晓。</p><ul><li>In your Campaign Log, record that *the investigators mended the tear in the fabric of time*.</li><li>Each investigator suffers 2 physical trauma and 2 mental trauma, as he or she never fully recovers from the expedition into N’kai.</li><li>将叠加在古代遗物上的每个带有胜利点数的地点放进胜利牌区。</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. Each investigator earns 5 bonus experience, as he or she has mended the shattered timeline and saved the Earth from catastrophe.</li><li>The investigators win the campaign!</li></ul>"
+    },
+    "resolution2": {
+      "title": "Resolution 2",
+      "body": "<p>_Resolution 2_: 你传送到了另一个时空，瓦卢西亚和伊格的子嗣就居住于此。在你所创造的新时间线的保护之下，你和蛇族子民得以平安，不同于另一时空里早早覆灭的蛇族国土。你曾对抗蛇族的罪过得到了宽恕，你获得允许，能够以伊格的形貌在天堂国度瓦卢西亚居住。尽管你背弃了自己的人性，但人类已经免遭巨难，得以幸存，你的心头大石也放了下来。你的所作所为在蛇族中备受敬仰，你的新父对你青眼有加，生活舒适无比，充满你从未预料的奇迹。然而，你时不时地会望向瓦卢西亚另一端的荒野，想要知道自己是否还有什么必须要做的事情……</p><ul><li>In your Campaign Log, record that *调查员拯救了蛇族文明。*</li><li>地球得救了，调查员游戏胜利……</li><li>……但调查员重塑了另一时空的世界，从此存在于另一条时间线。这些调查员不能再用于新的剧本中。(你必须重新开始。)</li></ul>"
+    },
+    "resolution3": {
+      "title": "Resolution 3",
+      "body": "<p>_Resolution 3_: Transposed to a different time, Pnakotus and the Great Race of Yith live on. Preserved by the new timeline you have created, you and the Yithians are safe from the extraterrestrials who ended their kind long ago, in another time. You are brought into the city and given freedoms other captive minds never received. Although at first, you long for your former life, the emotion fades the more time you spend in this strange new Earth. You roam the world on titan airships and delve into the collective knowledge of the Yithians, accumulated in their vast archives from centuries of research. Your studies unveil secrets that no other human will ever know. You experience technological advances that humanity would weep to discover. And you prepare for an accursed future that may still yet come to pass.</p><ul><li>In your Campaign Log, record that *调查员拯救了伊斯人的文明。*</li><li>地球得救了，调查员游戏胜利……</li><li>……但调查员重塑了另一时空的世界，从此存在于另一条时间线。这些调查员不能再用于新的剧本中。(你必须重新开始。)</li></ul>"
+    },
+    "resolution4": {
+      "title": "Resolution 4",
+      "body": "<p>_Resolution 4_: 你知道现世不会一成不变，但或许这不是世界末日。终究时间只是一种维度：一种人类几乎不了解的维度。我们经历时间，但却看不见它；有办法测量，但却无法改变它。所以当第四维度被切分为成千上百个位面时，会发生什么？我们人类的孱弱思维无法理解其后果，但宇宙仍然存在，其无限延伸的边界不再受时间的桎梏。</p><ul><li>In your Campaign Log, record that *时间线被解开。*</li><li>Each investigator is driven _insane_.</li><li>The investigators lose the campaign.</li></ul>"
+    },
+    "resolution5": {
+      "title": "Resolution 5",
+      "body": "<p>_Resolution 5_: 所有这一切都是从埃兹特里第一次遭到入侵开始的。伊塔卡最初的警告，是她最后弥留的人性在与你对话。她想要你和其他探险者离开此地，但好奇和贪婪在你心中占了上风。在那天到来之前，一切都还保持着平衡。亚历山卓寻找遗物，是有他自己的打算。伊塔卡听从主人的呼唤而来，服从命令。而人类才是这场混乱的真正诱因。你知道自己必须要做什么了。现在你知道了拯救所有人的方法。</p><ul><li>In your Campaign Log, record that *the investigators turned back time.*</li><li>将叠加在古代遗物上的每个带有胜利点数的地点放进胜利牌区。</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.</li><li>Proceed to _Epilogue_.</li></ul>"
+    }
+  }
+}

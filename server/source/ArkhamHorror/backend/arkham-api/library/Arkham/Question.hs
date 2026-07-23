@@ -1,0 +1,345 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoFieldSelectors #-}
+
+module Arkham.Question where
+
+import Arkham.Ability.Types
+import Arkham.Campaigns.TheForgottenAge.Supply
+import Arkham.Card
+import Arkham.ChaosBagStepState
+import Arkham.ChaosToken.Types
+import Arkham.I18n
+import Arkham.Id
+import Arkham.Key
+import Arkham.Prelude hiding (maxBound, minBound)
+import Arkham.SkillType
+import Arkham.Source
+import Arkham.Target
+import Arkham.Tarot
+import Arkham.Text
+import Arkham.Token
+import Arkham.Window
+import Control.Monad.Fail
+import Data.Aeson.TH
+import Data.UUID (nil)
+
+data Component
+  = InvestigatorComponent {investigatorId :: InvestigatorId, tokenType :: GameTokenType}
+  | InvestigatorDeckComponent {investigatorId :: InvestigatorId}
+  | AssetComponent {assetId :: AssetId, tokenType :: GameTokenType}
+  deriving stock (Show, Eq, Ord, Data)
+
+data GameTokenType = ResourceToken | ClueToken | DamageToken | HorrorToken | DoomToken
+  deriving stock (Show, Eq, Ord, Data)
+
+pattern ClueLabel :: InvestigatorId -> [msg] -> UI msg
+pattern ClueLabel iid msgs <- ComponentLabel (InvestigatorComponent iid ClueToken) msgs
+  where
+    ClueLabel iid msgs = ComponentLabel (InvestigatorComponent iid ClueToken) msgs
+
+pattern DamageLabel :: InvestigatorId -> [msg] -> UI msg
+pattern DamageLabel iid msgs <- ComponentLabel (InvestigatorComponent iid DamageToken) msgs
+  where
+    DamageLabel iid msgs = ComponentLabel (InvestigatorComponent iid DamageToken) msgs
+
+pattern AssetDamageLabel :: AssetId -> [msg] -> UI msg
+pattern AssetDamageLabel aid msgs <- ComponentLabel (AssetComponent aid DamageToken) msgs
+  where
+    AssetDamageLabel aid msgs = ComponentLabel (AssetComponent aid DamageToken) msgs
+
+pattern HorrorLabel :: InvestigatorId -> [msg] -> UI msg
+pattern HorrorLabel iid msgs <- ComponentLabel (InvestigatorComponent iid HorrorToken) msgs
+  where
+    HorrorLabel iid msgs = ComponentLabel (InvestigatorComponent iid HorrorToken) msgs
+
+pattern AuxiliaryHorrorLabel :: InvestigatorId -> [msg] -> UI msg
+pattern AuxiliaryHorrorLabel iid msgs <- AuxiliaryComponentLabel (InvestigatorComponent iid HorrorToken) msgs
+  where
+    AuxiliaryHorrorLabel iid msgs = AuxiliaryComponentLabel (InvestigatorComponent iid HorrorToken) msgs
+
+pattern AssetHorrorLabel :: AssetId -> [msg] -> UI msg
+pattern AssetHorrorLabel aid msgs <- ComponentLabel (AssetComponent aid HorrorToken) msgs
+  where
+    AssetHorrorLabel aid msgs = ComponentLabel (AssetComponent aid HorrorToken) msgs
+
+pattern ResourceLabel :: InvestigatorId -> [msg] -> UI msg
+pattern ResourceLabel iid msgs <- ComponentLabel (InvestigatorComponent iid ResourceToken) msgs
+  where
+    ResourceLabel iid msgs = ComponentLabel (InvestigatorComponent iid ResourceToken) msgs
+
+data UI msg
+  = Label {label :: Text, messages :: [msg]}
+  | InvalidLabel {label :: Text}
+  | TooltipLabel {label :: Text, tooltip :: Tooltip, messages :: [msg]}
+  | CardLabel {cardCode :: CardCode, flippable :: Bool, messages :: [msg]}
+  | ChaosTokenLabel {face :: ChaosTokenFace, messages :: [msg]}
+  | KeyLabel {key :: ArkhamKey, messages :: [msg]}
+  | PortraitLabel {investigatorId :: InvestigatorId, messages :: [msg]}
+  | TargetLabel {target :: Target, messages :: [msg]}
+  | SkillLabel {skillType :: SkillType, messages :: [msg]}
+  | SkillLabelWithLabel {label :: Text, skillType :: SkillType, messages :: [msg]}
+  | EvadeLabel {enemyId :: EnemyId, messages :: [msg]}
+  | FightLabel {enemyId :: EnemyId, messages :: [msg]}
+  | FightLabelWithSkill {enemyId :: EnemyId, skillType :: SkillType, messages :: [msg]}
+  | EngageLabel {enemyId :: EnemyId, messages :: [msg]}
+  | GridLabel {gridLabel :: Text, messages :: [msg]}
+  | TarotLabel {tarotCard :: TarotCard, messages :: [msg]}
+  | AbilityLabel
+      { investigatorId :: InvestigatorId
+      , ability :: Ability
+      , windows :: [Window]
+      , before :: [msg]
+      , messages :: [msg]
+      }
+  | ComponentLabel {component :: Component, messages :: [msg]}
+  | AuxiliaryComponentLabel {component :: Component, messages :: [msg]}
+  | EndTurnButton {investigatorId :: InvestigatorId, messages :: [msg]}
+  | StartSkillTestButton {investigatorId :: InvestigatorId}
+  | SkillTestApplyResultsButton
+  | ChaosTokenGroupChoice {source :: Source, investigatorId :: InvestigatorId, step :: ChaosBagStep}
+  | EffectActionButton {tooltip :: Tooltip, effectId :: EffectId, messages :: [msg]}
+  | Done {label :: Text}
+  | SkipTriggersButton {investigatorId :: InvestigatorId}
+  | CardPile {pile :: [PileCard], messages :: [msg]}
+  | Info {flavor :: FlavorText}
+  | ScenarioLabel {label :: Text, scenarioId :: Text, messages :: [msg]}
+  deriving stock (Show, Ord, Eq, Data)
+
+uiAnd :: UI msg -> msg -> UI msg
+uiAnd ui msg = case ui of
+  Label l msgs -> Label l (msgs <> [msg])
+  InvalidLabel l -> InvalidLabel l
+  TooltipLabel l t msgs -> TooltipLabel l t (msgs <> [msg])
+  CardLabel c f msgs -> CardLabel c f (msgs <> [msg])
+  ChaosTokenLabel face msgs -> ChaosTokenLabel face (msgs <> [msg])
+  KeyLabel k msgs -> KeyLabel k (msgs <> [msg])
+  PortraitLabel iid msgs -> PortraitLabel iid (msgs <> [msg])
+  TargetLabel target msgs -> TargetLabel target (msgs <> [msg])
+  SkillLabel sType msgs -> SkillLabel sType (msgs <> [msg])
+  SkillLabelWithLabel l sType msgs -> SkillLabelWithLabel l sType (msgs <> [msg])
+  EvadeLabel enemyId msgs -> EvadeLabel enemyId (msgs <> [msg])
+  FightLabel enemyId msgs -> FightLabel enemyId (msgs <> [msg])
+  FightLabelWithSkill enemyId sType msgs -> FightLabelWithSkill enemyId sType (msgs <> [msg])
+  EngageLabel enemyId msgs -> EngageLabel enemyId (msgs <> [msg])
+  GridLabel gridLabel msgs -> GridLabel gridLabel (msgs <> [msg])
+  TarotLabel tarotCard msgs -> TarotLabel tarotCard (msgs <> [msg])
+  AbilityLabel iid ability windows before msgs -> AbilityLabel iid ability windows (before <> [msg]) msgs
+  ComponentLabel component msgs -> ComponentLabel component (msgs <> [msg])
+  AuxiliaryComponentLabel component msgs -> AuxiliaryComponentLabel component (msgs <> [msg])
+  EndTurnButton iid msgs -> EndTurnButton iid (msgs <> [msg])
+  StartSkillTestButton iid -> StartSkillTestButton iid
+  SkillTestApplyResultsButton -> SkillTestApplyResultsButton
+  ChaosTokenGroupChoice source iid step -> ChaosTokenGroupChoice source iid step
+  EffectActionButton tooltip effectId msgs -> EffectActionButton tooltip effectId (msgs <> [msg])
+  Done label -> Done label
+  SkipTriggersButton iid -> SkipTriggersButton iid
+  CardPile pile msgs -> CardPile pile (msgs <> [msg])
+  Info flavor -> Info flavor
+  ScenarioLabel label scenarioId msgs -> ScenarioLabel label scenarioId (msgs <> [msg])
+
+
+data PileCard = PileCard
+  { cardId :: CardId
+  , cardOwner :: Maybe InvestigatorId
+  }
+  deriving stock (Show, Ord, Eq, Data)
+
+data PaymentAmountChoice msg = PaymentAmountChoice
+  { choiceId :: UUID
+  , investigatorId :: InvestigatorId
+  , minBound :: Int
+  , maxBound :: Int
+  , title :: Text
+  , message :: msg
+  }
+  deriving stock (Show, Ord, Eq, Data)
+
+data AmountChoice = AmountChoice
+  { choiceId :: UUID
+  , label :: Text
+  , minBound :: Int
+  , maxBound :: Int
+  }
+  deriving stock (Show, Ord, Eq, Data)
+
+data AmountTarget = MinAmountTarget Int | MaxAmountTarget Int | TotalAmountTarget Int | AmountOneOf [Int]
+  deriving stock (Show, Ord, Eq, Data)
+
+data Question msg
+  = ChooseOne {choices :: [UI msg]}
+  | PlayerWindowChooseOne {choices :: [UI msg]}
+  | ChooseOneFromEach {groups :: [[UI msg]]}
+  | ChooseN {amount :: Int, choices :: [UI msg]}
+  | ChooseSome {choices :: [UI msg]}
+  | ChooseSome1 {label :: Text, choices :: [UI msg]}
+  | ChooseUpToN {amount :: Int, choices :: [UI msg]}
+  | ChooseOneAtATime {choices :: [UI msg]}
+  | ChooseOneAtATimeWithAuto {label :: Text, choices :: [UI msg]}
+  | {- | Choosing payment amounts
+    The core idea is that costs get broken up into unitary costs and we
+    let the players decide how many times an individual player will pay
+    the cost. The @Maybe Int@ is used to designate whether or not there
+    is a target value. The tuple of ints are the min and max bound for
+    the specific investigator
+    -}
+    ChoosePaymentAmounts
+      { label :: Text
+      , paymentAmountTargetValue :: Maybe AmountTarget
+      , paymentAmountChoices :: [PaymentAmountChoice msg]
+      }
+  | ChooseAmounts
+      { label :: Text
+      , amountTargetValue :: AmountTarget
+      , amountChoices :: [AmountChoice]
+      , target :: Target
+      }
+  | ChooseUpgradeDeck
+  | ChooseDeck
+  | QuestionLabel {label :: Text, card :: Maybe CardCode, question :: Question msg}
+  | Read {flavorText :: FlavorText, readChoices :: ReadChoices msg, readCards :: Maybe [CardCode]}
+  | PickSupplies
+      {pointsRemaining :: Int, chosenSupplies :: [Supply], choices :: [UI msg], resupply :: Bool}
+  | PickDestiny {drawings :: [DestinyDrawing]}
+  | DropDown {options :: [(Text, msg)]}
+  | PickScenarioSettings
+  | PickCampaignSettings
+  | PickCampaignSpecific Text Value
+  | ChooseExchangeAmounts
+      { source :: Source
+      , investigator1Id :: InvestigatorId
+      , investigator1InitialAmount :: Int
+      , investigator2Id :: InvestigatorId
+      , investigator2InitialAmount :: Int
+      , token :: Token
+      }
+  | ContinueCampaign
+  deriving stock (Show, Ord, Eq, Data)
+
+data DestinyDrawing = DestinyDrawing
+  { scenario :: Scope
+  , tarot :: TarotCard
+  }
+  deriving stock (Show, Ord, Eq, Data)
+
+data ReadChoices msg
+  = BasicReadChoices [UI msg]
+  | BasicReadChoicesN Int [UI msg]
+  | BasicReadChoicesUpToN Int [UI msg]
+  | LeadInvestigatorMustDecide [UI msg]
+  deriving stock (Show, Ord, Eq, Data)
+
+data ChoosePlayerChoice = SetLeadInvestigator | SetTurnPlayer
+  deriving stock (Show, Ord, Eq, Data)
+
+evadeLabel
+  :: (AsId enemy, IdOf enemy ~ EnemyId, msg ~ Element (t msg), MonoFoldable (t msg))
+  => enemy
+  -> t msg
+  -> UI msg
+evadeLabel (asId -> enemy) (toList -> msgs) = EvadeLabel enemy msgs
+
+fightLabel
+  :: (AsId enemy, IdOf enemy ~ EnemyId, msg ~ Element (t msg), MonoFoldable (t msg))
+  => enemy
+  -> t msg
+  -> UI msg
+fightLabel (asId -> enemy) (toList -> msgs) = FightLabel enemy msgs
+
+fightLabelWith
+  :: (AsId enemy, IdOf enemy ~ EnemyId, msg ~ Element (t msg), MonoFoldable (t msg))
+  => SkillType
+  -> enemy
+  -> t msg
+  -> UI msg
+fightLabelWith sType (asId -> enemy) (toList -> msgs) = FightLabelWithSkill enemy sType msgs
+
+targetLabel
+  :: (Targetable target, msg ~ Element (t msg), MonoFoldable (t msg))
+  => target
+  -> t msg
+  -> UI msg
+targetLabel (toTarget -> target) (toList -> msgs) = TargetLabel target msgs
+
+targetLabels
+  :: (Targetable target, msg ~ Element (t msg), MonoFoldable (t msg))
+  => [target]
+  -> (target -> t msg)
+  -> [UI msg]
+targetLabels = flip mapTargetLabel
+
+mapTargetLabel
+  :: (Targetable target, msg ~ Element (t msg), MonoFoldable (t msg))
+  => (target -> t msg)
+  -> [target]
+  -> [UI msg]
+mapTargetLabel f = map (\c -> targetLabel c (f c))
+
+mapTargetLabelWith :: Targetable target => (c -> target) -> (c -> [msg]) -> [c] -> [UI msg]
+mapTargetLabelWith g f = map (uncurry targetLabel . (g &&& f))
+
+concat
+  [ deriveJSON defaultOptions ''GameTokenType
+  , deriveJSON defaultOptions ''Component
+  , deriveJSON defaultOptions ''DestinyDrawing
+  , deriveToJSON defaultOptions ''PaymentAmountChoice
+  , [d|
+      instance FromJSON msg => FromJSON (PaymentAmountChoice msg) where
+        parseJSON = withObject "PaymentAmountChoice" $ \o -> do
+          choiceId <- o .:? "choiceId" .!= nil
+          investigatorId <- o .: "investigatorId"
+          minBound <- o .: "minBound"
+          maxBound <- o .: "maxBound"
+          title <- o .: "title"
+          message <- o .: "message"
+          pure PaymentAmountChoice {..}
+      |]
+  , deriveJSON defaultOptions ''ChoosePlayerChoice
+  , deriveToJSON defaultOptions ''AmountChoice
+  , [d|
+      instance FromJSON AmountChoice where
+        parseJSON = withObject "AmountChoice" $ \o -> do
+          choiceId <- o .:? "choiceId" .!= nil
+          label <- o .: "label"
+          minBound <- o .: "minBound"
+          maxBound <- o .: "maxBound"
+          pure AmountChoice {..}
+      |]
+  , deriveJSON defaultOptions ''AmountTarget
+  , deriveJSON defaultOptions ''PileCard
+  , deriveToJSON defaultOptions ''ReadChoices
+  , [d|
+      instance FromJSON msg => FromJSON (ReadChoices msg) where
+        parseJSON (Array xs) = BasicReadChoices <$> parseJSON (Array xs)
+        parseJSON (Object o) = $(mkParseJSON defaultOptions ''ReadChoices) (Object o)
+        parseJSON other = fail $ "Unexpected json type: " <> show other
+      |]
+  , deriveToJSON defaultOptions ''UI
+  , [d|
+      instance FromJSON msg => FromJSON (UI msg) where
+        parseJSON (Object o) = do
+          tag :: Text <- o .: "tag"
+          case tag of
+            "CardLabel" -> do
+              cardCode <- o .: "cardCode"
+              flippable <- o .:? "flippable" .!= False
+              messages <- o .: "messages"
+              pure $ CardLabel {..}
+            _ -> $(mkParseJSON defaultOptions ''UI) (Object o)
+        parseJSON other = $(mkParseJSON defaultOptions ''UI) other
+      |]
+  , deriveToJSON defaultOptions ''Question
+  , [d|
+      instance FromJSON msg => FromJSON (Question msg) where
+        parseJSON = withObject "Question" \o -> do
+          tag :: Text <- o .: "tag"
+          case tag of
+            "PickSupplies" -> do
+              pointsRemaining <- o .: "pointsRemaining"
+              chosenSupplies <- o .: "chosenSupplies"
+              choices <- o .: "choices"
+              resupply <- o .:? "resupply" .!= False
+              pure $ PickSupplies {..}
+            _ -> $(mkParseJSON defaultOptions ''Question) (Object o)
+      |]
+  ]

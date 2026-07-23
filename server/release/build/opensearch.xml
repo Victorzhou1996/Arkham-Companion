@@ -1,0 +1,11 @@
+<OpenSearchDescription
+  xmlns="http://a9.com/-/spec/opensearch/1.1/"
+  xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>arkham.build</ShortName>
+  <Description>Deck builder and card browser for Arkham Horror: The Card Game™</Description>
+  <Image width="16" height="16" type="image/x-icon">https://arkham.build/favicon-16x16.png</Image>
+  <Url type="text/html" template="https://arkham.build/search?q={searchTerms}" />
+  <Url type="application/opensearchdescription+xml" rel="self" template="https://arkham.build/opensearch.xml" />
+  <InputEncoding>UTF-8</InputEncoding>
+  <OutputEncoding>UTF-8</OutputEncoding>
+</OpenSearchDescription>

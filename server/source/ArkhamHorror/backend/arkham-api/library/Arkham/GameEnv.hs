@@ -1,0 +1,301 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
+module Arkham.GameEnv where
+
+import Arkham.Ability
+import Arkham.ActiveCost.Base
+import {-# SOURCE #-} Arkham.Card (
+  Card (EncounterCard, PlayerCard),
+  CardCode,
+  CardGen (..),
+  CardId,
+  lookupCardDef,
+  unsafeMakeCardId,
+ )
+import Arkham.Card.CardDef (CardDef, toCardDef)
+import Arkham.Card.EncounterCard
+import Arkham.Card.PlayerCard
+import Arkham.Classes.Entity
+import Arkham.Classes.GameLogger
+import Arkham.Classes.HasAbilities
+import Arkham.Classes.HasDistance
+import Arkham.Classes.HasGame
+import Arkham.Classes.HasQueue
+import Arkham.Distance
+import Arkham.Entities
+import {-# SOURCE #-} Arkham.Game
+import Arkham.Game.Settings
+import Arkham.GameT
+import Arkham.History
+import Arkham.Id
+import Arkham.Investigator.Types (InvestigatorAttrs)
+import Arkham.Message
+import Arkham.Modifier
+import Arkham.Phase
+import Arkham.Prelude
+import Arkham.Random
+import Arkham.SkillTest.Base
+import {-# SOURCE #-} Arkham.Source
+import Arkham.Target
+import Arkham.Tracing
+import Arkham.Window
+import Control.Monad.Random.Lazy hiding (filterM, foldM, fromList)
+import Data.Dependent.Map qualified as DMap
+import Data.Map.Strict qualified as Map
+import OpenTelemetry.Trace.Monad (MonadTracer (..))
+
+-- Some ORPHANS we may want to move
+
+instance CardGen GameT where
+  genEncounterCard a = do
+    cardId <- unsafeMakeCardId <$> getRandom
+    let card = lookupEncounterCard (toCardDef a) cardId
+    ref <- asks gameEnvGame
+    atomicModifyIORef' ref $ \g ->
+      (g {gameCards = insertMap cardId (EncounterCard card) (gameCards g)}, ())
+    pure card
+  genPlayerCard a = do
+    cardId <- unsafeMakeCardId <$> getRandom
+    let card = lookupPlayerCard (toCardDef a) cardId
+    ref <- asks gameEnvGame
+    atomicModifyIORef' ref $ \g ->
+      (g {gameCards = insertMap cardId (PlayerCard card) (gameCards g)}, ())
+    pure card
+  replaceCard cardId card = do
+    ref <- asks gameEnvGame
+    atomicModifyIORef' ref $ \g ->
+      (g {gameCards = insertMap cardId card (gameCards g)}, ())
+  removeCard cardId = do
+    ref <- asks gameEnvGame
+    atomicModifyIORef' ref $ \g ->
+      (g {gameCards = deleteMap cardId (gameCards g)}, ())
+  clearCardCache = do
+    ref <- asks gameEnvGame
+    atomicModifyIORef' ref $ \g -> (g {gameCards = mempty}, ())
+
+instance HasGameRef GameEnv where
+  gameRefL = lens gameEnvGame $ \m x -> m {gameEnvGame = x}
+
+getCard :: (HasCallStack, HasGame m) => CardId -> m Card
+getCard cardId = do
+  g <- getGame
+  case lookup cardId (gameCards g) of
+    Nothing -> error $ "Unregistered card id: " <> show cardId <> "\n" <> prettyCallStack callStack
+    Just card -> pure card
+
+findAllCards :: HasGame m => (Card -> Bool) -> m [Card]
+findAllCards cardPred = filter cardPred . toList . gameCards <$> getGame
+
+findCard :: HasGame m => (Card -> Bool) -> m (Maybe Card)
+findCard cardPred = find cardPred . toList . gameCards <$> getGame
+
+runGameEnvT :: MonadIO m => GameEnv -> GameT a -> m a
+runGameEnvT gameEnv = liftIO . flip runReaderT gameEnv . unGameT
+
+toGameEnv
+  :: ( HasGameRef env
+     , HasQueue Message m
+     , HasStdGen env
+     , HasGameLogger m
+     , MonadReader env m
+     , MonadTracer m
+     )
+  => m GameEnv
+toGameEnv = do
+  gameEnvGame <- view gameRefL
+  gameRandomGen <- view genL
+  gameEnvQueue <- messageQueue
+  gameCacheRef <- newIORef DMap.empty
+  gameLogger <- getLogger
+  gameTracer <- getTracer
+  pure $ GameEnv {..}
+
+runWithEnv
+  :: ( HasGameRef env
+     , HasQueue Message m
+     , HasStdGen env
+     , HasGameLogger m
+     , MonadReader env m
+     , MonadTracer m
+     )
+  => GameT a
+  -> m a
+runWithEnv body = do
+  gameEnv <- toGameEnv
+  runGameEnvT gameEnv body
+
+instance MonadRandom GameT where
+  getRandomR lohi = do
+    ref <- view genL
+    atomicModifyIORef' ref (swap . randomR lohi)
+  getRandom = do
+    ref <- view genL
+    atomicModifyIORef' ref (swap . random)
+  getRandomRs lohi = do
+    ref <- view genL
+    gen <- atomicModifyIORef' ref splitGen
+    pure $ randomRs lohi gen
+  getRandoms = do
+    ref <- view genL
+    gen <- atomicModifyIORef' ref splitGen
+    pure $ randoms gen
+
+getSkillTest :: HasGame m => m (Maybe SkillTest)
+getSkillTest = gameSkillTest <$> getGame
+
+getsSkillTest :: HasGame m => (SkillTest -> a) -> m (Maybe a)
+getsSkillTest f = fmap f . gameSkillTest <$> getGame
+
+getSkillTestId :: HasGame m => m (Maybe SkillTestId)
+getSkillTestId = fmap skillTestId . gameSkillTest <$> getGame
+
+getIsSkillTest :: HasGame m => m Bool
+getIsSkillTest = isJust <$> getSkillTest
+
+getActiveCosts :: HasGame m => m [ActiveCost]
+getActiveCosts = toList . gameActiveCost <$> getGame
+
+getJustSkillTest :: (HasGame m, HasCallStack) => m SkillTest
+getJustSkillTest = fromJustNote "must be called during a skill test" . gameSkillTest <$> getGame
+
+getHistory :: HasGame m => HistoryType -> InvestigatorId -> m History
+getHistory TurnHistory iid =
+  findWithDefault mempty iid . gameTurnHistory <$> getGame
+getHistory PhaseHistory iid =
+  findWithDefault mempty iid . gamePhaseHistory <$> getGame
+getHistory RoundHistory iid = do
+  roundH <- findWithDefault mempty iid . gameRoundHistory <$> getGame
+  phaseH <- getHistory PhaseHistory iid
+  pure $ roundH <> phaseH
+
+getHistoryField :: HasGame m => HistoryType -> InvestigatorId -> HistoryField k -> m k
+getHistoryField htype iid fld = viewHistoryField fld <$> getHistory htype iid
+
+getDistance :: (HasGame m, Tracing m) => LocationId -> LocationId -> m (Maybe Distance)
+getDistance l1 l2 = do
+  game <- getGame
+  getDistance' game l1 l2
+
+getPhase :: HasGame m => m Phase
+getPhase = gamePhase <$> getGame
+
+getEnemyPhaseStep :: HasGame m => m (Maybe EnemyPhaseStep)
+getEnemyPhaseStep =
+  getGame <&> \g -> case gamePhaseStep g of
+    Just (EnemyPhaseStep s) -> Just s
+    _ -> Nothing
+
+getWindowDepth :: HasGame m => m Int
+getWindowDepth = gameWindowDepth <$> getGame
+
+getDepthLock :: HasGame m => m Int
+getDepthLock = gameDepthLock <$> getGame
+
+getAllAbilities :: HasGame m => m [Ability]
+getAllAbilities = getAbilities <$> getGame
+
+getSettings :: HasGame m => m Settings
+getSettings = gameSettings <$> getGame
+
+getCurrentBatchId :: HasGame m => m (Maybe BatchId)
+getCurrentBatchId = gameCurrentBatchId <$> getGame
+
+getAllPlayers :: HasGame m => m [PlayerId]
+getAllPlayers = gamePlayers <$> getGame
+
+getActivePlayer :: HasGame m => m PlayerId
+getActivePlayer = gameActivePlayerId <$> getGame
+
+getAllModifiers :: HasGame m => m (Map Target [Modifier])
+getAllModifiers = gameModifiers <$> getGame
+
+withModifiers'
+  :: (Targetable target, HasGame m)
+  => target
+  -> m [Modifier]
+  -> ReaderT Game m a
+  -> m a
+withModifiers' (toTarget -> target) mods body = do
+  game <- getGame
+  mods' <- mods
+  let
+    modifiers = gameModifiers game
+    modifiers' = insertWith (<>) target mods' modifiers
+  runReaderT body $ game & modifiersL .~ modifiers'
+
+-- Primarily used for Parallel Lola right now, we may want to make this more generic
+withoutModifiersFrom
+  :: HasGame m
+  => InvestigatorId
+  -> ReaderT Game m a
+  -> m a
+withoutModifiersFrom iid body = do
+  game <- getGame
+  let
+    modifiers = gameModifiers game
+    modifiers' = Map.adjust (filter ((/= toSource iid) . (.source))) (toTarget iid) modifiers
+  runReaderT body $ game & modifiersL .~ modifiers'
+
+withoutModifiersOf
+  :: (HasGame m, Sourceable source)
+  => source
+  -> ReaderT Game m a
+  -> m a
+withoutModifiersOf source body = do
+  game <- getGame
+  let
+    modifiers = gameModifiers game
+    modifiers' = Map.map (filter ((/= toSource source) . (.source))) modifiers
+  runReaderT body $ game & modifiersL .~ modifiers'
+
+withInvestigatorEdit
+  :: HasGame m => InvestigatorId -> (InvestigatorAttrs -> InvestigatorAttrs) -> ReaderT Game m a -> m a
+withInvestigatorEdit iid f body = do
+  game <- getGame
+  runReaderT body $ game & entitiesL . investigatorsL . ix iid %~ overAttrs f
+
+withActiveInvestigator :: HasGame m => InvestigatorId -> ReaderT Game m a -> m a
+withActiveInvestigator iid body = do
+  game <- getGame
+  runReaderT body $ game & activeInvestigatorIdL .~ iid
+
+withActiveInvestigatorAdjust
+  :: (HasGame m, Tracing m) => InvestigatorId -> ReaderT Game m a -> m a
+withActiveInvestigatorAdjust iid body = do
+  game <- getGame
+  game' <-
+    handleBlanked
+      =<< handleTraitRestrictedModifiers
+      =<< preloadModifiers (game & activeInvestigatorIdL .~ iid)
+  runReaderT body game'
+
+getActiveAbilities :: HasGame m => m [Ability]
+getActiveAbilities = gameActiveAbilities <$> getGame
+
+getActionCanBeUndone :: HasGame m => m Bool
+getActionCanBeUndone = gameActionCanBeUndone <$> getGame
+
+getGameInAction :: HasGame m => m Bool
+getGameInAction = gameInAction <$> getGame
+
+getWindowStack :: HasGame m => m [[Window]]
+getWindowStack = fromMaybe [] . gameWindowStack <$> getGame
+
+getIgnoreCanModifiers :: HasGame m => m Bool
+getIgnoreCanModifiers = gameIgnoreCanModifiers <$> getGame
+
+getInSetup :: HasGame m => m Bool
+getInSetup = gameInSetup <$> getGame
+
+getCardUses :: HasGame m => CardCode -> m [InvestigatorId]
+getCardUses cCode = findWithDefault [] cCode . gameCardUses <$> getGame
+
+getAllCardUses :: HasGame m => m [CardDef]
+getAllCardUses =
+  concatMap (mapMaybe lookupCardDef . (\(k, v) -> replicate (length v) k))
+    . Map.toList
+    . gameCardUses
+    <$> getGame
+
+getTurnOrder :: HasGame m => m [InvestigatorId]
+getTurnOrder = gamePlayerOrder <$> getGame

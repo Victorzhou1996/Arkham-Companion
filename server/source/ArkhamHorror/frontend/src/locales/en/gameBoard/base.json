@@ -1,0 +1,23 @@
+{
+    "applyAll": "All",
+    "skillTestTitle": "Skill Test",
+    "toBeCommitted": "To be committed",
+    "committedCards": "Committed cards",
+    "toBeCommittedNote": "Cards are not committed until you click the token above and your skill value may not show the bonuses added until then.",
+
+    "waitingForMorePlayers": "Waiting for more players",
+    "showInviteLink": "Invite them with this url:",
+
+    "gameOver": "Game over",
+    "watchReplay": "Watch Replay",
+
+    "submit": "Submit",
+    "sancel": "Cancel",
+    "close": "Close",
+
+    "outOfSyncHint": "Your game is out of sync, trying to reconnect...",
+
+    "error": "Error",
+    "errorContent": "This is most likely a bug, please file a bug report.",
+    "fileBug": "File Bug"
+}

@@ -1,0 +1,158 @@
+module Arkham.Campaign.Campaigns.ThePathToCarcosa (thePathToCarcosa, ThePathToCarcosa (..)) where
+
+import Arkham.Campaign.Import.Lifted
+import Arkham.CampaignLogKey
+import Arkham.Campaigns.ThePathToCarcosa.CampaignSteps
+import Arkham.Campaigns.ThePathToCarcosa.Import
+import Arkham.Card
+import Arkham.ChaosToken
+import Arkham.Enemy.Cards qualified as Enemies
+import {-# SOURCE #-} Arkham.GameEnv
+import Arkham.Helpers.FlavorText
+import Arkham.Helpers.Xp
+import Arkham.Matcher hiding (EnemyDefeated)
+import Arkham.Message qualified as Msg
+import Arkham.Message.Lifted.Choose
+import Arkham.Message.Lifted.Log
+
+newtype ThePathToCarcosa = ThePathToCarcosa CampaignAttrs
+  deriving newtype (Show, ToJSON, FromJSON, Entity, Eq, HasModifiersFor)
+
+instance IsCampaign ThePathToCarcosa where
+  campaignTokens = chaosBagContents
+  nextStep a = case (toAttrs a).normalizedStep of
+    PrologueStep -> continue CurtainCall
+    CurtainCall -> continue TheLastKing
+    TheLastKing -> continue EchoesOfThePast
+    InterludeStep 1 _ -> continue EchoesOfThePast
+    EchoesOfThePast -> continue TheUnspeakableOath
+    TheUnspeakableOath -> continue APhantomOfTruth
+    InterludeStep 2 _ -> continue APhantomOfTruth
+    APhantomOfTruth -> continue ThePallidMask
+    ThePallidMask -> continue BlackStarsRise
+    BlackStarsRise -> continue DimCarcosa
+    DimCarcosa -> continue EpilogueStep
+    other -> defaultNextStep other
+
+thePathToCarcosa :: Difficulty -> ThePathToCarcosa
+thePathToCarcosa = campaign ThePathToCarcosa (CampaignId "03") "The Path to Carcosa"
+
+findNewBearerIfNeeded :: ReverseQueue m => CampaignAttrs -> InvestigatorId -> m ()
+findNewBearerIfNeeded attrs iid = void $ runMaybeT do
+  theManInThePallidMask <- MaybeT $ fetchCardMaybe Enemies.theManInThePallidMask
+  owner <-
+    hoistMaybe $ findKey (any ((== Enemies.theManInThePallidMask) . toCardDef)) attrs.storyCards
+  guard $ owner == iid
+  lift do
+    others <- select $ IncludeEliminated (not_ (InvestigatorWithId iid) <> AliveInvestigator)
+    unless (null others) do
+      removeCampaignCardFromDeck owner theManInThePallidMask
+      addCampaignCardToDeckChoice others Msg.ShuffleIn theManInThePallidMask
+
+instance RunMessage ThePathToCarcosa where
+  runMessage msg c@(ThePathToCarcosa attrs) = runQueueT $ campaignI18n $ case msg of
+    CampaignStep PrologueStep -> scope "prologue" do
+      flavor do
+        setTitle "yellowSign.title"
+        p "yellowSign.body"
+
+      isLola <- selectAny $ InvestigatorWithTitle "Lola Hayes"
+      flavor do
+        setTitle "title"
+        p "body"
+        p.right.validate isLola "ifLola"
+        p.right.validate (not isLola) "otherwise"
+      when isLola $ flavor $ p "lola" >> p.right "proceed"
+      nextCampaignStep
+      pure c
+    CampaignStep (InterludeStep 1 _) -> scope "interlude1" do
+      vipsSlain <- getRecordSet VIPsSlain
+      let unslain =
+            recordedCardCodes
+              $ filter (`notElem` vipsSlain)
+              $ map
+                recorded
+                [ Enemies.constanceDumaine.cardCode
+                , Enemies.jordanPerry.cardCode
+                , Enemies.ishimaruHaruko.cardCode
+                , Enemies.sebastienMoreau.cardCode
+                , Enemies.ashleighClarke.cardCode
+                ]
+      removeAllChaosTokens Cultist
+      removeAllChaosTokens Tablet
+      removeAllChaosTokens ElderThing
+
+      let interlude k = storyBuild $ setTitle "title" >> p k
+
+      storyWithChooseOneM' (setTitle "title" >> p "body") do
+        labeled' "chooseLunacysReward1" do
+          interlude "lunacysReward1"
+          record YouIntrudedOnASecretMeeting
+          markDoubt
+          addChaosToken ElderThing
+          addChaosToken ElderThing
+        labeled' "chooseLunacysReward2" do
+          interlude "lunacysReward2"
+          record YouFledTheDinnerParty
+          addChaosToken Tablet
+          addChaosToken Tablet
+        labeled' "chooseLunacysReward3" do
+          interlude "lunacysReward3"
+          record YouSlayedTheMonstersAtTheDinnerParty
+          unless (null unslain) $ recordSetInsert VIPsSlain unslain
+          markConviction
+          addChaosToken Cultist
+          addChaosToken Cultist
+
+      nextCampaignStep
+      pure c
+    CampaignStep (InterludeStep 2 mInterludeKey) -> scope "interlude2" do
+      let interlude k = storyBuild $ setTitle "title" >> p k
+      let
+        handleWarning = do
+          labeled' "ignoreTheWarning" do
+            interlude "ignoreTheWarning"
+            record YouIgnoredDanielsWarning
+            markDoubtN 2
+          labeled' "heedTheWarning" do
+            interlude "heedTheWarning"
+            record YouHeadedDanielsWarning
+            markConvictionN 2
+            interludeXpAll (toBonus "bonus" 1)
+      case mInterludeKey of
+        Nothing -> error "Missing key from The Unspeakable Oath"
+        Just DanielSurvived -> do
+          storyWithChooseOneM' (setTitle "title" >> p "danielSurvived") handleWarning
+          interludeXpAll (toBonus "bonus" 2)
+        Just DanielDidNotSurvive ->
+          storyWithChooseOneM' (setTitle "title" >> p "danielDidNotSurvive") handleWarning
+        Just DanielWasPossessed ->
+          storyWithChooseOneM' (setTitle "title" >> p "danielWasPossessed") handleWarning
+        Just _ -> error "Invalid key for The Unspeakable Oath"
+
+      nextCampaignStep
+      pure c
+    CampaignStep EpilogueStep -> scope "epilogue" do
+      possessed <- getRecordSet Possessed
+      let
+        investigators = flip mapMaybe possessed $ \case
+          SomeRecorded RecordableCardCode (Recorded cardCode) -> Just (InvestigatorId cardCode)
+          _ -> Nothing
+      unless (null investigators) $ storyOnlyBuild investigators do
+        setTitle "title"
+        p "body"
+      gameOver
+      pure c
+    EnemyDefeated _ cardId _ _ -> do
+      card <- getCard cardId
+      when (card `cardMatch` cardIs Enemies.theManInThePallidMask) do
+        n <- getRecordCount ChasingTheStranger
+        recordCount ChasingTheStranger (n + 1)
+      pure c
+    After (Msg.DrivenInsane iid) -> do
+      findNewBearerIfNeeded attrs iid
+      pure c
+    After (Msg.InvestigatorKilled _ iid) -> do
+      findNewBearerIfNeeded attrs iid
+      pure c
+    _ -> lift $ defaultCampaignRunner msg c

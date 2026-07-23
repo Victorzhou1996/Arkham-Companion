@@ -1,0 +1,104 @@
+module Arkham.Event.Events.Decoy (decoy, Decoy (..)) where
+
+import Arkham.Ability
+import Arkham.Card
+import Arkham.Event.Cards qualified as Cards
+import Arkham.Event.Import.Lifted hiding (PlayCard)
+import Arkham.Matcher hiding (EnemyEvaded)
+import Arkham.Modifier
+import Data.Aeson
+import Data.Aeson.KeyMap qualified as KeyMap
+
+newtype Decoy = Decoy EventAttrs
+  deriving anyclass (IsEvent, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+decoy :: EventCard Decoy
+decoy = event Decoy Cards.decoy
+
+instance HasAbilities Decoy where
+  getAbilities (Decoy a) =
+    [ withTooltip
+        "{reaction}  When you play Decoy, increase its cost by 2: Change \"a non-Elite enemy\" to \"up to 2 non-Elite enemies.\""
+        $ mkAbility a 1
+        $ triggered
+          (PlayCard #when You (basic $ CardWithId a.cardId))
+          (IncreaseCostOfThis (toCardId a) 2)
+    , withTooltip
+        "{reaction} When you play Decoy, increase its cost by 2: Change \"at your location\" to \"at a location up to 2 connections away.\""
+        $ mkAbility a 2
+        $ ForcedWhen (not_ $ exists $ at_ YourLocation <> NonEliteEnemy)
+        $ triggered
+          (PlayCard #when You (basic $ CardWithId $ toCardId a))
+          (IncreaseCostOfThis (toCardId a) 2)
+    ]
+
+instance RunMessage Decoy where
+  runMessage msg e@(Decoy attrs) = runQueueT $ case msg of
+    PlayThisEvent iid eid | eid == attrs.id -> do
+      modifiers' <- getModifiers (toTarget $ toCardId attrs)
+
+      let
+        updateEnemyCount :: Int -> ModifierType -> Int
+        updateEnemyCount n (MetaModifier (Object o)) =
+          case fromJSON <$> KeyMap.lookup "enemyCount" o of
+            Just (Success a) -> a
+            _ -> n
+        updateEnemyCount n _ = n
+        enemyCount = foldl' updateEnemyCount 1 modifiers'
+        updateUpToTwoAway :: Bool -> ModifierType -> Bool
+        updateUpToTwoAway n (MetaModifier (Object o)) =
+          case fromJSON <$> KeyMap.lookup "upToTwoAway" o of
+            Just (Success a) -> a
+            _ -> n
+        updateUpToTwoAway n _ = n
+        upToTwoAway = foldl' updateUpToTwoAway False modifiers'
+
+      enemies <-
+        select
+          $ NonEliteEnemy
+          <> oneOf
+            ( at_ (locationWithInvestigator iid)
+                : [ at_ (LocationWithDistanceFrom n (locationWithInvestigator iid) Anywhere)
+                  | upToTwoAway
+                  , n <- [1 .. 2]
+                  ]
+            )
+
+      let
+        handleOne :: ReverseQueue n => n ()
+        handleOne =
+          chooseAutomaticallyEvadeAt
+            iid
+            attrs
+            ( oneOf $ locationWithInvestigator iid
+                : [LocationWithDistanceFrom n (locationWithInvestigator iid) Anywhere | upToTwoAway, n <- [1 .. 2]]
+            )
+            NonEliteEnemy
+      if enemyCount == 2 && length enemies > 1
+        then chooseOneM iid do
+          labeled "Evade 1 enemy" handleOne
+          labeled "Evade 2 enemies" do
+            chooseAutomaticallyEvadeNAt
+              iid
+              attrs
+              2
+              ( oneOf $ locationWithInvestigator iid
+                  : [LocationWithDistanceFrom n (locationWithInvestigator iid) Anywhere | upToTwoAway, n <- [1 .. 2]]
+              )
+              NonEliteEnemy
+        else handleOne
+      pure e
+    InHand iid (UseThisAbility iid' (isSource attrs -> True) 1) | iid == iid' -> do
+      eventModifier attrs (toCardId attrs) $ MetaModifier $ object ["enemyCount" .= (2 :: Int)]
+      pure e
+    InHand iid (UseThisAbility iid' (isSource attrs -> True) 2) | iid == iid' -> do
+      eventModifier attrs (toCardId attrs) $ MetaModifier $ object ["upToTwoAway" .= True]
+      pure e
+    InDiscard iid (UseThisAbility iid' (isSource attrs -> True) 1) | iid == iid' -> do
+      eventModifier attrs (toCardId attrs) $ MetaModifier $ object ["enemyCount" .= (2 :: Int)]
+      pure e
+    InDiscard iid (UseThisAbility iid' (isSource attrs -> True) 2) | iid == iid' -> do
+      eventModifier attrs (toCardId attrs) $ MetaModifier $ object ["upToTwoAway" .= True]
+      pure e
+    _ -> Decoy <$> liftRunMessage msg attrs

@@ -1,0 +1,28 @@
+module Arkham.Asset.Assets.TheMoonXIII1 (theMoonXiii1) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Runner
+import Arkham.Helpers.Modifiers
+import Arkham.Matcher
+import Arkham.Prelude
+
+newtype TheMoonXIII1 = TheMoonXIII1 AssetAttrs
+  deriving anyclass IsAsset
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+theMoonXiii1 :: AssetCard TheMoonXIII1
+theMoonXiii1 = asset TheMoonXIII1 Cards.theMoonXiii1
+
+instance HasModifiersFor TheMoonXIII1 where
+  getModifiersFor (TheMoonXIII1 a) = controllerGets a [SkillModifier #agility 1]
+
+instance HasAbilities TheMoonXIII1 where
+  getAbilities (TheMoonXIII1 a) = [restrictedAbility a 1 InYourHand $ freeReaction (GameBegins #when)]
+
+instance RunMessage TheMoonXIII1 where
+  runMessage msg a@(TheMoonXIII1 attrs) = case msg of
+    InHand iid (UseCardAbility iid' (isSource attrs -> True) 1 _ _) | iid == iid' -> do
+      push $ putCardIntoPlay iid attrs
+      pure a
+    _ -> TheMoonXIII1 <$> runMessage msg attrs

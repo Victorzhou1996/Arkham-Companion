@@ -1,0 +1,45 @@
+module Arkham.Asset.Assets.OccultLexicon3 (occultLexicon3) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Import.Lifted
+import Arkham.Event.Cards qualified as Events
+import Arkham.Helpers.Investigator (searchBonded)
+import Arkham.Helpers.Window (cardPlayed)
+import Arkham.Matcher
+import Arkham.Matcher qualified as Matcher
+import Arkham.Message.Lifted.Choose
+import Arkham.Modifier
+import Arkham.Strategy
+
+newtype OccultLexicon3 = OccultLexicon3 AssetAttrs
+  deriving anyclass (IsAsset, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+occultLexicon3 :: AssetCard OccultLexicon3
+occultLexicon3 = asset OccultLexicon3 Cards.occultLexicon3
+
+instance HasAbilities OccultLexicon3 where
+  getAbilities (OccultLexicon3 a) =
+    [ restrictedAbility a 1 ControlsThis
+        $ freeReaction
+        $ Matcher.PlayCard #when You (basic $ cardIs Events.bloodRite)
+    , controlled_ a 1 $ forced $ AssetEntersPlay #after (be a)
+    ]
+
+instance RunMessage OccultLexicon3 where
+  runMessage msg a@(OccultLexicon3 attrs) = runQueueT $ case msg of
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      bonded <- take 3 <$> searchBonded iid Events.bloodRite
+      for_ (nonEmpty bonded) \(handBloodRite :| deckBloodRites) -> do
+        addToHand iid (only handBloodRite)
+        shuffleCardsIntoDeck iid deckBloodRites
+      OccultLexicon3 <$> liftRunMessage msg attrs
+    UseCardAbility iid (isSource attrs -> True) 1 (cardPlayed -> card) _ -> do
+      chooseOneM iid do
+        labeled "Change each \"2\" to a \"3\"" do
+          cardResolutionModifier card (attrs.ability 1) card (MetaModifier $ object ["use3" .= True])
+        labeled "Shuffle it into your deck instead of discarding it" do
+          cardResolutionModifier card (attrs.ability 1) card (SetAfterPlay ShuffleThisBackIntoDeck)
+      pure a
+    _ -> OccultLexicon3 <$> liftRunMessage msg attrs

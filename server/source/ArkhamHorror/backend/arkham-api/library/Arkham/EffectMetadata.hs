@@ -1,0 +1,52 @@
+{-# OPTIONS_GHC -O0 -fomit-interface-pragmas -fno-specialise #-}
+
+module Arkham.EffectMetadata (
+  EffectMetadata (..),
+  effectInt,
+  effectAbility,
+  effectMetaTarget,
+) where
+
+import Arkham.Ability.Types
+import Arkham.Card.CardCode
+import Arkham.Id
+import Arkham.Modifier
+import Arkham.Prelude
+import Arkham.SkillType
+import Arkham.Target
+import GHC.Records
+
+data EffectMetadata a
+  = EffectInt Int
+  | EffectMessages [a]
+  | EffectModifiers [Modifier]
+  | EffectCardCodes [CardCode]
+  | EffectMetaTarget Target
+  | EffectMetaSkill SkillType
+  | EffectAbility Ability
+  | EffectCost ActiveCostId
+  | EffectText Text
+  deriving stock (Ord, Eq, Show, Generic, Data)
+  deriving anyclass (ToJSON, FromJSON)
+
+effectAbility :: Ability -> Maybe (EffectMetadata a)
+effectAbility = Just . EffectAbility
+
+effectInt :: Int -> Maybe (EffectMetadata a)
+effectInt = Just . EffectInt
+
+effectMetaTarget :: Targetable target => target -> Maybe (EffectMetadata a)
+effectMetaTarget = Just . EffectMetaTarget . toTarget
+
+instance HasField "int" (EffectMetadata a) (Maybe Int) where
+  getField (EffectInt n) = Just n
+  getField _ = Nothing
+
+instance HasField "skill" (EffectMetadata a) (Maybe SkillType) where
+  getField (EffectMetaSkill n) = Just n
+  getField _ = Nothing
+
+instance HasField "skill" (Maybe (EffectMetadata a)) (Maybe SkillType) where
+  getField (Just meta) = meta.skill
+  getField _ = Nothing
+

@@ -1,0 +1,46 @@
+{
+  "background_color": "#2e3440",
+  "display": "standalone",
+  "categories": ["games", "utilities"],
+  "description": "Deck builder for Arkham Horror: The Card Game™",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "id": "https://arkham.build",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "name": "arkham.build",
+  "orientation": "natural",
+  "scope": "/",
+  "short_name": "arkham.build",
+  "shortcuts": [
+    {
+      "name": "Browse cards",
+      "url": "/"
+    },
+    {
+      "name": "Create a deck",
+      "url": "/deck/create"
+    },
+    {
+      "name": "Search deck guides",
+      "url": "/decklists"
+    },
+    {
+      "name": "Rules",
+      "url": "/rules"
+    }
+  ],
+  "start_url": "/",
+  "theme_color": "#2e3440"
+}

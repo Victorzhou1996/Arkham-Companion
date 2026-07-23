@@ -1,0 +1,22 @@
+[Unit]
+Description=Arkham Horror Online API additions
+After=network-online.target arkham-horror.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=arkham
+Group=arkham
+WorkingDirectory=/opt/arkham-horror/online-api
+EnvironmentFile=/etc/arkham-online-api.env
+ExecStart=/opt/arkham-horror/online-api/venv/bin/python /opt/arkham-horror/online-api/online_api.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/arkham-horror
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,76 @@
+/health HealthR GET
+/error ErrorR GET
+/api ApiP:
+  /v1 ApiV1P:
+    /authenticate ApiV1AuthenticationR POST
+    /register ApiV1RegistrationR POST
+    /password-reset ApiV1PasswordResetP:
+      / ApiV1PasswordResetsR POST
+      /#PasswordResetId ApiV1PasswordResetR PUT
+    /whoami ApiV1CurrentUserR GET
+    /settings ApiV1SettingsR PUT
+    /account ApiV1AccountR DELETE
+    /site-settings ApiV1SiteSettingsR GET
+    /notifications ApiV1NotificationsR GET
+    /arkham ApiV1ArkhamP:
+      /cards ApiV1ArkhamCardsR GET
+      /card/#CardCode ApiV1ArkhamCardR GET
+      /investigators ApiV1ArkhamInvestigatorsR GET
+      /decks ApiV1ArkhamDecksP:
+        / ApiV1ArkhamDecksR GET POST
+        !/fetch ApiV1ArkhamDecksFetchR POST
+        !/validate ApiV1ArkhamDecksValidateR POST
+        /#ArkhamDeckId ApiV1ArkhamDeckP:
+          / ApiV1ArkhamDeckR GET DELETE
+          /sync ApiV1ArkhamSyncDeckR POST
+      /games ApiV1ArkhamGamesP:
+        / ApiV1ArkhamGamesR GET POST
+        !/import ApiV1ArkhamGamesImportR POST
+        !/fix ApiV1ArkhamGamesFixR POST
+        !/reload ApiV1ArkhamGamesReloadR GET
+        !/old ApiV1ArkhamGamesOldR GET
+        /#ArkhamGameId ApiV1ArkhamGameP:
+          / ApiV1ArkhamGameR GET PUT DELETE
+          /raw ApiV1ArkhamGameRawR PUT
+          /join ApiV1ArkhamPendingGameR GET PUT
+          /replay/#Int ApiV1ArkhamGameReplayR GET
+          /decks ApiV1ArkhamGameDecksR PUT
+          /undo ApiV1ArkhamGameUndoR PUT
+          /undo/scenario ApiV1ArkhamGameUndoScenarioR PUT
+          /undo/action ApiV1ArkhamGameUndoActionR PUT
+          /undo/turn ApiV1ArkhamGameUndoTurnR PUT
+          /undo/phase ApiV1ArkhamGameUndoPhaseR PUT
+          /undo/round ApiV1ArkhamGameUndoRoundR PUT
+          /file-bug ApiV1ArkhamGameBugR POST
+          /spectate ApiV1ArkhamGameSpectateR GET
+          /export ApiV1ArkhamGameExportR GET
+          /full-export ApiV1ArkhamGameFullExportR GET
+          /scenario-export ApiV1ArkhamGameScenarioExportR GET
+          /reload ApiV1ArkhamGameReloadR GET
+          /playability ApiV1ArkhamGamePlayabilityR POST
+          /open-seats ApiV1ArkhamGameOpenSeatsR GET
+          /ai-questions ApiV1ArkhamGameAiQuestionsR GET
+          /claim-seat ApiV1ArkhamGameClaimSeatR POST
+      /events ApiV1ArkhamEventsP:
+        / ApiV1ArkhamEventsR GET POST
+        /#ArkhamEpicEventId ApiV1ArkhamEventP:
+          / ApiV1ArkhamEventR GET DELETE
+          !/counter ApiV1ArkhamEventCounterR POST
+          !/time-up ApiV1ArkhamEventTimeUpR POST
+          !/ready ApiV1ArkhamEventReadyR POST
+          !/resolve-advance ApiV1ArkhamEventResolveAdvanceR POST
+    /admin AdminP:
+      / ApiV1AdminR GET
+      /stats ApiV1AdminStatsR GET
+      /metrics ApiV1AdminMetricsR GET DELETE
+      /rooms ApiV1AdminRoomsP:
+        / ApiV1AdminRoomsR GET
+        /#ArkhamGameId ApiV1AdminRoomP:
+          / ApiV1AdminRoomR DELETE
+      /games ApiV1AdminGamesP:
+        / ApiV1AdminGamesR GET
+        !/active ApiV1AdminActiveGamesR GET
+        !/find/#ArkhamPlayerId ApiV1AdminFindGameR GET
+        /#ArkhamGameId ApiV1AdminGameP:
+          / ApiV1AdminGameR GET PUT
+          /raw ApiV1AdminGameRawR PUT

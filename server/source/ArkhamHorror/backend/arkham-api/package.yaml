@@ -1,0 +1,188 @@
+name:    arkham-api
+version: "0.0.0"
+language: GHC2021
+
+extra-source-files:
+- digital-ocean.crt
+
+default-extensions:
+- AllowAmbiguousTypes
+- BlockArguments
+- DataKinds
+- DeriveAnyClass
+- DerivingStrategies
+- DerivingVia
+- ExtendedDefaultRules
+- FunctionalDependencies
+- GADTs
+- LambdaCase
+- MultiWayIf
+- NoImplicitPrelude
+- NoMonomorphismRestriction
+- OverloadedLabels
+- OverloadedRecordDot
+- OverloadedStrings
+- PatternSynonyms
+- RecordWildCards
+- StrictData
+- TypeFamilies
+- TypeFamilyDependencies
+- TypeOperators
+- UndecidableInstances
+- ViewPatterns
+
+build-tools:
+- cards-discover
+
+dependencies:
+  - base
+
+library:
+  source-dirs: library
+  when:
+    - condition: (flag(dev)) || (flag(library-only))
+      then:
+        ghc-options:
+        - -Wall
+        - -fwarn-tabs
+        - -O0
+        cpp-options: -DDEVELOPMENT
+      else:
+        ghc-options:
+        - -Wall
+        - -fwarn-tabs
+        - -O2
+        - +RTS -V0 -RTS
+  dependencies:
+    - MonadRandom
+    - aeson
+    - aeson-casing
+    - aeson-diff
+    - amazonka
+    - amazonka-s3
+    - annotated-exception
+    - async
+    - base16-bytestring
+    - bugsnag
+    - bugsnag-hs
+    - bugsnag-yesod
+    - bcrypt
+    - bytestring
+    - case-insensitive
+    - classy-prelude
+    - conduit
+    - constraints-extras
+    - containers
+    - cryptohash-sha256
+    - crypton-x509-store
+    - data-default-class
+    - dependent-map
+    - dependent-sum
+    - dependent-sum-template
+    - directory
+    - email-validate
+    - errors
+    - esqueleto
+    - exceptions
+    - extra
+    - fast-logger
+    - file-embed
+    - hashable
+    - hedis
+    - hs-opentelemetry-sdk
+    - hs-opentelemetry-instrumentation-wai
+    - http-api-data
+    - http-client-tls
+    - http-conduit
+    - http-types
+    - jose
+    - lens
+    - lens-aeson
+    - mailtrap
+    - monad-logger
+    - monad-time
+    - monoidal-containers
+    - mtl >= 2.3.1
+    - opentelemetry
+    - parsec
+    - path-pieces
+    - persistent
+    - persistent-postgresql
+    - pretty-simple
+    - process
+    - random-shuffle
+    - regex-posix
+    - relude
+    - safe
+    - semialign
+    - some
+    - stm
+    - string-conversions
+    - template-haskell
+    - text
+    - these
+    - these-lens
+    - time
+    - tls
+    - transformers
+    - unix
+    - unliftio
+    - uri-bytestring
+    - uuid
+    - vector
+    - wai
+    - wai-extra
+    - wai-logger
+    - warp
+    - websockets
+    - yaml
+    - yesod-core
+    - yesod-persistent
+    - yesod-test
+    - yesod-websockets
+
+executables:
+  arkham-api:
+    main: main.hs
+    source-dirs: app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+      - foreign-store
+      - warp
+      - arkham-api
+    when:
+      - condition: flag(library-only)
+        buildable: false
+
+flags:
+  library-only:
+    description: Build for use with "yesod devel"
+    manual: false
+    default: false
+  dev:
+    description: Turn on development settings, like auto-reload templates.
+    manual: false
+    default: false
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs: tests
+    ghc-options: -threaded -rtsopts -O0 "-with-rtsopts=-N"
+    dependencies:
+      - arkham-api
+      - async
+      - exceptions
+      - hspec
+      - hspec-expectations-lifted
+      - hs-opentelemetry-api
+      - hs-opentelemetry-sdk
+      - lens
+      - uuid
+      - mtl
+      - random
+      - containers
+      - text

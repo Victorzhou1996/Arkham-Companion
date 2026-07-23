@@ -1,0 +1,4 @@
+data/*
+*.dump-hi
+*.dump-simpl
+tags

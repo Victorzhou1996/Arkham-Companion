@@ -1,0 +1,91 @@
+{
+  "heading": "Scenario IV",
+  "tokens": {
+    "easyStandard": {
+      "skull": "-1. 如果你失败，从放在一边的 _怪物_ 敌人中随机选择1个放在场景牌堆下，不要查看。 (每次检定限制1次。)",
+      "cultist": "-X. 其中X为你身上的恐惧数量。",
+      "tablet": "-X. 其中X等于你所在地点的基础隐藏值。",
+      "elderThing": "0. 从放在一边的 _怪物_ 敌人中随机选择1个放在场景牌堆下，不要查看，或者本次检定自动失败。"
+    },
+    "hardExpert": {
+      "skull": "再抽取一个标记。如果你失败，从放在一边的 _怪物_ 敌人中随机选择1个放在场景牌堆下，不要查看。 (每次检定限制1次。)",
+      "cultist": "-X. 其中X为你身上的恐惧数量。如果你失败，受到1点恐惧。",
+      "tablet": "-X. 其中X等于你所在地点的基础隐藏值。如果你失败，受到1点恐惧。",
+      "elderThing": "0. 从放在一边的 _怪物_ 敌人中随机选择1个放在场景牌堆下，不要查看，或者本次检定自动失败。"
+    }
+  },
+  "remembered": {
+    "setAFireInTheKitchen": "在厨房放了火",
+    "incitedAFightAmongstThePatients": "煽动病人互相攻击",
+    "distractedTheGuards": "分散了守卫的注意力",
+    "releasedADangerousPatient": "释放了一个危险的病人",
+    "knowTheGuardsPatrols": "获知了守卫的巡逻路线",
+    "recalledTheWayOut": "想起了出去的路",
+    "youTookTheKeysByForce": "You took the keys by force"
+  },
+  "intro": {
+    "title": "冒险IV：邪秽誓约",
+    "foundTheWayForward": "Check 冒险日志. *If the followers of the sign have found the way forward*: Read _Intro 1_.",
+    "didNotFindTheWayForward": "否则: 进入_引言2_。",
+    "intro1": "<p>_引言1_: 「丹尼尔，醒醒。」当你穿过一片狼藉的房间，试图厘清方才究竟经历了什么时，一句话忽然在脑海中响起。然后你猛然惊醒，汗水湿透了床单。时间已是下午，尽管睡了足足有八个半小时，感觉却比前一晚更加疲惫。你从梳妆镜中瞥见自己眼圈深浓，满眼血丝，怀疑自己是不是压根就没睡着。</p><p>丹尼尔究竟是谁?你梦中的小房间看似监狱，而那名男子——丹尼尔，似乎精神失常，头脑不听使唤。这只会导出一个推断: 那是疯人院。你知道自己没法在这好好休息，便动身前往阿卡姆疯人院，只愿你的直觉依然准确。</p><p class='basic right'>跳到_引言3_.</p>",
+    "intro2": "<p>_Intro 2_: 在接下来的几天里，你深入钻研你所收集到的证据，希望能够从中找出关于丹尼尔·契斯特菲尔德的信息，他是《黄衣之王》早年演出的一名舞台工作人员。据你所知，他是那场演出的演职人员中唯一的幸存者。而其他的演职人员——所有能在记录中找到的——在演出当晚之后不久便失踪或死亡，他们的遇害形式各不相同，但却都呈现出病态的异常。离奇事故、自杀身亡、凭空消失。</p><p>如果要作进一步的调查，丹尼尔似乎是你唯一的线索了。根据你找到的记录，他在很多年以前就被送进了阿卡姆疯人院。在那之后，关于丹尼尔接受治疗的文档再无下文。你不知道他现在是否还活着。可能他早已痊愈出院，如果真是这样的话你的调查将难上加难，但要找到答案只得一种办法。你收拾行囊，出发前往市中心的阿卡姆疯人院。</p><p class='basic right'>Continue to _Intro 3_.</p>",
+    "intro3": "<p>_Intro 3_: 当你步入疯人院时，你停下脚步与接待员谈话，但你感觉你的身体在驱使着你一步一步迈向疯子的聚居地。你向接待员提到《黄衣之王》和丹尼尔时，他的脸庞上流露出困惑的表情。但是在你的坚持之下，他从档案柜里一番好找，终于找出一个样式简陋的白色文档夹。里面有着病人的许多资料——病例，精神评估报告等等。就在他翻页时，你认出了几张面孔。“丹尼尔……丹尼尔·契斯特菲尔德，对吗？他是在明茨医生的特殊护理下收容入院的。但你不能见他；他当前的级别只允许医院员工进行探视。”你与他争辩起来，坚持要进入病房大楼，因为你坚信丹尼尔掌握着通向真相的门匙，找到他你才能明白这一切。</p><p>接待员怜悯地笑笑，态度变得缓和，他向旁边的警卫点了点头。“噢，当然，当然，”他带有街头小贩般恳切的口气。“我会安排你与明茨医生会面，到时你就可以问他有关丹尼尔的事情了。这几位先生会领你进去的。”你马上就会得到你所追寻的答案，不由得放下心来，在护送之下走进了阿卡姆疯人院的病房大楼。</p>",
+    "proceedToConstancesInformation": "前往_康丝坦丝提供的资讯_。",
+    "otherwise": "否则，跳到_设置_。",
+    "constancesInformation": "<p>_康斯坦丝提供的资讯_: 你回想起康斯坦丝在她那地狱般的宴会上透露的事。导演奈杰尔·英格兰姆，曾要求她和其他剧组人员进行某种宣誓。起初，她将这看作是乖僻艺术家的心血来潮，想透过这奇怪的仪式加强剧组之间的情谊促使大家团结起来。她声称这确实有效，值得对导演褒奖几句。自从宣读那段怪异誓言之后，她与整个剧团都感到更加自信、更有活力。或许丹尼尔在上一次《黄衣之王》演出中也有相同经历，你得跟他谈谈这事。</p><ul><li>所有调查员将其牌库顶的1张卡牌置于各自游戏区域，正面朝下，不要偷看。将此卡视为1张费用为0、神智值为2且无图标的胆量支持卡。当此卡以任何理由离场，将它弃掉。</li></ul><div class='basic right'>前往_设置_。</div>"
+  },
+  "setup": {
+    "gatherSets": "收齐下列遭遇组所有卡牌: *邪秽誓约*、*哈斯塔的魄赠*、*卡尔克萨居民*、*妄想*、*衰败与污秽*、*哈斯塔的使徒*。这些遭遇组的图示为:<section class='encounter-sets'><img src='{setImgPath}/the-unspeakable-oath.png' /><img src='{setImgPath}/hasturs-gift.png' /><img src='{setImgPath}/inhabitants-of-carcosa.png' /><img src='{setImgPath}/delusions.png' /><img src='{setImgPath}/decay-and-filth.png' /><img src='{setImgPath}/agents-of-hastur.png' /></section>",
+    "monsters": "将所有的_怪物_敌人卡和刚才找出的遭遇组放作一堆，置于一旁备用(总共应有7张怪物敌人)。",
+    "lunatics": "将所有的_狂人_敌人卡和刚才找出的遭遇组放作一堆，置于一旁备用(总共应有7张狂人敌人)。",
+    "chooseLocations": "随机选择1张疯人院大厅(*东区病房*)和1张疯人院大厅(*西区病房*)移出游戏，再把剩余的疯人院大厅放置入场。每位调查员任意选择一个疯人院大厅开始游戏。",
+    "setAside": "将下列卡牌放在一边，位于场外：丹尼尔·契斯特菲尔德，以及所有的病人拘禁室。",
+    "placeLocations": "将以下地点放置入场: 食堂、厨房、后院、花园、医务室、地下室走廊(下页有建议位置)。",
+    "adjustChaosBag": "根据当前游戏难度，在混乱袋加入1个下列标记，直到剧本结束:<div class='columns'><ul><li>_简单_: -2</li><li>_普通_: -3</li></ul><ul><li>_困难_: -4</li><li>_专家_: -5</li></ul></div>",
+    "act2": {
+      "instructions": "Check 冒险日志. Depending on the following circumstances, a different version of Act 2 should be used in this scenario. Each other version of Act 2 is removed from the game.",
+      "v1": "如果「取得黑玛瑙扣环」，使用场景2-真正可怕的人(版本一)。",
+      "v2": "否则，使用场景2-真正可怕的人(版本二)。"
+    }
+  },
+  "tooltips": {
+    "noAsylum": {
+      "resign": "终于，找到出口了！"
+    }
+  },
+  "label": {
+    "cloudedMemory": {
+      "forget": "Forget something an investigator has \"remembered\" from an ability on a location. (It is no longer true.)",
+      "chooseForget": "Forget something an investigator has \"remembered\" from an ability on a location. (It is no longer true.)",
+      "horror": "Take 1 horror and Clouded Memory gains surge."
+    },
+    "infirmary": {
+      "healDamage": "治疗1点伤害并受到1点直接恐惧",
+      "healHorror": "治疗1点恐惧并受到1点直接伤害"
+    },
+    "wallsClosingIn": {
+      "chooseEnemy": "从放在一边的怪物敌人中随机选择1个放在场景牌堆下，不要查看。"
+    },
+    "arkhamAsylum": {
+      "youKnockHerOverAndGrabTheKeys": "强行夺走了钥匙"
+    }
+  },
+  "resolutions": {
+    "defeated": {
+      "title": "调查员被击败",
+      "body": "<div class='resolution'><p class='basic'>_Before resolving any other resolution, if at least 1 investigator was defeated_: The defeated investigators read _Investigator Defeat_ first.</p><p>_Investigator Defeat_: “明茨医生，病人吃过药了，现在随时可以开始面诊。”海瑟护士翻开隔壁桌上的文档，看了一下那个病人的病历。</p><p> “病人病情有变化吗？”明茨医生用一成不变的声音问道。这纯粹只是形式，他们二人都知道这个病人是治不好的。</p><p>“None. The patient’s delusions remain. Demanding to speak with the Warden, claiming they are only guests, and rambling about that play that aired the other night, The King in Yellow.”</p><p>“还说了其他罪行吗？剧院发生的事件？大西洋街1452号的呢？”</p><p>“病人认为自己遭到袭击并且作出了自卫。”她的声音充满了怜悯。是什么能导致人作出如此迅猛的撕咬动作？这个病人从来没有精神不稳定的病史。“您有头绪吗，医生？”</p><p>“没有。”明茨医生叹气并站起身，拿起桌上的文档。“我的职责是治病，而不是去搞懂病人的想法。或许我的实验疗法会对这种病情有所帮助。”护士的身体不由得退缩，她感觉到手臂上冒出了鸡皮疙瘩。她非常清楚医生所说的疗法是什么，并且十分怀疑那种疗法是否能起到任何的作用。</p><ul><li>Each investigator who was defeated is driven _insane_.</li><li>If there are not enough investigators to continue the campaign, the campaign is over and the players lose.</li><li>If another resolution was reached, the remaining investigators proceed to that resolution.</li><li>If no resolution was reached (each investigator was defeated): Go to _Resolution 1_.</li></ul></div>"
+    },
+    "resolution1": {
+      "title": "结局1",
+      "body": "<div class='resolution'><p>_Resolution 1_: ……围绕着《黄衣之王》的一切疯狂都到此为止。</p><ul><li>In your 冒险日志, record that *the King claimed its victims*.</li><li>If there are not enough investigators to continue the campaign, the campaign is over and the players lose. Otherwise, the campaign continues. (Each player whose investigator has been driven insane must choose a new investigator from the pool of available investigators.)</li><li>Check 冒险日志. *If you took the onyx clasp*, choose a new investigator to take the clasp. That investigator must include the Clasp of Black Onyx weakness in their deck. This card does not count toward that investigator’s deck size.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>If Constance Dumaine (*A Little Too Sociable*) is in the victory display, record her name in your 冒险日志, under “贵宾遇害.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}cultist{'}'} tokens to the chaos bag.</li><li>Skip _幕间故事II：失魂落魄_ and proceed directly to _冒险V：真相幻影_.</li></ul></div>"
+    },
+    "resolution2": {
+      "title": "结局2",
+      "body": "<div class='resolution'><p>_Resolution 2 (each defeated investigator should resolve Investigator Defeat first)_: 一群护工和警卫围在你面前，阻止你逃走。面对众人的围困与步步紧逼，你除了强行突围之外别无选择。正当你拼尽全力要逃跑时，附近有一些病人趁机暴怒地攻击警卫。海瑟护士尖叫着跑开了，在这场骚乱中你得以逃出重围，遍体鳞伤的你终于重获自由。你身上的伤需要一段时间才能痊愈，但你现在顾不上了。</p><ul><li>In your 冒险日志, record that *the investigators were attacked as they escaped the Asylum*.</li><li>每位调查员承受由疯人院警卫造成的1点肉体创伤。</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>If Constance Dumaine (*A Little Too Sociable*) is in the victory display, record her name in your 冒险日志, under “贵宾遇害.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}tablet{'}'} tokens to the chaos bag.</li><li>Proceed to _幕间故事II：失魂落魄_.</li></ul></div>"
+    },
+    "resolution3": {
+      "title": "结局3",
+      "body": "<div class='resolution'><p>_Resolution 3 (each defeated investigator should resolve Investigator Defeat first)_: 这时医院职工人心惶惶，病人四处逃窜，没人注意你逃离了此地。你逃到疯人院的花园深处，面前是两层楼高的带刺铁丝网栅栏，将你与外界分隔开来。你没时间了，必须赶紧逃离疯人院，否则守卫返回此地就会发现你。你把从病院找到的拘束衣盖在铁丝网上，飞快地爬上栅栏，跑到栅栏的另一边。</p><ul><li>In your 冒险日志, record that *the investigators escaped the Asylum*.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display.<ul><li>_Experience_: {xp}</li></ul></li><li>If Constance Dumaine (*A Little Too Sociable*) is in the victory display, record her name in your 冒险日志, under “贵宾遇害.”</li><li>Remove all {'{'}cultist{'}'}, {'{'}tablet{'}'}, and {'{'}elderThing{'}'} tokens from the chaos bag. Then, add 2 {'{'}elderThing{'}'} tokens to the chaos bag.</li><li>Proceed to _幕间故事II：失魂落魄_.</li></ul></div>"
+    }
+  }
+}

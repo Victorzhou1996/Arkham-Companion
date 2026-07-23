@@ -1,0 +1,102 @@
+module Arkham.Location.Import.Lifted (module X, module Arkham.Location.Import.Lifted) where
+
+import Arkham.Calculation as X
+import Arkham.Classes as X
+import Arkham.GameValue as X
+import Arkham.Helpers.Message as X (pattern R1, pattern R2)
+import Arkham.Helpers.Modifiers as X (toModifiers)
+import Arkham.Id as X
+import Arkham.Location.Helpers as X (adjacentLocations, connectsToAdjacent)
+import Arkham.Location.Runner as X (
+  IsLocation,
+  LocationAttrs (..),
+  LocationCard,
+  Message (..),
+  canBeFlippedL,
+  cardsUnderneathL,
+  connectedMatchersL,
+  connectsToL,
+  costToEnterUnrevealedL,
+  extendRevealed,
+  extendRevealed1,
+  extendUnrevealed,
+  extendUnrevealed1,
+  floodLevelL,
+  getLeadPlayer,
+  getLocationMetaDefault,
+  getSetAsideCard,
+  globalMetaL,
+  investigateSkillL,
+  is,
+  labelL,
+  location,
+  locationResignAction,
+  locationWith,
+  push,
+  pushAll,
+  revealedConnectedMatchersL,
+  setConnectsTo,
+  setLabel,
+  setMeta,
+  shroudL,
+  symbolLabel,
+  tokensL,
+  veiled,
+  veiled1,
+  withDrawCardUnderneathAction,
+  withResignAction,
+  pattern FailedThisSkillTest,
+  pattern FailedThisSkillTestBy,
+  pattern FlipThis,
+  pattern PassedThisSkillTest,
+  pattern PassedThisSkillTestBy,
+  pattern PlaceDoom,
+  pattern UseThisAbility,
+ )
+import Arkham.Message.Lifted as X
+import Arkham.Prelude as X
+import Arkham.Question as X
+import Arkham.SkillTest.Base as X (SkillTestDifficulty (..))
+import Arkham.Source as X
+import Arkham.Target as X
+
+import Arkham.Classes.HasGame
+import Arkham.Helpers.Modifiers
+import Arkham.Matcher
+import Arkham.Modifier
+import Arkham.Tracing
+import Control.Monad.Writer.Class
+import Data.Map.Monoidal.Strict
+
+whenRevealed :: HasGame m => LocationAttrs -> m () -> m ()
+whenRevealed attrs body = when attrs.revealed body
+
+whenUnrevealed :: HasGame m => LocationAttrs -> m () -> m ()
+whenUnrevealed attrs body = when attrs.unrevealed body
+
+blockedWhenUnrevealed
+  :: (HasGame m, Tracing m, MonadWriter (MonoidalMap Target [Modifier]) m) => LocationAttrs -> m ()
+blockedWhenUnrevealed attrs = whenUnrevealed attrs $ modifySelf attrs [Blocked]
+
+blockedWhen
+  :: (HasGame m, Tracing m, MonadWriter (MonoidalMap Target [Modifier]) m)
+  => LocationAttrs -> m Bool -> m ()
+blockedWhen attrs body = do
+  cond <- body
+  when cond $ modifySelf attrs [Blocked]
+
+blockedUnless
+  :: (HasGame m, Tracing m, MonadWriter (MonoidalMap Target [Modifier]) m) => LocationAttrs -> m Bool -> m ()
+blockedUnless attrs body = blockedWhen attrs (not <$> body)
+
+blockedWhenAny
+  :: (Query query, HasGame m, Tracing m, MonadWriter (MonoidalMap Target [Modifier]) m)
+  => LocationAttrs
+  -> query
+  -> m ()
+blockedWhenAny attrs query = blockedWhen attrs (selectAny query)
+
+hereGets
+  :: (HasGame m, Tracing m, MonadWriter (MonoidalMap Target [Modifier]) m)
+  => LocationAttrs -> [ModifierType] -> m ()
+hereGets a mods = modifySelect a (investigatorAt a) mods

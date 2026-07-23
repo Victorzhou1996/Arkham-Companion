@@ -1,0 +1,832 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
+module Arkham.Scenario (module Arkham.Scenario) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Assets
+import Arkham.Card
+import Arkham.ChaosToken
+import Arkham.Classes
+import Arkham.Classes.HasGame
+import Arkham.Damage
+import Arkham.Deck qualified as Deck
+import Arkham.Difficulty
+import Arkham.EncounterSet (EncounterSet)
+import Arkham.EncounterSet qualified as EncounterSet
+import {-# SOURCE #-} Arkham.GameEnv
+import Arkham.Helpers.ChaosBag
+import Arkham.Helpers.Cost
+import Arkham.Helpers.Investigator qualified as Helpers
+import Arkham.Helpers.Modifiers
+import Arkham.Helpers.Playable
+import Arkham.Helpers.Query
+import Arkham.Helpers.Scenario
+import Arkham.Helpers.SkillTest
+import Arkham.Helpers.Tarot
+import Arkham.Helpers.Window (checkWindows)
+import Arkham.History
+import Arkham.Id
+import Arkham.Investigator.Types qualified as Field
+import Arkham.Matcher qualified as Matcher
+import Arkham.Message
+import Arkham.Message.Lifted qualified as Lifted
+import Arkham.Modifier
+import Arkham.Name
+import Arkham.Prelude
+import Arkham.Projection
+import Arkham.Scenario.Runner
+import Arkham.Scenario.Scenarios
+import Arkham.Slot
+import Arkham.Tarot
+import Arkham.Tracing
+import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Window (duringTurnWindow, mkWhen)
+import Arkham.Window qualified as Window
+import Data.Map.Strict qualified as Map
+
+instance FromJSON Scenario where
+  parseJSON = withObject "Scenario" $ \o -> do
+    cCode <- o .: "id"
+    case lookup cCode allScenarios of
+      Nothing -> error $ "Unknown scenario: " <> show cCode
+      Just (SomeScenario (_ :: Difficulty -> a)) ->
+        Scenario <$> parseJSON @a (Object o)
+
+instance HasAbilities Scenario where
+  getAbilities (Scenario x) = concatMap getAbilities $ concat $ toList (attr scenarioTarotCards x)
+
+fromTarot :: TarotCard -> SourceableWithCardCode
+fromTarot t = SourceableWithCardCode (CardCode $ tshow t.arcana) (TarotSource t)
+
+instance HasAbilities TarotCard where
+  getAbilities c@(TarotCard facing arcana) = case arcana of
+    TheLoversVI -> [restricted (fromTarot c) 1 AffectedByTarot $ forced (Matcher.GameBegins #when)]
+    StrengthVIII | facing == Upright -> do
+      [restricted (fromTarot c) 1 AffectedByTarot $ forced (Matcher.GameBegins #when)]
+    WheelOfFortuneX -> case facing of
+      Upright ->
+        [ restricted (fromTarot c) 1 (AffectedByTarot <> ActExists Matcher.ActCanWheelOfFortuneX)
+            $ freeReaction (Matcher.RevealChaosToken #when Matcher.You #autofail)
+        ]
+      Reversed ->
+        [ restricted
+            (fromTarot c)
+            1
+            (AffectedByTarot <> AgendaExists Matcher.AgendaCanWheelOfFortuneX)
+            $ forced (Matcher.RevealChaosToken #when Matcher.You #eldersign)
+        ]
+    JusticeXI -> case facing of
+      Upright ->
+        [ groupLimit PerGame
+            $ restricted (fromTarot c) 1 AffectedByTarot
+            $ forced
+            $ Matcher.WouldPlaceDoomCounter
+              #when
+              Matcher.AnySource
+              (Matcher.AgendaTargetMatches Matcher.FinalAgenda)
+        ]
+      Reversed ->
+        [ restricted (fromTarot c) 1 AffectedByTarot
+            $ forced (Matcher.AgendaEntersPlay #when Matcher.FinalAgenda)
+        ]
+    TheDevilXV -> [restricted (fromTarot c) 1 AffectedByTarot $ forced (Matcher.GameBegins #when)]
+    TheTowerXVI -> do
+      -- This is handled by SetupInvestigators below
+      [restricted (fromTarot c) 1 AffectedByTarot $ forced Matcher.NotAnyWindow]
+    TheStarXVII -> case facing of
+      Upright ->
+        [ restricted
+            (fromTarot c)
+            1
+            ( AffectedByTarot
+                <> DuringSkillTest Matcher.AnySkillTest
+                <> exists
+                  ( Matcher.AnyInvestigator
+                      [ Matcher.HealableInvestigator (TarotSource c) DamageType Matcher.You
+                      , Matcher.HealableInvestigator (TarotSource c) HorrorType Matcher.You
+                      ]
+                  )
+            )
+            $ forced (Matcher.RevealChaosToken #when Matcher.You #eldersign)
+        ]
+      Reversed ->
+        [ restricted (fromTarot c) 1 (AffectedByTarot <> DuringSkillTest Matcher.AnySkillTest)
+            $ forced (Matcher.RevealChaosToken #when Matcher.You #autofail)
+        ]
+    TheMoonXVIII -> case facing of
+      Upright ->
+        [ playerLimit PerGame
+            $ restricted (fromTarot c) 1 AffectedByTarot
+            $ forced (Matcher.DeckWouldRunOutOfCards #when Matcher.You)
+        ]
+      Reversed -> [restricted (fromTarot c) 1 AffectedByTarot $ forced (Matcher.GameBegins #when)]
+    JudgementXX -> [restricted (fromTarot c) 1 AffectedByTarot $ forced (Matcher.GameBegins #when)]
+    TheWorldXXI -> [restricted (fromTarot c) 1 AffectedByTarot $ forced (Matcher.GameEnds #when)]
+    _ -> []
+
+tarotInvestigator :: (HasGame m, Tracing m) => TarotCard -> m (Maybe InvestigatorId)
+tarotInvestigator card = do
+  tarotCards <- Map.assocs <$> scenarioField ScenarioTarotCards
+  pure $ case find (\(_, vs) -> card `elem` vs) tarotCards of
+    Nothing -> Nothing
+    Just (InvestigatorTarot iid, _) -> Just iid
+    Just (GlobalTarot, _) -> Nothing
+
+instance HasModifiersFor TarotCard where
+  getModifiersFor c@(TarotCard facing arcana) = do
+    let source = TarotSource c
+    case arcana of
+      TheFool0 -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        isDefeated <- lift $ iid <=~> Matcher.DefeatedInvestigator
+        pure
+          $ case facing of
+            Upright -> [XPModifier "The Fool 0" 2 | not isDefeated]
+            Reversed -> [XPModifier "The Fool 0" (-2) | isDefeated]
+      TheMagicianI -> modifySelectMaybeWith source Matcher.Anyone setActiveDuringSetup \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        firstTurn <- lift $ scenarioFieldMap ScenarioTurn (== 1)
+        pure
+          $ case facing of
+            Upright -> [StartingResources 3]
+            Reversed -> StartingResources (-3) : [CannotGainResources | firstTurn]
+      TheHighPriestessII -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        history <- lift $ getHistory TurnHistory iid
+        currentSkillTypes <- lift getSkillTestSkillTypes
+        let
+          skillTypes = concatMap fst $ historySkillTestsPerformed history
+        guard $ #intellect `notElem` skillTypes && #intellect `elem` currentSkillTypes
+        pure
+          $ case facing of
+            Upright -> [SkillModifier #intellect 1]
+            Reversed -> [SkillModifier #intellect (-1)]
+      TheEmpressIII -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        history <- lift $ getHistory TurnHistory iid
+        currentSkillTypes <- lift getSkillTestSkillTypes
+        let
+          skillTypes = concatMap fst $ historySkillTestsPerformed history
+        guard $ #agility `notElem` skillTypes && #agility `elem` currentSkillTypes
+        pure
+          $ case facing of
+            Upright -> [SkillModifier #agility 1]
+            Reversed -> [SkillModifier #agility (-1)]
+      TheEmperorIV -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        history <- lift $ getHistory TurnHistory iid
+        currentSkillTypes <- lift getSkillTestSkillTypes
+        let
+          skillTypes = concatMap fst $ historySkillTestsPerformed history
+        guard $ #combat `notElem` skillTypes && #combat `elem` currentSkillTypes
+        pure
+          $ case facing of
+            Upright -> [SkillModifier #combat 1]
+            Reversed -> [SkillModifier #combat (-1)]
+      TheHierophantV -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        history <- lift $ getHistory TurnHistory iid
+        currentSkillTypes <- lift getSkillTestSkillTypes
+        let
+          skillTypes = concatMap fst $ historySkillTestsPerformed history
+        guard $ #willpower `notElem` skillTypes && #willpower `elem` currentSkillTypes
+        pure
+          $ case facing of
+            Upright -> [SkillModifier #willpower 1]
+            Reversed -> [SkillModifier #willpower (-1)]
+      TheLoversVI -> pure mempty
+      TheChariotVII -> modifySelectMaybeWith source Matcher.Anyone setActiveDuringSetup \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        firstTurn <- lift $ scenarioFieldMap ScenarioTurn (== 1)
+        pure
+          $ case facing of
+            Upright -> [StartingHand 2]
+            Reversed -> StartingHand (-2) : [CannotDrawCards | firstTurn]
+      StrengthVIII ->
+        case facing of
+          Upright -> pure mempty
+          Reversed -> modifySelectMaybe source Matcher.Anyone \iid -> do
+            liftGuardM $ affectedByTarot iid c
+            liftGuardM $ scenarioFieldMap ScenarioTurn (== 1)
+            pure [CannotPlay #asset]
+      TheHermitIX -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        pure
+          $ case facing of
+            Upright -> [HandSize 3]
+            Reversed -> [HandSize (-3)]
+      WheelOfFortuneX -> pure mempty
+      JusticeXI -> pure mempty
+      TheHangedManXII -> modifySelectMaybeWith source Matcher.Anyone setActiveDuringSetup \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        pure
+          $ case facing of
+            Upright -> [Mulligans 2]
+            Reversed -> [CannotMulligan, CannotReplaceWeaknesses]
+      DeathXIII -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        pure
+          $ case facing of
+            Upright -> [HealthModifier 1]
+            Reversed -> [HealthModifier (-1)]
+      TemperanceXIV -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        pure
+          $ case facing of
+            Upright -> [SanityModifier 1]
+            Reversed -> [SanityModifier (-1)]
+      TheDevilXV -> pure mempty
+      TheTowerXVI -> pure mempty
+      TheStarXVII -> pure mempty
+      TheMoonXVIII -> pure mempty
+      TheSunXIX -> modifySelectMaybe source Matcher.Anyone \iid -> do
+        liftGuardM $ affectedByTarot iid c
+        liftGuardM $ scenarioFieldMap ScenarioTurn (== 1)
+        pure
+          $ case facing of
+            Upright -> [AdditionalActions "THE SUN · XIX" source 2]
+            Reversed -> [FewerActions 2]
+      JudgementXX -> pure mempty
+      TheWorldXXI -> pure mempty
+
+instance HasModifiersFor Scenario where
+  getModifiersFor (Scenario a) = do
+    getModifiersFor a
+    traverse_ getModifiersFor (concat . toList $ attr scenarioTarotCards a)
+
+isTarotSource :: Ability -> Bool
+isTarotSource ab = case ab.source of
+  TarotSource _ -> True
+  _ -> False
+
+instance RunMessage Scenario where
+  runMessage msg x@(Scenario s) =
+    withSpan_ ("Scenario[" <> unCardCode (unScenarioId x.id) <> "].runMessage") do
+      case msg of
+        UseThisAbility _ source@(TarotSource card@(TarotCard facing TheLoversVI)) 1 -> do
+          investigators <- filterM (`affectedByTarot` card) =<< getInvestigators
+          pushAll
+            [ search iid source iid [fromDeck] (#asset <> #ally)
+                $ if facing == Upright then DrawFound iid 1 else RemoveFoundFromGame iid 1
+            | iid <- investigators
+            ]
+          pure x
+        UseThisAbility _ source@(TarotSource card@(TarotCard Upright StrengthVIII)) 1 -> do
+          investigators <- filterM (`affectedByTarot` card) =<< getInvestigators
+          msgs <- forMaybeM investigators $ \investigator -> do
+            results <-
+              select (Matcher.InHandOf Matcher.ForPlay (Matcher.InvestigatorWithId investigator) <> #asset)
+            resources <- getSpendableResources investigator
+            cards <-
+              filterM
+                ( getIsPlayableWithResources
+                    investigator
+                    source
+                    (resources + 2)
+                    (UnpaidCost NoAction)
+                    [duringTurnWindow investigator]
+                )
+                results
+            player <- getPlayer investigator
+            choices <- for cards \c -> do
+              enabled <- costModifier source investigator (ReduceCostOf (Matcher.CardWithId $ toCardId c) 2)
+              pure $ targetLabel c [enabled, PayCardCost investigator c [duringTurnWindow investigator]]
+
+            pure $ Just $ chooseOne player $ Label "Do not play asset" [] : choices
+          pushAll msgs
+          pure x
+        UseAbility _ (isTarotSource -> True) _ -> do
+          push $ Do msg
+          pure x
+        UseCardAbility _ source@(TarotSource card@(TarotCard facing JusticeXI)) 1 ws _ -> do
+          case facing of
+            Upright -> do
+              let
+                getDoomTarget [] = error "wrong window"
+                getDoomTarget ((Window.windowType -> Window.WouldPlaceDoom _ doomTarget _) : _) = doomTarget
+                getDoomTarget (_ : xs) = getDoomTarget xs
+                target = getDoomTarget ws
+              cancelDoom target 1
+            Reversed -> do
+              mInvestigator <- tarotInvestigator card
+              lead <- getLead
+              let investigator = fromMaybe lead mInvestigator
+              player <- getPlayer investigator
+
+              agendas <- select Matcher.AnyAgenda
+              push
+                $ chooseOrRunOne
+                  player
+                  [targetLabel agenda [PlaceDoom source (toTarget agenda) 1] | agenda <- agendas]
+          -- cancelDoom 1
+          pure x
+        UseThisAbility _ source@(TarotSource card@(TarotCard facing TheDevilXV)) 1 -> do
+          investigatorPlayers <- filterM ((`affectedByTarot` card) . fst) =<< getInvestigatorPlayers
+          case facing of
+            Upright -> do
+              pushAll
+                [ chooseOne
+                    player
+                    [ Label ("Add " <> slotName slotType <> " Slot") [AddSlot investigator slotType (Slot source [])]
+                    | slotType <- allSlotTypes
+                    ]
+                | (investigator, player) <- investigatorPlayers
+                ]
+            Reversed -> do
+              for_ investigatorPlayers $ \(investigator, player) -> do
+                slotTypes <- keys . filterMap notNull <$> field Field.InvestigatorSlots investigator
+                pushWhen (notNull slotTypes)
+                  $ chooseN
+                    player
+                    (min 3 $ length slotTypes)
+                    [ Label ("Remove " <> slotName slotType <> " Slot") [RemoveSlot investigator slotType]
+                    | slotType <- slotTypes
+                    ]
+          pure x
+        UseThisAbility _ source@(TarotSource card@(TarotCard facing TheTowerXVI)) 1 -> do
+          investigators <- filterM (`affectedByTarot` card) =<< getInvestigators
+          case facing of
+            Upright ->
+              pushAll
+                [ search
+                    iid
+                    source
+                    iid
+                    [fromDeck]
+                    (Matcher.basic $ Matcher.CardWithSubType BasicWeakness)
+                    (RemoveFoundFromGame iid 1)
+                | iid <- investigators
+                ]
+            Reversed ->
+              for_ investigators $ \investigator ->
+                push
+                  $ SearchCollectionForRandom investigator source
+                  $ Matcher.BasicWeaknessCard
+          pure x
+        RequestedPlayerCard iid (TarotSource (TarotCard Reversed TheTowerXVI)) (Just c) _ -> do
+          card <- setOwner iid (toCard c)
+          push $ ShuffleCardsIntoDeck (Deck.InvestigatorDeck iid) [card]
+          pure x
+        UseThisAbility iid source@(TarotSource (TarotCard facing TheStarXVII)) 1 -> do
+          player <- getPlayer iid
+          case facing of
+            Upright -> do
+              canHealDamage <- Helpers.canHaveDamageHealed source iid
+              canHealHorror <- Helpers.canHaveHorrorHealed source iid
+              push
+                $ chooseOne player
+                $ Label "Skip" []
+                : [DamageLabel iid [HealDamage (toTarget iid) source 1] | canHealDamage]
+                  <> [HorrorLabel iid [HealHorror (toTarget iid) source 1] | canHealHorror]
+            Reversed -> do
+              push
+                $ chooseOne
+                  player
+                  [ Label "Take 1 damage" [assignDamage iid source 1]
+                  , Label "Take 1 horror" [assignHorror iid source 1]
+                  ]
+          pure x
+        UseCardAbility
+          iid
+          (TarotSource (TarotCard Upright TheMoonXVIII))
+          1
+          (Window.getBatchId -> batchId)
+          _ -> do
+            let
+              getDraw [] = Nothing
+              getDraw (Would batchId' msgs : _) | batchId' == batchId = getDraw msgs
+              getDraw (Do (EmptyDeck _ (Just draw)) : _) = Just draw
+              getDraw (_ : rest) = getDraw rest
+            mDrawing <- fromQueue getDraw
+            cards <- map toCard . take 10 . reverse <$> field Field.InvestigatorDiscard iid
+            player <- getPlayer iid
+            push
+              $ chooseOne
+                player
+                [ Label
+                    "Shuffle the bottom 10 cards of your discard back into your Deck"
+                    $ [IgnoreBatch batchId, ShuffleCardsIntoDeck (Deck.InvestigatorDeck iid) cards]
+                    <> maybeToList mDrawing
+                , Label "Do Nothing" []
+                ]
+            pure x
+        UseThisAbility _ source@(TarotSource card@(TarotCard Reversed TheMoonXVIII)) 1 -> do
+          investigators <- filterM (`affectedByTarot` card) =<< getInvestigators
+          for_ investigators $ \investigator -> do
+            push $ DiscardTopOfDeck investigator 5 source (Just $ TarotTarget (TarotCard Reversed TheMoonXVIII))
+          pure x
+        DiscardedTopOfDeck iid cards _ (TarotTarget (TarotCard Reversed TheMoonXVIII)) -> do
+          let weaknesses = filter (`cardMatch` Matcher.WeaknessCard) cards
+          unless (null weaknesses)
+            $ push
+            $ ShuffleCardsIntoDeck (Deck.InvestigatorDeck iid) (map toCard weaknesses)
+          pure x
+        UseThisAbility _ (TarotSource (TarotCard facing JudgementXX)) 1 -> do
+          case facing of
+            Upright -> push $ SwapChaosToken Skull Zero
+            Reversed -> do
+              tokenFaces <- filter isNonNegativeChaosToken . map chaosTokenFace <$> getBagChaosTokens
+              case nonEmpty tokenFaces of
+                Just (face :| faces) -> do
+                  let maxFace =
+                        foldr
+                          ( \f g ->
+                              if chaosTokenToFaceValue f > chaosTokenToFaceValue g then f else g
+                          )
+                          face
+                          faces
+                  push $ SwapChaosToken maxFace Skull
+                Nothing -> pure ()
+          pure x
+        UseThisAbility _ (TarotSource card@(TarotCard facing TheWorldXXI)) 1 -> do
+          case facing of
+            Upright -> do
+              investigators <- filterM (`affectedByTarot` card) =<< getInvestigators
+              investigatorsWhoCanHealTrauma <-
+                catMaybes <$> for
+                  investigators
+                  \iid -> do
+                    hasPhysicalTrauma <- fieldP Field.InvestigatorPhysicalTrauma (> 0) iid
+                    hasMentalTrauma <- fieldP Field.InvestigatorMentalTrauma (> 0) iid
+                    player <- getPlayer iid
+                    if (hasPhysicalTrauma || hasMentalTrauma)
+                      then pure $ Just (iid, player, hasPhysicalTrauma, hasMentalTrauma)
+                      else pure Nothing
+
+              pushAll
+                $ [ chooseOne player
+                      $ [Label "Remove a physical trauma" [HealTrauma iid 1 0] | hasPhysical]
+                      <> [Label "Remove a mental trauma" [HealTrauma iid 0 1] | hasMental]
+                      <> [Label "Do not remove trauma" []]
+                  | (iid, player, hasPhysical, hasMental) <- investigatorsWhoCanHealTrauma
+                  ]
+            Reversed -> do
+              defeatedInvestigators <-
+                filterM (`affectedByTarot` card) =<< select Matcher.DefeatedInvestigator
+              defeatedInvestigatorPlayers <- traverse (traverseToSnd getPlayer) defeatedInvestigators
+              pushAll
+                $ [ chooseOne
+                      player
+                      [ Label "Suffer physical trauma" [SufferTrauma iid 1 0]
+                      , Label "Suffer mental trauma" [SufferTrauma iid 0 1]
+                      ]
+                  | (iid, player) <- defeatedInvestigatorPlayers
+                  ]
+          pure x
+        ResolveChaosToken drawnToken chaosTokenFace _ -> do
+          modifiers' <- foldMapM getModifiers [toTarget chaosTokenFace, toTarget drawnToken]
+          if any (`elem` modifiers') [IgnoreChaosTokenEffects, IgnoreChaosToken]
+            then pure x
+            else go
+        FailedSkillTest _ _ _ (ChaosTokenTarget token) _ _ -> do
+          modifiers' <- foldMapM getModifiers [toTarget token.face, toTarget token]
+          if any (`elem` modifiers') [IgnoreChaosTokenEffects, IgnoreChaosToken]
+            then pure x
+            else go
+        PassedSkillTest _ _ _ (ChaosTokenTarget token) _ _ -> do
+          modifiers' <- foldMapM getModifiers [toTarget token.face, toTarget token]
+          if any (`elem` modifiers') [IgnoreChaosTokenEffects, IgnoreChaosToken]
+            then pure x
+            else go
+        SetupInvestigators -> do
+          result <- go
+          let isTowerXVI = (== TheTowerXVI) . toTarotArcana
+          for_ (concatMap (filter isTowerXVI) (toList $ attr scenarioTarotCards s)) \card -> do
+            lead <- getLead
+            mInvestigator <- tarotInvestigator card
+            let investigator = fromMaybe lead mInvestigator
+            let abilities = getAbilities card
+            player <- getPlayer investigator
+            for_ abilities $ \ability -> do
+              push $ chooseOne player [AbilityLabel investigator ability [] [] []]
+          pure result
+        PreScenarioSetup -> do
+          result <- go
+          observed <- select $ Matcher.DeckWith $ Matcher.HasCard $ Matcher.cardIs Assets.observed4
+          for_ observed $ \iid -> do
+            push $ DrawAndChooseTarot iid Upright 3
+          damned <- select $ Matcher.DeckWith $ Matcher.HasCard $ Matcher.cardIs Treacheries.damned
+          for_ damned $ \iid -> do
+            push $ DrawAndChooseTarot iid Reversed 1
+          pure result
+        ScenarioResolution {} -> do
+          -- This is a bit of a hack, but we want to trigger the end game window
+          -- before going into the resolution
+          if not $ attr scenarioInResolution x
+            then do
+              addToVictoryMsgs <- Lifted.capture do
+                -- also clean up victory enemies
+                select (Matcher.OutOfPlayEnemy RemovedZone Matcher.EnemyWithVictory)
+                  >>= traverse_ Lifted.addToVictoryIfNeeded
+
+              -- We want to empty the queue for triggering a resolution
+              clearQueue
+              whenEnd <- checkWindows [mkWhen Window.EndOfGame]
+              pushAll $ addToVictoryMsgs <> [whenEnd, msg]
+              pure $ overAttrs (\a -> a & inResolutionL .~ True) x
+            else clearQueue >> go
+        _ -> go
+   where
+    go = Scenario <$> runMessage msg s
+
+instance HasChaosTokenValue Scenario where
+  getChaosTokenValue iid chaosTokenFace (Scenario s) = do
+    modifiers' <- getModifiers (ChaosTokenFaceTarget chaosTokenFace)
+    if any (`elem` modifiers') [IgnoreChaosTokenEffects, IgnoreChaosToken]
+      then pure $ ChaosTokenValue chaosTokenFace NoModifier
+      else do
+        case chaosTokenFace of
+          CurseToken -> pure $ ChaosTokenValue chaosTokenFace (NegativeModifier 2)
+          BlessToken -> pure $ ChaosTokenValue chaosTokenFace (PositiveModifier 2)
+          FrostToken -> do
+            revealed <- map (.face) <$> getSkillTestRevealedChaosTokens
+            pure
+              $ ChaosTokenValue chaosTokenFace
+              $ if count (== #frost) revealed == 2 then AutoFailModifier else NegativeModifier 1
+          _ -> getChaosTokenValue iid chaosTokenFace s
+
+lookupScenario :: ScenarioId -> Difficulty -> Scenario
+lookupScenario scenarioId =
+  case lookup (unScenarioId scenarioId) allScenarios of
+    Nothing -> error $ "Unknown scenario: " <> show scenarioId
+    Just (SomeScenario f) -> Scenario . f
+
+data SomeScenario = forall a. IsScenario a => SomeScenario (Difficulty -> a)
+
+scenarioCard :: CardCode -> Name -> EncounterSet -> CardDef
+scenarioCard cCode name ecSet =
+  (emptyCardDef cCode name ScenarioType)
+    { cdEncounterSet = Just ecSet
+    , cdEncounterSetQuantity = Just 1
+    , cdDoubleSided = True
+    , cdLevel = Nothing
+    }
+
+allScenarioCards :: Map CardCode CardDef
+allScenarioCards =
+  mapFromList $ allScenarios & mapToList & filter ((`notElem` duplicatedScenarios) . fst) & map \(c, SomeScenario s) -> do
+    let ecSet = fromJustNote "you forgot to add the encounter set" $ lookup c scenarioEncounterSets
+        name = scenarioName $ toAttrs $ Scenario (s Easy)
+        normalizeCardCode = \case
+          "08501a" -> "08501"
+          other -> other
+    (normalizeCardCode c, scenarioCard (normalizeCardCode c) name ecSet)
+
+duplicatedScenarios :: [CardCode]
+duplicatedScenarios = ["04205a", "04205b", "08501c"]
+
+allScenarios :: Map CardCode SomeScenario
+allScenarios =
+  mapFromList
+    [ ("01104", SomeScenario theGathering)
+    , ("01120", SomeScenario theMidnightMasks)
+    , ("01142", SomeScenario theDevourerBelow)
+    , ("02041", SomeScenario extracurricularActivity)
+    , ("02062", SomeScenario theHouseAlwaysWins)
+    , ("02118", SomeScenario theMiskatonicMuseum)
+    , ("02159", SomeScenario theEssexCountyExpress)
+    , ("02195", SomeScenario bloodOnTheAltar)
+    , ("02236", SomeScenario undimensionedAndUnseen)
+    , ("02274", SomeScenario whereDoomAwaits)
+    , ("02311", SomeScenario lostInTimeAndSpace)
+    , ("03043", SomeScenario curtainCall)
+    , ("03061", SomeScenario theLastKing)
+    , ("03120", SomeScenario echoesOfThePast)
+    , ("03159", SomeScenario theUnspeakableOath)
+    , ("03200", SomeScenario aPhantomOfTruth)
+    , ("03240", SomeScenario thePallidMask)
+    , ("03274", SomeScenario blackStarsRise)
+    , ("03316", SomeScenario dimCarcosa)
+    , ("04043", SomeScenario theUntamedWilds)
+    , ("04054", SomeScenario theDoomOfEztli)
+    , ("04113", SomeScenario threadsOfFate)
+    , ("04161", SomeScenario theBoundaryBeyond)
+    , ("04205", SomeScenario heartOfTheElders)
+    , ("04205a", SomeScenario heartOfTheEldersPart1)
+    , ("04205b", SomeScenario heartOfTheEldersPart2)
+    , ("04237", SomeScenario theCityOfArchives)
+    , ("04277", SomeScenario theDepthsOfYoth)
+    , ("04314", SomeScenario shatteredAeons)
+    , ("04344", SomeScenario turnBackTime)
+    , ("05043", SomeScenario disappearanceAtTheTwilightEstate)
+    , ("05050", SomeScenario theWitchingHour)
+    , ("05065", SomeScenario atDeathsDoorstep)
+    , ("05120", SomeScenario theSecretName)
+    , ("05161", SomeScenario theWagesOfSin)
+    , ("05197", SomeScenario forTheGreaterGood)
+    , ("05238", SomeScenario unionAndDisillusion)
+    , ("05284", SomeScenario inTheClutchesOfChaos)
+    , ("05325", SomeScenario beforeTheBlackThrone)
+    , ("06039", SomeScenario beyondTheGatesOfSleep)
+    , ("06063", SomeScenario wakingNightmare)
+    , ("06119", SomeScenario theSearchForKadath)
+    , ("06168", SomeScenario aThousandShapesOfHorror)
+    , ("06206", SomeScenario darkSideOfTheMoon)
+    , ("06247", SomeScenario pointOfNoReturn)
+    , ("06286", SomeScenario whereTheGodsDwell)
+    , ("06333", SomeScenario weaverOfTheCosmos)
+    , ("07041", SomeScenario thePitOfDespair)
+    , ("07056", SomeScenario theVanishingOfElinaHarper)
+    , ("07123", SomeScenario inTooDeep)
+    , ("07163", SomeScenario devilReef)
+    , ("07198", SomeScenario horrorInHighGear)
+    , ("07231", SomeScenario aLightInTheFog)
+    , ("07274", SomeScenario theLairOfDagon)
+    , ("07311", SomeScenario intoTheMaelstrom)
+    , ("08501a", SomeScenario iceAndDeathPart1)
+    , ("08501b", SomeScenario iceAndDeathPart2)
+    , ("08501c", SomeScenario iceAndDeathPart3)
+    , ("08549", SomeScenario fatalMirage)
+    , ("08596", SomeScenario toTheForbiddenPeaks)
+    , ("08621", SomeScenario cityOfTheElderThings)
+    , ("08648", SomeScenario theHeartOfMadnessPart1)
+    , ("08648a", SomeScenario theHeartOfMadnessPart1)
+    , ("08648b", SomeScenario theHeartOfMadnessPart2)
+    , ("09501", SomeScenario riddlesAndRain)
+    , ("09520", SomeScenario deadHeat)
+    , ("09545", SomeScenario sanguineShadows)
+    , ("09566", SomeScenario dealingsInTheDark)
+    , ("09591", SomeScenario dancingMad)
+    , ("09609", SomeScenario onThinIce)
+    , ("09635", SomeScenario dogsOfWar)
+    , ("09660", SomeScenario shadesOfSuffering)
+    , ("09681", SomeScenario withoutATrace)
+    , ("09694", SomeScenario congressOfTheKeys)
+    , ("10501", SomeScenario writtenInRock)
+    , ("10502", SomeScenario writtenInRock) -- duplicated for card view
+    , ("10605", SomeScenario theTwistedHollow)
+    , ("10704", SomeScenario preludeWelcomeToHemlockVale)
+    , ("50011", SomeScenario returnToTheGathering)
+    , ("50025", SomeScenario returnToTheMidnightMasks)
+    , ("50032", SomeScenario returnToTheDevourerBelow)
+    , ("51012", SomeScenario returnToExtracurricularActivities)
+    , ("51015", SomeScenario returnToTheHouseAlwaysWins)
+    , ("51020", SomeScenario returnToTheMiskatonicMuseum)
+    , ("51025", SomeScenario returnToTheEssexCountyExpress)
+    , ("51032", SomeScenario returnToBloodOnTheAltar)
+    , ("51041", SomeScenario returnToUndimensionedAndUnseen)
+    , ("51047", SomeScenario returnToWhereDoomAwaits)
+    , ("51053", SomeScenario returnToLostInTimeAndSpace)
+    , ("52014", SomeScenario returnToCurtainCall)
+    , ("52021", SomeScenario returnToTheLastKing)
+    , ("52028", SomeScenario returnToEchoesOfThePast)
+    , ("52034", SomeScenario returnToTheUnspeakableOath)
+    , ("52040", SomeScenario returnToAPhantomOfTruth)
+    , ("52048", SomeScenario returnToThePallidMask)
+    , ("52054", SomeScenario returnToBlackStarsRise)
+    , ("52059", SomeScenario returnToDimCarcosa)
+    , ("53016", SomeScenario returnToTheUntamedWilds)
+    , ("53017", SomeScenario returnToTheDoomOfEztli)
+    , ("53028", SomeScenario returnToThreadsOfFate)
+    , ("53038", SomeScenario returnToTheBoundaryBeyond)
+    , ("53045", SomeScenario returnToHeartOfTheEldersPart1)
+    , ("53048", SomeScenario returnToHeartOfTheEldersPart2)
+    , ("53053", SomeScenario returnToTheCityOfArchives)
+    , ("53059", SomeScenario returnToTheDepthsOfYoth)
+    , ("53061", SomeScenario returnToShatteredAeons)
+    , ("53066", SomeScenario returnToTurnBackTime)
+    , ("54016", SomeScenario returnToDisappearanceAtTheTwilightEstate)
+    , ("54017", SomeScenario returnToTheWitchingHour)
+    , ("54024", SomeScenario returnToAtDeathsDoorstep)
+    , ("54029", SomeScenario returnToTheSecretName)
+    , ("54034", SomeScenario returnToTheWagesOfSin)
+    , ("54042", SomeScenario returnToForTheGreaterGood)
+    , ("54046", SomeScenario returnToUnionAndDisillusion)
+    , ("54049", SomeScenario returnToInTheClutchesOfChaos)
+    , ("54056", SomeScenario returnToBeforeTheBlackThrone)
+    , ("71001", SomeScenario theMidwinterGala)
+    , ("72001", SomeScenario filmFatale)
+    , ("81001", SomeScenario curseOfTheRougarou)
+    , ("82001", SomeScenario carnevaleOfHorrors)
+    , ("84001", SomeScenario murderAtTheExcelsiorHotel)
+    , ("88001", SomeScenario fortuneAndFolly)
+    , ("88001b", SomeScenario fortuneAndFollyPart2)
+    ]
+
+scenarioEncounterSets :: Map CardCode EncounterSet
+scenarioEncounterSets =
+  mapFromList
+    [ ("01104", EncounterSet.TheGathering)
+    , ("01120", EncounterSet.TheMidnightMasks)
+    , ("01142", EncounterSet.TheDevourerBelow)
+    , ("02041", EncounterSet.ExtracurricularActivity)
+    , ("02062", EncounterSet.TheHouseAlwaysWins)
+    , ("02118", EncounterSet.TheMiskatonicMuseum)
+    , ("02159", EncounterSet.TheEssexCountyExpress)
+    , ("02195", EncounterSet.BloodOnTheAltar)
+    , ("02236", EncounterSet.UndimensionedAndUnseen)
+    , ("02274", EncounterSet.WhereDoomAwaits)
+    , ("02311", EncounterSet.LostInTimeAndSpace)
+    , ("03043", EncounterSet.CurtainCall)
+    , ("03061", EncounterSet.TheLastKing)
+    , ("03120", EncounterSet.EchoesOfThePast)
+    , ("03159", EncounterSet.TheUnspeakableOath)
+    , ("03200", EncounterSet.APhantomOfTruth)
+    , ("03240", EncounterSet.ThePallidMask)
+    , ("03274", EncounterSet.BlackStarsRise)
+    , ("03316", EncounterSet.DimCarcosa)
+    , ("04043", EncounterSet.TheUntamedWilds)
+    , ("04054", EncounterSet.TheDoomOfEztli)
+    , ("04113", EncounterSet.ThreadsOfFate)
+    , ("04161", EncounterSet.TheBoundaryBeyond)
+    , ("04205", EncounterSet.HeartOfTheElders)
+    , ("04205a", EncounterSet.HeartOfTheElders)
+    , ("04205b", EncounterSet.HeartOfTheElders)
+    , ("04237", EncounterSet.TheCityOfArchives)
+    , ("04277", EncounterSet.TheDepthsOfYoth)
+    , ("04314", EncounterSet.ShatteredAeons)
+    , ("04344", EncounterSet.TurnBackTime)
+    , ("05043", EncounterSet.DisappearanceAtTheTwilightEstate)
+    , ("05050", EncounterSet.TheWitchingHour)
+    , ("05065", EncounterSet.AtDeathsDoorstep)
+    , ("05120", EncounterSet.TheSecretName)
+    , ("05161", EncounterSet.TheWagesOfSin)
+    , ("05197", EncounterSet.ForTheGreaterGood)
+    , ("05238", EncounterSet.UnionAndDisillusion)
+    , ("05284", EncounterSet.InTheClutchesOfChaos)
+    , ("05325", EncounterSet.BeforeTheBlackThrone)
+    , ("06039", EncounterSet.BeyondTheGatesOfSleep)
+    , ("06063", EncounterSet.WakingNightmare)
+    , ("06119", EncounterSet.TheSearchForKadath)
+    , ("06168", EncounterSet.AThousandShapesOfHorror)
+    , ("06206", EncounterSet.DarkSideOfTheMoon)
+    , ("06247", EncounterSet.PointOfNoReturn)
+    , ("06286", EncounterSet.WhereTheGodsDwell)
+    , ("06333", EncounterSet.WeaverOfTheCosmos)
+    , ("07041", EncounterSet.ThePitOfDespair)
+    , ("07056", EncounterSet.TheVanishingOfElinaHarper)
+    , ("07123", EncounterSet.InTooDeep)
+    , ("07163", EncounterSet.DevilReef)
+    , ("07198", EncounterSet.HorrorInHighGear)
+    , ("07231", EncounterSet.ALightInTheFog)
+    , ("07274", EncounterSet.TheLairOfDagon)
+    , ("07311", EncounterSet.IntoTheMaelstrom)
+    , ("08501a", EncounterSet.IceAndDeath)
+    , ("08501b", EncounterSet.IceAndDeath)
+    , ("08501c", EncounterSet.IceAndDeath)
+    , ("08549", EncounterSet.FatalMirage)
+    , ("08596", EncounterSet.ToTheForbiddenPeaks)
+    , ("08621", EncounterSet.CityOfTheElderThings)
+    , ("08648", EncounterSet.TheHeartOfMadness)
+    , ("08648a", EncounterSet.TheHeartOfMadness)
+    , ("08648b", EncounterSet.TheHeartOfMadness)
+    , ("09501", EncounterSet.RiddlesAndRain)
+    , ("09520", EncounterSet.DeadHeat)
+    , ("09545", EncounterSet.SanguineShadows)
+    , ("09566", EncounterSet.DealingsInTheDark)
+    , ("09591", EncounterSet.DancingMad)
+    , ("09609", EncounterSet.OnThinIce)
+    , ("09635", EncounterSet.DogsOfWar)
+    , ("09660", EncounterSet.ShadesOfSuffering)
+    , ("09681", EncounterSet.WithoutATrace)
+    , ("09694", EncounterSet.CongressOfTheKeys)
+    , ("10501", EncounterSet.WrittenInRock)
+    , ("10502", EncounterSet.WrittenInRock)
+    , ("10605", EncounterSet.TheTwistedHollow)
+    , ("10704", EncounterSet.TheVale)
+    , ("50011", EncounterSet.ReturnToTheGathering)
+    , ("50025", EncounterSet.ReturnToTheMidnightMasks)
+    , ("50032", EncounterSet.ReturnToTheDevourerBelow)
+    , ("51012", EncounterSet.ReturnToExtracurricularActivities)
+    , ("51015", EncounterSet.ReturnToTheHouseAlwaysWins)
+    , ("51020", EncounterSet.ReturnToTheMiskatonicMuseum)
+    , ("51025", EncounterSet.ReturnToTheEssexCountyExpress)
+    , ("51032", EncounterSet.ReturnToBloodOnTheAltar)
+    , ("51041", EncounterSet.ReturnToUndimensionedAndUnseen)
+    , ("51047", EncounterSet.ReturnToWhereDoomAwaits)
+    , ("51053", EncounterSet.ReturnToLostInTimeAndSpace)
+    , ("52014", EncounterSet.ReturnToCurtainCall)
+    , ("52021", EncounterSet.ReturnToTheLastKing)
+    , ("52028", EncounterSet.ReturnToEchoesOfThePast)
+    , ("52034", EncounterSet.ReturnToTheUnspeakableOath)
+    , ("52040", EncounterSet.ReturnToAPhantomOfTruth)
+    , ("52048", EncounterSet.ReturnToThePallidMask)
+    , ("52054", EncounterSet.ReturnToBlackStarsRise)
+    , ("52059", EncounterSet.ReturnToDimCarcosa)
+    , ("53016", EncounterSet.ReturnToTheUntamedWilds)
+    , ("53017", EncounterSet.ReturnToTheDoomOfEztli)
+    , ("53028", EncounterSet.ReturnToThreadsOfFate)
+    , ("53038", EncounterSet.ReturnToTheBoundaryBeyond)
+    , ("53045", EncounterSet.ReturnToHeartOfTheElders)
+    , ("53048", EncounterSet.ReturnToHeartOfTheElders)
+    , ("53053", EncounterSet.ReturnToTheCityOfArchives)
+    , ("53059", EncounterSet.ReturnToTheDepthsOfYoth)
+    , ("53061", EncounterSet.ReturnToShatteredAeons)
+    , ("53066", EncounterSet.ReturnToTurnBackTime)
+    , ("54016", EncounterSet.ReturnToDisappearanceAtTheTwilightEstate)
+    , ("54017", EncounterSet.ReturnToTheWitchingHour)
+    , ("54024", EncounterSet.ReturnToAtDeathsDoorstep)
+    , ("54029", EncounterSet.ReturnToTheWitchingHour)
+    , ("54034", EncounterSet.ReturnToTheWagesOfSin)
+    , ("54042", EncounterSet.ReturnToForTheGreaterGood)
+    , ("54046", EncounterSet.ReturnToUnionAndDisillusion)
+    , ("54049", EncounterSet.ReturnToInTheClutchesOfChaos)
+    , ("54056", EncounterSet.ReturnToBeforeTheBlackThrone)
+    , ("71001", EncounterSet.TheMidwinterGala)
+    , ("72001", EncounterSet.FilmFatale)
+    , ("81001", EncounterSet.CurseOfTheRougarou)
+    , ("82001", EncounterSet.CarnevaleOfHorrors)
+    , ("84001", EncounterSet.MurderAtTheExcelsiorHotel)
+    , ("88001", EncounterSet.FortuneAndFolly)
+    , ("88001b", EncounterSet.FortuneAndFolly)
+    ]

@@ -1,0 +1,37 @@
+module Arkham.Asset.Assets.Plucky3 (plucky3) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Import.Lifted
+import Arkham.Helpers.Modifiers hiding (skillTestModifier)
+import Arkham.Helpers.SkillTest (withSkillTest)
+import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
+
+newtype Plucky3 = Plucky3 AssetAttrs
+  deriving anyclass IsAsset
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+plucky3 :: AssetCard Plucky3
+plucky3 = assetWith Plucky3 Cards.plucky3 $ (healthL ?~ 1) . (sanityL ?~ 3)
+
+instance HasAbilities Plucky3 where
+  getAbilities (Plucky3 x) =
+    [ wantsSkillTest (YourSkillTest $ mapOneOf SkillTestWants [#willpower, #intellect])
+        $ controlled x 1 (DuringSkillTest AnySkillTest)
+        $ FastAbility (ResourceCost 1)
+    ]
+
+instance HasModifiersFor Plucky3 where
+  getModifiersFor (Plucky3 a) = do
+    modifySelf a [NonDirectHorrorMustBeAssignToThisFirst, NonDirectDamageMustBeAssignToThisFirst]
+    controllerGets a [SkillModifier #willpower 1, SkillModifier #intellect 1]
+
+instance RunMessage Plucky3 where
+  runMessage msg a@(Plucky3 attrs) = runQueueT $ case msg of
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      withSkillTest \sid ->
+        chooseSkillM iid [#willpower, #intellect] \kind ->
+          skillTestModifier sid (attrs.ability 1) iid (SkillModifier kind 1)
+      pure a
+    _ -> Plucky3 <$> liftRunMessage msg attrs

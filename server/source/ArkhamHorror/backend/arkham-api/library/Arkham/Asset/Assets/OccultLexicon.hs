@@ -1,0 +1,33 @@
+module Arkham.Asset.Assets.OccultLexicon (occultLexicon) where
+
+import Arkham.Ability
+import Arkham.Asset.Cards qualified as Cards
+import Arkham.Asset.Import.Lifted
+import Arkham.Event.Cards qualified as Events
+import Arkham.Helpers.Investigator (searchBonded)
+import Arkham.Matcher
+
+newtype OccultLexicon = OccultLexicon AssetAttrs
+  deriving anyclass (IsAsset, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+occultLexicon :: AssetCard OccultLexicon
+occultLexicon = asset OccultLexicon Cards.occultLexicon
+
+instance HasAbilities OccultLexicon where
+  getAbilities (OccultLexicon a) = [controlled_ a 1 $ forced $ AssetEntersPlay #after (be a)]
+
+instance RunMessage OccultLexicon where
+  runMessage msg (OccultLexicon attrs) = runQueueT $ case msg of
+    UseThisAbility iid (isSource attrs -> True) 1 -> do
+      bonded <- take 3 <$> searchBonded iid Events.bloodRite
+      for_ (nonEmpty bonded) \(handBloodRite :| deckBloodRites) -> do
+        addToHand iid (only handBloodRite)
+        shuffleCardsIntoDeck iid deckBloodRites
+      OccultLexicon <$> liftRunMessage msg attrs
+    RemovedFromPlay (isSource attrs -> True) -> do
+      for_ attrs.owner \iid -> do
+        bloodRite <- select $ basic $ CardOwnedBy iid <> cardIs Events.bloodRite
+        for_ bloodRite $ placeInBonded iid
+      OccultLexicon <$> liftRunMessage msg attrs
+    _ -> OccultLexicon <$> liftRunMessage msg attrs

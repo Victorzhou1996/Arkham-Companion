@@ -1,0 +1,452 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
+module Arkham.Campaign.Runner (module X, defaultCampaignRunner) where
+
+import Arkham.Campaign.Types as X
+import Arkham.Helpers.Message as X
+import Arkham.Source as X
+import Arkham.Target as X
+
+import Arkham.CampaignLog
+import Arkham.CampaignLogKey
+import Arkham.CampaignStep
+import Arkham.Card
+import Arkham.Card.Settings
+import Arkham.ChaosToken
+import Arkham.Classes.Entity
+import Arkham.Classes.GameLogger
+import Arkham.Classes.Query
+import Arkham.Classes.RunMessage
+import {-# SOURCE #-} Arkham.GameEnv
+import Arkham.Helpers
+import Arkham.Helpers.Deck
+import Arkham.Helpers.Investigator
+import Arkham.Helpers.Query
+import Arkham.Id
+import Arkham.Investigator.Types (Field (..))
+import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
+import Arkham.Name
+import Arkham.Prelude
+import Arkham.Projection
+import Arkham.SideStory
+import Arkham.Tarot
+import Arkham.Xp
+import Data.Aeson.Key qualified as Aeson
+import Data.Map.Strict qualified as Map
+
+defaultCampaignRunner :: IsCampaign a => Runner a
+defaultCampaignRunner msg a = case msg of
+  BecomeHomunculus iid -> do
+    pure
+      $ flip overAttrs a
+      $ (decksL %~ Map.mapKeys (\iid' -> if iid == iid' then "11068b" else iid'))
+      . (storyCardsL %~ Map.mapKeys (\iid' -> if iid == iid' then "11068b" else iid'))
+      . (modifiersL %~ Map.mapKeys (\iid' -> if iid == iid' then "11068b" else iid'))
+      . ( logL
+            . recordedSetsL
+            %~ insertWith (<>) KilledInvestigators (singleton $ recorded $ unInvestigatorId iid)
+        )
+  SetGlobal CampaignTarget k v -> do
+    pure $ updateAttrs a (storeL . at (Aeson.toText k) ?~ v)
+  StartCampaign -> do
+    -- [ALERT] StartCampaign
+    players <- allPlayers
+    lead <- getActivePlayer
+    pushAll
+      $ chooseDecks players
+      : [Ask lead PickCampaignSettings | (campaignStep (toAttrs a)).unwrap /= PrologueStep]
+        <> [CampaignStep $ campaignStep $ toAttrs a]
+    pure a
+  HandleKilledOrInsaneInvestigators -> do
+    -- This case is mainly to handle when there is not an upgrade window
+    -- between two scenarios
+    killed <- select KilledInvestigator
+    insane <- select InsaneInvestigator
+    case nub (killed <> insane) of
+      [] -> pure ()
+      xs -> push . chooseUpgradeDecks =<< traverse getPlayer xs
+    pure a
+  CampaignStep (ScenarioStepWithOptions sid opts) -> do
+    pushAll
+      $ [ ResetInvestigators
+        , ResetGame
+        , ForTarget GameTarget ResetGame
+        ]
+      <> [ForInvestigators [] ResetGame | not opts.skipInvestigatorSetup]
+      <> [ StartScenario sid (Just opts)
+         ]
+    -- [ALERT] Update TheDreamEaters if this alters a
+    pure a
+  CampaignStep (ScenarioStep sid) -> do
+    pushAll
+      [ ResetInvestigators
+      , ResetGame
+      , ForTarget GameTarget ResetGame
+      , ForInvestigators [] ResetGame
+      , StartScenario sid Nothing
+      ]
+    -- [ALERT] Update TheDreamEaters if this alters a
+    pure a
+  CampaignStep (UpgradeDeckStep _) -> do
+    investigators <- select InvestigatorCanAddCardsToDeck
+    players <- traverse getPlayer investigators
+    pushAll
+      [ ResetGame
+      , ForTarget GameTarget ResetGame
+      , ForInvestigators [] ResetGame
+      , chooseUpgradeDecks players
+      , FinishedUpgradingDecks
+      ]
+    pure a
+  CampaignStep (ChooseDecksStep _) -> do
+    players <- allPlayers
+    pushAll $ chooseDecks players : [FinishedUpgradingDecks]
+    pure a
+  CampaignStep (ContinueCampaignStep _step') -> do
+    lead <- getLeadPlayer
+    push $ Ask lead ContinueCampaign
+    pure a
+  CampaignStep (StandaloneScenarioStep sid _) -> do
+    let xp = getSideStoryCost sid
+    pushAll
+      [ ResetInvestigators
+      , ResetGame
+      , ForTarget GameTarget ResetGame
+      , ForInvestigators [] ResetGame
+      , StartScenario sid Nothing
+      ]
+    select Anyone >>= traverse_ \iid -> push $ SpendXP iid xp
+    pure a
+  CampaignStep (StandaloneScenarioStepWithOptions sid _ opts) -> do
+    let xp = getSideStoryCost sid
+    pushAll
+      [ ResetInvestigators
+      , ResetGame
+      , ForTarget GameTarget ResetGame
+      , ForInvestigators [] ResetGame
+      , StartScenario sid (Just opts)
+      ]
+    select Anyone >>= traverse_ \iid -> push $ SpendXP iid xp
+    pure a
+  SetChaosTokensForScenario -> a <$ push (SetChaosTokens $ campaignChaosBag $ toAttrs a)
+  AddCampaignCardToDeck iid _ card -> do
+    card' <- setOwner iid card
+    pure $ updateAttrs a (storyCardsL %~ insertWith (<>) iid [card'])
+  RemoveCampaignCardFromDeck iid cardDef ->
+    pure
+      $ updateAttrs a
+      $ (storyCardsL %~ adjustMap (filter ((/= cardDef) . toCardDef)) iid)
+      . (decksL %~ adjustMap (withDeck $ filter ((/= cardDef) . toCardDef)) iid)
+  AddChaosToken token -> do
+    if token `notElem` [CurseToken, BlessToken]
+      then pure $ updateAttrs a (chaosBagL %~ (token :))
+      else pure a
+  RemoveChaosToken token -> pure $ updateAttrs a (chaosBagL %~ deleteFirstMatch (== token))
+  RemoveAllChaosTokens token -> pure $ updateAttrs a (chaosBagL %~ filter (/= token))
+  InitDeck iid _ deck -> do
+    playerCount <- getPlayerCount
+    investigatorClass <- field InvestigatorClass iid
+    let cardCodes = map toCardCode $ unDeck deck
+
+    mEldritchBrand <-
+      if "11080" `elem` cardCodes
+        then
+          getMaybeCardAttachments iid (CardCode "11080") >>= \case
+            Nothing -> do
+              pid <- getPlayer iid
+              let cards = nub $ map toCardCode $ filterCards (card_ $ #asset <> #spell) (unDeck deck)
+              pure $ Just $ Ask pid $ QuestionLabel "Choose card for Eldritch Brand (5)" Nothing $ ChooseOne $ flip map cards \c ->
+                CardLabel c False [UpdateCardSetting iid "11080" (SetCardSetting CardAttachments [c])]
+            Just _ -> pure Nothing
+        else pure Nothing
+
+    (deck', randomWeaknesses) <- addRandomBasicWeaknessIfNeeded investigatorClass playerCount deck
+    purchaseTrauma <- initDeckTrauma deck' iid CampaignTarget
+    initXp <- initDeckXp deck' iid CampaignTarget
+    pushAll
+      $ map (AddCampaignCardToDeck iid ShuffleIn) randomWeaknesses
+      <> purchaseTrauma
+      <> toList mEldritchBrand
+      <> [DoStep 1 msg]
+      <> initXp
+
+    pure $ updateAttrs a $ decksL %~ insertMap iid deck'
+  DoStep 1 (InitDeck iid _ deck) -> do
+    let cardCodes = map toCardCode $ unDeck deck
+    mSpiritualHealing <-
+      if "11098" `elem` cardCodes
+        then do
+          mentalTrauma <- field InvestigatorMentalTrauma iid
+          physicalTrauma <- field InvestigatorPhysicalTrauma iid
+          pid <- getPlayer iid
+          pure
+            $ if
+              | mentalTrauma > 0 && physicalTrauma > 0 ->
+                  Just
+                    $ chooseOne
+                      pid
+                      [ Label "Heal 1 Physical Trauma" [HealTrauma iid 1 0]
+                      , Label "Heal 1 Mental Trauma" [HealTrauma iid 0 1]
+                      ]
+              | physicalTrauma > 0 -> Just $ HealTrauma iid 1 0
+              | mentalTrauma > 0 -> Just $ HealTrauma iid 0 1
+              | otherwise -> Nothing
+        else pure Nothing
+    for_ mSpiritualHealing push
+    pure a
+  ResolveAmounts iid choiceMap (LabeledTarget "Purchase Trauma" CampaignTarget) -> do
+    let physical = getChoiceAmount "$physical" choiceMap
+    let mental = getChoiceAmount "$mental" choiceMap
+    push $ SufferTrauma iid physical mental
+    pure a
+  UpgradeDeck iid mUrl deck -> do
+    let
+      oldDeck = fromJustNote "No deck? (UpgradeDeck)" $ lookup iid (campaignDecks $ toAttrs a)
+      deckDiff =
+        foldr
+          (\x -> deleteFirstMatch ((== toCardCode x) . toCardCode))
+          (unDeck deck)
+          (unDeck oldDeck)
+
+    let cardCodes = map toCardCode deckDiff
+
+    mEldritchBrand <-
+      if "11080" `elem` cardCodes
+        then
+          getMaybeCardAttachments iid (CardCode "11080") >>= \case
+            Nothing -> do
+              pid <- getPlayer iid
+              let cards = nub $ map toCardCode $ filterCards (card_ #spell) (unDeck deck)
+              pure $ Just $ Ask pid $ QuestionLabel "Choose card for Eldritch Brand (5)" Nothing $ ChooseOne $ flip map cards \c ->
+                CardLabel c False [UpdateCardSetting iid "11080" (SetCardSetting CardAttachments [c])]
+            Just _ -> pure Nothing
+        else pure Nothing
+
+    purchaseTrauma <- initDeckTrauma (Deck deckDiff) iid CampaignTarget
+    initXp <- initDeckXp (Deck deckDiff) iid CampaignTarget
+    -- We remove the random weakness if the upgrade deck still has it listed
+    -- since this will have been added at the beginning of the campaign
+    let deck' = Deck $ filter ((/= "01000") . toCardCode) $ unDeck deck
+    pushAll
+      $ purchaseTrauma
+      <> toList mEldritchBrand
+      <> [DoStep 1 (UpgradeDeck iid mUrl oldDeck)]
+      <> initXp
+    pure $ updateAttrs a $ decksL %~ insertMap iid deck'
+  DoStep 1 (UpgradeDeck iid _ oldDeck) -> do
+    -- we have lost the old deck data, so we swap in the message
+    let
+      deck = fromJustNote "No deck? (DoStep 1 (UpgradeDeck))" $ lookup iid (campaignDecks $ toAttrs a)
+      deckDiff =
+        foldr
+          (\x -> deleteFirstMatch ((== toCardCode x) . toCardCode))
+          (unDeck deck)
+          (unDeck oldDeck)
+
+    let cardCodes = map toCardCode deckDiff
+    mSpiritualHealing <-
+      if "11098" `elem` cardCodes
+        then do
+          mentalTrauma <- field InvestigatorMentalTrauma iid
+          physicalTrauma <- field InvestigatorPhysicalTrauma iid
+          pid <- getPlayer iid
+          pure
+            $ if
+              | mentalTrauma > 0 && physicalTrauma > 0 ->
+                  Just
+                    $ chooseOne
+                      pid
+                      [ Label "Heal 1 Physical Trauma" [HealTrauma iid 1 0]
+                      , Label "Heal 1 Mental Trauma" [HealTrauma iid 0 1]
+                      ]
+              | physicalTrauma > 0 -> Just $ HealTrauma iid 1 0
+              | mentalTrauma > 0 -> Just $ HealTrauma iid 0 1
+              | otherwise -> Nothing
+        else pure Nothing
+    for_ mSpiritualHealing push
+    pure a
+  ReplaceInvestigator oldIid _ -> do
+    pure $ updateAttrs a $ decksL %~ deleteMap oldIid
+  FinishedUpgradingDecks -> case campaignStep (toAttrs a) of
+    ChooseDecksStep nextStep' -> do
+      push $ CampaignStep nextStep'
+      pure $ updateAttrs a $ stepL .~ nextStep'
+    UpgradeDeckStep nextStep' -> do
+      push $ CampaignStep nextStep'
+      pure $ updateAttrs a $ stepL .~ nextStep'
+    _ -> do
+      sendError
+        $ "Your game can continue without issue, but please file a bug for this. Invalid state: "
+        <> tshow (campaignStep (toAttrs a))
+      pure a
+  ForInvestigators _ ResetGame -> runMessage ReloadDecks a
+  ReloadDecks -> do
+    for_ (mapToList $ campaignDecks $ toAttrs a) \(iid, Deck deck) -> do
+      let storyCards = findWithDefault [] iid (campaignStoryCards $ toAttrs a)
+      let storyCardCodes = map toCardCode storyCards
+      let (deck', removals) =
+            partition
+              (\card -> card.cardCode `notElem` storyCardCodes && card.cardCode `notElem` invalidCards a)
+              deck
+      for_ removals \c -> removeCard c.id
+
+      push (LoadDeck iid . Deck $ deck' <> mapMaybe (preview _PlayerCard) storyCards)
+    pure a
+  CrossOutRecord key -> do
+    let
+      crossedOutModifier =
+        if key `member` view (logL . recordedL) (toAttrs a) then insertSet key else id
+      removeOrderedKey =
+        if key `member` view (logL . recordedL) (toAttrs a) then filter (/= key) else id
+
+    pure
+      $ updateAttrs a
+      $ (logL . recordedL %~ deleteSet key)
+      . (logL . crossedOutL %~ crossedOutModifier)
+      . (logL . recordedSetsL %~ deleteMap key)
+      . (logL . recordedCountsL %~ deleteMap key)
+      . (logL . orderedKeysL %~ removeOrderedKey)
+  Record key -> do
+    send $ "Record \"" <> format key <> "\""
+    pure
+      $ updateAttrs a
+      $ ( logL
+            . recordedL
+            %~ insertSet key
+        )
+      . ( logL
+            . orderedKeysL
+            %~ (<> [key])
+        )
+  RecordSetInsert key recs -> do
+    let defs = mapMaybe lookupCardDef $ recordedCardCodes recs
+    for_ defs $ \def ->
+      send $ "Record \"" <> format (toName def) <> " " <> format key <> "\""
+    pure $ case toAttrs a ^. logL . recordedSetsL . at key of
+      Nothing ->
+        updateAttrs a $ logL . recordedSetsL %~ insertMap key recs
+      Just set ->
+        let
+          set' =
+            filter (`notElem` recs) set
+              <> recs
+         in
+          updateAttrs a $ logL . recordedSetsL %~ insertMap key set'
+  RecordSetReplace key v v' -> do
+    pure $ case toAttrs a ^. logL . recordedSetsL . at key of
+      Nothing ->
+        updateAttrs a $ logL . recordedSetsL %~ insertMap key (singleton v')
+      Just set ->
+        let set' = map (\x -> if x == v then v' else x) set
+         in updateAttrs a $ logL . recordedSetsL %~ insertMap key set'
+  CrossOutRecordSetEntries key recs ->
+    pure
+      $ updateAttrs a
+      $ logL
+      . recordedSetsL
+      %~ adjustMap
+        ( map
+            ( \case
+                someRec@(SomeRecorded k (Recorded c))
+                  | someRec `elem` recs ->
+                      SomeRecorded k (CrossedOut c)
+                other -> other
+            )
+        )
+        key
+  RecordCount key int ->
+    pure $ updateAttrs a $ logL . recordedCountsL %~ insertMap key int
+  IncrementRecordCount key int ->
+    pure $ updateAttrs a $ logL . recordedCountsL %~ alterMap (Just . maybe int (+ int)) key
+  DecrementRecordCount key int ->
+    pure $ updateAttrs a $ logL . recordedCountsL %~ alterMap (fmap (max 0 . subtract int)) key
+  ScenarioResolution r -> case (toAttrs a).step.scenario of
+    Just sid -> pure $ updateAttrs a $ resolutionsL %~ insertMap sid r
+    _ -> error $ "must be called in a scenario, but called in " <> show (campaignStep (toAttrs a))
+  DrivenInsane iid ->
+    pure
+      $ updateAttrs a
+      $ logL
+      . recordedSetsL
+      %~ insertWith
+        (<>)
+        DrivenInsaneInvestigators
+        (singleton $ recorded $ unInvestigatorId iid)
+  InvestigatorKilled _ iid ->
+    pure
+      $ updateAttrs a
+      $ logL
+      . recordedSetsL
+      %~ insertWith
+        (<>)
+        KilledInvestigators
+        (singleton $ recorded $ unInvestigatorId iid)
+  CreateWeaknessInThreatArea (PlayerCard pc) iid -> do
+    pure
+      $ updateAttrs a
+      $ decksL
+      %~ adjustMap (withDeck (pc {pcOwner = Just iid} :)) iid
+  RemoveCardFromDeckForCampaign iid cardId ->
+    pure
+      $ updateAttrs a
+      $ (decksL %~ adjustMap (withDeck (filter ((/= cardId) . toCardId))) iid)
+      . (storyCardsL %~ Map.map (filter ((/= cardId) . toCardId)))
+  NextCampaignStep mOverrideStep -> do
+    let mstep = mOverrideStep <|> nextStep a
+    case mstep of
+      Nothing -> push GameOver
+      Just step ->
+        case step.unwrap.normalize of
+          EpilogueStep -> push $ CampaignStep step
+          _ -> pushAll [HandleKilledOrInsaneInvestigators, CampaignStep step]
+    pure
+      $ updateAttrs a
+      $ \attrs ->
+        attrs
+          & (stepL %~ maybe id const mstep)
+          & (completedStepsL %~ completeStep (campaignStep attrs).unwrapScenario)
+  SetCampaignStep step' -> pure $ updateAttrs a $ stepL .~ step'
+  SetCampaignLog newLog ->
+    pure $ updateAttrs a $ logL %~ \oldLog -> newLog {campaignLogOptions = newLog.options <> oldLog.options}
+  SpendXP iid n -> do
+    runMessage
+      (ReportXp $ XpBreakdown [InvestigatorLoseXp iid $ XpDetail XpFromCardEffect "Spent Xp" n])
+      a
+  ReportXp report -> do
+    let
+    pure $ updateAttrs a \attrs ->
+      case campaignXpBreakdown attrs of
+        (step, report') : rest
+          | step == normalizedCampaignStep (campaignStep attrs) ->
+              attrs & xpBreakdownL .~ (step, report' <> report) : rest
+        _ -> attrs & xpBreakdownL %~ ((normalizedCampaignStep (campaignStep attrs), report) :)
+  IgnoreGainXP step -> pure $ updateAttrs a \attrs -> attrs & xpBreakdownL %~ filter ((/= step) . fst)
+  UseAbility _ ab _ | ab.source == CampaignSource -> do
+    push $ Do msg
+    pure a
+  RotateTarot (toTarotArcana -> arcana) -> do
+    let
+      rotate = \case
+        TarotCard Upright arcana' | arcana' == arcana -> TarotCard Reversed arcana'
+        TarotCard Reversed arcana' | arcana' == arcana -> TarotCard Upright arcana'
+        c -> c
+    pure $ updateAttrs a \attrs -> attrs & destinyL %~ fmap rotate
+  SetDestiny destiny -> do
+    pure $ updateAttrs a $ destinyL .~ destiny
+  RunDestiny -> runQueueT do
+    let destiny = campaignDestiny (toAttrs a)
+    let cards = Map.elems destiny
+    let n = (length cards + 1) `div` 2
+    push $ DoStep n msg
+    pure a
+  DoStep n RunDestiny | n > 0 -> runQueueT do
+    let destiny = campaignDestiny (toAttrs a)
+    let cards = Map.elems destiny
+    push $ FocusTarotCards cards
+    lead <- getLead
+    let cards' = filter ((== Upright) . (.facing)) cards
+    chooseOneM lead $ for_ cards' \card -> tarotLabeled card $ push $ RotateTarot card
+    push $ DoStep (n - 1) RunDestiny
+    pure a
+  _ -> pure a

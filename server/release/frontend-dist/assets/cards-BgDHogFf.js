@@ -1,0 +1,1 @@
+import{ap as a}from"./index-D5jvZ5_j.js";import{q as r}from"./api-DIGE8FFF.js";const o=a("cards",{state:()=>({cards:[],loaded:!1}),getters:{getCards(t){return t.cards}},actions:{async fetchCards(){if(!this.loaded)try{const t=await r(!0);this.cards=t,this.loaded=!0}catch(t){console.log(t)}}}});export{o as u};

@@ -1,0 +1,74 @@
+module Arkham.Investigator.Cards.AgnesBakerParallel (agnesBakerParallel) where
+
+import Arkham.ActiveCost.Base
+import Arkham.Card
+import Arkham.Cost
+import {-# SOURCE #-} Arkham.GameEnv (findAllCards, getActiveCosts)
+import Arkham.Helpers.Investigator (canHaveDamageHealed)
+import Arkham.Helpers.Modifiers (ModifierType (..), modifyEachMaybe, modifySelf)
+import Arkham.I18n
+import Arkham.Text
+import Arkham.Investigator.Cards qualified as Cards
+import Arkham.Investigator.Import.Lifted
+import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
+import Arkham.Projection
+import Arkham.Strategy
+
+newtype AgnesBakerParallel = AgnesBakerParallel InvestigatorAttrs
+  deriving anyclass (IsInvestigator, HasAbilities)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+  deriving stock Data
+
+instance HasModifiersFor AgnesBakerParallel where
+  getModifiersFor (AgnesBakerParallel a) = do
+    modifySelf a [ReduceCostOf (#spell <> #event) 2]
+    validCards <- findAllCards (`cardMatch` (CardOwnedBy a.id <> card_ (#spell <> #event)))
+    modifyEachMaybe a validCards \card -> do
+      startingCost <- case card.cost of
+        Just (StaticCost n) -> pure n
+        Just DynamicCost -> pure 0
+        Just (MaxDynamicCost _) -> pure 0
+        Just DeferredCost -> pure 0
+        Just DiscardAmountCost -> lift $ fieldMap InvestigatorDiscard (count ((== card.cardCode) . toCardCode)) a.id
+        Just (AnyMatchingCardCost {}) -> pure 0
+        Just (MatchingEnemyFieldCost {}) -> pure 0
+        Nothing -> pure 0
+      pure
+        [ AdditionalCost
+            $ OrCost
+              [ InvestigatorDamageCost (toSource a) (InvestigatorWithId a.id) DamageAny 1
+              , LabeledCost (withI18n $ toI18n "label.doNotTakeDamage") $ ResourceCost (min startingCost 2)
+              ]
+        ]
+
+agnesBakerParallel :: InvestigatorCard AgnesBakerParallel
+agnesBakerParallel =
+  investigator AgnesBakerParallel Cards.agnesBakerParallel
+    $ Stats {health = 8, sanity = 6, willpower = 5, intellect = 2, combat = 2, agility = 3}
+
+instance HasChaosTokenValue AgnesBakerParallel where
+  getChaosTokenValue iid ElderSign (AgnesBakerParallel attrs) | iid == toId attrs = do
+    pure $ ChaosTokenValue ElderSign (PositiveModifier 1)
+  getChaosTokenValue _ token _ = pure $ ChaosTokenValue token mempty
+
+instance RunMessage AgnesBakerParallel where
+  runMessage msg i@(AgnesBakerParallel attrs) = runQueueT $ case msg of
+    ElderSignEffect (is attrs -> True) -> do
+      whenM (canHaveDamageHealed attrs attrs.id) do
+        chooseOneM attrs.id do
+          labeled "Heal 1 damage" $ healDamage attrs (ChaosTokenEffectSource #eldersign) 1
+          labeled "Do not heal" nothing
+      pure i
+    PayCost _ iid _ (InvestigatorDamageCost (isSource attrs -> True) _ _ _) -> do
+      let go [] = error "No ForCard cost found"
+          go (c : rest) = case c.target of
+            ForCard _ card -> do
+              chooseOneM iid do
+                labeled "Shuffle event back in instead of discard?" do
+                  cardResolutionModifier card attrs card (SetAfterPlay ShuffleThisBackIntoDeck)
+                labeled "Resolve normally" nothing
+            _ -> go rest
+      go =<< getActiveCosts
+      pure i
+    _ -> AgnesBakerParallel <$> liftRunMessage msg attrs

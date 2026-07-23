@@ -1,0 +1,1 @@
+import{d as e}from"./src.DEN_3V-D.js";import{Ro as t}from"./http-client.context.CrnUW5jD.js";var n={separator:`_separator_kgbey_1`},r=e();function i(){let{t:e}=t();return(0,r.jsx)(`div`,{className:n.separator,children:(0,r.jsx)(`span`,{children:e(`common.or`)})})}export{i as t};
