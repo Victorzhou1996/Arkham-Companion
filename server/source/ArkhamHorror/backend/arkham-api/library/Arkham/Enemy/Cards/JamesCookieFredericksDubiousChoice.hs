@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.JamesCookieFredericksDubiousChoice (jamesCookieFrederi
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Helpers.SkillTest.Lifted (parley)
 import Arkham.Matcher
@@ -25,8 +25,6 @@ jamesCookieFredericksDubiousChoice =
   enemy
     JamesCookieFredericksDubiousChoice
     Cards.jamesCookieFredericksDubiousChoice
-    (3, Static 4, 1)
-    (2, 0)
 
 instance RunMessage JamesCookieFredericksDubiousChoice where
   runMessage msg e@(JamesCookieFredericksDubiousChoice attrs) = runQueueT $ case msg of

@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.SummonedBeast (summonedBeast) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Enemy.Types qualified as Field
 import Arkham.Helpers.Doom
 import Arkham.Helpers.Modifiers
@@ -15,7 +15,7 @@ newtype SummonedBeast = SummonedBeast EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 summonedBeast :: EnemyCard SummonedBeast
-summonedBeast = enemy SummonedBeast Cards.summonedBeast (5, PerPlayer 6, 2) (2, 2)
+summonedBeast = enemy SummonedBeast Cards.summonedBeast
 
 instance HasModifiersFor SummonedBeast where
   getModifiersFor (SummonedBeast attrs) = do

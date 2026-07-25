@@ -104,7 +104,7 @@ const defaults: Required<Pick<
   gravity: 1,
   drift: 0,
   ticks: 200,
-  zIndex: 100,
+  zIndex: cssZIndex('--z-index-100', 100),
   colors: ['#26ccff', '#a25afd', '#ff5e7e', '#88ff5a', '#fcff42', '#ffa62d', '#ff36ff'],
   disableForReducedMotion: false,
   scalar: 1,
@@ -118,16 +118,21 @@ function toRgb(hex: string): RGB {
   return { r: toDec(val.slice(0, 2)), g: toDec(val.slice(2, 4)), b: toDec(val.slice(4, 6)) };
 }
 function colorsToRgb(colors: string[]) { return colors.map(toRgb); }
+function cssZIndex(name: string, fallback: number) {
+  if (typeof window === 'undefined') return fallback;
+  const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return Number(value) || fallback;
+}
 function onlyPositiveInt(n: number) { return n < 0 ? 0 : Math.floor(n); }
 function randomInt(min: number, max: number) { return Math.floor(Math.random() * (max - min)) + min; }
 function isOk<T>(v: T | null | undefined): v is T { return v !== null && v !== undefined; }
 function prop<T, K extends keyof T, R = T[K]>(
   options: T | undefined,
   name: K,
-  transform?: (v: T[K]) => R
+  transform?: (v: NonNullable<T[K]>) => R
 ): R | T[K] {
-  const src = options && isOk(options[name]) ? options[name] : (defaults as any)[name];
-  return transform ? transform(src as any) : (src as any);
+  const src = options && isOk(options[name]) ? options[name] : (defaults as Record<string, unknown>)[name as string];
+  return transform ? transform(src as NonNullable<T[K]>) : (src as T[K]);
 }
 function getOrigin(options?: ConfettiOptions): Required<Origin> {
   const origin = (prop(options, 'origin', Object) as Origin) || {};
@@ -634,9 +639,9 @@ function workerMain(global: any, module: any, isWorker: boolean, workerSize: { w
       return new Promise<void>((resolve) => {
         const onDone = () => { frame = null; ctx.clearRect(0,0,size.width,size.height); done(); resolve(); };
         const update = () => {
-          if (canvas.width !== SIZE.width || canvas.height !== SIZE.height) {
-            canvas.width = SIZE.width || canvas.width;
-            canvas.height = SIZE.height || canvas.height;
+          if (canvas.width !== workerSize.width || canvas.height !== workerSize.height) {
+            canvas.width = workerSize.width || canvas.width;
+            canvas.height = workerSize.height || canvas.height;
             size.width = canvas.width; size.height = canvas.height;
           }
           ctx.clearRect(0,0,size.width,size.height);
@@ -704,11 +709,13 @@ function getDefaultFire(): FireWithReset {
   return defaultFire;
 }
 
-export function create(canvas: HTMLCanvasElement, globalOptions?: { useWorker?: boolean; resize?: boolean }): FireWithReset {
+type GlobalConfettiOptions = Pick<ConfettiOptions, 'useWorker' | 'resize' | 'disableForReducedMotion'>
+
+export function create(canvas: HTMLCanvasElement, globalOptions?: GlobalConfettiOptions): FireWithReset {
   return confettiCannon(canvas, globalOptions || {});
 }
 
-function confettiCannon(canvas: HTMLCanvasElement | null, globalOpts?: { useWorker?: boolean; resize?: boolean }): FireWithReset {
+function confettiCannon(canvas: HTMLCanvasElement | null, globalOpts?: GlobalConfettiOptions): FireWithReset {
   const isLibCanvas = !canvas;
   const allowResize = !!(globalOpts && (globalOpts as any).resize);
   const globalDisableForReducedMotion = prop(globalOpts, 'disableForReducedMotion', Boolean) as boolean || false;
@@ -721,7 +728,7 @@ function confettiCannon(canvas: HTMLCanvasElement | null, globalOpts?: { useWork
   let animationObj: null | ReturnType<typeof animate> = null;
   let hasResizeEventRegistered = false;
 
-  function fireLocal(options: ConfettiOptions, size: { width: number | null; height: number | null }, done: () => void) {
+  function fireLocal(options: ConfettiOptions, size: { width: number; height: number }, done: () => void) {
     const particleCount = prop(options, 'particleCount', onlyPositiveInt) as number;
     const angle = prop(options, 'angle', Number) as number;
     const spread = prop(options, 'spread', Number) as number;
@@ -788,7 +795,8 @@ function confettiCannon(canvas: HTMLCanvasElement | null, globalOpts?: { useWork
         (worker as any).postMessage({ resize: { width: obj.width, height: obj.height } });
         return;
       }
-      size.width = size.height = null;
+      size.width = 0;
+      size.height = 0;
     };
 
     const done = () => {

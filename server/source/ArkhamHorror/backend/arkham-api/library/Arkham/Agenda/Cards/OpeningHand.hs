@@ -2,9 +2,10 @@ module Arkham.Agenda.Cards.OpeningHand (openingHand) where
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.EncounterSet qualified as Set
 import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Helpers.Query (getInvestigators)
 import Arkham.Matcher
 import Arkham.Scenarios.FortuneAndFolly.Helpers
 import Arkham.Trait (Trait (Casino))
@@ -21,7 +22,7 @@ instance HasAbilities OpeningHand where
     [ restricted a 1 (exists $ InvestigatorAt $ LocationWithEnemy $ EnemyWithTrait Casino <> ReadyEnemy)
         $ forced
         $ PhaseBegins #when #enemy
-    , mkAbility a 2 $ forced $ EnemyDefeated #after You ByAny (EnemyWithTrait Casino)
+    , mkAbility a 2 $ forced $ IfEnemyDefeated #after You ByAny (EnemyWithTrait Casino)
     ]
 
 instance RunMessage OpeningHand where
@@ -36,6 +37,7 @@ instance RunMessage OpeningHand where
     AdvanceAgenda (isSide B attrs -> True) -> do
       createEnemyAtLocationMatching_ Enemies.dimensionalShamblerHunterFromBeyond "Roulette Wheel"
       shuffleEncounterDiscardBackIn
+      raiseAlarmLevel attrs =<< getInvestigators
       doStep 1 msg
       advanceAgendaDeck attrs
       pure a

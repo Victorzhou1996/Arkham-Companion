@@ -3,11 +3,10 @@ import { computed } from 'vue'
 import { Game } from '@/arkham/types/Game'
 import * as ArkhamGame from '@/arkham/types/Game'
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message'
-import { imgsrc } from '@/arkham/helpers'
+import { cardImage } from '@/arkham/cardImages'
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import * as Arkham from '@/arkham/types/ScarletKey'
-import PoolItem from '@/arkham/components/PoolItem.vue';
-import { TokenType } from '@/arkham/types/Token';
+import TokenPool from '@/arkham/components/TokenPool.vue';
 
 export interface Props {
   game: Game
@@ -24,8 +23,7 @@ const emit = defineEmits<{
 
 const image = computed(() => {
   const { id, stability } = props.scarletKey
-  const suffix = stability == 'Unstable' ? 'b' : ''
-  return imgsrc(`cards/${id.replace('c', '')}${suffix}.avif`);
+  return cardImage(id, stability === 'Unstable' ? 'b' : '')
 })
 
 const id = computed(() => props.scarletKey.id)
@@ -78,10 +76,6 @@ const abilities = computed(() => {
     }, []);
 })
 
-const clues = computed(() => props.scarletKey.tokens[TokenType.Clue])
-const resources = computed(() => props.scarletKey.tokens[TokenType.Resource])
-const charges = computed(() => props.scarletKey.tokens[TokenType.Charge])
-const empowerment = computed(() => props.scarletKey.tokens[TokenType.Empowerment])
 </script>
 
 <template>
@@ -95,10 +89,7 @@ const empowerment = computed(() => props.scarletKey.tokens[TokenType.Empowerment
           @click="$emit('choose', cardAction)"
         />
         <div class="pool">
-          <PoolItem v-if="clues && clues > 0" type="clue" :amount="clues" />
-          <PoolItem v-if="resources && resources > 0" type="resource" :amount="resources" />
-          <PoolItem v-if="charges && charges > 0" type="resource" :amount="charges" />
-          <PoolItem v-if="empowerment && empowerment > 0" type="resource" :amount="empowerment" />
+          <TokenPool :tokens="scarletKey.tokens" />
         </div>
       </div>
       <AbilityButton
@@ -157,7 +148,7 @@ const empowerment = computed(() => props.scarletKey.tokens[TokenType.Empowerment
   border: 0;
   color: #fff;
   border-radius: 4px;
-  border: 1px solid #ff00ff;
+  border: 1px solid var(--select);
 }
 
 .card {
@@ -178,14 +169,14 @@ const empowerment = computed(() => props.scarletKey.tokens[TokenType.Empowerment
   flex-wrap: wrap;
   align-self: flex-start;
   align-items: flex-end;
-  z-index: 15;
+  z-index: var(--z-index-15);
   :deep(img) {
-    width: 20px;
+    width: var(--card-token-width);
     height: auto;
   }
 
   :deep(.token-container) {
-    width: 20px;
+    width: var(--card-token-width);
   }
 
   &:not(:has(.key--can-interact)) {

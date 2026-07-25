@@ -1,10 +1,13 @@
 <script lang="ts">
 import { defineComponent, h } from 'vue'
 import { type FlavorTextEntry, type FlavorTextModifier, type ImageModifier, type ListItemEntry } from '@/arkham/types/FlavorText'
-import { baseUrl, formatContent } from '@/arkham/helpers'
-import { I18n, useI18n } from 'vue-i18n'
-import { imgsrc } from '@/arkham/helpers'
+import { baseUrl, formatContent, imgsrc } from '@/arkham/helpers'
+import { cardImage } from '@/arkham/cardImages'
+import { type ComposerTranslation, useI18n } from 'vue-i18n'
 import { tarotArcanaImage } from '@/arkham/types/TarotCard'
+import { chaosTokenImage } from '@/arkham/types/ChaosToken'
+import CodexEntry from '@/arkham/components/CodexEntry.vue'
+import ChaosTokenMorph from '@/arkham/components/ChaosTokenMorph.vue'
 
 function entryStyles(entry: FlavorTextEntry): { [key: string]: boolean } {
   switch (entry.tag) {
@@ -17,6 +20,7 @@ function entryStyles(entry: FlavorTextEntry): { [key: string]: boolean } {
     case 'EntrySplit': return {}
     case 'HeaderEntry': return {}
     case 'TarotEntry': return {"card": true, "no-overlay": true}
+    case 'ChaosTokenEntry': return {"chaos-token": true}
     case 'CardEntry': {
       const mods = entry.imageModifiers.reduce((acc, m) => { return { [imageModifierToStyle(m)]: true, ...acc }}, {})
       return {"card": true, "no-overlay": true, ...mods}
@@ -38,12 +42,14 @@ function modifierToStyle(modifier: FlavorTextModifier): string {
   switch (modifier) {
     case 'BlueEntry': return 'blue'
     case 'GreenEntry': return 'green'
+    case 'CodexEntry': return 'codex'
     case 'RedEntry': return 'red'
     case 'BorderedEntry': return 'bordered'
     case 'NestedEntry': return 'nested'
     case 'ResolutionEntry': return 'resolution'
     case 'CheckpointEntry': return 'checkpoint'
     case 'InterludeEntry': return 'interlude'
+    case 'HauntedEntry': return 'haunted'
     case 'RightAligned': return 'right'
     case 'CenteredEntry': return 'center'
     case 'NoUnderline': return 'no-underline'
@@ -54,14 +60,27 @@ function modifierToStyle(modifier: FlavorTextModifier): string {
   }
 }
 
-function formatListEntry(t: I18n, entry: { tag: 'ListEntry', list: ListItemEntry[] }): any {
+function formatListEntry(t: ComposerTranslation, entry: ListItemEntry): ReturnType<typeof h> {
   const inner = formatEntry(t, entry.entry)
-  return h('li',  entry.nested.length == 0 ? inner : [inner, h('ul', entry.nested.map((e) => formatListEntry(t, e)))])
+  return h('li',  entry.nested.length == 0 ? inner : [inner, h('ul', entry.nested.map((e: ListItemEntry) => formatListEntry(t, e)))])
 }
 
-function formatEntry(t: I18n, entry: FlavorTextEntry, classes: { [key: string]: boolean } = {}): any {
+function localizeBasicEntry(text: string): string {
+  const translator = (
+    globalThis as typeof globalThis & {
+      __translateBasicEntryZh?: (source: string) => string
+    }
+  ).__translateBasicEntryZh
+
+  return translator ? translator(text) : text
+}
+
+function formatEntry(t: ComposerTranslation, entry: FlavorTextEntry, classes: { [key: string]: boolean } = {}): ReturnType<typeof h> {
   switch (entry.tag) {
-    case 'BasicEntry': return h('p', { innerHTML: formatContent(entry.text.startsWith('$') ? t(entry.text.slice(1)) : entry.text) })
+    case 'BasicEntry': {
+      const text = entry.text.startsWith('$') ? t(entry.text.slice(1)) : entry.text
+      return h('p', { innerHTML: formatContent(localizeBasicEntry(text)) })
+    }
     case 'HeaderEntry': if (entry.level == 1) {
         return h('header', [h('h1', { class: classes, innerHTML: formatContent(t(entry.key)) })])
       } else {
@@ -69,15 +88,21 @@ function formatEntry(t: I18n, entry: FlavorTextEntry, classes: { [key: string]: 
       }
     case 'I18nEntry': return h('div', { innerHTML: formatContent(t(entry.key, {...entry.variables, setImgPath: `${baseUrl}/img/arkham/encounter-sets` })) })
     case 'ModifyEntry': {
+      const styles = entryStyles(entry)
+      if (styles.codex) {
+        return h(CodexEntry, null, { default: () => [formatEntry(t, entry.entry)] })
+      }
       // HeaderEntry is handled specially to avoid wrapping it in a div
-      if (entry.entry.tag === 'HeaderEntry') return formatEntry(t, entry.entry, entryStyles(entry))
-      return h('div', { class: entryStyles(entry) }, [formatEntry(t, entry.entry)])
+      if (entry.entry.tag === 'HeaderEntry') return formatEntry(t, entry.entry, styles)
+      return h('div', { class: styles }, [formatEntry(t, entry.entry)])
     }
     case 'CompositeEntry': return h('div', { class: "composite" }, entry.entries.map((e) => formatEntry(t, e)))
     case 'ColumnEntry': return h('div', { class: "columns" }, entry.entries.map((e) => formatEntry(t, e)))
     case 'ListEntry': return h('ul', entry.list.map((e) => formatListEntry(t, e)))
-    case 'CardEntry': return h('div', [h('img', { class: entryStyles(entry), src: imgsrc(`cards/${entry.cardCode.replace(/^c/, "")}.avif`)})])
+    case 'CardEntry': return h('div', [h('img', { class: entryStyles(entry), src: cardImage(entry.cardCode)})])
     case 'TarotEntry': return h('div', [h('img', { class: entryStyles(entry), src: imgsrc(`tarot/${tarotArcanaImage(entry.tarot)}`)})])
+    case 'ChaosTokenEntry': return h('div', [h('img', { class: entryStyles(entry), src: chaosTokenImage(entry.chaosTokenFace)})])
+    case 'ChaosTokenMorphEntry': return h(ChaosTokenMorph, { from: entry.morphFrom, to: entry.morphTo })
     case 'EntrySplit': return h('hr')
     default: return h('div', "Unknown entry type")
   }
@@ -98,6 +123,23 @@ export default defineComponent({
 
 <style scoped>
 .composite { display: contents; }
+
+.chaos-token, :deep(.chaos-token) {
+  display: block;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.interlude-banner, :deep(.interlude-banner) {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
 .columns, :deep(.columns) {
   display: flex;
   flex-direction: row;
@@ -108,7 +150,7 @@ export default defineComponent({
     flex-direction: column;
     flex: 1 1 auto;
     padding: 10px 20px;
-    z-index: 5;
+    z-index: var(--z-index-5);
   }
 
   .composite {
@@ -123,6 +165,30 @@ export default defineComponent({
     height: calc(100% - 20px);
     content: '';
     border-left: 1px solid black;
+  }
+
+  /* When a column contains a chaos token, drop the divider line and
+     center the token + paragraph as a stacked block. */
+  .composite:has(.chaos-token) {
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+
+    &::after {
+      content: none;
+    }
+
+    > div {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    p, :deep(p) {
+      margin: 0;
+      text-align: center;
+    }
   }
 
   &.simple {
@@ -156,7 +222,7 @@ export default defineComponent({
   background-color: color-mix(in srgb, #3a4a69, transparent 90%);
   padding: 20px;
   position: relative;
-  z-index: 0;
+  z-index: var(--z-index-0);
 
   &.nested {
     border: 0;
@@ -171,7 +237,7 @@ export default defineComponent({
     content: "";
     position: absolute;
     inset: 0;
-    z-index: -1;
+    z-index: var(--z-index-neg-1);
   }
 
   > p:first-child {
@@ -198,7 +264,7 @@ export default defineComponent({
   background-color: color-mix(in srgb, var(--color), transparent 90%);
   padding: 20px;
   position: relative;
-  z-index: 0;
+  z-index: var(--z-index-0);
 
   &:has(.composite > :nth-child(2)) {
     display: flex;
@@ -219,13 +285,14 @@ export default defineComponent({
     content: "";
     position: absolute;
     inset: 0;
-    z-index: 1;
+    z-index: var(--z-index-1);
   }
 
   > p:first-child {
     margin-left: 35px;
   }
 }
+
 
 .right, :deep(.right) {
   text-align: right !important;
@@ -235,6 +302,13 @@ export default defineComponent({
 .basic, :deep(.basic), p.basic, :deep(p.basic) {
   font-style: normal !important;
   font-family: auto !important;
+}
+
+.censor, :deep(.censor) {
+  background-color: black;
+  color: black;
+  padding: 0 4px;
+  border-radius: 2px;
 }
 
 :deep(b), :deep(i), :deep(strong) {
@@ -310,6 +384,10 @@ p.indented, :deep(p.indented) {
   margin-inline: 50px;
 }
 
+div:has(p.unindented), :deep(div:has(p.unindented)) {
+  padding-inline: 0px;
+}
+
 p.billenia, :deep(p.billenia) {
   font-family: "Billenia";
   font-weight: 500;
@@ -356,7 +434,7 @@ p.billenia, :deep(p.billenia) {
         mix-blend-mode: multiply;
       }
       &::before {
-        z-index: 2;
+        z-index: var(--z-index-2);
         pointer-events: none;
         position: absolute;
         inset: 10px;
@@ -404,6 +482,27 @@ p.billenia, :deep(p.billenia) {
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"%3E%3Cpath d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636l4.95 4.95z"/%3E%3C/svg%3E');
   }
 
+  /* Red entries add outer spacing; align only their invalid marker with the first line. */
+  &:not(li):has(> div > .red:first-child)::before {
+    margin-top: 20px;
+  }
+
+  &:has(> .composite),
+  &:has(> ul) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  &:has(> .composite)::before,
+  &:has(> ul)::before {
+    margin-top: 10px;
+  }
+
+  > .composite {
+    display: block;
+  }
+
   &.right::after {
     content: '';
     display: inline-block;
@@ -420,9 +519,18 @@ p.billenia, :deep(p.billenia) {
   }
 }
 
+li:has(> .invalid) > ul,
+:deep(li:has(> .invalid) > ul) {
+  color: #666;
+}
+
+li:has(> .invalid) > ul .valid,
+:deep(li:has(> .invalid) > ul .valid) {
+  color: var(--neutral-extra-dark);
+}
+
 h3, :deep(h3) {
-  margin-bottom: 10px;
-  font-size: 1.1em;
+  font-size: 1.3em;
   font-weight: bold;
   text-decoration: underline;
   justify-self: center;
@@ -453,6 +561,28 @@ h3, :deep(h3) {
     background-repeat: no-repeat;
     background-color: green;
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"%3E%3Cpath d="M9 19l-6-6 1.414-1.414L9 16.172l10.586-10.586L21 7.586z"/%3E%3C/svg%3E');
+  }
+
+  /* Red entries add outer spacing; keep their marker aligned with the first line.
+     Excluding list items preserves the marker position used by normal list entries. */
+  &:not(li):has(> div > .red:first-child)::before {
+    margin-top: 20px;
+  }
+
+  &:has(> .composite),
+  &:has(> ul) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  &:has(> .composite)::before,
+  &:has(> ul)::before {
+    margin-top: 10px;
+  }
+
+  > .composite {
+    display: block;
   }
 
   &.right::after {
@@ -503,7 +633,7 @@ ul, :deep(ul) {
     padding: 0;
     text-align: center;
     gap: 0;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid var(--neutral-dark);
 
     > .composite {
       padding: 0;
@@ -516,7 +646,7 @@ ul, :deep(ul) {
 
       &:has(.yea) {
         background-color: lightcoral;
-        border-left: 2px solid #333;
+        border-left: 2px solid var(--neutral-dark);
       }
     }
     h3 {
@@ -537,7 +667,7 @@ ul, :deep(ul) {
     isolation: isolate;
     mix-blend-mode: multiply;
     &::before {
-      z-index: -1;
+      z-index: var(--z-index-neg-1);
       content: '';
       position: absolute;
       inset: -10px;
@@ -571,7 +701,7 @@ ul, :deep(ul) {
       content: "";
       position: absolute;
       inset: 0;
-      z-index: 3;
+      z-index: var(--z-index-3);
       border: 3px solid black;
       filter: blur(5px);
     }
@@ -605,6 +735,84 @@ ul, :deep(ul) {
   }
 }
 
+.haunted, :deep(.haunted) {
+  color: #fafbe8;
+
+  p, :deep(p) {
+    color: #fcfdef;
+    text-shadow:
+      0 1px 2px rgba(0, 0, 0, 1),
+      0 0 8px rgba(0, 0, 0, 0.9),
+      0 0 18px rgba(0, 0, 0, 0.65);
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  .chaos-token, :deep(.chaos-token) {
+    border-radius: 50%;
+    filter:
+      drop-shadow(0 0 1px rgba(0, 0, 0, 1))
+      drop-shadow(0 0 2px rgba(0, 0, 0, 0.95))
+      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 10px rgba(208, 215, 100, 0.95))
+      drop-shadow(0 0 22px rgba(180, 188, 75, 0.85))
+      drop-shadow(0 0 50px rgba(131, 137, 56, 0.6))
+      drop-shadow(0 0 90px rgba(131, 137, 56, 0.35));
+    animation: haunted-token-pulse 3.2s ease-in-out infinite;
+  }
+
+  .card, :deep(.card), img.card, :deep(img.card) {
+    filter:
+      brightness(0.7) contrast(1.15) saturate(0.6)
+      drop-shadow(0 0 18px rgba(0, 0, 0, 0.95))
+      drop-shadow(0 0 30px rgba(66, 69, 28, 0.5));
+    transition: filter 220ms ease;
+  }
+
+  .columns, :deep(.columns) {
+    justify-content: space-evenly;
+    gap: 0;
+
+    > * {
+      flex: 0 1 auto;
+      padding: 10px 8px;
+    }
+
+    .composite:has(.chaos-token), :deep(.composite:has(.chaos-token)) {
+      gap: 56px;
+    }
+
+    .composite::after {
+      border-left-color: rgba(131, 137, 56, 0.3) !important;
+    }
+  }
+}
+
+@keyframes haunted-token-pulse {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 1px rgba(0, 0, 0, 1))
+      drop-shadow(0 0 2px rgba(0, 0, 0, 0.95))
+      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 10px rgba(208, 215, 100, 0.95))
+      drop-shadow(0 0 22px rgba(180, 188, 75, 0.85))
+      drop-shadow(0 0 50px rgba(131, 137, 56, 0.6))
+      drop-shadow(0 0 90px rgba(131, 137, 56, 0.35));
+    transform: scale(1);
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 1px rgba(0, 0, 0, 1))
+      drop-shadow(0 0 2px rgba(0, 0, 0, 0.95))
+      drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9))
+      drop-shadow(0 0 16px rgba(230, 235, 130, 1))
+      drop-shadow(0 0 34px rgba(208, 215, 100, 1))
+      drop-shadow(0 0 70px rgba(180, 188, 75, 0.85))
+      drop-shadow(0 0 120px rgba(131, 137, 56, 0.55));
+    transform: scale(1.05);
+  }
+}
+
 .note-green, :deep(.note-green) {
   h1 {
     text-align: center;
@@ -626,18 +834,18 @@ ul, :deep(ul) {
   align-self: start;
   justify-self: start;
   justify-content: start;
-  margin: 10px;
+  margin: 0;
 }
 
 :deep(h1) {
   font-family: "Teutonic";
   font-weight: 500;
-  color: #38615F;
+  color: var(--green-title);
   padding-bottom: 2px;
   &:not(.no-underline) {
-    border-bottom: 1px solid #38615f;
+    border-bottom: 1px solid var(--green-title);
     &::after {
-      border-bottom: 1px solid #38615f;
+      border-bottom: 1px solid var(--green-title);
     }
   }
   font-size: 2em;
@@ -652,21 +860,356 @@ ul, :deep(ul) {
   font-family: "Teutonic";
   font-weight: 500;
   font-size: 1.5em;
-  color: #222;
+  color: var(--neutral-extra-dark);
 }
 
+:deep(.set-icon-font) {
+  display: inline-block;
+  font-family: "ArkhamEncounters";
+  font-style: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  background-color: transparent;
+}
 
 :deep(.encounter-sets) {
   display: flex;
-  gap: 10%;
+  gap: 12px;
   margin-block: 10px;
   justify-content: center;
   flex-wrap: wrap;
   img {
     align-self: center;
     width: 40px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+  span {
+    text-align: left;
+    font-size: 0.78rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  &.grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 20px;
+    justify-content: stretch;
+    > div {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      img {
+        width: 36px;
+        max-width: 36px;
+        flex-shrink: 0;
+      }
+      span {
+        font-weight: bold;
+      }
+    }
   }
 }
+
+/* example card images for the additional rules sections, mimicking the
+   rulebook layout: the two portrait cards (enemy/treachery) sit side by side
+   on top, with the landscape agenda centered below and slightly larger.
+   Natural aspect ratios are preserved so the landscape agenda is not cropped.
+   Faction-colored arrows (set via the --faction custom property) point at each
+   card, emulating the call-outs printed in the rulebook. */
+:deep(.card-examples) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .ex {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+  }
+  img {
+    width: 120px;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+  }
+  img.agenda {
+    width: 170px;
+  }
+  /* arrows overlay the card edge, tip pointing onto the card; --at sets the
+     vertical position to roughly match the rulebook call-out for each card.
+     The SVG (faction-colored, with its own white border + drop shadow) points
+     left; the base .arrow flips it to point right, .arrow.left keeps it left. */
+  .arrow {
+    position: absolute;
+    top: var(--at, 30%);
+    left: var(--left, -25px);
+    transform: translateY(-50%) scaleX(-1);
+    width: 36px;
+    height: auto;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: var(--z-index-5);
+  }
+  .arrow.left {
+    left: auto;
+    right: var(--right, -30px);
+    transform: translateY(-50%);
+  }
+  .arrow.top {
+    left: var(--left, 50%);
+    top: -15px;
+    right: var(--right, -30px);
+    transform: rotate(var(--angle, -90deg));
+  }
+}
+
+/* "Place around this location" example: a location card with clue tokens
+   physically bordering it (around the edges, not placed on the card).
+   Clue size = 1/6 of the card height, so exactly 6 clues run along the card's
+   right edge; the two corner clues extend one clue beyond the card, making the
+   right column 8 total. The left/right columns own the corners, so the
+   top/bottom rows sit inset between them to avoid corner overlap. */
+:deep(.place-around) {
+  --card-w: 180px;
+  --clue: calc(var(--card-w) * 1.4 / 6);
+  position: relative;
+  width: var(--card-w);
+  margin: calc(var(--clue) + 8px) auto;
+  > img {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+  }
+  .clues {
+    position: absolute;
+    display: flex;
+  }
+  .clues img {
+    width: var(--clue);
+    height: var(--clue);
+    border-radius: 0;
+    box-shadow: none;
+    transform: rotate(90deg);
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.6));
+  }
+  .clues.left,
+  .clues.right {
+    flex-direction: column;
+  }
+  /* right column extends into both corners (level with the top/bottom rows),
+     so its top and bottom clues sit in the corners with 6 along the side */
+  .clues.right {
+    right: calc(-1 * var(--clue));
+    top: calc(-1 * var(--clue));
+    height: calc(100% + 2 * var(--clue));
+    justify-content: space-between;
+  }
+  /* left column: 2 clues at the bottom, the lowest sitting in the corner
+     (level with the bottom row) */
+  .clues.left {
+    left: calc(-1 * var(--clue));
+    top: 0;
+    height: calc(100% + var(--clue));
+    justify-content: flex-end;
+  }
+  /* rows: full width, inset from the corners owned by the columns */
+  .clues.top,
+  .clues.bottom {
+    left: 0;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-evenly;
+  }
+  .clues.top {
+    top: calc(-1 * var(--clue));
+    justify-content: flex-end;
+  }
+  .clues.bottom {
+    bottom: calc(-1 * var(--clue));
+  }
+}
+
+/* "Warring" worked example — three panels mirroring the rulebook diagram:
+   setup, hunter move, and resolve attacks. */
+:deep(.warring-example) {
+  --we-card: 84px;
+  --we-h: calc(var(--we-card) * 1.4);
+  margin: 12px 0 4px;
+}
+:deep(.warring-example) .we-cap {
+  margin: 16px 0 10px;
+}
+:deep(.warring-example) .we-title {
+  margin: 8px 0;
+}
+:deep(.warring-example) img {
+  border-radius: 5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+:deep(.warring-example) .faded {
+  opacity: 0.4;
+}
+:deep(.warring-example) .we-panel {
+  position: relative;
+}
+:deep(.warring-example) .we-arrow {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Panel 1 — setup: three location + enemy groups, centered with a gap */
+:deep(.warring-example) .we-setup {
+  display: flex;
+  justify-content: center;
+  gap: 72px;
+  padding-bottom: 52px;
+}
+:deep(.warring-example) .we-spot {
+  position: relative;
+  flex: none;
+  width: var(--we-card);
+}
+:deep(.warring-example) .we-spot > .loc {
+  display: block;
+  width: 100%;
+}
+:deep(.warring-example) .we-spot > .enemy {
+  position: absolute;
+  width: 100%;
+  left: -40%;
+  top: 30%;
+  z-index: 2;
+}
+
+/* Panel 2 — hunter move: same centered layout as the setup panel. The side
+   locations keep faded "origin" copies of the enemies that moved; the middle
+   location gathers all three. */
+:deep(.warring-example) .we-move {
+  display: flex;
+  justify-content: center;
+  gap: 72px;
+  padding-bottom: 52px;
+  width: fit-content;
+  margin-inline: auto;
+  margin-bottom: 28px;
+}
+/* the left move arrow: from the bottom of the left enemy to the lower middle
+   of the same (red) enemy gathered on the middle location */
+:deep(.warring-example) .we-mv-left {
+  left: 10px;
+  bottom: -19px;
+  width: 150px;
+  height: 40px;
+  box-shadow: none;
+  border-radius: 0;
+}
+/* mirror of the left move arrow: from the right enemy to the middle (green) */
+:deep(.warring-example) .we-mv-right {
+  right: 10px;
+  bottom: -19px;
+  width: 150px;
+  height: 40px;
+  box-shadow: none;
+  border-radius: 0;
+}
+:deep(.warring-example) .we-move .enemy.red-faction {
+  left: -40%;
+  right: auto;
+  top: 30%;
+}
+:deep(.warring-example) .we-move .enemy.green-faction {
+  left: auto;
+  right: -40%;
+  top: 30%;
+}
+:deep(.warring-example) .we-move .enemy.blue-faction {
+  left: 0;
+  right: auto;
+  top: 25%;
+  z-index: 1;
+}
+/* the three enemies gathered on the middle location sit lower and further out
+   than the side "origin" copies */
+:deep(.warring-example) .we-move .gathered .enemy.red-faction {
+  left: -60%;
+  top: 50%;
+}
+:deep(.warring-example) .we-move .gathered .enemy.green-faction {
+  right: -60%;
+  top: 50%;
+}
+
+/* Panel 3 — resolve attacks: three enemies in a row */
+:deep(.warring-example) .we-attack {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0 12px;
+  width: fit-content;
+  margin-inline: auto;
+}
+/* attack arrows: top = Herald -> Disciple, bottom = Zealot -> Disciple */
+:deep(.warring-example) .we-atk-top {
+  left: 44px;
+  top: -10px;
+  width: 72px;
+  height: auto;
+  box-shadow: none;
+  border-radius: 0;
+}
+:deep(.warring-example) .we-atk-bot {
+  left: 72px;
+  bottom: -24px;
+  width: 150px;
+  height: auto;
+  box-shadow: none;
+  border-radius: 0;
+}
+:deep(.warring-example) .we-attack .enemy {
+  position: relative;
+  flex: none;
+  width: var(--we-card);
+}
+/* the outer two enemies (attackers' target and the green attacker) sit lower
+   than the middle one */
+:deep(.warring-example) .we-attack .enemy:nth-child(1),
+:deep(.warring-example) .we-attack .enemy:nth-child(3) {
+  transform: translateY(25%);
+}
+:deep(.warring-example) .we-attack .enemy > img {
+  display: block;
+  width: 100%;
+}
+:deep(.warring-example) .we-attack .dmg {
+  position: absolute;
+  /* width: 15px !important;*/
+  width: calc(var(--we-card) * 0.2) !important;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+  z-index: 3;
+}
+:deep(.warring-example) .we-attack .dmg.d1 { top: -8%; left: 40%; }
+:deep(.warring-example) .we-attack .dmg.d2 { top: 17%; left: 43%; }
+:deep(.warring-example) .we-attack .dmg.d3 { top: 27%; left: 79%; }
+:deep(.warring-example) .we-attack .dmg.d4 { top: 66%; left: 60%; }
 
 :deep(hr) {
   border:0;
@@ -682,7 +1225,7 @@ img.remove {
 div:has(> img.remove) {
   position: relative;
   &::before {
-    z-index: 1;
+    z-index: var(--z-index-1);
     content: "";
     display: block;
     inset: 0;
@@ -747,7 +1290,7 @@ div:has(> img.remove) {
       translateX(calc(-50% + (var(--i) - (var(--n) - 1)/2) * var(--shift)))
       rotate(calc((var(--i) - (var(--n) - 1)/2) * var(--spread)))
       translateY(var(--lift));
-    z-index: calc(var(--i) + 1);
+    z-index: calc(var(--i) + var(--z-index-1));
   }
 
   /* lift the hovered card and bring it to the top */
@@ -757,7 +1300,7 @@ div:has(> img.remove) {
       rotate(calc((var(--i) - (var(--n) - 1)/2) * var(--spread)))
       translateY(var(--hover-lift));
     box-shadow: 0 16px 30px rgba(0,0,0,.35);
-    z-index: 999;
+    z-index: var(--z-index-999);
   }
 
   /* ---- small utility: assign index (--i) with :nth-child rules ---- */
@@ -810,7 +1353,7 @@ div:has(> img.remove) {
       translateX(calc(-50% + (var(--i) - (var(--n) - 1)/2) * var(--shift)))
       rotate(calc((var(--i) - (var(--n) - 1)/2) * var(--spread)))
       translateY(var(--lift));
-    z-index: calc(100 - var(--i));
+    z-index: calc(var(--z-index-100) - var(--i));
   }
 
   /* lift the hovered card and bring it to the top */
@@ -820,7 +1363,7 @@ div:has(> img.remove) {
       rotate(calc((var(--i) - (var(--n) - 1)/2) * var(--spread)))
       translateY(var(--hover-lift));
     box-shadow: 0 16px 30px rgba(0,0,0,.35);
-    z-index: 999;
+    z-index: var(--z-index-999);
   }
 
   /* ---- small utility: assign index (--i) with :nth-child rules ---- */

@@ -5,6 +5,7 @@ import Arkham.Asset.Uses
 import Arkham.Capability
 import Arkham.Event.Cards qualified as Cards
 import Arkham.Event.Import.Lifted hiding (InvestigatorResigned)
+import Arkham.Exhaust (mkExhaustion)
 import Arkham.Helpers.Customization
 import Arkham.Helpers.Message (handleTargetChoice)
 import Arkham.Helpers.Message qualified as Msg
@@ -92,10 +93,8 @@ instance RunMessage TheRavenQuill where
             then pushAll defaultChoose
             else
               chooseOrRunOne iid
-                $ Label
-                  "Search your deck, discard pile, and hand for a copy of a named asset and play it (paying its cost). Then, attach The Raven Quill to it."
-                  [DoStep 1 msg]
-                : [Label "Do not search" defaultChoose | notNull assets]
+                $ Label "$cards.label.theRavenQuill.search" [DoStep 1 msg]
+                : [Label "$cards.label.theRavenQuill.doNotSearch" defaultChoose | notNull assets]
         else pushAll defaultChoose
       pure e
     DoStep 1 (PlayThisEvent iid (is attrs -> True)) -> do
@@ -106,7 +105,7 @@ instance RunMessage TheRavenQuill where
       search iid attrs iid sources matcher (defer attrs IsNotDraw)
       pure e
     SearchFound iid (isTarget attrs -> True) _ xs | null xs -> do
-      chooseOne iid [Label "No playable cards found" []]
+      chooseOne iid [Label "$label.noPlayableCardsFound" []]
       pure e
     SearchFound iid (isTarget attrs -> True) _ xs | notNull xs -> do
       let ws = defaultWindows iid
@@ -119,12 +118,7 @@ instance RunMessage TheRavenQuill where
       pure e
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       -- [DECKBUILDING]
-      chooseOne
-        iid
-        [ Label
-            "Either mark a checkbox on The Raven Quill's upgrade sheet, or reduce the experience cost to upgrade the attached asset before the next scenario by 1. (NOTE: you must handle this update manually when upgrading your deck via ArkhamDB)"
-            []
-        ]
+      chooseOne iid [Label "$cards.label.theRavenQuill.deckbuilding" []]
       pure e
     UseThisAbility iid (isSource attrs -> True) 2 -> do
       for_ attrs.attachedTo \case
@@ -144,7 +138,10 @@ instance RunMessage TheRavenQuill where
         hasCharge <- sourceAsset <=~> AssetWithUses Charge
         if
           | hasSecret && hasCharge ->
-              chooseOne iid [Label "Move secret" [moveToken Secret], Label "Move charge" [moveToken Charge]]
+              chooseOne iid
+                [ Label "$cards.label.theRavenQuill.moveSecret" [moveToken Secret]
+                , Label "$cards.label.theRavenQuill.moveCharge" [moveToken Charge]
+                ]
           | hasSecret -> push $ moveToken Secret
           | hasCharge -> push $ moveToken Charge
           | otherwise -> error "invalid choice"
@@ -153,8 +150,8 @@ instance RunMessage TheRavenQuill where
       for_ attrs.attachedTo \case
         AssetTarget aid -> do
           others <- select $ assetControlledBy iid <> #exhausted <> not_ (AssetWithId aid)
-          chooseOne iid $ Label "Do not ready asset" []
-            : [targetLabel asset [Exhaust (toTarget attrs), Ready (toTarget asset)] | asset <- others]
+          chooseOne iid $ Label "$cards.label.theRavenQuill.doNotReady" []
+            : [targetLabel asset [Exhaust (mkExhaustion attrs attrs), Ready (toTarget asset)] | asset <- others]
         _ -> error "invalid attach"
       pure e
     _ -> TheRavenQuill <$> liftRunMessage msg attrs

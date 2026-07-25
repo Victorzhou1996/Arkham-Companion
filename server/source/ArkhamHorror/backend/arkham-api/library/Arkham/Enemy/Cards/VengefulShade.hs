@@ -17,7 +17,7 @@ newtype VengefulShade = VengefulShade EnemyAttrs
 
 vengefulShade :: EnemyCard VengefulShade
 vengefulShade =
-  enemy VengefulShade Cards.vengefulShade (5, Static 2, 5) (0, 2)
+  enemy VengefulShade Cards.vengefulShade
     & setNoSpawn
     & setOnlyPrey
       (oneOf [investigatorIs Investigators.jimCulver, investigatorIs Investigators.jimCulverParallel])
@@ -36,10 +36,10 @@ instance HasAbilities VengefulShade where
                     <> EnemyCriteria (ThisEnemy $ EnemyWithoutModifier CannotBeAttacked)
                     <> CanAttack
                 )
-              $ ActionAbility [#fight] #combat (ActionCost 1)
+              $ ActionAbility #fight #combat (ActionCost 1)
           , basicAbility
               $ restricted a AbilityEvade (exists (You <> InvestigatorWithId iid))
-              $ ActionAbility [#evade] #agility (ActionCost 1)
+              $ ActionAbility #evade #agility (ActionCost 1)
           , mkAbility a 1 $ forced NotAnyWindow -- the beyond will call this
           ]
     _ -> extend a [mkAbility a 1 $ forced NotAnyWindow] -- the beyond will call this

@@ -32,12 +32,6 @@ removeBarrierBetweenConnected iid lid = do
 placeBarrier :: ReverseQueue m => LocationId -> LocationId -> m ()
 placeBarrier l1 l2 = push $ ScenarioCountIncrementBy (Barriers l1 l2) 1
 
-insertBarrier :: LocationId -> LocationId -> Meta -> Meta
-insertBarrier = incrementBarriers 1
-
-removeBarrier :: LocationId -> LocationId -> Meta -> Meta
-removeBarrier = decrementBarriers 1
-
 incrementBarriers :: Int -> LocationId -> LocationId -> Meta -> Meta
 incrementBarriers n a b (Meta barriers) =
   Meta $ Map.insertWith (+) (sortedPair a b) n barriers
@@ -68,8 +62,8 @@ flashback iid f = case f of
     recoverMemory AFollowedLead
     iids <- select $ InvestigatorAt "The Little Bookshop"
     teachings <- getSetAsideCard Assets.teachingsOfTheOrder
-    chooseOrRunOneM iid do
-      labeled "Do not take Teachings of the Order" nothing
+    chooseOrRunOneM iid $ scenarioI18n do
+      labeled' "doNotTakeTeachings" nothing
       targets iids \iid' -> do
         addCampaignCardToDeck iid' DoNotShuffleIn Assets.teachingsOfTheOrder
         takeControlOfSetAsideAsset iid' teachings
@@ -80,6 +74,7 @@ flashback iid f = case f of
   Flashback8 -> do
     scenarioI18n $ story $ i18nWithTitle "flashback8"
     recoverMemory AJailbreak
-    chooseOneM iid do
-      for_ [Cultist, Tablet, ElderThing] \face ->
-        labeled ("Remove " <> toDisplay face) $ removeChaosToken face
+    chooseOneM iid $ scenarioI18n do
+      labeled' "removeCultist" $ removeChaosToken Cultist
+      labeled' "removeTablet" $ removeChaosToken Tablet
+      labeled' "removeElderThing" $ removeChaosToken ElderThing

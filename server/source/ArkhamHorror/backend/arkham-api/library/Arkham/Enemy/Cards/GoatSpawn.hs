@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.GoatSpawn (goatSpawn) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Matcher
 
 newtype GoatSpawn = GoatSpawn EnemyAttrs
@@ -10,7 +10,7 @@ newtype GoatSpawn = GoatSpawn EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 goatSpawn :: EnemyCard GoatSpawn
-goatSpawn = enemy GoatSpawn Cards.goatSpawn (3, Static 3, 2) (1, 0)
+goatSpawn = enemy GoatSpawn Cards.goatSpawn
 
 instance HasAbilities GoatSpawn where
   getAbilities (GoatSpawn a) =

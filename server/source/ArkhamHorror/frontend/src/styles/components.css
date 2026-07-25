@@ -1,0 +1,146 @@
+h2.title {
+  color: var(--title);
+  font-size: 2em;
+  text-transform: uppercase;
+  font-family: Teutonic;
+}
+
+.box {
+  background-color: var(--box-background);
+  border: 1px solid var(--box-border);
+  color: var(--title);
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.card {
+  user-select: none;
+  box-shadow: var(--card-shadow);
+}
+
+.about-dead {
+  font-family: "AboutDead";
+  text-align: center;
+  font-size: 1.5em;
+}
+
+.error-message {
+  margin: 50px;
+  header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+}
+
+.fade-leave-active,
+.fade-enter-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  transition: opacity 0.3s;
+}
+
+.fade-enter-active {
+  transition-delay: 0.3s;
+}
+
+.fade-leave-to,
+.fade-enter-from {
+  opacity: 0;
+}
+
+@keyframes glow {
+  from {
+    --glow-rotation: 0deg;
+  }
+  to {
+    --glow-rotation: 360deg;
+  }
+}
+
+@keyframes objective-ring-rotation {
+  0% { --objective-ring-angle: 0deg; }
+  100% { --objective-ring-angle: 360deg; }
+}
+
+@property --objective-ring-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.objective-ring {
+  --objective-ring-angle: 0deg;
+  --objective-ring-clr-1: #198891;
+  --objective-ring-clr-2: #2d8f85;
+  --objective-ring-clr-3: #73fb22;
+  --objective-ring-border-width: 2px;
+  --objective-ring-outset: 2px;
+  --objective-ring-radius: 5px;
+
+  position: relative;
+  isolation: isolate;
+}
+
+.objective-ring > :is(.card, .card-frame-inner) {
+  position: relative;
+  z-index: var(--z-index-1);
+}
+
+.objective-ring::before,
+.objective-ring::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--objective-ring-outset));
+  border-radius: calc(var(--objective-ring-radius) + var(--objective-ring-outset));
+  background: conic-gradient(
+    from var(--objective-ring-angle),
+    var(--objective-ring-clr-1),
+    var(--objective-ring-clr-2),
+    var(--objective-ring-clr-3),
+    var(--objective-ring-clr-2),
+    var(--objective-ring-clr-1));
+  pointer-events: none;
+  animation: objective-ring-rotation 1s linear infinite;
+}
+
+.objective-ring::before {
+  z-index: var(--z-index-0);
+  padding: var(--objective-ring-border-width);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+}
+
+.objective-ring::after {
+  z-index: var(--z-index-neg-1);
+  filter: blur(10px);
+  opacity: 0.75;
+}
+
+.highlighted {
+  border: 2px solid transparent;
+  background: conic-gradient(from var(--glow-rotation), var(--gradient-glow)) border-box;
+  border-style: inset;
+  border-radius: 3px;
+  position: relative;
+  animation: glow 3s linear infinite;
+}
+
+/* On-card token pools (damage/horror/clue/doom shown on assets, enemies,
+   locations, ...). Centralizes size + count font on a single knob so they
+   scale together; overrides the scattered per-component token sizes. */
+.pool .poolItem {
+  --width: var(--card-token-width);
+  font-size: var(--card-token-width);
+}
+
+.pool .poolItem img {
+  width: var(--card-token-width) !important;
+  height: auto !important;
+}
+
+.pool .poolItem span {
+  font-size: calc(var(--card-token-width) * 0.62) !important;
+}

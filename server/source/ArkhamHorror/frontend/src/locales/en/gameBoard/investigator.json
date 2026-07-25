@@ -1,8 +1,31 @@
 {
     "discards": "Discards",
     "endTurn": "End turn",
+    "endTurnShort": "End",
     "skipTriggers": "Skip Triggers",
+    "skipAllTriggers": "Skip Triggers for All Investigators",
     "devouredCards": "Devoured ({count})",
-    "underneathCards": "Underneath ({count})"
+    "underneathCards": "Underneath ({count})",
+    "freeAbilitiesUnavailable": "<strong>Free abilities unavailable</strong><br>Fast and free abilities can't be used during an immediate action.",
+    "abilityTriggerMode": {
+        "AbilityOwnerOnly": {
+            "short": "O",
+            "description": "Ability {index}: ask only during your turn or your skill test"
+        },
+        "AbilityAlwaysAsk": {
+            "short": "A",
+            "description": "Ability {index}: always ask"
+        },
+        "AbilityAutoSkip": {
+            "short": "N",
+            "description": "Ability {index}: never ask"
+        }
+    },
+    "responseStatus": {
+        "label": "Investigator response status",
+        "active": "active turn",
+        "waiting": "waiting for response",
+        "idle": "no pending response"
+    }
 
 }

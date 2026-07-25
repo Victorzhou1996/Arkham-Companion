@@ -5,15 +5,18 @@
 
 module Api.Handler.Arkham.Games.Admin (
   getApiV1AdminR,
+  getApiV1AdminStatsR,
   getApiV1AdminRoomsR,
   getApiV1AdminGameR,
   getApiV1AdminFindGameR,
   putApiV1AdminGameR,
   getApiV1AdminGamesR,
+  getApiV1AdminActiveGamesR,
   putApiV1AdminGameRawR,
   deleteApiV1AdminRoomR,
 ) where
 
+import Api.Arkham.Epic (lookupGameEvent)
 import Api.Arkham.Helpers
 import Api.Handler.Arkham.Games.Shared
 import Arkham.Game
@@ -39,6 +42,13 @@ data AdminData = AdminData
   deriving stock (Show, Generic)
   deriving anyclass ToJSON
 
+data AdminStats = AdminStats
+  { currentUsers :: Int
+  , activeUsers :: Int
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass ToJSON
+
 data RoomData = RoomData
   { roomClients :: Int
   , roomLastUpdatedAt :: Maybe UTCTime
@@ -52,8 +62,15 @@ selectCount inner = fmap (sum . map unValue . toList) . selectOne $ inner $> cou
 
 getApiV1AdminR :: Handler AdminData
 getApiV1AdminR = do
-  recent <- addUTCTime (negate (14 * nominalDay)) <$> liftIO getCurrentTime
+  AdminStats {..} <- getApiV1AdminStatsR
   roomData <- getRoomData
+  activeGames <- getActiveGames roomData
+  recentGames <- runDB $ getRecentGames 20
+  pure $ AdminData {..}
+
+getApiV1AdminStatsR :: Handler AdminStats
+getApiV1AdminStatsR = do
+  recent <- addUTCTime (negate (14 * nominalDay)) <$> liftIO getCurrentTime
 
   runDB do
     currentUsers <- selectCount $ from $ table @User
@@ -68,14 +85,14 @@ getApiV1AdminR = do
         where_ (games.updatedAt >=. val recent)
         pure (countDistinct users.id)
 
-    activeGames <-
-      map toGameDetailsEntry <$> select do
-        games <- from $ table @ArkhamGameRaw
-        where_ (games.id `in_` valList (coerce $ map (.roomArkhamGameId) roomData))
-        pure games
-    recentGames <- getRecentGames 20
+    pure $ AdminStats {..}
 
-    pure $ AdminData {..}
+getActiveGames :: [RoomData] -> Handler [GameDetailsEntry]
+getActiveGames roomData = runDB do
+  map (`toGameDetailsEntry` 0) <$> select do
+    games <- from $ table @ArkhamGameRaw
+    where_ (games.id `in_` valList (coerce $ map (.roomArkhamGameId) roomData))
+    pure games
 
 getApiV1AdminGameR :: ArkhamGameId -> Handler GetGameJson
 getApiV1AdminGameR gameId = do
@@ -84,14 +101,20 @@ getApiV1AdminGameR gameId = do
   let Game {..} = g.currentData
   gameLog <- runDB $ getGameLog gameId Nothing
   let player = gameActivePlayerId
-  pure $ GetGameJson (Just player) g.variant (PublicGame gameId g.name gameLog.entries g.currentData)
+  mEvt <- runDB $ lookupGameEvent gameId
+  pure
+    $ GetGameJson
+      (Just player)
+      g.variant
+      (PublicGame gameId g.name gameLog.entries g.currentData)
+      (entityKey . fst <$> mEvt)
 
 getApiV1AdminFindGameR :: ArkhamPlayerId -> Handler GameDetailsEntry
 getApiV1AdminFindGameR playerId = do
   runDB do
     player <- get404 playerId
     g <- getEntity404 $ coerce player.arkhamGameId
-    pure $ toGameDetailsEntry g
+    pure $ toGameDetailsEntry g 0
 
 getRecentGames :: Int64 -> DB [GameDetailsEntry]
 getRecentGames n = do
@@ -100,41 +123,59 @@ getRecentGames n = do
     orderBy [desc games.updatedAt]
     limit n
     pure games
-  pure $ map toGameDetailsEntry games
+  pure $ map (`toGameDetailsEntry` 0) games
 
 getApiV1AdminGamesR :: Handler [GameDetailsEntry]
 getApiV1AdminGamesR = runDB $ getRecentGames 20
 
+getApiV1AdminActiveGamesR :: Handler [GameDetailsEntry]
+getApiV1AdminActiveGamesR = getRoomData >>= getActiveGames
+
 putApiV1AdminGameR :: ArkhamGameId -> Handler ()
 putApiV1AdminGameR gameId = do
   response <- requireCheckJsonBody
-  writeChannel <- (.channel) <$> getRoom gameId
-  updateGame response gameId writeChannel
+  mRoom <- lookupRoom gameId
+  updateGame response gameId mRoom
 
 -- TODO: Make this a websocket message
 putApiV1AdminGameRawR :: ArkhamGameId -> Handler ()
 putApiV1AdminGameRawR gameId = do
   response <- requireCheckJsonBody @_ @RawGameJsonPut
-  writeChannel <- (.channel) <$> getRoom gameId
-  updateGame (Raw response.gameMessage) gameId writeChannel
+  mRoom <- lookupRoom gameId
+  updateGame (Raw response.gameMessage) gameId mRoom
 
 getApiV1AdminRoomsR :: Handler [RoomData]
 getApiV1AdminRoomsR = getRoomData
 
 getRoomData :: Handler [RoomData]
 getRoomData = do
-  roomsVar <- getsApp appGameRooms
-  rooms <- liftIO $ readMVar roomsVar
-
-  runDB do
-    rooms & Map.assocs & traverse \(arkhamGameId, Room {..}) -> do
-      mRoomLastUpdatedAt <- fmap arkhamGameUpdatedAt <$> E.get arkhamGameId
-      pure
-        $ RoomData
-          { roomClients = socketClients
-          , roomLastUpdatedAt = mRoomLastUpdatedAt
-          , roomArkhamGameId = arkhamGameId
-          }
+  -- When a Redis broker is configured, we aggregate room/client counts
+  -- across every API server through `arkham:rooms`. Otherwise fall back
+  -- to this server's in-memory map (single-server / dev setups).
+  mRedisCounts <- getRedisRoomCounts
+  case mRedisCounts of
+    Just counts -> runDB do
+      counts & Map.assocs & traverse \(arkhamGameId, clients) -> do
+        mRoomLastUpdatedAt <- fmap arkhamGameUpdatedAt <$> E.get arkhamGameId
+        pure
+          $ RoomData
+            { roomClients = clients
+            , roomLastUpdatedAt = mRoomLastUpdatedAt
+            , roomArkhamGameId = arkhamGameId
+            }
+    Nothing -> do
+      roomsVar <- getsApp appGameRooms
+      rooms <- liftIO $ readMVar roomsVar
+      runDB do
+        rooms & Map.assocs & traverse \(arkhamGameId, room) -> do
+          mRoomLastUpdatedAt <- fmap arkhamGameUpdatedAt <$> E.get arkhamGameId
+          clients <- roomClientCount room
+          pure
+            $ RoomData
+              { roomClients = clients
+              , roomLastUpdatedAt = mRoomLastUpdatedAt
+              , roomArkhamGameId = arkhamGameId
+              }
 
 deleteApiV1AdminRoomR :: ArkhamGameId -> Handler ()
 deleteApiV1AdminRoomR = deleteRoom

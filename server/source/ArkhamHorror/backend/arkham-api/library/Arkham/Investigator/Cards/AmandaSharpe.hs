@@ -51,10 +51,13 @@ instance RunMessage AmandaSharpe where
       doStep 1 msg
       pure $ AmandaSharpe $ attrs & setMeta @(Maybe CardId) Nothing
     DoStep 1 (UseThisAbility iid (isSource attrs -> True) 1) -> do
-      hand <- field InvestigatorHand iid
-      case find (`cardMatch` cardIs Skills.whispersFromTheDeep) hand of
-        Nothing -> when (notNull hand) do
-          chooseOrRunOneM iid $ targets hand $ handleTarget iid (attrs.ability 1)
+      playerCards <-
+        fieldMap InvestigatorHand (filter (isJust . preview _PlayerCard)) iid
+      case find (`cardMatch` cardIs Skills.whispersFromTheDeep) playerCards of
+        Nothing -> do
+          let hand = filter (`cardMatch` NonWeakness) playerCards
+          when (notNull hand) do
+            chooseOrRunOneM iid $ targets hand $ handleTarget iid (attrs.ability 1)
         Just whispersFromTheDeep -> do
           chooseOneM iid do
             abilityLabeled iid (mkAbility (proxied whispersFromTheDeep.id attrs) 1 (forced AnyWindow)) do
@@ -80,7 +83,7 @@ instance RunMessage AmandaSharpe where
       withSkillTest \sid -> do
         for_ (toResult @(Maybe CardId) attrs.meta) \cardId -> do
           chooseOneM iid do
-            labeled "Double skill icons" $ skillTestModifier sid (toSource attrs) cardId DoubleSkillIcons
-            labeled "Do not double skill icons" nothing
+            labeledI "doubleSkillIcons" $ skillTestModifier sid (toSource attrs) cardId DoubleSkillIcons
+            labeledI "doNotDoubleSkillIcons" nothing
       pure i
     _ -> AmandaSharpe <$> liftRunMessage msg attrs

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { imgsrc } from '@/arkham/helpers';
-import { watch, computed, ref, inject } from 'vue'
+import { watch, computed, ref, inject, onMounted, onUnmounted } from 'vue'
 import { Game } from '@/arkham/types/Game';
 import { useI18n } from 'vue-i18n';
 import WorldMapDrawerContent from '@/arkham/components/TheScarletKeys/WorldMapDrawerContent.vue';
@@ -48,11 +48,12 @@ interface LocationData {
   travel: number | null
   unlocked: boolean
 }
-interface MapData {
+type LocationInputData = Partial<Pick<LocationData, 'travel'>> & Pick<LocationData, 'unlocked'>
+export interface MapData {
   current: string
   hasTicket: boolean
-  available: MapLocationId[]
-  locations: [MapLocationId, LocationData][]
+  available: string[]
+  locations: [string, LocationInputData][]
 } 
 
 const send = inject<(msg: string) => void>('send', () => {})
@@ -108,14 +109,16 @@ const data = {
 }
 
 //convert props.mapData.locations to a Record<MapLocationId, LocationData>
-const locationData = computed<Record<MapLocationId, LocationData>>(() => {
-  const record: Record<MapLocationId, LocationData> = {} as Record<MapLocationId, LocationData>
+const locationData = computed<Record<string, LocationData>>(() => {
+  const record: Record<string, LocationData> = {}
   for (const [key, value] of props.mapData.locations) {
     const unlocked = props.mapData.available.includes(key)
-    if (greenLocations.includes(key)) {
-      record[key] = {...value, ...data[key], travel: (value.travel ?? 0) + 1 , unlocked }
+    const mapPoint = data[key as MapLocationId]
+    if (!mapPoint) continue
+    if ((greenLocations as readonly string[]).includes(key)) {
+      record[key] = {...value, ...mapPoint, travel: (value.travel ?? 0) + 1 , unlocked }
     } else {
-      record[key] = {...value, ...data[key], unlocked}
+      record[key] = {...value, ...mapPoint, travel: value.travel ?? null, unlocked}
     }
   }
   return record
@@ -249,9 +252,9 @@ const toggleFullScreen = async () => {
 }
 
 // Handle user pressing ESC or system exit
-document.addEventListener('fullscreenchange', () => {
-  fullScreen.value = !!document.fullscreenElement
-})
+const onFullscreenChange = () => { fullScreen.value = !!document.fullscreenElement }
+onMounted(() => document.addEventListener('fullscreenchange', onFullscreenChange))
+onUnmounted(() => document.removeEventListener('fullscreenchange', onFullscreenChange))
 
 </script>
 
@@ -734,7 +737,7 @@ document.addEventListener('fullscreenchange', () => {
   </svg>
 
   <!-- HTML overlay button — unaffected by SVG viewBox/coordinate system -->
-  <button class="expand-btn" @click.stop="toggleFullScreen" title="Toggle fullscreen">
+  <button class="expand-btn" @click.stop="toggleFullScreen" :title="$t('worldMap.toggleFullscreen')">
     <svg v-if="!fullScreen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
       <path fill-rule="evenodd" d="M15 3.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V5.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l3.97-3.97h-2.69a.75.75 0 0 1-.75-.75Zm-12 0A.75.75 0 0 1 3.75 3h4.5a.75.75 0 0 1 0 1.5H5.56l3.97 3.97a.75.75 0 0 1-1.06 1.06L4.5 5.56v2.69a.75.75 0 0 1-1.5 0v-4.5Zm11.47 11.78a.75.75 0 1 1 1.06-1.06l3.97 3.97v-2.69a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75h-4.5a.75.75 0 0 1 0-1.5h2.69l-3.97-3.97Zm-4.94-1.06a.75.75 0 0 1 0 1.06L5.56 19.5h2.69a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v2.69l3.97-3.97a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/>
     </svg>
@@ -827,7 +830,7 @@ svg {
   align-items: center;
   justify-content: center;
   opacity: 0.8;
-  z-index: 10;
+  z-index: var(--z-index-10);
   transition: opacity 0.15s, background 0.15s;
 
   &:hover { opacity: 1; background: rgba(0,0,0,0.75); }

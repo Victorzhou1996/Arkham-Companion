@@ -5,7 +5,7 @@ import { useDebug } from '@/arkham/debug';
 import { imgsrc } from '@/arkham/helpers';
 import type { Game } from '@/arkham/types/Game';
 import type { ConcealedCard } from '@/arkham/types/ConcealedCard';
-import { useMenu } from '@/composeable/menu';
+import { useMenu } from '@/composable/menu';
 
 const props = defineProps<{
   game: Game
@@ -66,7 +66,7 @@ const debug = useDebug()
 
 <template>
   <Draggable>
-    <template #handle><h2>Debug Concealed Card</h2></template>
+    <template #handle><h2>{{ $t('debug.concealedCard.title') }}</h2></template>
     <div class="concealed-card--outer">
       <div class="concealed-card" :data-index="card.id">
         <div class="card-frame">
@@ -76,7 +76,7 @@ const debug = useDebug()
         </div>
       </div>
       <div class="buttons">
-        <button @click="emit('close')">Close</button>
+        <button @click="emit('close')">{{ $t('debug.common.close') }}</button>
       </div>
     </div>
   </Draggable>
@@ -117,7 +117,7 @@ const debug = useDebug()
   border: 0;
   color: #fff;
   border-radius: 4px;
-  border: 1px solid #ff00ff;
+  border: 1px solid var(--select);
 }
 
 .card-frame {

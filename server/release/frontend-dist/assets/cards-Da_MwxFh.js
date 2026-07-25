@@ -1,1 +1,0 @@
-import{am as a}from"./index-B8J-VuBr.js";import{l as r}from"./api-CioXnE15.js";const o=a("cards",{state:()=>({cards:[],loaded:!1}),getters:{getCards(t){return t.cards}},actions:{async fetchCards(){if(!this.loaded)try{const t=await r(!0);this.cards=t,this.loaded=!0}catch(t){console.log(t)}}}});export{o as u};

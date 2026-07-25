@@ -1,8 +1,10 @@
 module Arkham.Scenarios.DarkSideOfTheMoon.Helpers where
 
+import Arkham.Campaigns.TheDreamEaters.Helpers
 import Arkham.Classes.HasGame
 import {-# SOURCE #-} Arkham.Game ()
 import Arkham.Helpers.Query (getInvestigators)
+import Arkham.I18n
 import Arkham.Id
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Message.Lifted
@@ -12,6 +14,9 @@ import Arkham.Source
 import Arkham.Token
 import Arkham.Tracing
 import Arkham.Window
+
+scenarioI18n :: (HasI18n => a) -> a
+scenarioI18n a = campaignI18n $ scope "darkSideOfTheMoon" a
 
 getAlarmLevel :: (HasGame m, Tracing m) => InvestigatorId -> m Int
 getAlarmLevel = fieldMap InvestigatorTokens (countTokens AlarmLevel)
@@ -28,7 +33,10 @@ reduceAlarmLevel source = reduceAlarmLevelBy 1 source
 {-# INLINE reduceAlarmLevel #-}
 
 reduceAlarmLevelBy :: (Sourceable source, ReverseQueue m) => Int -> source -> InvestigatorId -> m ()
-reduceAlarmLevelBy n (toSource -> source) iid = removeTokens source iid AlarmLevel n
+reduceAlarmLevelBy n (toSource -> source) iid = do
+  current <- getAlarmLevel iid
+  let n' = min n (max 0 (current - 1))
+  when (n' > 0) $ removeTokens source iid AlarmLevel n'
 {-# INLINE reduceAlarmLevelBy #-}
 
 getMaxAlarmLevel :: (HasGame m, Tracing m) => m Int

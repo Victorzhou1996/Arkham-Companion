@@ -1,8 +1,11 @@
 module Arkham.Asset.Cards (module Arkham.Asset.Cards, module X) where
 
 import Arkham.Asset.Cards.AndrePatel as X
+import Arkham.Asset.Cards.CarolynFern2 as X
 import Arkham.Asset.Cards.Core2026 as X
 import Arkham.Asset.Cards.EdgeOfTheEarth as X
+import Arkham.Asset.Cards.MarieLambeau2 as X
+import Arkham.Asset.Cards.MiguelDeLaCruz as X
 import Arkham.Asset.Cards.NightOfTheZealot as X
 import Arkham.Asset.Cards.Parallel as X
 import Arkham.Asset.Cards.Promo as X
@@ -19,6 +22,8 @@ import Arkham.Asset.Cards.TheInnsmouthConspiracy as X
 import Arkham.Asset.Cards.ThePathToCarcosa as X
 import Arkham.Asset.Cards.TheScarletKeys as X
 import Arkham.Asset.Cards.TommyMuldoon2 as X
+import Arkham.Asset.Cards.RedTideRising as X
+import Arkham.Asset.Cards.RelicsOfThePast as X
 import Arkham.Card.CardCode
 import Arkham.Card.CardDef
 import Arkham.Prelude
@@ -36,6 +41,7 @@ allPlayerAssetCards =
       , adaptable1
       , agentAriQuinnFoundationResearcher
       , agencyBackup5
+      , ajax
       , alchemicalDistillation
       , alchemicalTransmutation
       , alchemicalTransmutation2
@@ -50,6 +56,7 @@ allPlayerAssetCards =
       , ancestralKnowledge3
       , ancestralToken
       , anchorChain
+      , ancientAnkh
       , ancientCovenant2
       , ancientStone1
       , ancientStoneKnowledgeOfTheElders4
@@ -74,6 +81,7 @@ allPlayerAssetCards =
       , aquinnah3
       , arbiterOfFates
       , arcaneEnlightenment
+      , arcaneExperience4
       , arcaneInitiate
       , arcaneInitiate3
       , arcaneInsight4
@@ -104,6 +112,7 @@ allPlayerAssetCards =
       , astronomicalAtlas3
       , augur
       , augustLindquist
+      , autopsyReport3
       , averyClaypoolAntarcticGuide
       , averyClaypoolAntarcticGuideResolute
       , awakenedMantle
@@ -133,6 +142,7 @@ allPlayerAssetCards =
       , blackjack
       , blackjack2
       , blackmailFile
+      , bladeOfArkat
       , bladeOfYothTheFathersIre
       , blasphemousCovenant2
       , blessedBlade
@@ -141,6 +151,7 @@ allPlayerAssetCards =
       , bloodOfThothLawIncarnate
       , bloodPact
       , bloodPact3
+      , bloodstone
       , bloodstainedDagger
       , blur1
       , blur4
@@ -179,6 +190,7 @@ allPlayerAssetCards =
       , catBurglar1
       , catMaskTheCapriciousMeddler
       , celaenoFragments
+      , ceremonialRobes1
       , ceremonialSickle
       , ceremonialSickle4
       , chainsaw4
@@ -203,6 +215,7 @@ allPlayerAssetCards =
       , cleaningKit3
       , clintonFreemanShouldHaveStayedHome
       , cloakOfResonance
+      , cloakOfTheOuterRealm
       , closeTheCircle1
       , collectedWorksOfPoe
       , coltVestPocket
@@ -211,6 +224,7 @@ allPlayerAssetCards =
       , combatTraining3
       , cookiesCustom32
       , cornered2
+      , cornHuskDoll
       , cosmicFlame
       , cosmicFlame5
       , covertOpsInTheShadows
@@ -259,6 +273,7 @@ allPlayerAssetCards =
       , digDeep
       , digDeep2
       , digDeep4
+      , dimensionalBeamMachine
       , directiveConsultExperts
       , directiveDueDiligence
       , directiveLeaveNoDoubt
@@ -289,10 +304,14 @@ allPlayerAssetCards =
       , drAmyKenslerProfessorOfBiologyResolute
       , drawingThin
       , drCharlesWestIiiKnowsHisPurpose
+      , drRosaMarquezBestInHerField
       , dreamDiary
       , dreamDiaryDreamsOfAChild3
       , dreamDiaryDreamsOfAMadman3
       , dreamDiaryDreamsOfAnExplorer3
+      , dreadCurseOfAzathoth3
+      , dreadedEnd
+      , dreamersChronicle
       , dreamEnhancingSerum
       , drDewiIrawanCryptozoologist
       , drElliHorowitz
@@ -310,6 +329,8 @@ allPlayerAssetCards =
       , earlSawyer
       , earthlySerenity1
       , earthlySerenity4
+      , edwinBennetAstuteAssociate
+      , edwinBennetEsteemedColleague
       , eighteenDerringer
       , eighteenDerringer2
       , elderSignAmulet3
@@ -333,6 +354,7 @@ allPlayerAssetCards =
       , enchantedBladeGuardian3
       , enchantedBladeMystic3
       , enchantedBow2
+      , enchantedSkull
       , encyclopedia
       , encyclopedia2
       , endurance
@@ -345,8 +367,10 @@ allPlayerAssetCards =
       , esotericAtlas2
       , esotericFormula
       , evanescentAscensionTheMorningStar
+      , experimentalPsychology
       , expeditedTicket
       , expeditionJournal
+      , ezraGraves
       , eyeOfChaos
       , eyeOfChaos4
       , eyeOfGhatanothoaArtifactOfTheDarkGod2
@@ -414,6 +438,7 @@ allPlayerAssetCards =
       , giftOfNodens5
       , gildedVolto
       , girishKadakiaIcpcPunjabDetective4
+      , grandMeresCharm
       , grannyOrne
       , grannyOrne3
       , grapplingHook
@@ -509,12 +534,14 @@ allPlayerAssetCards =
       , jeromeDavids
       , jessicaHyde1
       , jewelOfAureolus3
+      , jimCulver4
       , jimCulverHauntedMusician
       , jimsTrumpet
       , jimsTrumpetAdvanced
       , joeSargentRattletrapBusDriver
       , joeyTheRatVigil
       , joeyTheRatVigil3
+      , johnAndJessieBurke
       , johnnyValoneReadyToMakeADeal
       , johnnyValoneReadyToMakeADeal
       , jumpsuit
@@ -527,6 +554,7 @@ allPlayerAssetCards =
       , kenslersLog
       , kerosene1
       , keyOfYs
+      , khopeshOfTheAbyss
       , kleptomania
       , knife
       , knightOfSwords3
@@ -551,6 +579,7 @@ allPlayerAssetCards =
       , liquidCourage
       , liquidCourage1
       , litaChantler
+      , littleSylvie
       , livingInk
       , livreDeibon
       , localMap
@@ -584,6 +613,9 @@ allPlayerAssetCards =
       , marinersCompass
       , marinersCompass2
       , martyrsVambraceRemnantOfTheUnknown3
+      , maryZielinskiFuture
+      , maryZielinskiPast
+      , maryZielinskiPresent
       , maskedCarnevaleGoer_17
       , maskedCarnevaleGoer_18
       , maskedCarnevaleGoer_19
@@ -609,6 +641,19 @@ allPlayerAssetCards =
       , mindsEye2
       , mineralSpecimen
       , mirandaKeeper
+      , miguelsKnapsack
+      , danielJameson
+      , huntingDog
+      , loner
+      , oldCompass
+      , pocketknife
+      , sameOldThing
+      , extraRations1
+      , canteen2
+      , huntersInstinct2
+      , winchesterModel522
+      , levelheaded3
+      , longbow3
       , misdirection2
       , miskatonicArchaeologyFunding4
       , missDoyle1
@@ -635,6 +680,7 @@ allPlayerAssetCards =
       , newspaper
       , newspaper2
       , nightmareBauble3
+      , nikolaTesla
       , nineOfRods3
       , nkosiMabatiEnigmaticWarlock3
       , noseToTheGrindstone3
@@ -645,10 +691,12 @@ allPlayerAssetCards =
       , obsidianBracelet
       , occultLexicon
       , occultLexicon3
+      , occultRecords
       , occultReliquary3
       , occultScraps
       , oculaObscuraEsotericEyepiece
       , oculusMortuum
+      , offeringBowl
       , ofuda
       , oldBookOfLore
       , oldBookOfLore3
@@ -690,6 +738,7 @@ allPlayerAssetCards =
       , plucky3
       , pnakoticManuscripts5
       , pocketMultiTool
+      , pocketPortal
       , pocketTelescope
       , policeBadge2
       , policeDog
@@ -701,6 +750,7 @@ allPlayerAssetCards =
       , priestOfTwoFaiths1
       , prismaticShardAlienMeteorite
       , prismaticSpectaclesLensToTheOtherworld2
+      , privatePractice
       , profaneIdol
       , professorWarrenRice
       , professorWilliamDyerProfessorOfGeology
@@ -709,6 +759,7 @@ allPlayerAssetCards =
       , professorWilliamWebbFinderOfHiddenConnections2
       , prophesiaeProfanaAtlasOfTheUnknowable5
       , prophetic3
+      , psychologyStudent
       , protectiveGear2
       , protectiveVest
       , protectiveVest4
@@ -749,6 +800,7 @@ allPlayerAssetCards =
       , riteOfSeeking2
       , riteOfSeeking4
       , ritualCandles
+      , ritualDagger3
       , roaldEllsworthIntrepidExplorer
       , roaldEllsworthIntrepidExplorerResolute
       , robertCastaigneHasYourBack
@@ -763,6 +815,7 @@ allPlayerAssetCards =
       , rookieCop
       , runicAxe
       , ruthWestmacottDarkRevelations
+      , sacrificialDoll
       , sacredCovenant2
       , sacredOathOathOfLoyalty5
       , sacredOathOathOfOrder5
@@ -785,18 +838,26 @@ allPlayerAssetCards =
       , scrollOfSecrets
       , scrollOfSecretsMystic3
       , scrollOfSecretsSeeker3
+      , scrollOfThePharaohs
+      , scrollOfThePharaohsWordsOfBast4
+      , scrollOfThePharaohsWordsOfRa4
+      , scrollOfThePharaohsWordsOfSet4
       , scrying
       , scrying3
       , scryingMirror
       , seaChangeHarpoon
       , sealOfTheSeventhSign5
       , secondSight
+      , secondSight5
       , segmentOfOnyx1
       , sergeantMonroe
       , servantOfBrassDaemonaicVassal
       , serviceRevolver
+      , shadowmeld
+      , shadowmeld5
       , shardsOfTheVoid3
       , sharpRhetoric
+      , sharpRhetoric3
       , sharpshooter3
       , shieldOfFaith2
       , shiningTrapezohedron4
@@ -843,6 +904,7 @@ allPlayerAssetCards =
       , spiritSpeaker
       , spiritualHealing4
       , spiritualIntuition
+      , spiritualIntuition3
       , spiritualResolve5
       , splitTheAngleIreOfTheVoid
       , springfieldM19034
@@ -868,6 +930,7 @@ allPlayerAssetCards =
       , suggestion1
       , suggestion4
       , summonedHound1
+      , summonedNightgaunt
       , summonedServitor
       , surgicalKit3
       , survivalKnife
@@ -919,6 +982,7 @@ allPlayerAssetCards =
       , thePaleLanternBeguilingAura
       , thePaleLanternHypnoticGlow
       , thePallidMask
+      , thePearlDiaryAGrimAccount
       , theRedClockBrokenButReliable2
       , theRedClockBrokenButReliable5
       , theRedGlovedMan5
@@ -937,6 +1001,9 @@ allPlayerAssetCards =
       , thirtyFiveWinchester
       , thirtyTwoColt
       , thirtyTwoColt2
+      , thomasCorriganFuture
+      , thomasCorriganPast
+      , thomasCorriganPresent
       , thomasDawsonSoldierInANewWar
       , thomasOlney
       , thompsonSubmachineGun5
@@ -960,6 +1027,7 @@ allPlayerAssetCards =
       , trustyBullwhipAdvanced
       , tryAndTryAgain1
       , tryAndTryAgain3
+      , typewriter2
       , twentyFiveAutomatic
       , twentyFiveAutomatic2
       , twilaKatherinePrice3
@@ -968,6 +1036,7 @@ allPlayerAssetCards =
       , uncannySpecimen
       , underworldMarket2
       , underworldSupport
+      , universityArchivist
       , unscrupulousLoan3
       , untilTheEndOfTime
       , valentinoRivas
@@ -1004,6 +1073,8 @@ allPlayerAssetCards =
       , zebulonWhateley
       , zoeysCross
       , zoeysCrossAdvanced
+      , drHenryArmitage_SpreadingFlames
+      , collector
       ]
 
 -- with encounter backs
@@ -1015,16 +1086,25 @@ allEncounterAssetCards =
       [ adamLynch
       , alchemicalConcoction
       , bearTrap
+      , decayDiagramEpicMultiplayer
+      , decayDiagram
       , divingSuit
+      , eixodolonsNote
       , fishingNet
       , haroldWalsted
       , helplessPassenger
+      , hungerDiagramEpicMultiplayer
+      , hungerDiagram
       , jazzMulligan
+      , keyOfMysteries
       , keyToTheChamber
+      , mysteriousSyringe
       , peterClover
       , constanceDumaine
       , jordanPerry
       , ishimaruHaruko
+      , rotDiagramEpicMultiplayer
+      , rotDiagram
       , sebastienMoreau
       , ashleighClarke
       , mrPeabody
@@ -1054,6 +1134,11 @@ allEncounterAssetCards =
       , theRedGlovedManHeWasAlwaysThere
       , alikiZoniUperetriaTheMaidWithTheScarletSash
       , mineCartReliableButBroken
+      , crystalRemainsTheChild
+      , crystalRemainsTheFather
+      , crystalRemainsTheMother
+      , theCaptives
+      , oldMemory
       , valeLanternBeaconOfHope
       , valeLanternExtinguishedLightBoon
       , valeLanternAFaintHope
@@ -1067,7 +1152,6 @@ allEncounterAssetCards =
       , judithParkTheMuscle
       , theoPetersJackOfAllTrades
       , bertieMusgraveATrueAesthete
-      , drRosaMarquezBestInHerField
       , dianneDevineHidingAnOathUnspoken
       , partyGuest
       , nightgauntSteed
@@ -1078,6 +1162,56 @@ allEncounterAssetCards =
       , accursedCapeShroudOfChaos
       , rocketShipRattlingWithEnergy
       , cashCart
+      , --- Mi-Go Incursion
+        universityChemist
+      , meteoriteSample
+      , theMilitarysPlan
+      , universalSolvent
+      , petOozeling
+      , miGoWeapon
+      , ltWilsonStewart
+      , mysteriousPhoto
+      , mysteriousPhotoBack
+      , --- Relics of the Past
+        jadeCrocodile
+      , obsidianJaguar
+      , citrineSnake
+      , turquoiseEagle
+      , --- The Drowned City
+        walkInFaith
+      , toeTheLine
+      , noPlaceLikeHome
+      , goodMoney
+      , doNoHarm
+      , proveYourWorth
+      , dreamsOfDestruction
+      , plumbTheDepths
+      , expeditionGear
+      , laudanum
+      , alienTablet
+      , divingSuitTheDrownedCity
+      , rubyStandish
+      , andyVanNortwick
+      , noPlaceLikeHomeCompleted
+      , walkInFaithCompleted
+      , toeTheLineCompleted
+      , goodMoneyCompleted
+      , proveYourWorthCompleted
+      , doNoHarmCompleted
+      , dreamsOfDestructionCompleted
+      , plumbTheDepthsCompleted
+      , obsidianRelic
+      , barrierNode
+      , mariaRivera
+      , ancientRelic
+      , grislyMask
+      , tidalTablet
+      , shardOfYchlecht
+      , skyRelic
+      , obsidianClaw
+      , obsidianClawPower
+      , johnRaymondLegrasse
+      , horrorInClay
       ]
 
 allSpecialPlayerAssetCards :: Map CardCode CardDef

@@ -21,7 +21,7 @@ guidedByTheUnseen3 = asset GuidedByTheUnseen3 Cards.guidedByTheUnseen3
 
 instance HasAbilities GuidedByTheUnseen3 where
   getAbilities (GuidedByTheUnseen3 x) =
-    [ playerLimit PerTestOrAbility
+    [ playerLimit PerTest
         $ controlled
           x
           1
@@ -52,7 +52,7 @@ instance RunMessage GuidedByTheUnseen3 where
           else withSkillTest \sid ->
             -- MustBeCommitted prevents being able to uncommit, as it is really "committed"
             chooseOneM iid do
-              labeled "Do not commit any cards" unfocusCards
+              labeledI "doNotCommitAnyCards" unfocusCards
               targets committable \card -> do
                 unfocusCards
                 push $ SpendUses (attrs.ability 1) (toTarget attrs) Secret 1

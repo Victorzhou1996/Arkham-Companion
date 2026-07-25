@@ -90,9 +90,40 @@ data ScenarioLogKey
   | PeeredBeyond
   | SharedADeepPain
   | FoundHiddenBones
+  | -- | Prelude Dawn of the SecondDay
+    YouAreRunningAnErrand
+  | -- | Prelude Dawn of the Final Day
+    YouAreDeliveringAPackage
+  | -- | Prelude The Final Evening
+    TheHemlocksAreHashingItOut
+  | -- | Hemlock House
+    JudithIsRemodeling
+  | FoundLittleSylvie
+  | YouAreHelpingGideon
+  | -- | The Lost Sister
+    FoundATornDogLeash
+  | FoundASetOfFootprints
+  | TheoIsArguingWithHelen
+  | GideonIsSearchingForAnHeirloom
+  | -- | Fate of the Vale
+    BertieIsFleeing
+  | TheInvestigatorsFoundGas
+  | TheRoadIsClear
+  | TheSamplesWereFound
+  | TheSurveyNotesWereRecovered
+  | TheInvestigatorsFoundTheosTruck
   | -- | Return to the City of Archives
     ReadAboutEarth
   | SawAFamiliarSpecimen
+  | -- | The Blob That Ate Everything
+    TheChemistWasSaved
+  | TheFormulaWasNotCompleted
+  | TheSampleWasRecovered
+  | TheSampleWasLost
+  | TheMiGoWereDrivenOff
+  | TheSecretOfTheOozeWasStolen
+  | TheExplosivesWereDefused
+  | TheExplosivesWereDetonated
   | -- | Murder at the Excelsior Hotel
     CleanedUpTheBlood
   | HidTheBody
@@ -118,6 +149,36 @@ data ScenarioLogKey
   | TheVentIsOpen
   | -- | Film Fatale
     TheInvestigatorsMadeTheirCallTime
+  | -- | Machinations Through Time
+    ThomasAndMaryHaveMet
+  | ThomasAndMaryAreInspiredByNikolaTesla
+  | FundingForAnObservatoryHasBegun
+  | TheObservatoryIsBuilt
+  | TeleportationResearchHasBegun
+  | CorriganIndustriesHasBeenFounded
+  | ThomasAndMaryHaveMadeAHistoricDiscovery
+  | ThomasAndMaryHaveWonANobelPrize
+  | ATreeSeedHasBeenPlanted
+  | ThomasAndMaryHaveMarried
+  | TheDebtHasBeenPaid
+  | -- | The Labyrinths of Lunacy
+    BeenInjected (Labeled InvestigatorId)
+  | PulledTheLeftLever (Labeled InvestigatorId)
+  | PulledTheMiddleLever (Labeled InvestigatorId)
+  | PulledTheRightLever (Labeled InvestigatorId)
+  | TurnedTheValve (Labeled InvestigatorId)
+  | -- | Guardians of the Abyss
+    FoundADoorMarkedWithBlood
+  | BoughtAnOddTrinket
+  | DiscoveredAnAncientTablet
+  | SabotagedTheTrain
+  | BrokenIntoADesertedTemple
+  | FreedTheNightgaunts
+  | ExecutedTheNightgaunts
+  | WarnedTheDenizensOfSarkomand
+  | CutOffAllEscape
+  | PledForHelp
+  | AffrontedTheRulerOfThisRealm
   | -- Investigator Cards
     YouOweBiancaResources (Labeled InvestigatorId) Int
   deriving stock (Eq, Show, Ord, Data)
@@ -128,6 +189,21 @@ data ScenarioCountKey
   | Distortion
   | Barriers LocationId LocationId
   | CiviliansSlain
+  | StrengthOfTheAbyss
+  | CluesAroundHubDimension
+  | -- Epic Multiplayer: a per-group mirror of an event-wide shared counter,
+    -- keyed by 'Arkham.Epic.Types.sharedKeyText'. Refreshed from the locked
+    -- event row at the start of each action so the scenario/enemy can read the
+    -- current shared value purely. See "Arkham.Epic".
+    EpicShared Text
+  | -- Epic Multiplayer: a LOCAL (per-group, never-synced) count of how many times
+    -- the act at this stage has advanced. Unlike 'EpicShared', this is never
+    -- mirrored from the event row, so it is safe to increment per group. It lets a
+    -- cumulative shared clue pool drive a looping act ('ResetActDeckToStage'):
+    -- the Nth advance fires at shared progress >= 2 * total * N, so no shared
+    -- counter ever has to be reset. Lives on the scenario, so it survives the act
+    -- being replaced when the deck loops.
+    EpicActAdvances Int
   deriving stock (Eq, Show, Ord, Data)
 
 instance ToGameLoggerFormat ScenarioLogKey where
@@ -153,6 +229,11 @@ instance ToGameLoggerFormat ScenarioLogKey where
     HadADrink (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} had a drink"
     Cheated (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} cheated"
     MeddledWithThePast (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} meddled with the past"
+    BeenInjected (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} has been injected"
+    PulledTheLeftLever (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} pulled the left lever"
+    PulledTheMiddleLever (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} pulled the middle lever"
+    PulledTheRightLever (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} pulled the right lever"
+    TurnedTheValve (Labeled name iid) -> "{investigator:\"" <> display name <> "\":" <> tshow iid <> "} turned the valve"
     other -> pack . go $ show other
    where
     go :: String -> String
@@ -184,16 +265,22 @@ instance FromJSON ScenarioCountKey where
     String "CurrentDepth" -> pure CurrentDepth
     String "SignOfTheGods" -> pure SignOfTheGods
     String "Distortion" -> pure Distortion
+    String "StrengthOfTheAbyss" -> pure StrengthOfTheAbyss
+    String "CluesAroundHubDimension" -> pure CluesAroundHubDimension
     Object o -> do
       tag :: Text <- o .: "tag"
       case tag of
         "Barriers" -> do
           (x, y) <- o .: "contents"
           pure $ Barriers x y
+        "EpicShared" -> EpicShared <$> o .: "contents"
+        "EpicActAdvances" -> EpicActAdvances <$> o .: "contents"
         "CurrentDepth" -> pure CurrentDepth
         "SignOfTheGods" -> pure SignOfTheGods
         "Distortion" -> pure Distortion
         "CiviliansSlain" -> pure CiviliansSlain
+        "StrengthOfTheAbyss" -> pure StrengthOfTheAbyss
+        "CluesAroundHubDimension" -> pure CluesAroundHubDimension
         _ -> fail "Unknown tag"
     _ -> fail "Expected String or Object"
 

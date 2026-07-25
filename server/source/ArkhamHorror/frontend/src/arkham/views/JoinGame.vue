@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { Game } from '@/arkham/types/Game';
 import { ref } from 'vue';
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { joinGame, fetchJoinGame} from '@/arkham/api'
 import GameDetails from '@/arkham/components/GameDetails.vue';
 
@@ -10,14 +10,22 @@ export interface Props {
 }
 const props = defineProps<Props>()
 
+const route = useRoute()
 const router = useRouter()
 const game = ref<Game | null>(null)
 
 fetchJoinGame(props.gameId).then((result: Game) => game.value = result)
 
 async function join() {
+    // Preserve an Epic Multiplayer event context if present, so an organizer who
+    // joins their own group lands in the game with the organizer bar intact.
+    const eventId = typeof route.query.event === 'string' ? route.query.event : null
     joinGame(props.gameId)
-      .then((game) => router.push(`/games/${game.id}`));
+      .then((game) => router.push(
+        eventId
+          ? { name: 'Game', params: { gameId: game.id }, query: { event: eventId } }
+          : `/games/${game.id}`
+      ));
 }
 </script>
 
@@ -25,12 +33,12 @@ async function join() {
   <div class="container">
     <div>
       <header>
-        <h2>Join Game</h2>
+        <h2>{{ $t('joinGame') }}</h2>
       </header>
 
       <GameDetails v-if="game" :game="game">
         <form id="join-game" @submit.prevent="join">
-          <button type="submit">Join</button>
+          <button type="submit">{{ $t('join') }}</button>
         </form>
       </GameDetails>
     </div>
@@ -54,7 +62,7 @@ async function join() {
   button {
     outline: 0;
     padding: 15px;
-    background: #6E8640;
+    background: var(--button-1);
     text-transform: uppercase;
     color: white;
     border: 0;

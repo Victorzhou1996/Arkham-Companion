@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.AgentOfTheKing (agentOfTheKing) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyAttacks, EnemyDefeated)
+import Arkham.Enemy.Import.Lifted hiding (EnemyAttacks)
 import Arkham.Matcher
 
 newtype AgentOfTheKing = AgentOfTheKing EnemyAttrs
@@ -11,7 +11,7 @@ newtype AgentOfTheKing = AgentOfTheKing EnemyAttrs
 
 agentOfTheKing :: EnemyCard AgentOfTheKing
 agentOfTheKing =
-  enemy AgentOfTheKing Cards.agentOfTheKing (4, Static 4, 2) (1, 2)
+  enemy AgentOfTheKing Cards.agentOfTheKing
     & setPrey MostClues
 
 instance HasAbilities AgentOfTheKing where

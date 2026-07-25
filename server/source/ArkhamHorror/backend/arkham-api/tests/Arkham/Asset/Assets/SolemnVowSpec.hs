@@ -2,6 +2,7 @@ module Arkham.Asset.Assets.SolemnVowSpec (spec) where
 
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Investigator.Cards (rolandBanks)
+import Arkham.Matcher.Asset
 import TestImport.New
 
 data MoveType = MoveDamage | MoveHorror
@@ -27,7 +28,10 @@ instance Show TargetType where
 
 testPermutations :: [(MoveType, SourceType, TargetType)]
 testPermutations =
-  [ (dType, sType, tType) | dType <- [MoveDamage, MoveHorror], sType <- [You, AssetYouControl], tType <- [Owner, AssetOwnerControls]
+  [ (dType, sType, tType)
+  | dType <- [MoveDamage, MoveHorror]
+  , sType <- [You, AssetYouControl]
+  , tType <- [Owner, AssetOwnerControls]
   ]
 
 spec :: Spec
@@ -41,6 +45,23 @@ spec = describe "Solemn Vow" do
 
     solemnVow.controller `shouldReturn` Just (toId roland)
     solemnVow.owner `shouldReturn` Just (toId self)
+
+  it
+    "enters under the control of an investigator other than the one playing it, even when played by a non-owner" . gameTest $ \self -> do
+    roland <- addInvestigator rolandBanks
+    location <- testLocation
+    self `moveTo` location
+    roland `moveTo` location
+    -- self plays a Solemn Vow owned by roland (e.g. via "You Owe Me One")
+    card <- genCard Assets.solemnVow
+    let card' = case card of
+          PlayerCard pc -> PlayerCard pc {pcOwner = Just (toId roland)}
+          other -> other
+    run $ PutCardIntoPlay (toId self) card' Nothing NoPayment []
+    solemnVow <- selectJust $ AssetWithCardId (toCardId card)
+
+    solemnVow.controller `shouldReturn` Just (toId roland)
+    solemnVow.owner `shouldReturn` Just (toId roland)
 
   context "if the owner of Solemn Vow is at your location" do
     context
@@ -88,6 +109,25 @@ spec = describe "Solemn Vow" do
               `shouldReturn` (if (dType, tType) == (MoveDamage, AssetOwnerControls) then 1 else 0)
             leoDeLuca.horror
               `shouldReturn` (if (dType, tType) == (MoveHorror, AssetOwnerControls) then 1 else 0)
+
+    it "does not offer to move damage or horror from cards that have none" . gameTest $ \self -> do
+      roland <- addInvestigator rolandBanks & prop @"horror" 1
+      beatCop2 <- roland `putAssetIntoPlay` Assets.beatCop2
+      location <- testLocation
+      self `moveTo` location
+      roland `moveTo` location
+      solemnVow <- self `putAssetIntoPlay` Assets.solemnVow
+      setActive roland
+      [useSolemnVow] <- roland `getActionsFrom` solemnVow
+      roland `useAbility` useSolemnVow
+
+      -- roland has no damage and Beat Cop has no damage or horror, so moving
+      -- roland's horror to the owner is the only legal choice and runs
+      -- automatically without asking
+      roland.horror `shouldReturn` 0
+      self.horror `shouldReturn` 1
+      beatCop2.damage `shouldReturn` 0
+      beatCop2.horror `shouldReturn` 0
 
   context "if the owner of Solemn Vow is not at your location" do
     it "can't be used" . gameTest $ \self -> do

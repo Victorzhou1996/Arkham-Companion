@@ -6,8 +6,9 @@ import Arkham.Card
 import Arkham.Classes.HasQueue (HasQueue)
 import Arkham.Enemy.Cards qualified as Cards
 import Arkham.Enemy.Creation
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Enemy.Types (Field (EnemyLocation))
+import Arkham.Helpers.Enemy (insteadOfDiscarding)
 import Arkham.Matcher
 import Arkham.Placement
 import Arkham.Projection
@@ -17,7 +18,7 @@ newtype Wraith = Wraith EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 wraith :: EnemyCard Wraith
-wraith = enemy Wraith Cards.wraith (2, Static 2, 2) (0, 2)
+wraith = enemy Wraith Cards.wraith
 
 instance HasAbilities Wraith where
   getAbilities (Wraith a) = case a.placement of
@@ -43,12 +44,13 @@ recreateWraith attrs placement = do
       , enemyCreationTarget = Nothing
       , enemyCreationInvestigator = Nothing
       }
+  push $ EnemyCheckEngagement attrs.id
 
 instance RunMessage Wraith where
   runMessage msg e@(Wraith attrs) = runQueueT $ case msg of
     UseThisAbility _iid (isSource attrs -> True) 1 -> do
-      cancelEnemyDefeatWithWindows attrs
-      recreateWraith attrs . AttachedToLocation =<< fieldJust EnemyLocation attrs.id
+      insteadOfDiscarding attrs do
+        recreateWraith attrs . AttachedToLocation =<< fieldJust EnemyLocation attrs.id
       pure e
     UseThisAbility _iid (isProxySource attrs -> True) 2 -> do
       case attrs.placement of

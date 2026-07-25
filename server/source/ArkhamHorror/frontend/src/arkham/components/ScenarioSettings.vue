@@ -41,8 +41,8 @@ const findSetting = (key: string) => {
 // when we change standaloneSettings they are "cached" so to avoid this we deep copy the
 // standaloneSettings in order to never alter its original value.
 const computedStandaloneSettings = computed<StandaloneSetting[]>(() => {
-  const s = scenarioJSON.find((s) => s.id === props.scenario.id.replace(/^c/, ''))
-  return s?.settings ? s.settings as StandaloneSetting[] : []
+  const s = scenarioJSON.find((s) => s.id === props.scenario.id.replace(/^c/, '')) as { settings?: StandaloneSetting[] } | undefined
+  return s?.settings ?? []
 })
 
 watch(computedStandaloneSettings, (newSettings) => {
@@ -130,18 +130,25 @@ const activeSettings = computed(() => {
     return true
   })
 })
+
+// When a scenario has no standalone settings to configure, there's nothing for
+// the player to do here, so skip the screen entirely by auto-submitting.
+const submitted = ref(false)
+watch(activeSettings, (settings) => {
+  if (settings.length === 0 && !submitted.value) {
+    submitted.value = true
+    submit()
+  }
+}, { immediate: true })
 </script>
 
 <template>
-  <div class="container scroll-container">
-    <h2>Standalone Settings</h2>
-    <div v-if="activeSettings.length == 0">
-      <p>There are currently no standalone settings available for this scenario.</p>
-    </div>
+  <div v-if="activeSettings.length > 0" class="container scroll-container">
+    <h2>{{ $t('scenarioSettings.title') }}</h2>
     <div v-for="setting in activeSettings" :key="setting.key">
       <ScenarioSetting :setting="setting" :scenario="scenario" :game="game" :playerId="playerId" />
     </div>
-    <button @click="submit">Begin</button>
+    <button @click="submit">{{ $t('scenarioSettings.begin') }}</button>
   </div>
 </template>
 
@@ -207,7 +214,7 @@ input[type=radio] + label {
 }
 
 input[type=radio]:checked + label {
-  background: #6E8640;
+  background: var(--button-1);
 }
 
 input[type=checkbox] {
@@ -224,25 +231,25 @@ input[type=checkbox] + label {
   }
 
   &.invert {
-    background: #6E8640;
+    background: var(--button-1);
     &:hover {
-      background: #6E8640;
+      background: var(--button-1);
     }
   }
   border-color: #ddd;
 }
 
 input[type=checkbox]:checked + label {
-  background: #6E8640;
+  background: var(--button-1);
   &.invert {
     background-color: hsl(80, 5%, 39%);
   }
 }
 
 .invert[type=checkbox] + label {
-    background: #6E8640;
+    background: var(--button-1);
     &:hover {
-      background: #6E8640;
+      background: var(--button-1);
     }
 }
 

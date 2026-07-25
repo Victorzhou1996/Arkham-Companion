@@ -7,7 +7,6 @@ import Arkham.Agenda.Runner
 import Arkham.Card
 import Arkham.Classes
 import Arkham.Prelude
-import Arkham.Tracing
 
 lookupAgenda :: AgendaId -> Int -> CardId -> Agenda
 lookupAgenda agendaId = case lookup (unAgendaId agendaId) allAgendas of
@@ -15,9 +14,7 @@ lookupAgenda agendaId = case lookup (unAgendaId agendaId) allAgendas of
   Just (SomeAgendaCard a) -> \i cardId -> Agenda $ cbCardBuilder a cardId (i, agendaId)
 
 instance RunMessage Agenda where
-  runMessage msg x@(Agenda a) =
-    withSpan_ ("Agenda[" <> unCardCode (toCardCode x) <> "].runMessage") do
-      Agenda <$> runMessage msg a
+  runMessage msg (Agenda a) = Agenda <$> runMessage msg a
 
 instance FromJSON Agenda where
   parseJSON = withObject "Agenda" $ \o -> do
@@ -324,11 +321,38 @@ allAgendas =
       --- Written in Rock
       SomeAgendaCard undergroundSurvey
     , SomeAgendaCard dangerousRide
+    , --- Hemlock House
+      SomeAgendaCard eerieSilence
+    , SomeAgendaCard theHouseStirsV1
+    , SomeAgendaCard theHouseStirsV2
+    , SomeAgendaCard livingWalls
+    , --- The Silent Heath
+      SomeAgendaCard unsettlingSilence
+    , SomeAgendaCard desolationV1
+    , SomeAgendaCard desolationV2
+    , --- The Lost Sister
+      SomeAgendaCard intoTheCaves
+    , SomeAgendaCard darknessClosesIn
+    , --- The Thing in the Depths
+      SomeAgendaCard sinkingGround
+    , SomeAgendaCard theThingInTheBog
     , --- The Twisted Hollow
       SomeAgendaCard deepeningDark
     , SomeAgendaCard backToTheVale
+    , --- The Longest Night
+      SomeAgendaCard theOnslaught
     , --- Day of Rest
       SomeAgendaCard welcomeToHemlockVale
+    , --- Day of Rain
+      SomeAgendaCard darkClouds
+    , --- Day of the Feast
+      SomeAgendaCard allIsFullOfLove
+    , SomeAgendaCard aroundTheTable
+    , SomeAgendaCard lambsToTheSlaughter
+    , --- Fate of the Vale
+      SomeAgendaCard theSilence
+    , SomeAgendaCard theMiasma
+    , SomeAgendaCard theSpiral
     , -- Return to the Night of the Zealot
       --- Return to the Midnight Masks
       SomeAgendaCard returnToPredatorOrPrey
@@ -349,6 +373,29 @@ allAgendas =
       SomeAgendaCard theFestivitiesBegin
     , SomeAgendaCard theShadowOfTheEclipse
     , SomeAgendaCard chaosAtTheCarnevale
+    , -- The Eternal Slumber
+      SomeAgendaCard jessiesRequest
+    , SomeAgendaCard curseOfTheAbyss
+    , SomeAgendaCard gardenOfShadows
+    , -- The Night's Usurper
+      SomeAgendaCard theBrotherhoodBidesTheirTime
+    , SomeAgendaCard schemesInTheDarkBeyond
+    , -- War of the Outer Gods
+      SomeAgendaCard theSummoningOfSilenus
+    , SomeAgendaCard theSummoningProgresses
+    , SomeAgendaCard theSummoningNearsCompletion
+    , SomeAgendaCard theIncubationOfTheEgg
+    , SomeAgendaCard theIncubationProgresses
+    , SomeAgendaCard theIncubationNearsCompletion
+    , SomeAgendaCard theProliferationOfTheSwarm
+    , SomeAgendaCard theProliferationProgresses
+    , SomeAgendaCard theProliferationNearsCompletion
+    , -- Death of Stars
+      SomeAgendaCard silenusDescends
+    , -- Children of Paradise
+      SomeAgendaCard theEggHatches
+    , -- Swarm of Assimilation
+      SomeAgendaCard ezelZenRezlEmerges
     , -- Murder at the Excelsior Hotel
       SomeAgendaCard theMurder
     , SomeAgendaCard specialInvestigation
@@ -374,4 +421,67 @@ allAgendas =
     , -- Film Fatale
       SomeAgendaCard showbusinessAsUsual
     , SomeAgendaCard collidingRealities
+      -- Core2026
+      -- Spreading Flames
+    , SomeAgendaCard pastCurfew
+    , SomeAgendaCard litUp
+    , SomeAgendaCard wildFlames
+      -- Smoke And Mirrors
+    , SomeAgendaCard arkhamAlive
+    , SomeAgendaCard emergentEvils
+      -- Queen of Ash
+    , SomeAgendaCard aGathering
+    , SomeAgendaCard aRitual
+    , SomeAgendaCard brethrenOfAsh
+    , -- The Blob That Ate Everything
+      SomeAgendaCard theAnomalySpreads
+    , SomeAgendaCard theAnomalySwells
+    , SomeAgendaCard theAnomalyConsumes
+    , -- The Labyrinths of Lunacy
+      SomeAgendaCard awakeningTheLabyrinthsOfLunacy
+    , SomeAgendaCard agonyAndDespair
+    , SomeAgendaCard theMastermind
+    , -- Machinations Through Time
+      SomeAgendaCard intoTheVoid
+    , SomeAgendaCard timeMarchesOn
+    , -- Read or Die
+      SomeAgendaCard mortalInquiry
+    , -- All or Nothing
+      SomeAgendaCard eyesAllAroundYou
+    , -- Bad Blood
+      SomeAgendaCard hyperboreanBlood
+    , -- By the Book
+      SomeAgendaCard aCovertConspiracy
+    , SomeAgendaCard yourDeadlineNears
+    , -- Laid to Rest
+      SomeAgendaCard gatheringMists
+    , -- Red Tide Rising
+      SomeAgendaCard theNewGirl
+    , SomeAgendaCard trailGoesCold
+    , -- Enthralling Encore
+      SomeAgendaCard theHauntingOfTheWardTheatre
+    , -- Relics of the Past
+      SomeAgendaCard somethingElseStirs
+    , SomeAgendaCard guardianOfTheRelics
+    , --- The Drowned City
+      SomeAgendaCard arkhamNightlife
+    , SomeAgendaCard longNight
+    , SomeAgendaCard floodedPaths
+    , SomeAgendaCard theSunkenRuins
+    , SomeAgendaCard collapsingDome
+    , SomeAgendaCard stirringInTheDark
+    , SomeAgendaCard loathsomeParasites
+    , SomeAgendaCard bowelsOfTheCity
+    , SomeAgendaCard devilInTheMachine
+    , SomeAgendaCard everShiftingWalls
+    , SomeAgendaCard ruinedArchives
+    , SomeAgendaCard floodedArchives
+    , SomeAgendaCard unstableFoundations
+    , SomeAgendaCard otherworldlyStorms
+    , SomeAgendaCard encroachingStorms
+    , SomeAgendaCard beneathTheCity
+    , SomeAgendaCard cthulhuAwakened
+    , SomeAgendaCard theComingStorm
+    , SomeAgendaCard theDoomOfArkham
+    , SomeAgendaCard theFinalSeal
     ]

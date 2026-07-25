@@ -6,6 +6,7 @@ import * as ArkhamGame from '@/arkham/types/Game';
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message';
 import { imgsrc } from '@/arkham/helpers';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import * as Arkham from '@/arkham/types/Skill';
 
 export interface Props {
@@ -22,6 +23,9 @@ const emits = defineEmits<{
 }>()
 
 const id = computed(() => props.skill.id)
+const ownedByCurrentPlayer = computed(() =>
+  props.game.investigators[props.skill.owner]?.playerId === props.playerId
+)
 
 const cardCode = computed(() => props.skill.cardCode)
 const image = computed(() => {
@@ -97,6 +101,14 @@ const choose = (index: number) => emits('choose', index)
       :game="game"
       @click="choose(ability.index)"
       />
+    <AbilityTriggerModeToggle
+      v-if="ownedByCurrentPlayer"
+      :game="game"
+      :player-id="playerId"
+      :investigator-id="skill.owner"
+      :card-code="cardCode"
+      :abilities="abilities"
+    />
   </div>
 </template>
 
@@ -123,7 +135,7 @@ const choose = (index: number) => emits('choose', index)
   border: 0;
   color: #fff;
   border-radius: 4px;
-  border: 1px solid #ff00ff;
+  border: 1px solid var(--select);
 }
 
 :deep(.token) {
@@ -137,17 +149,13 @@ const choose = (index: number) => emits('choose', index)
   display: flex;
   align-self: flex-start;
   align-items: flex-end;
-  z-index: 1;
+  z-index: var(--z-index-1);
   pointer-events: none;
-  * {
-    transform: scale(0.6);
-  }
-  :deep(.token-container) {
-    transform: scale(1);
+  & :deep(.token-container) {
     width: unset;
   }
-  :deep(img) {
-    width: 20px;
+  & :deep(img) {
+    width: var(--card-token-width);
     height: auto;
   }
 }

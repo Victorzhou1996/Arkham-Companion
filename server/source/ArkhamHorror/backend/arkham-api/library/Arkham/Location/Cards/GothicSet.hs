@@ -20,7 +20,7 @@ instance HasAbilities GothicSet where
       a
       [ mkAbility a 1 $ forced $ DiscoverClues #after You (be a) (atLeast 1)
       , restricted a 2 (youExist $ InvestigatorWithHealableHorror (a.ability 2))
-          $ freeReaction (EnemyDefeated #after You ByAny $ enemyAt a)
+          $ freeReaction (IfEnemyDefeated #after You ByAny $ enemyAt a)
       ]
 
 instance RunMessage GothicSet where
@@ -40,7 +40,8 @@ instance RunMessage GothicSet where
 
       pure l
     UseThisAbility iid (isSource attrs -> True) 2 -> do
-      whenM (canHaveHorrorHealed (attrs.ability 2) iid) do
-        healHorror iid (attrs.ability 2) 1
+      let source = UseAbilitySource iid (toSource attrs) 2
+      whenM (canHaveHorrorHealed source iid) do
+        healHorror iid source 1
       pure l
     _ -> GothicSet <$> liftRunMessage msg attrs

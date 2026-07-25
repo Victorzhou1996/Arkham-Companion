@@ -65,15 +65,6 @@ selectField
   -> a
   -> m [typ]
 selectField fld = traverse (field fld) <=< select
-
-selectRandom
-  :: (HasCallStack, Query a, Tracing m, HasGame m, MonadRandom m)
-  => a
-  -> m (Maybe (QueryElement a))
-selectRandom matcher = do
-  results <- select matcher
-  maybe (pure Nothing) (fmap Just . sample) (nonEmpty results)
-
 selectRandomJust
   :: (HasCallStack, Query a, Tracing m, HasGame m, MonadRandom m)
   => String
@@ -398,9 +389,20 @@ selectOne matcher = do
     [] -> Nothing
     x : _ -> Just x
 
+withMatch :: (HasCallStack, Query a, Tracing m, HasGame m) => a -> (QueryElement a -> m ()) -> m ()
+withMatch matcher = whenJustM (selectOne matcher)
+
 selectOrDefault
   :: (HasCallStack, Query a, Tracing m, HasGame m) => QueryElement a -> a -> m (QueryElement a)
 selectOrDefault def matcher = selectMaybe def id matcher
+
+selectOrElse
+  :: (HasCallStack, Query a, Tracing m, HasGame m) => a -> a -> m [QueryElement a]
+selectOrElse q1 q2 = do
+  results <- select q1
+  if null results
+    then select q2
+    else pure results
 
 selectMaybeT :: (HasCallStack, Query a, Tracing m, HasGame m) => a -> MaybeT m (QueryElement a)
 selectMaybeT = MaybeT . selectOne
@@ -490,10 +492,10 @@ guardMatches
   :: (HasCallStack, Tracing m, HasGame m, Query a, Alternative m) => QueryElement a -> a -> m ()
 guardMatches a matcher = guardM $ elem a <$> select matcher
 
-(<=~>) :: (Tracing m, HasGame m, Query a) => QueryElement a -> a -> m Bool
+(<=~>) :: (HasCallStack, Tracing m, HasGame m, Query a) => QueryElement a -> a -> m Bool
 (<=~>) = matches
 
-(<!=~>) :: (Tracing m, HasGame m, Query a) => QueryElement a -> a -> m Bool
+(<!=~>) :: (HasCallStack, Tracing m, HasGame m, Query a) => QueryElement a -> a -> m Bool
 (<!=~>) el q = not <$> matches el q
 
 unlessMatch

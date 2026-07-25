@@ -84,7 +84,7 @@ instance RunMessage ShadesOfSuffering where
       addCampaignCardToDeckChoice iids ShuffleIn Assets.inspectorFlintWithPrideAndCare
       pure s
     DoStep 2 PreScenarioSetup -> scope "intro" do
-      flavor $ setTitle "title" >> p "intro1"
+      flavor $ setTitle "title" >> p "intro2"
       pure s
     Setup -> runScenarioSetup ShadesOfSuffering attrs do
       t <- getTime
@@ -133,7 +133,7 @@ instance RunMessage ShadesOfSuffering where
       uncannyShadow <-
         pickFrom (Enemies.uncannyShadowPlayfulShadows, Enemies.uncannyShadowTimorousShadows)
       buriedMiner <- pickFrom (Enemies.buriedMinerALostMemento, Enemies.buriedMinerExhumeTheBones)
-      slainForeman <- pickFrom (Enemies.slainForemanSympathyPain, Enemies.slainForemanSympathyPain)
+      slainForeman <- pickFrom (Enemies.slainForemanSympathyPain, Enemies.slainForemanFamilialPain)
       setAside [uncannyShadow, buriedMiner, slainForeman]
 
       lead <- getLead

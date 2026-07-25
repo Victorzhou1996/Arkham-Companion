@@ -8,7 +8,6 @@ import Arkham.Classes
 import Arkham.Event.Events
 import Arkham.Event.Runner
 import Arkham.Prelude hiding (catch)
-import Arkham.Tracing
 
 createEvent :: IsCard a => a -> InvestigatorId -> EventId -> Event
 createEvent a iid eid =
@@ -36,7 +35,7 @@ createEvent a iid eid =
     _ -> Nothing
 
 instance RunMessage Event where
-  runMessage msg x@(Event a) = withSpan_ ("Event[" <> unCardCode (toCardCode x) <> "].runMessage") do
+  runMessage msg x@(Event a) = do
     if x.placement.outOfGame
       then case msg of
         ReturnLocationToGame {} -> Event <$> runMessage msg a
@@ -821,6 +820,17 @@ allEvents =
       , SomeEventCard physicalFitness2
       , SomeEventCard stockAmmoReload2
       , SomeEventCard stakeout3
+      , -- Carolyn Fern
+        SomeEventCard causticReaction
+      , SomeEventCard causticReaction2
+      , SomeEventCard unflappable
+      , SomeEventCard unflappable1
+      , SomeEventCard psychoanalysis
+      , SomeEventCard psychoanalysis3
+      , SomeEventCard deEscalate
+      , SomeEventCard insidiousTruths
+      , SomeEventCard hypnotize2
+      , SomeEventCard communeWithTheCosmos5
       , -- André Patel
         SomeEventCard cleanSweep
       , SomeEventCard payYourDues
@@ -831,6 +841,28 @@ allEvents =
       , SomeEventCard quickExit2
       , SomeEventCard aSuddenFall2
       , SomeEventCard rightUnderTheirNoses3
+      , -- Marie Lambeau
+        SomeEventCard consumeLife
+      , SomeEventCard favorOfBaalshandor
+      , SomeEventCard infuseLife
+      , SomeEventCard mirrorForm
+      , SomeEventCard spiritualCharm
+      , SomeEventCard bloodWard2
+      , SomeEventCard retribution2
+      , SomeEventCard ultimateSacrifice4
+      , SomeEventCard bendBlood5
+      , -- Miguel de la Cruz
+        SomeEventCard decoyTrap
+      , SomeEventCard glassing
+      , SomeEventCard guerrillaTactics
+      , SomeEventCard hiddenShelter
+      , SomeEventCard lieInWait
+      , SomeEventCard stalkPrey
+      , SomeEventCard fieldDressing1
+      , SomeEventCard guerrillaTactics2
+      , SomeEventCard respite2
+      , SomeEventCard ropeTrap2
+      , SomeEventCard makeshiftBomb3
       , -- Promo
         -- The Dirge of Reason
         SomeEventCard mysteriesRemain

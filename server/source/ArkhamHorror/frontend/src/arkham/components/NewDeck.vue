@@ -1,11 +1,14 @@
 <script lang="ts" setup>
 import { computed, watch, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import {imgsrc} from '@/arkham/helpers';
 import { fetchInvestigators, newDeck, validateDeck } from '@/arkham/api'
 import ArkhamDbDeck from '@/arkham/components/ArkhamDbDeck.vue';
-import { ArkhamDbDecklist } from '@/arkham/types/Deck';
+import { ArkhamDbDecklist, deckMetaAlternateFront } from '@/arkham/types/Deck';
 import { useCardStore } from '@/stores/cards'
+
+const { t } = useI18n()
 
 const props = withDefaults(defineProps<{
   noPortrait?: boolean
@@ -26,10 +29,31 @@ interface UnimplementedCardError {
   contents: string
 }
 
+function validationErrorsFromResponse(err: unknown): string[] {
+  const response = err as { response?: { data?: unknown } }
+  const payload = response.response?.data
+  if (!Array.isArray(payload)) {
+    if (payload && typeof payload === 'object' && 'message' in payload) {
+      return [String((payload as { message: unknown }).message)]
+    }
+    return ['Unable to validate deck']
+  }
+
+  return payload.map((e) => {
+    const code = typeof e === 'object' && e !== null && 'contents' in e
+      ? String((e as UnimplementedCardError).contents)
+      : String(e)
+    const key = normalizeCode(code)
+    const hit = cardByCode.value.get(key)
+    if (hit) return hit.xp ? `${hit.name.title} (${hit.xp})` : hit.name.title
+    return `Unknown card: ${code}`
+  })
+}
+
 interface ArkhamDBCard {
-  name: string
-  code: string
-  xp?: string
+  name: { title: string; subtitle: string | null }
+  cardCode: string
+  xp?: string | number | null
 }
 
 const errors = ref<string[]>([])
@@ -43,12 +67,15 @@ const deckId = ref<string | null>(null)
 const deckName = ref<string | null>(null)
 const deckUrl = ref<string | null>(null)
 const deckList = ref<ArkhamDbDecklist | null>(null)
+const normalizeCode = (code: string) => code.replace(/^c/, '')
+const isInvestigatorImplemented = (code: string) =>
+  investigators.value.includes(code) || investigators.value.includes(normalizeCode(code))
 const maybeSetPortrait = (code: string | null | undefined) => {
   if (!code || !props.setPortrait) return
   props.setPortrait(imgsrc(`portraits/${normalizeCode(code)}.jpg`))
 }
 const resolvedInvestigatorCode = (d: ArkhamDbDecklist) =>
-  d.meta?.alternate_front ?? d.investigator_code
+  deckMetaAlternateFront(d.meta) ?? d.investigator_code
 
 function loadDeckFromFile(e: Event) {
   valid.value = false
@@ -62,7 +89,7 @@ function loadDeckFromFile(e: Event) {
       deckList.value = data
       investigator.value = null
       investigatorError.value = null
-      if (investigators.value.includes(data.investigator_code)) {
+      if (isInvestigatorImplemented(data.investigator_code)) {
         if(data.meta && data.meta.alternate_front) {
           investigator.value = data.meta.alternate_front
           if (props.setPortrait) {
@@ -99,7 +126,7 @@ async function loadDeck() {
   if (!dl) return
 
   const invCode = resolvedInvestigatorCode(dl)
-  const invImplemented = investigators.value.includes(dl.investigator_code)
+  const invImplemented = isInvestigatorImplemented(dl.investigator_code)
 
   if (invImplemented) {
     investigator.value = invCode
@@ -116,10 +143,9 @@ async function loadDeck() {
   await runValidations()
 }
 
-const normalizeCode = (code: string) => code.replace(/^c/, '')
 const cardByCode = computed(() => {
   const m = new Map<string, ArkhamDBCard>()
-  for (const c of cards.value) m.set(normalizeCode(c.code), c)
+  for (const c of cards.value) m.set(normalizeCode(c.cardCode), c)
   return m
 })
 
@@ -127,24 +153,19 @@ async function runValidations() {
   valid.value = false
   errors.value = []
   try {
+    if (!deckList.value) return
     await validateDeck(deckList.value)
     valid.value = true
-  } catch (err: any) {
-    const payload: UnimplementedCardError[] = err?.response?.data ?? []
-    errors.value = payload.map((e) => {
-      const key = normalizeCode(e.contents)
-      const hit = cardByCode.value.get(key)
-      if (hit) return hit.xp ? `${hit.name} (${hit.xp})` : hit.name
-      return `Unknown card: ${e.contents}`
-    })
+  } catch (err: unknown) {
+    errors.value = validationErrorsFromResponse(err)
   }
 }
 
 async function createDeck() {
   errors.value = []
-  if (!(deckId.value && deckName.value && valid.value)) return
+  if (!valid.value || !deckList.value) return
 
-  if (!saveDeck.value && deckList.value) {
+  if (!saveDeck.value) {
     const dl = deckList.value
     deckId.value = null
     deckName.value = null
@@ -155,6 +176,8 @@ async function createDeck() {
     return
   }
 
+  if (!(deckId.value && deckName.value)) return
+
   try {
     const created = await newDeck(deckId.value, deckName.value, deckUrl.value, deckList.value)
     deckId.value = null
@@ -163,14 +186,8 @@ async function createDeck() {
     investigator.value = null
     deck.value = null
     emit('newDeck', created)
-  } catch (err: any) {
-    const payload: UnimplementedCardError[] = err?.response?.data ?? []
-    errors.value = payload.map((e) => {
-      const key = normalizeCode(e.contents)
-      const hit = cardByCode.value.get(key)
-      if (hit) return hit.xp ? `${hit.name} (${hit.xp})` : hit.name
-      return 'Unknown card'
-    })
+  } catch (err: unknown) {
+    errors.value = validationErrorsFromResponse(err)
   }
 }
 </script>
@@ -185,21 +202,21 @@ async function createDeck() {
         <input v-if="investigator" v-model="deckName" />
         <div v-if="!alwaysSave" class="save-option" :class="{ active: saveDeck }" @click="saveDeckToggle = !saveDeckToggle" role="checkbox" :aria-checked="saveDeck">
           <div class="save-option-body">
-            <span class="save-option-title">Save to Deck List</span>
-            <span class="save-option-desc">Keep this deck available for future campaigns</span>
+            <span class="save-option-title">{{ $t('deckList.saveToDeckList') }}</span>
+            <span class="save-option-desc">{{ $t('deckList.saveToDeckListDescription') }}</span>
           </div>
           <div class="save-option-toggle" :class="{ on: saveDeck }">
             <div class="save-option-thumb" />
           </div>
         </div>
-        <button :disabled="!valid" @click.prevent="createDeck" class="primary-action">{{ alwaysSave ? 'Save' : saveDeck ? 'Save &amp; Use' : 'Use Without Saving' }}</button>
+        <button :disabled="!valid" @click.prevent="createDeck" class="primary-action">{{ alwaysSave ? t('newDeck.save') : saveDeck ? t('newDeck.saveAndUse') : t('newDeck.useWithoutSaving') }}</button>
       </div>
     </div>
     <div class="errors" v-if="investigatorError">
       {{investigatorError}}
     </div>
     <div class="errors" v-if="errors.length > 0">
-      <p>Could not create deck, the following cards are unimplemented:</p>
+      <p>{{ t('newDeck.unimplementedError') }}</p>
       <ul>
         <li class="error" v-for="(error, idx) in errors" :key="idx">
           {{error}}

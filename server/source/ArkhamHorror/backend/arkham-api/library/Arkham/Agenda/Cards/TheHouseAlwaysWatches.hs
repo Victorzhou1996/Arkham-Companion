@@ -2,7 +2,7 @@ module Arkham.Agenda.Cards.TheHouseAlwaysWatches (theHouseAlwaysWatches) where
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Investigator.Types (Field (InvestigatorResources))
 import Arkham.Matcher
@@ -27,7 +27,7 @@ instance HasAbilities TheHouseAlwaysWatches where
     [ restricted a 1 (exists $ InvestigatorAt $ LocationWithEnemy $ EnemyWithTrait Casino <> ReadyEnemy)
         $ forced
         $ PhaseBegins #when #enemy
-    , mkAbility a 2 $ forced $ EnemyDefeated #after You ByAny (EnemyWithTrait Casino)
+    , mkAbility a 2 $ forced $ IfEnemyDefeated #after You ByAny (EnemyWithTrait Casino)
     ]
 
 instance RunMessage TheHouseAlwaysWatches where

@@ -6,17 +6,20 @@ import Card from '@/arkham/components/Card.vue'
 import DeckList from '@/arkham/components/DeckList.vue'
 import {imgsrc} from '@/arkham/helpers'
 import { useDbCardStore } from '@/stores/dbCards'
+import { asCardCode } from '@/arkham/types/Card';
 import type { CardContents } from '@/arkham/types/Card';
 
 export interface Props {
   investigator: Investigator
   game: Arkham.Game
   bonusXp?: number | null;
+  showExpand?: boolean;
 }
 
 const store = useDbCardStore()
 const props = withDefaults(defineProps<Props>(), {
-  bonusXp: null
+  bonusXp: null,
+  showExpand: true,
 })
 
 const expanded = ref(false)
@@ -24,7 +27,7 @@ const expanded = ref(false)
 const storyCards = computed(() => {
   const fromMeta = props.game.campaign?.meta?.otherCampaignAttrs?.storyCards[props.investigator.id]
   if (fromMeta) {
-    return fromMeta.map((c) => ({tag: 'CardContents', ...c} as CardContents))
+    return (fromMeta as Omit<CardContents, 'tag'>[]).map((c: Omit<CardContents, 'tag'>) => ({tag: 'CardContents', ...c} as CardContents))
   }
 
   return props.game.campaign?.storyCards[props.investigator.id] || props.game.scenario?.storyCards[props.investigator.id] || []
@@ -39,18 +42,48 @@ const deck = computed(() => {
   const deck = props.game.campaign?.decks[props.investigator.id] || props.game.campaign?.meta?.otherCampaignAttrs?.decks[props.investigator.id]
 
   if (!deck) return null
-  const slots = deck.reduce((acc, { cardCode }) => {
+  const slots = (deck as CardContents[]).reduce((acc, { cardCode }) => {
       acc[cardCode] = (acc[cardCode] ?? 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
+  const attachmentMeta = (deck as CardContents[]).reduce<Record<string, string>>((acc, card) => {
+    const attachments = card.meta?.attachments
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      acc[`attachments_${card.cardCode.replace(/^c/, '')}`] = attachments.map((code) => String(code).replace(/^c/, '')).join(',')
+    }
+
+    return acc
+  }, {})
+
+  Object.entries(props.investigator.settings.perCardSettings).forEach(([cardCode, settings]) => {
+    if (settings.cardAttachments && settings.cardAttachments.length > 0) {
+      attachmentMeta[`attachments_${cardCode.replace(/^c/, '')}`] = settings.cardAttachments.map((code) => code.replace(/^c/, '')).join(',')
+    }
+  })
+
+  for (const asset of Object.values(props.game.assets)) {
+    if (asset.owner !== props.investigator.id) continue
+
+    if (asset.cardCode === 'c09077' && asset.marketDeck?.length) {
+      attachmentMeta.attachments_09077 = asset.marketDeck.map((card) => asCardCode(card).replace(/^c/, '')).join(',')
+    }
+
+    if (asset.cardCode === 'c90052' && asset.spiritDeck?.length) {
+      attachmentMeta.attachments_90052 = asset.spiritDeck.map((card) => asCardCode(card).replace(/^c/, '')).join(',')
+    }
+  }
+
+  for (const cardCode of Object.keys(attachmentMeta)) {
+    const slotCode = `c${cardCode.replace(/^attachments_/, '')}`
+    slots[slotCode] = slots[slotCode] ?? 1
+  }
   return {
     id: props.investigator.id,
     name: "",
-    url: props.investigator.deckUrl,
+    url: props.investigator.deckUrl ?? null,
     list: {
       investigator_code: props.investigator.id,
-      taboo_id: null,
-      meta: null,
+      meta: Object.keys(attachmentMeta).length > 0 ? JSON.stringify(attachmentMeta) : undefined,
       slots
     }
   }
@@ -66,7 +99,7 @@ const deck = computed(() => {
         </div>
         <span class="name">{{ getInvestigatorName(investigator.name.title) }}</span>
         <slot name="back" :investigator="props.investigator">
-          <button class="expand-btn" @click="expanded = !expanded" :aria-label="expanded ? 'Collapse' : 'Expand'">
+          <button v-if="showExpand" class="expand-btn" @click="expanded = !expanded" :aria-label="expanded ? $t('investigatorRow.collapse') : $t('investigatorRow.expand')">
             <svg class="icon icon-expand" :class="{ expanded }"><use xlink:href="#icon-right-arrow"></use></svg>
           </button>
         </slot>
@@ -78,12 +111,12 @@ const deck = computed(() => {
         </div>
         <div class="stat-chip stat-health">
           <svg class="icon icon-health"><use xlink:href="#icon-health"></use></svg>
-          <span class="stat-label">Physical</span>
+          <span class="stat-label">{{ $t('investigatorRow.physical') }}</span>
           <span class="stat-value">{{ investigator.physicalTrauma }}</span>
         </div>
         <div class="stat-chip stat-sanity">
           <svg class="icon icon-sanity"><use xlink:href="#icon-sanity"></use></svg>
-          <span class="stat-label">Mental</span>
+          <span class="stat-label">{{ $t('investigatorRow.mental') }}</span>
           <span class="stat-value">{{ investigator.mentalTrauma }}</span>
         </div>
       </div>
@@ -91,7 +124,7 @@ const deck = computed(() => {
 
     <div v-if="expanded" class="expanded-details">
       <section v-if="storyCards.length > 0" class="inner-section">
-        <h2>Earned Cards</h2>
+        <h2>{{ $t('investigatorRow.earnedCards') }}</h2>
         <div class="earned-cards">
           <div v-for="card in storyCards">
             <Card :game="game" :card="card" :playerId="investigator.id" />
@@ -110,7 +143,7 @@ const deck = computed(() => {
 /* ── Container ───────────────────────────────────────────── */
 
 .investigator {
-  width: 80%;
+  min-width: 80%;
   border-radius: 10px;
   overflow: hidden;
 

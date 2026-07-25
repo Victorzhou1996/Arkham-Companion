@@ -32,7 +32,7 @@ instance RunMessage UntimelyTransaction1 where
       pure e
     HandleTargetChoice iid (isSource attrs -> True) (CardIdTarget cid) -> do
       card <- getCard cid
-      otherInvestigators <- select $ affectsOthers $ colocatedWith iid <> not_ (InvestigatorWithId iid)
+      otherInvestigators <- select $ affectsOthersKnown iid $ colocatedWith iid <> not_ (InvestigatorWithId iid)
       canAfford <- flip filterM otherInvestigators $ \other -> getIsPlayable other attrs (UnpaidCost NoAction) (defaultWindows other) card
       unless (null canAfford) do
         for_ canAfford \otherInvestigator -> do
@@ -47,10 +47,10 @@ instance RunMessage UntimelyTransaction1 where
           push
             $ AskMap
             $ mapFromList
-            $ (player, ChooseOne [Label "No one pays" [UnfocusCards]])
+            $ (player, ChooseOne [Label "$cards.label.untimelyTransaction1.noOnePays" [UnfocusCards]])
             : [ ( otherPlayer
                 , ChooseOne
-                    [ Label "Play Card" $ UnfocusCards
+                    [ Label "$cards.label.untimelyTransaction1.playCard" $ UnfocusCards
                         : PayCardCost otherInvestigator card (defaultWindows otherInvestigator)
                         : played
                     ]

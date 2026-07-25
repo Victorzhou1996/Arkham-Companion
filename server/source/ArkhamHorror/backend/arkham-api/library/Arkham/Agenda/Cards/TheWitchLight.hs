@@ -2,7 +2,7 @@ module Arkham.Agenda.Cards.TheWitchLight (theWitchLight) where
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.Card
 import Arkham.Enemy.Cards qualified as Enemies
 import {-# SOURCE #-} Arkham.GameEnv
@@ -28,7 +28,7 @@ instance HasAbilities TheWitchLight where
   getAbilities (TheWitchLight a) =
     [ mkAbility a 1
         $ freeReaction
-        $ EnemyDefeated #after You ByAny
+        $ IfEnemyDefeated #after You ByAny
         $ oneOf [enemyIs Enemies.nahab, enemyIs Enemies.brownJenkin]
     ]
 

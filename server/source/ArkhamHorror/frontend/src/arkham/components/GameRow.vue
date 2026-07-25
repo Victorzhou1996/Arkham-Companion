@@ -47,6 +47,30 @@ const otherHeading = computed(() => {
 })
 
 const toCssName = (s: string): string => s.charAt(0).toLowerCase() + s.substring(1)
+
+const campaignIcon = computed(() => {
+  if (!campaign.value) return null
+  const { id: campaignId } = campaign.value
+  if (!campaignId) return null
+  if (campaignId.startsWith(':')) {
+    const homebrewId = campaignId.slice(1)
+    return imgsrc(`homebrew/${homebrewId}/sets/${homebrewId}.png`)
+  }
+  return imgsrc(`sets/${campaignId}.png`)
+})
+
+const scenarioIcon = computed(() => {
+  if (!scenario.value) return null
+  const { id: scenarioId } = scenario.value
+  if (!scenarioId) return null
+  if (scenarioId.startsWith('c:')) {
+    const match = scenarioId.match(/^c:([^:]+):([^:]+)$/)
+    if (!match) return null
+    const [, homebrewId, homebrewScenarioId] = match
+    return imgsrc(`homebrew/${homebrewId}/sets/${homebrewScenarioId}.png`)
+  }
+  return imgsrc(`sets/${scenarioId.replace('c', '')}.png`)
+})
 </script>
 
 <template>
@@ -54,18 +78,19 @@ const toCssName = (s: string): string => s.charAt(0).toLowerCase() + s.substring
     <div class="game-details">
       <div class="game-title">
         <div class="main-details">
-          <div class="campaign-icon-container" v-if="campaign">
-            <img class="campaign-icon" :src="imgsrc(`sets/${campaign.id}.png`)" />
+          <div class="campaign-icon-container" v-if="campaignIcon">
+            <img class="campaign-icon" :src="campaignIcon" />
           </div>
-          <div class="campaign-icon-container" v-else-if="scenario">
-            <img class="campaign-icon" :src="imgsrc(`sets/${scenario.id.replace('c', '')}.png`)" />
+          <div class="campaign-icon-container" v-else-if="scenarioIcon">
+            <img class="campaign-icon" :src="scenarioIcon" />
           </div>
           <router-link v-if="admin" class="title" :to="`/admin/games/${game.id}`">{{game.name}}</router-link>
+          <router-link v-else-if="game.hasOpenSeats" class="title" :to="`/games/${game.id}/claim-seat`">{{game.name}}</router-link>
           <router-link v-else class="title" :to="`/games/${game.id}`">{{game.name}}</router-link>
-          <div v-if="game.multiplayerVariant === 'Solo'" class="solo">Solo</div>
+          <div v-if="game.multiplayerVariant === 'Solo'" class="solo">{{ $t('gameRow.solo') }}</div>
         </div>
-        <div v-if="campaign && scenario" class="scenario-details">
-          <img class="scenario-icon" :src="imgsrc(`sets/${scenario.id.replace('c', '')}.png`)" />
+        <div v-if="campaign && scenario && scenarioIcon" class="scenario-details">
+          <img class="scenario-icon" :src="scenarioIcon" />
           <span>{{scenario.name.title}}</span>
         </div>
         <div class="extra-details">
@@ -124,7 +149,7 @@ h2 {
 }
 .game {
   display: flex;
-  color: #cecece;
+  color: var(--title);
   background-color: var(--box-background);
   border: 1px solid var(--box-border);
   border-radius: 3px;
@@ -209,7 +234,7 @@ h2 {
   }
 
   &:hover {
-    color: #cecece;
+    color: var(--title);
   }
 }
 
@@ -340,7 +365,7 @@ h2 {
   }
 
   * {
-    z-index: 1;
+    z-index: var(--z-index-1);
   }
 
   &:before {
@@ -356,7 +381,7 @@ h2 {
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
-    z-index: 0;
+    z-index: var(--z-index-0);
   }
 }
 
@@ -402,5 +427,20 @@ h2 {
 .solo {
   color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
+}
+
+.claim-seat-link {
+  padding: 3px 10px;
+  background: var(--spooky-green);
+  color: white !important;
+  border-radius: 3px;
+  text-decoration: none;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  font-weight: bold;
+
+  &:hover {
+    background: hsl(80, 35%, 32%);
+  }
 }
 </style>

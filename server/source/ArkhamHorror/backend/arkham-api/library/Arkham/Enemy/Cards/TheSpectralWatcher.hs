@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.TheSpectralWatcher (theSpectralWatcher) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Enemy (disengageEnemyFromAll)
 import Arkham.Matcher
 
@@ -11,7 +11,7 @@ newtype TheSpectralWatcher = TheSpectralWatcher EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 theSpectralWatcher :: EnemyCard TheSpectralWatcher
-theSpectralWatcher = enemy TheSpectralWatcher Cards.theSpectralWatcher (3, Static 5, 3) (1, 1)
+theSpectralWatcher = enemy TheSpectralWatcher Cards.theSpectralWatcher
 
 instance HasAbilities TheSpectralWatcher where
   getAbilities (TheSpectralWatcher a) =

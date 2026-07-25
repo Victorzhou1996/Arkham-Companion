@@ -49,7 +49,12 @@ instance HasChaosTokenValue WilsonRichards where
 
 instance RunMessage WilsonRichards where
   runMessage msg i@(WilsonRichards (With attrs meta)) = runQueueT $ case msg of
+    Blanked BeginRound -> pure . WilsonRichards $ attrs `with` Meta True
     BeginRound -> pure . WilsonRichards $ attrs `with` Meta True
+    Blanked (PaidForCardCost iid pc _) | attrs.id == iid -> do
+      if active meta && toCard pc `cardMatch` card_ (#asset <> #tool)
+        then pure . WilsonRichards $ attrs `with` Meta False
+        else pure i
     PaidForCardCost iid pc _ | attrs.id == iid -> do
       if active meta && toCard pc `cardMatch` card_ (#asset <> #tool)
         then pure . WilsonRichards $ attrs `with` Meta False
@@ -61,7 +66,7 @@ instance RunMessage WilsonRichards where
         cost <- field AssetCost aid
         pure $ any (\c -> maybe False ((<= cost) . toPrintedCost) c.cost) handTools
       when (notNull validPlayAreaTools) do
-        chooseOne iid $ Label "Do not swap" []
+        chooseOne iid $ Label "$label.doNotSwap" []
           : targetLabels validPlayAreaTools (only . Msg.handleTargetChoice iid attrs)
       pure i
     HandleTargetChoice iid (isSource attrs -> True) (AssetTarget aid) -> do

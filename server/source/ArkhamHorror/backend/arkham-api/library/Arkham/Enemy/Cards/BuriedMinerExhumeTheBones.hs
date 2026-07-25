@@ -16,7 +16,7 @@ newtype BuriedMinerExhumeTheBones = BuriedMinerExhumeTheBones EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 buriedMinerExhumeTheBones :: EnemyCard BuriedMinerExhumeTheBones
-buriedMinerExhumeTheBones = enemy BuriedMinerExhumeTheBones Cards.buriedMinerExhumeTheBones (2, Static 4, 4) (1, 1)
+buriedMinerExhumeTheBones = enemy BuriedMinerExhumeTheBones Cards.buriedMinerExhumeTheBones
 
 instance HasModifiersFor BuriedMinerExhumeTheBones where
   getModifiersFor (BuriedMinerExhumeTheBones a) = do
@@ -44,10 +44,10 @@ instance RunMessage BuriedMinerExhumeTheBones where
       parley sid iid (attrs.ability 1) attrs #combat (Fixed $ max 0 $ 6 - n)
       pure e
     PassedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
-      flipOverBy iid (attrs.ability 2) attrs
+      flipOver iid attrs
       pure e
     UseThisAbility iid (isSource attrs -> True) 2 -> do
-      flipOverBy iid (attrs.ability 2) attrs
+      flipOver iid attrs
       pure e
     Flip iid _source (isTarget attrs -> True) -> do
       readStoryWithPlacement iid attrs Stories.exhumeTheBones (enemyPlacement attrs)

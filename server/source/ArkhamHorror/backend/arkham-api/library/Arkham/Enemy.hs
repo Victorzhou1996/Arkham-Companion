@@ -10,16 +10,13 @@ import Arkham.Helpers.Modifiers
 import Arkham.Matcher
 import Arkham.Placement
 import Arkham.Prelude
-import Arkham.Tracing
 
 createEnemy :: (HasCallStack, IsCard a) => a -> EnemyId -> Enemy
 createEnemy a eid = lookupEnemy (toCardCode a) eid (toCardId a)
 
 instance RunMessage Enemy where
-  runMessage (SendMessage target msg) e | e `is` target =
-    withSpan_ ("Enemy[" <> unCardCode (toCardCode e) <> "].runMessage") do
-      runMessage msg e
-  runMessage msg e@(Enemy x) = withSpan_ ("Enemy[" <> unCardCode (toCardCode e) <> "].runMessage") do
+  runMessage (SendMessage target msg) e | e `is` target = runMessage msg e
+  runMessage msg e@(Enemy x) = do
     -- we must check that an enemy exists when grabbing modifiers
     -- as some messages are not masked when targetting cards in the
     -- discard.
@@ -581,11 +578,70 @@ allEnemies =
         SomeEnemyCard subterraneanBeast
       , SomeEnemyCard burrowingHybrid
       , SomeEnemyCard frenziedMiner
+      , --- Hemlock House [fhv]
+        SomeEnemyCard grapplingSpawn
+      , --- The Silent Heath [fhv]
+        SomeEnemyCard colorlessLarva
+      , SomeEnemyCard broodSoldier
+      , SomeEnemyCard broodQueenDyingMother
+      , --- The Lost Sister [fhv]
+        SomeEnemyCard limulusHybridInTheLight
+      , SomeEnemyCard limulusHybridInTheDark
+      , SomeEnemyCard crustaceanHybridInTheLight
+      , SomeEnemyCard crustaceanHybridInTheDark
+      , SomeEnemyCard cosmicEmissaryTheAbyss
+      , SomeEnemyCard cosmicEmissaryTheAbyssShattered
+      , SomeEnemyCard cosmicEmissaryThePhantasm
+      , SomeEnemyCard cosmicEmissaryThePhantasmShattered
+      , SomeEnemyCard cosmicEmissaryTheMiasma
+      , SomeEnemyCard cosmicEmissaryTheMiasmaShattered
+      , SomeEnemyCard cosmicEmissaryTheBrilliance
+      , SomeEnemyCard cosmicEmissaryTheBrillianceShattered
+      , SomeEnemyCard crystalMimic
+      , SomeEnemyCard cavernMoss
+      , --- The Thing in the Depths [fhv]
+        SomeEnemyCard thingInTheDepths
+      , SomeEnemyCard chelydranHybrid
+      , SomeEnemyCard graspingTendril
+      , --- The Longest Night [fhv]
+        SomeEnemyCard ursineHybridStarvingAbomination
+      , SomeEnemyCard moltingHybridA
+      , SomeEnemyCard moltingHybridB
+      , SomeEnemyCard moltingHybridC
+      , SomeEnemyCard lupineHybridA
+      , SomeEnemyCard lupineHybridB
+      , SomeEnemyCard lupineHybridC
+      , SomeEnemyCard capraHybrid
+      , SomeEnemyCard equineHybridA
+      , SomeEnemyCard equineHybridB
+      , SomeEnemyCard equineHybridC
+      , SomeEnemyCard slitheringHybrid
       , --- The Twisted Hollow [fhv]
         SomeEnemyCard ursineHybridGlowingAbomination
       , SomeEnemyCard stalkingHybrid
       , --- Horrors in the Rock [fhv]
         SomeEnemyCard crystalParasite
+      , --- Agents of the Colour [fhv]
+        SomeEnemyCard miasmaticShadow
+      , --- Day of the Feast [fhv]
+        SomeEnemyCard frenziedReveler
+      , --- Residents [fhv]
+        SomeEnemyCard motherRachelStarbornHerald
+      , SomeEnemyCard leahAtwood
+      , SomeEnemyCard simeonAtwood
+      , SomeEnemyCard williamHemlock
+      , SomeEnemyCard riverHawthorne
+      , SomeEnemyCard gideonMizrah
+      , SomeEnemyCard judithPark
+      , SomeEnemyCard theoPeters
+      , SomeEnemyCard bertieMusgrave
+      , --- The Forest [fhv]
+        SomeEnemyCard poisonblossom
+      , SomeEnemyCard forestWatcher
+      , SomeEnemyCard cochlealStag
+      , --- Myconids [fhv]
+        SomeEnemyCard blackAmanita
+      , SomeEnemyCard corpseLichen
       , -- Core 2026
         --- signature [core2026]
         SomeEnemyCard blackChamberOperative
@@ -668,6 +724,9 @@ allEnemies =
         SomeEnemyCard screechingBanshee
       , -- Nathanial Cho
         SomeEnemyCard tommyMalloy
+      , -- Miguel de la Cruz
+        SomeEnemyCard felineHybrid
+      , SomeEnemyCard bloodDrinker
       , -- Curse of the Rougarou
         SomeEnemyCard bogGator
       , SomeEnemyCard swampLeech
@@ -685,6 +744,45 @@ allEnemies =
       , SomeEnemyCard poleman
       , SomeEnemyCard carnevaleSentinel
       , SomeEnemyCard writhingAppendage
+      , -- The Eternal Slumber
+        SomeEnemyCard neith
+      , SomeEnemyCard humbleSupplicant
+      , SomeEnemyCard creatureFromTheAbyss
+      , -- The Night's Usurper
+        SomeEnemyCard xzharah
+      , SomeEnemyCard dreadedShantak
+      , SomeEnemyCard speakerForTheDarkPharaoh
+      , -- Brotherhood of the Beast
+        SomeEnemyCard drLaylaElMasri
+      , SomeEnemyCard drWentworthMoore
+      , SomeEnemyCard nadiaNimr
+      , SomeEnemyCard farid
+      , SomeEnemyCard nassor
+      , SomeEnemyCard professorNathanielTaylor
+      , -- Sands of Egypt
+        SomeEnemyCard abyssalRevenant
+      , SomeEnemyCard thingInTheSarcophagus
+      , -- War of the Outer Gods
+        SomeEnemyCard nihilisticStargazer
+      , SomeEnemyCard zealotOfParadise
+      , SomeEnemyCard discipleOfTheSwarm
+      , SomeEnemyCard etherealEntityWarOfTheOuterGods
+      , SomeEnemyCard bringerOfParadiseWarOfTheOuterGods
+      , SomeEnemyCard trylogogWarOfTheOuterGods
+      , -- Death of Stars
+        SomeEnemyCard silenus
+      , SomeEnemyCard theInescapableMaw
+      , SomeEnemyCard huneStitchedHerald
+      , SomeEnemyCard etherealEntity
+      , -- Children of Paradise
+        SomeEnemyCard maghanArkat
+      , SomeEnemyCard vileBroodmaster
+      , SomeEnemyCard horrificShoggoth
+      , SomeEnemyCard bringerOfParadise
+      , -- Swarm of Assimilation
+        SomeEnemyCard ezelZenRezl
+      , SomeEnemyCard droningHorde
+      , SomeEnemyCard trylogog
       , -- Murder at the Excelsior Hotel
         SomeEnemyCard arkhamOfficer
       , SomeEnemyCard mrTrombly
@@ -768,4 +866,126 @@ allEnemies =
       , SomeEnemyCard theContessaEnraged
       , SomeEnemyCard vampireThrall
       , SomeEnemyCard werewolf
+      , --- Spreading Flames
+        SomeEnemyCard servantOfFlameRagingFury
+      , SomeEnemyCard servantOfFlameOnTheRun
+      , SomeEnemyCard servantOfFlameAWillingSacrifice
+      , --- People Of Arkham
+        SomeEnemyCard davidRenfieldDisillusionedEschatologist
+      , SomeEnemyCard corneliaAkelyExhaustedSupervisor
+      , SomeEnemyCard naomiOBannionRunsThisTown
+      , SomeEnemyCard sgtEarlMonroeDirtyCop
+      , SomeEnemyCard abigailForemanWaryLibrarian
+      , SomeEnemyCard margaretLiuBeguilingLoungeSinger
+      , --- Ashen Pilgrims
+        SomeEnemyCard cantorOfFlame
+      , SomeEnemyCard hellhound
+      , --- Bystanders
+        SomeEnemyCard bystander
+      , --- Mad Science
+        SomeEnemyCard mutatedExperiment
+      , --- Torment
+        SomeEnemyCard batHorror
+      , --- Gangs Of Arkham
+        SomeEnemyCard rogueGangster
+      , --- Whippoorwills (Chapter 2)
+        SomeEnemyCard whippoorwill2
+      , --- Cultists
+        SomeEnemyCard zealot
+      , SomeEnemyCard darkMagician
+      , --- Queen of Ash
+        SomeEnemyCard queensKnight
+      , SomeEnemyCard heraldOfFlame
+      , SomeEnemyCard elokossFaintEmbers
+      , SomeEnemyCard elokossMotherOfFlame
+      , -- The Blob That Ate Everything
+        SomeEnemyCard oozeling
+      , SomeEnemyCard graspingOoze
+      , SomeEnemyCard cubicOoze
+      , SomeEnemyCard oozewraith
+      , SomeEnemyCard vulnerableHeart
+      , SomeEnemyCard subject8L08
+      , SomeEnemyCard subject8L08EpicMultiplayer
+      , -- Mi-Go Incursion
+        SomeEnemyCard miGoGeneral
+      , SomeEnemyCard miGoDrone
+      , SomeEnemyCard miGoHarvester
+      , SomeEnemyCard miGoMeddler
+      , SomeEnemyCard miGoAbductor
+      , -- The Labyrinths of Lunacy
+        SomeEnemyCard eixodolon
+      , SomeEnemyCard eixodolonsPet
+      , SomeEnemyCard facelessAbductor
+      , SomeEnemyCard torturedVictim
+      , SomeEnemyCard miGoGuard
+      , -- Machinations Through Time
+        SomeEnemyCard edwinBennetBitterAdversary
+      , SomeEnemyCard oldSadieSheldon
+      , SomeEnemyCard sheldonGang
+      , SomeEnemyCard tyrthrha
+      , SomeEnemyCard ghastlySatyr
+      , SomeEnemyCard houndOfTindalos
+      , SomeEnemyCard manyAngledThing
+      , SomeEnemyCard tindalosAlphaMachinationsThroughTime
+      , -- Read or Die
+        SomeEnemyCard namerOfTheDead
+      , -- All or Nothing
+        SomeEnemyCard siobhanRiley
+      , SomeEnemyCard cloverClubBouncer
+      , -- Bad Blood
+        SomeEnemyCard elspethBaudin
+      , -- By the Book
+        SomeEnemyCard mrGrey
+      , -- Laid to Rest
+        SomeEnemyCard jeanDevereuxSeekingClosure
+      , SomeEnemyCard jeanDevereuxPossessed
+      , SomeEnemyCard ravenousSpirit
+      , -- Enthralling Encore
+        SomeEnemyCard sinisterSoloist
+      , -- Relics of the Past
+        SomeEnemyCard dwellerInThePit
+      , --- The Drowned City
+        SomeEnemyCard sadieSheldon
+      , SomeEnemyCard naomiOBannion
+      , SomeEnemyCard gangSoldier
+      , SomeEnemyCard gangEnforcer
+      , SomeEnemyCard gangInformant
+      , SomeEnemyCard deepOneMatron
+      , SomeEnemyCard huntingParasite
+      , SomeEnemyCard seafloorLeviathan
+      , SomeEnemyCard underseaParasite
+      , SomeEnemyCard medusa
+      , SomeEnemyCard mother
+      , SomeEnemyCard grotesqueAmalgam
+      , SomeEnemyCard apiaryTender
+      , SomeEnemyCard squamousParasite
+      , SomeEnemyCard slithererInDarkness
+      , SomeEnemyCard vaultAttendant
+      , SomeEnemyCard courtKeeperObserverOfDreams
+      , SomeEnemyCard courtKeeperWeaverOfNightmares
+      , SomeEnemyCard colossalTyrant
+      , SomeEnemyCard wingedKeeper
+      , SomeEnemyCard primevalTerror
+      , SomeEnemyCard starVampire
+      , SomeEnemyCard cthulhuDeadAndDreaming
+      , SomeEnemyCard randallTillinghast
+      , SomeEnemyCard cthulhuAncientEvil
+      , SomeEnemyCard cthulhuHoaryWings
+      , SomeEnemyCard cthulhuHoaryWingsEnraged
+      , SomeEnemyCard cthulhuFierceVisage
+      , SomeEnemyCard cthulhuFierceVisageEnraged
+      , SomeEnemyCard cthulhuWickedClaw
+      , SomeEnemyCard cthulhuWickedClawEnraged
+      , SomeEnemyCard stowawayDrone
+      , SomeEnemyCard pilgrimAcolyte
+      , SomeEnemyCard pilgrimLeader
+      , SomeEnemyCard monstrousStarSpawn
+      , SomeEnemyCard infectedStarSpawn
+      , SomeEnemyCard coralStarSpawn
+      , SomeEnemyCard starSpawnObserver
+      , SomeEnemyCard voltaicEel
+      , SomeEnemyCard theInescapable
+      , SomeEnemyCard deepOneThrall
+      , SomeEnemyCard elderDeepOne
+      , SomeEnemyCard persistentConstruct
       ]

@@ -26,7 +26,7 @@ instance HasAbilities GrapplingHook where
   getAbilities (GrapplingHook (With x _)) =
     [ doesNotProvokeAttacksOfOpportunity
         $ restricted x 1 ControlsThis
-        $ ActionAbility [] Nothing (exhaust x <> ActionCost 2)
+        $ ActionAbility mempty Nothing (exhaust x <> ActionCost 2)
     ]
 
 instance RunMessage GrapplingHook where
@@ -43,7 +43,7 @@ instance RunMessage GrapplingHook where
       effectId <- getRandom
       builder <- makeEffectBuilder (toCardCode attrs) Nothing (attrs.ability 1) iid
       chooseOrRunOneM iid do
-        labeled "Take no more actions" nothing
+        labeledI "takeNoMoreActions" nothing
         for_ (filter ((`notElem` chosenAbilities meta) . (.different)) abilities') \ab -> do
           if #investigate `elem` ab.actions
             then do

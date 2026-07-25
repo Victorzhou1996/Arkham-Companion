@@ -1,81 +1,91 @@
-import CampaignLog from '@/arkham/views/CampaignLog.vue';
-import Game from '@/arkham/views/Game.vue';
-import Deck from '@/arkham/views/Deck.vue';
-import Decks from '@/arkham/views/Decks.vue';
-import Cards from '@/arkham/views/Cards.vue';
-import JoinGame from '@/arkham/views/JoinGame.vue';
-import ReplayGame from '@/arkham/views/ReplayGame.vue';
-import NewCampaign from '@/arkham/views/NewCampaign.vue';
 import { RouteLocationNormalized } from 'vue-router';
 
 export default [
   {
-    path: '/cards',
-    name: 'Cards',
-    component: Cards,
-    meta: { requiresAuth: true, title: "Arkham Horror: Cards" },
-    props: true,
+    path: '/decks',
+    name: 'Decks',
+    component: () => import('@/arkham/views/Decks.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Decks" },
   },
   {
-    path: '/deck/:deckId',
+    path: '/decks/:deckId',
     name: 'Deck',
-    component: Deck,
+    component: () => import('@/arkham/views/Deck.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: Deck" },
     props: true,
   },
   {
-    path: '/decks',
-    name: 'Decks',
-    component: Decks,
-    meta: { requiresAuth: true, title: "Arkham Horror: Decks" },
-    props: true,
+    path: '/achievements',
+    name: 'Achievements',
+    component: () => import('@/arkham/views/Achievements.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Achievements" },
+  },
+  {
+    path: '/bugs',
+    name: 'Bugs',
+    component: () => import('@/arkham/views/Bugs.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Bugs" },
   },
   {
     path: '/campaigns/new',
     name: 'NewCampaign',
-    component: NewCampaign,
+    component: () => import('@/arkham/views/NewCampaign.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: New Game" },
+    props: true,
+  },
+  {
+    path: '/events/:id',
+    name: 'OrganizerDashboard',
+    component: () => import('@/arkham/views/OrganizerDashboard.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Organizer Dashboard" },
     props: true,
   },
   {
     path: '/games/:gameId',
     name: 'Game',
-    component: Game,
+    component: () => import('@/arkham/views/Game.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror" },
     props: true,
   },
   {
     path: '/admin/games/:gameId',
     name: 'AdminGame',
-    component: Game,
+    component: () => import('@/arkham/views/Game.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror" },
     props: (route: RouteLocationNormalized) => ({ ...route.params, spectate: true }),
   },
   {
     path: '/games/:gameId/spectate',
     name: 'Spectate',
-    component: Game,
+    component: () => import('@/arkham/views/Game.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: Spectate" },
     props: (route: RouteLocationNormalized) => ({ ...route.params, spectate: true }),
   },
   {
     path: '/games/:gameId/log',
     name: 'CampaignLog',
-    component: CampaignLog,
+    component: () => import('@/arkham/views/CampaignLog.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: Campaign Log" },
     props: true,
   },
   {
     path: '/games/:gameId/join',
     name: 'JoinGame',
-    component: JoinGame,
+    component: () => import('@/arkham/views/JoinGame.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: Join Game" },
+    props: true,
+  },
+  {
+    path: '/games/:gameId/claim-seat',
+    name: 'ClaimSeat',
+    component: () => import('@/arkham/views/ClaimSeat.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Claim Seat" },
     props: true,
   },
   {
     path: '/games/:gameId/replay',
     name: 'ReplayGame',
-    component: ReplayGame,
+    component: () => import('@/arkham/views/ReplayGame.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: Replay" },
     props: true,
   },

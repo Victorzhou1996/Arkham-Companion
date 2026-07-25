@@ -15,14 +15,14 @@ newtype DimensionalDuplicatorA = DimensionalDuplicatorA EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 dimensionalDuplicatorA :: EnemyCard DimensionalDuplicatorA
-dimensionalDuplicatorA = enemy DimensionalDuplicatorA Cards.dimensionalDuplicatorA (3, Static 3, 3) (1, 1)
+dimensionalDuplicatorA = enemy DimensionalDuplicatorA Cards.dimensionalDuplicatorA
 
 instance HasAbilities DimensionalDuplicatorA where
   getAbilities (DimensionalDuplicatorA a) =
     extend1 a
       $ mkAbility a 1
       $ forced
-      $ EnemyDealtDamage #after AnyDamageEffect (be a) (SourceOwnedBy You)
+      $ EnemyDealtDamage #after AnyDamageEffect (be a) (SourceUsedBy You)
 
 instance RunMessage DimensionalDuplicatorA where
   runMessage msg e@(DimensionalDuplicatorA attrs) = runQueueT $ case msg of

@@ -1,5 +1,17 @@
 {
   "heading": "Scenario I-A",
+  "specialRules": [
+    {
+      "title": "Steps of Slumber",
+      "body": "<p class='basic'>At the start of this scenario, there is no encounter deck. This means that the investigators cannot use abilities that interact with the encounter deck in any way. (For example, effects such as those that search the encounter deck, draw cards from the encounter deck, or look at cards in the encounter deck all fail.)</p><p class='basic'>Additionally, act 1a has the text: “Do not draw cards from the encounter deck during the mythos phase.”</p><p class='basic'>At a certain point in the scenario, the investigators will be instructed to form the encounter deck, and this text will no longer be active. From that point onward, the investigators can interact with the encounter deck as normal.</p>"
+    }
+  ],
+  "thePath": {
+    "label": {
+      "stepBack": "Step back and watch this surreal scene play out.",
+      "interrupt": "Interrupt the scarred cat and handle this yourself."
+    }
+  },
   "tokens": {
     "easyStandard": {
       "skull": "-X. X is half the number of cards in your hand (rounded up).",
@@ -10,6 +22,23 @@
       "skull": "-X. X is the number of cards in your hand.",
       "cultist": "-X. X is the number of revealed _Woods_ locations.",
       "tablet": "-2. If this is an attack or evasion attempt against a swarming enemy, add 1 swarm card to it."
+    }
+  },
+  "label": {
+    "doNotReplace": "Do not replace",
+    "doNotTakeAny": "Do not take any",
+    "replaceWeaknessQuestion": "Replace basic weakness with random and take 1 trauma of your choice?",
+    "chooseUpToTacticSupply": "Choose up to {count} Tactic and/or Supply cards and begin this scenario with them as additional cards in your opening hand."
+  },
+  "enchantedWoodsTheMoonTree": {
+    "label": {
+      "loseAllActions": "Lose all remaining actions"
+    }
+  },
+  "journeyThroughTheGates": {
+    "label": {
+      "testWillpower": "Test {'{'}willpower{'}'} (3) to remember that this is all a dream",
+      "doNotTest": "Do not test"
     }
   }
 }

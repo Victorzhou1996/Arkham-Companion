@@ -1,15 +1,17 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { imgsrc } from '@/arkham/helpers';
+import { cardImage } from '@/arkham/cardImages';
 import type { Modifier } from '@/arkham/types/Modifier';
 import { TokenType } from '@/arkham/types/Token';
-import type { Card, CardContents } from '@/arkham/types/Card';
+import { cardFacedown, type Card, type CardContents } from '@/arkham/types/Card';
 import type { Game } from '@/arkham/types/Game';
 import * as ArkhamGame from '@/arkham/types/Game';
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message';
 import { MessageType } from '@/arkham/types/Message';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import PoolItem from '@/arkham/components/PoolItem.vue'
+import { useDebug } from '@/arkham/debug'
 
 const props = withDefaults(defineProps<{
   game: Game
@@ -21,9 +23,15 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   choose: [value: number]
 }>()
+const debug = useDebug()
 
 const cardContents = computed<CardContents>(() => {
   return props.card.tag === "CardContents" ? props.card : ( props.card.tag === "VengeanceCard" ? props.card.contents.contents : props.card.contents)
+})
+
+const isEnemyLocationCard = computed(() => {
+  const id = cardContents.value.id
+  return Object.values(props.game.locations).some(loc => loc.enemyLocation && loc.cardId === id)
 })
 
 const image = computed(() => {
@@ -33,30 +41,37 @@ const image = computed(() => {
   }
 
   const { cardCode, isFlipped, mutated } = cardContents.value
-  if (cardCode === "c05178b" && !isFlipped) {
-    return imgsrc(`cards/${cardCode.replace(/^c/, '').replace(/b$/, 'a')}.avif`)
+  if (cardFacedown(props.card) && !props.revealed) {
+    const back = props.card.tag === 'PlayerCard' ? 'player_back' : 'encounter_back'
+    return imgsrc(`${back}.jpg`);
   }
-  if (cardCode === "c05178d" && !isFlipped) {
-    return imgsrc(`cards/${cardCode.replace(/^c/, '').replace(/d$/, 'c')}.avif`)
+  // c05178 has 6 pairs of (front,back) variants using extended alphabet
+  // suffixes: 05178a/b, 05178c/d, ... 05178k/l. The card code points at
+  // the back/Unfinished Business side, so when unflipped render the matching
+  // previous-letter front, and when flipped render the card code as-is.
+  // Some saved/flipped cards can arrive with the generic "b" suffix appended
+  // to the extended code (e.g. c05178lb); canonicalize those to c05178l.
+  const unfinishedBusinessBack = cardCode.match(/^(c(?:05178[bcdfhjl]|5403[89]b))b$/)?.[1]
+  if (unfinishedBusinessBack) return cardImage(unfinishedBusinessBack)
+
+  const forcedFlippedSuffix: Record<string, string> = {
+    c05178b: 'a', c05178d: 'c', c05178f: 'e',
+    c05178h: 'g', c05178j: 'i', c05178l: 'k',
+    c54038b: '', c54039b: '',
   }
-  if (cardCode === "c05178f" && !isFlipped) {
-    return imgsrc(`cards/${cardCode.replace(/^c/, '').replace(/f$/, 'e')}.avif`)
+  if (cardCode in forcedFlippedSuffix) {
+    return isFlipped
+      ? cardImage(cardCode)
+      : cardImage(cardCode.slice(0, -1), forcedFlippedSuffix[cardCode])
   }
-  if (cardCode === "c05178h" && !isFlipped) {
-    return imgsrc(`cards/${cardCode.replace(/^c/, '').replace(/h$/, 'g')}.avif`)
-  }
-  if (cardCode === "c05178j" && !isFlipped) {
-    return imgsrc(`cards/${cardCode.replace(/^c/, '').replace(/j$/, 'i')}.avif`)
-  }
-  if (cardCode === "c05178l" && !isFlipped) {
-    return imgsrc(`cards/${cardCode.replace(/^c/, '').replace(/l$/, 'k')}.avif`)
-  }
-  const suffix = !props.revealed && isFlipped ? 'b' : ''
+  const revealed = props.revealed && !isEnemyLocationCard.value
+  const suffix = !revealed && isFlipped ? 'b' : ''
   const mutatedSuffix = mutated ? `_${mutated}` : ''
-  return imgsrc(`cards/${cardCode.replace(/^c/, '')}${suffix}${mutatedSuffix}.avif`)
+  return cardImage(cardCode, `${suffix}${mutatedSuffix}`)
 })
 
 const id = computed(() => props.card.tag === 'VengeanceCard' ? props.card.contents.contents.id : cardContents.value.id)
+const isHighlighted = computed(() => props.game.highlightedCards.includes(id.value))
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 
 function canInteract(c: Message): boolean {
@@ -67,8 +82,11 @@ function canInteract(c: Message): boolean {
       }
     }
     if (c.target.tag === 'EnemyTarget') {
-      if (typeof c.target.contents === 'string' && props.game.enemies[c.target.contents].cardId == id.value) {
-        return true
+      if (typeof c.target.contents === 'string') {
+        const enemy = props.game.enemies[c.target.contents]
+        if (enemy && enemy.cardId == id.value) {
+          return true
+        }
       }
     }
     return c.target.contents === id.value
@@ -82,7 +100,7 @@ const cardAction = computed(() => {
 })
 
 function isAbility(v: Message): v is AbilityLabel {
-  if (v.tag === MessageType.EVADE_LABEL) {
+  if (v.tag === MessageType.EVADE_LABEL || v.tag === MessageType.EVADE_LABEL_WITH_SKILL) {
     return v.enemyId === id.value
   }
 
@@ -98,14 +116,14 @@ function isAbility(v: Message): v is AbilityLabel {
     }
   }
 
-  if (source.tag === 'AssetSource') {
+  if (source.tag === 'AssetSource' && source.contents) {
     const asset = props.game.assets[source.contents]
     if (asset) {
       return asset.cardId === id.value && asset.placement.tag === 'StillInHand'
     }
   }
 
-  return source.contents === id.value
+  return 'contents' in source && source.contents === id.value
 }
 
 const abilities = computed<AbilityMessage[]>(() => {
@@ -163,6 +181,18 @@ const modifiedPlayingCard = computed(() => {
 
 })
 
+function startDrag(event: DragEvent) {
+  if (!debug.active) {
+    event.preventDefault()
+    return
+  }
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'copy'
+    event.dataTransfer.setData('text/plain', JSON.stringify({ tag: 'CardTarget', contents: id.value }))
+  }
+}
+
 </script>
 
 <template>
@@ -173,11 +203,13 @@ const modifiedPlayingCard = computed(() => {
       class="playing-card-overlay"
     />
     <img
-      :class="{'card--can-interact': cardAction !== -1, 'sideways': forceSideways}"
+      :class="{'card--can-interact': cardAction !== -1, 'card--highlighted': isHighlighted && cardAction === -1, 'sideways': forceSideways}"
       class="card"
       :src="image"
       :data-customizations="JSON.stringify(cardContents.customizations)"
       :data-pc="modifiedPlayingCard ? modifiedPlayingCard : null"
+      :draggable="debug.active"
+      @dragstart="startDrag"
       @click="emit('choose', cardAction)"
     />
     <span class="vengeance" v-if="card.tag === 'VengeanceCard'">{{$t('card.vengeance', {value: 1})}}</span>
@@ -226,6 +258,10 @@ const modifiedPlayingCard = computed(() => {
 .card--can-interact {
   border: 2px solid var(--select);
   cursor: pointer;
+}
+
+.card--highlighted {
+  border: 2px solid var(--highlight);
 }
 
 .vengeance {

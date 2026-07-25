@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.MemoryOfAMissingFather (memoryOfAMissingFather) where
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Story
 import Arkham.Matcher
 import Arkham.Story.Cards qualified as Stories
@@ -14,7 +14,7 @@ newtype MemoryOfAMissingFather = MemoryOfAMissingFather EnemyAttrs
 
 memoryOfAMissingFather :: EnemyCard MemoryOfAMissingFather
 memoryOfAMissingFather =
-  enemyWith MemoryOfAMissingFather Cards.memoryOfAMissingFather (3, PerPlayer 4, 4) (1, 1)
+  enemyWith MemoryOfAMissingFather Cards.memoryOfAMissingFather
     $ preyL
     .~ Prey (ControlsAsset $ assetIs Assets.takadaHirokoAeroplaneMechanic)
 

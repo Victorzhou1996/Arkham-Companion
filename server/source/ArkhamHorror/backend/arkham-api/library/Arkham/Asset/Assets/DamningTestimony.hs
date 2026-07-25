@@ -50,7 +50,15 @@ instance HasModifiersFor DamningTestimony where
 
 instance HasAbilities DamningTestimony where
   getAbilities (DamningTestimony (With attrs _)) =
-    [ restrictedAbility attrs 1 (ControlsThis <> exists (EnemyAt Anywhere))
+    [ restrictedAbility
+        attrs
+        1
+        ( ControlsThis
+            <> exists (EnemyAt Anywhere)
+            <> if attrs `hasCustomization` Surveil
+              then oneOf [exists $ YourLocation <> InvestigatableLocation, exists $ EnemyAt InvestigatableLocation]
+              else exists $ YourLocation <> InvestigatableLocation
+        )
         $ investigateAction (exhaust attrs)
     ]
 
@@ -73,10 +81,9 @@ instance RunMessage DamningTestimony where
           then
             chooseOne
               iid
-              [ Label
-                  "Investigate the enemy's location"
+              [ Label "$label.cards.damningTestimony.investigateTheEnemysLocation"
                   [toMessage $ investigate' {investigateLocation = enemyLoc}]
-              , Label "Investigate your location" [toMessage investigate']
+              , Label "$label.cards.damningTestimony.investigateYourLocation" [toMessage investigate']
               ]
           else push investigate'
       pure $ DamningTestimony $ attrs `with` Metadata (Just eid)
@@ -93,8 +100,7 @@ instance RunMessage DamningTestimony where
               guardM $ lift $ getCanDiscoverClues IsInvestigate iid lid
               enabled <- Msg.skillTestModifier sid (attrs.ability 1) iid (DiscoveredCluesAt lid 1)
               pure
-                $ Label
-                  "Spend 1 Evidence to discover 1 additional clue at the chosen enemy's location."
+                $ Label "$label.cards.damningTestimony.spendForClue"
                   [ SpendUses (attrs.ability 1) (toTarget attrs) Evidence 1
                   , enabled
                   , DoStep (setBit 0 n) msg'
@@ -105,8 +111,7 @@ instance RunMessage DamningTestimony where
               guard $ attrs `hasCustomization` Extort
               guardM $ lift $ eid <=~> ReadyEnemy
               pure
-                $ Label
-                  "Spend 1 Evidence to automatically evade the chosen enemy."
+                $ Label "$label.cards.damningTestimony.spendEvidence"
                   [ SpendUses (attrs.ability 1) (toTarget attrs) Evidence 1
                   , EnemyEvaded iid eid
                   , DoStep (setBit 1 n) msg'
@@ -131,7 +136,7 @@ instance RunMessage DamningTestimony where
 
             let choices = catMaybes [mAdditional, mExtort, mExpose]
             when (notNull choices) do
-              chooseOne iid $ Label "Do not spend Evidence" [] : choices
+              chooseOne iid $ Label "$label.cards.damningTestimony.doNotSpendEvidence" [] : choices
 
       pure a
     _ -> DamningTestimony . (`with` meta) <$> liftRunMessage msg attrs

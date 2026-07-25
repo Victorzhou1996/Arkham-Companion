@@ -1,6 +1,6 @@
 module Arkham.Location.Cards.KualaLumpurStationWestWing (kualaLumpurStationWestWing) where
 
-import Arkham.Ability
+import Arkham.Ability hiding (resignAction)
 import Arkham.Location.Cards qualified as Cards
 import Arkham.Location.Helpers
 import Arkham.Location.Import.Lifted
@@ -35,7 +35,7 @@ instance HasAbilities KualaLumpurStationWestWing where
 instance RunMessage KualaLumpurStationWestWing where
   runMessage msg l@(KualaLumpurStationWestWing attrs) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
-      healHorror iid (attrs.ability 1) 2
+      healHorror iid (UseAbilitySource iid (toSource attrs) 1) 2
       remember FoundACheapMemento
       pure l
     _ -> KualaLumpurStationWestWing <$> liftRunMessage msg attrs

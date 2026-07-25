@@ -16,7 +16,7 @@ newtype BuriedMinerALostMemento = BuriedMinerALostMemento EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 buriedMinerALostMemento :: EnemyCard BuriedMinerALostMemento
-buriedMinerALostMemento = enemy BuriedMinerALostMemento Cards.buriedMinerALostMemento (2, Static 4, 4) (1, 1)
+buriedMinerALostMemento = enemy BuriedMinerALostMemento Cards.buriedMinerALostMemento
 
 instance HasModifiersFor BuriedMinerALostMemento where
   getModifiersFor (BuriedMinerALostMemento a) = do
@@ -44,10 +44,10 @@ instance RunMessage BuriedMinerALostMemento where
       parley sid iid (attrs.ability 1) attrs #combat (Fixed $ max 0 $ 6 - n)
       pure e
     PassedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
-      flipOverBy iid (attrs.ability 2) attrs
+      flipOver iid attrs
       pure e
     UseThisAbility iid (isSource attrs -> True) 2 -> do
-      flipOverBy iid (attrs.ability 2) attrs
+      flipOver iid attrs
       pure e
     Flip iid _source (isTarget attrs -> True) -> do
       readStoryWithPlacement iid attrs Stories.aLostMemento (enemyPlacement attrs)

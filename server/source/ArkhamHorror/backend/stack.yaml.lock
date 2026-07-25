@@ -16,71 +16,6 @@ packages:
   original:
     url: https://github.com/halogenandtoast/monad-validate/archive/e5f36d4a82875c09c6000fed8f8ced50e21b75ce.tar.gz
 - completed:
-    name: amazonka
-    pantry-tree:
-      sha256: fc1bb41150c88a2920d12a058578ad11d827fa43b16274391015260b2fe8c56d
-      size: 1528
-    sha256: 2383a31782b75b13f52b2032b53a03d0e969eb4f075649868d48817a0765915f
-    size: 34732929
-    subdir: lib/amazonka
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-    version: '2.0'
-  original:
-    subdir: lib/amazonka
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-- completed:
-    name: amazonka-core
-    pantry-tree:
-      sha256: e560d220c73068da280e8532d27f4cee341c2c05efd2f5d5b1b0336cb24ccb1b
-      size: 3222
-    sha256: 2383a31782b75b13f52b2032b53a03d0e969eb4f075649868d48817a0765915f
-    size: 34732929
-    subdir: lib/amazonka-core
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-    version: '2.0'
-  original:
-    subdir: lib/amazonka-core
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-- completed:
-    name: amazonka-sso
-    pantry-tree:
-      sha256: f8897d82072d662605f60dc3d18e921c04bbb337b5d7caaeaece36fc8aee7fb9
-      size: 1817
-    sha256: 2383a31782b75b13f52b2032b53a03d0e969eb4f075649868d48817a0765915f
-    size: 34732929
-    subdir: lib/services/amazonka-sso
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-    version: '2.0'
-  original:
-    subdir: lib/services/amazonka-sso
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-- completed:
-    name: amazonka-sts
-    pantry-tree:
-      sha256: b2a18c0a04c999f9f32e114ad94bf76a89e463dbb16063ebf0899ee28808f898
-      size: 2880
-    sha256: 2383a31782b75b13f52b2032b53a03d0e969eb4f075649868d48817a0765915f
-    size: 34732929
-    subdir: lib/services/amazonka-sts
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-    version: '2.0'
-  original:
-    subdir: lib/services/amazonka-sts
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-- completed:
-    name: amazonka-s3
-    pantry-tree:
-      sha256: 50bb47db3771d94ee26711bad9d91b1dc32e6466a9a580e9333af434728052b1
-      size: 38690
-    sha256: 2383a31782b75b13f52b2032b53a03d0e969eb4f075649868d48817a0765915f
-    size: 34732929
-    subdir: lib/services/amazonka-s3
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-    version: '2.0'
-  original:
-    subdir: lib/services/amazonka-s3
-    url: https://github.com/brendanhay/amazonka/archive/4873cc451113147d071721c97704ac648d71e9ee.tar.gz
-- completed:
     hackage: yesod-test-1.6.19@sha256:faac869ab6fa86113cde99d28928e196373a04879c03204071956954ed7ba2a3,3003
     pantry-tree:
       sha256: 3ff394578b2de20c7c67bae0a827e658dbea16a04b908804d4f0bb50bf4a5a1c
@@ -180,7 +115,7 @@ packages:
     hackage: hs-opentelemetry-instrumentation-wai-0.1.1.0@sha256:d97b4cb3870217e64e95da3f51db814eca62eb57484ee0a6f747366da5940bc2,1371
 snapshots:
 - completed:
-    sha256: cd7c0bda539e01dd990b90e13f3c82169c16e65052557cf49fdd93590c5a7931
-    size: 692684
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/9/16.yaml
-  original: nightly-2025-09-16
+    sha256: a578d98b69e5742eaf2c42d870e9c5011e5f8b5ad216f04ca8f52caadc8bf89c
+    size: 715419
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/12/30.yaml
+  original: nightly-2025-12-30

@@ -40,14 +40,14 @@ validExists = oneOf [can.have.cards.leaveDiscard <> DiscardWith #item, can.manip
 instance RunMessage TetsuoMori where
   runMessage msg a@(TetsuoMori attrs) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
-      iids <- select $ affectsOthers $ colocatedWith iid <> validExists
+      iids <- select $ affectsOthersKnown iid $ colocatedWith iid <> validExists
       chooseOrRunOneM iid $ targets iids $ handleTarget iid (attrs.ability 1)
       pure a
     HandleTargetChoice _ source@(isAbilitySource attrs 1 -> True) (InvestigatorTarget iid') -> do
       discardWithItem <- fieldP InvestigatorDiscard (any (`cardMatch` CardWithTrait Item)) iid'
       chooseOrRunOneM iid' do
         when discardWithItem do
-          labeled "Search Discard" $ search iid' source iid' [fromDiscard] #item (DrawFound iid' 1)
-        labeled "Search Deck" $ search iid' source iid' [fromTopOfDeck 9] #item (DrawFound iid' 1)
+          labeledI "searchDiscard" $ search iid' source iid' [fromDiscard] #item (DrawFound iid' 1)
+        labeledI "searchDeck" $ search iid' source iid' [fromTopOfDeck 9] #item (DrawFound iid' 1)
       pure a
     _ -> TetsuoMori <$> liftRunMessage msg attrs

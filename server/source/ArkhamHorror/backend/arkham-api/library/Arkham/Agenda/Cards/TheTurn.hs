@@ -2,8 +2,8 @@ module Arkham.Agenda.Cards.TheTurn (theTurn) where
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
-import Arkham.Helpers.Query (getLead, getSetAsideCardsMatching)
+import Arkham.Agenda.Import.Lifted
+import Arkham.Helpers.Query (getInvestigators, getLead, getSetAsideCardsMatching)
 import Arkham.Matcher
 import Arkham.Message.Lifted.Story
 import Arkham.Scenarios.FortuneAndFolly.Helpers
@@ -22,7 +22,7 @@ instance HasAbilities TheTurn where
     [ restricted a 1 (exists $ InvestigatorAt $ LocationWithEnemy $ EnemyWithTrait Casino <> ReadyEnemy)
         $ forced
         $ PhaseBegins #when #enemy
-    , mkAbility a 2 $ forced $ EnemyDefeated #after You ByAny (EnemyWithTrait Casino)
+    , mkAbility a 2 $ forced $ IfEnemyDefeated #after You ByAny (EnemyWithTrait Casino)
     ]
 
 instance RunMessage TheTurn where
@@ -42,6 +42,7 @@ instance RunMessage TheTurn where
             (mapOneOf cardIs [Stories.fortunesDisfavor25, Stories.fortunesDisfavor26, Stories.fortunesDisfavor27])
       for_ (nonEmpty fortunesDisfavor) \(card :| _) -> do
         resolveStory lead card
+      raiseAlarmLevel attrs =<< getInvestigators
       advanceAgendaDeck attrs
       pure a
     _ -> TheTurn <$> liftRunMessage msg attrs

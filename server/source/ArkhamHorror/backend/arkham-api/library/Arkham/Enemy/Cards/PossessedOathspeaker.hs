@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.PossessedOathspeaker (possessedOathspeaker) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Agenda
 import Arkham.Helpers.Modifiers (ModifierType (..), modifySelfWhen)
 import Arkham.Helpers.Query
@@ -15,7 +15,7 @@ newtype PossessedOathspeaker = PossessedOathspeaker EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 possessedOathspeaker :: EnemyCard PossessedOathspeaker
-possessedOathspeaker = enemy PossessedOathspeaker Cards.possessedOathspeaker (4, PerPlayer 5, 3) (2, 2)
+possessedOathspeaker = enemy PossessedOathspeaker Cards.possessedOathspeaker
 
 instance HasModifiersFor PossessedOathspeaker where
   getModifiersFor (PossessedOathspeaker attrs) = do
@@ -27,7 +27,7 @@ instance HasAbilities PossessedOathspeaker where
     extend
       a
       [ mkAbility a 1 $ forced $ PhaseBegins #when #enemy
-      , mkAbility a 2 $ Objective $ forced $ EnemyDefeated #after Anyone ByAny (be a)
+      , mkAbility a 2 $ Objective $ forced $ EnemyDefeated #when Anyone ByAny (be a)
       ]
 
 instance RunMessage PossessedOathspeaker where

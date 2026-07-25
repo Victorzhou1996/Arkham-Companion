@@ -6,6 +6,8 @@ import Arkham.Asset.Import.Lifted
 import Arkham.Asset.Uses
 import Arkham.Helpers.Investigator (canHaveHorrorHealed, healAdditional)
 import Arkham.Helpers.Message qualified as Msg
+import Arkham.Helpers.Modifiers (ModifierType (..))
+import Arkham.Helpers.SkillTest (withSkillTest)
 import Arkham.Matcher
 
 newtype SurgicalKit3 = SurgicalKit3 AssetAttrs
@@ -22,7 +24,7 @@ instance HasAbilities SurgicalKit3 where
           ( InvestigatorHealed #when #damage (affectsOthers Anyone) (SourceOwnedBy You <> SourceIsCardEffect)
           )
           (assetUseCost a Supply 1)
-    , controlledAbility a 2 criteria $ ActionAbility [] Nothing (ActionCost 2)
+    , controlledAbility a 2 criteria $ ActionAbility mempty Nothing (ActionCost 2)
     ]
    where
     criteria =
@@ -38,14 +40,17 @@ instance RunMessage SurgicalKit3 where
       canHeal <- canHaveHorrorHealed (attrs.ability 1) iid
       chooseOne
         iid
-        $ Label "That effect heals 1 additional damage" [DoStep 1 msg]
-        : [ Label
-            "Draw 1 card and heal 1 horror"
+        $ Label "$label.cards.surgicalKit3.thatEffectHeals1AdditionalDamage" [DoStep 1 msg]
+        : [ Label "$label.cards.surgicalKit3.draw1CardAndHeal1Horror"
             (maybeToList mDraw <> [HealHorror (toTarget iid) (attrs.ability 1) 1 | canHeal])
           | isJust mDraw || canHeal
           ]
       pure a
-    DoStep 1 (UseCardAbility _iid (isSource attrs -> True) 1 ws' _) -> do
+    DoStep 1 (UseCardAbility iid (isSource attrs -> True) 1 ws' _) -> do
+      withSkillTest \sid ->
+        skillTestModifier sid (attrs.ability 1) iid
+          $ CannotTriggerAbilityMatching
+          $ AbilityIs (toSource attrs) 1
       healAdditional (attrs.ability 1) #damage ws' 1
       pure a
     UseThisAbility iid (isSource attrs -> True) 2 -> do

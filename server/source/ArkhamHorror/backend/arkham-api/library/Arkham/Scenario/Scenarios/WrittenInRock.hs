@@ -1,6 +1,5 @@
 module Arkham.Scenario.Scenarios.WrittenInRock (writtenInRock) where
 
-import Arkham.Ability.Types
 import Arkham.Act.Cards qualified as Acts
 import Arkham.Agenda.Cards qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
@@ -33,7 +32,6 @@ import Arkham.Projection
 import Arkham.Resolution
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenarios.WrittenInRock.Helpers
-import Arkham.Story.Cards qualified as Stories
 import Arkham.Token
 import Arkham.Trait (Trait (Cave, Rail))
 
@@ -86,9 +84,16 @@ instance HasChaosTokenValue WrittenInRock where
 instance RunMessage WrittenInRock where
   runMessage msg s@(WrittenInRock attrs) = runQueueT $ scenarioI18n $ case msg of
     PreScenarioSetup -> do
-      story $ i18nWithTitle "intro"
+      flavor $ scope "intro" do
+        h "title"
+        p "body"
       pure s
     Setup -> runScenarioSetup WrittenInRock attrs do
+      setScenarioDayAndTime
+
+      day <- getCampaignDay
+      time <- getCampaignTime
+
       setup $ ul do
         li "gatherSets"
         li "currentDaySet"
@@ -97,12 +102,19 @@ instance RunMessage WrittenInRock where
         li "otherLocations"
         li.nested "scrap" do
           li "startAt"
-        li.nested "residents" do
-          li "riverHawthorne"
-          li "simeonAtwood"
-          li "leahAtwood"
-          li "remainingResidents"
-        li "subterraneanBeast"
+        li.nested.validate (time == Day) "residents" do
+          if time == Day
+            then do
+              li.validate (day == Day1) "riverHawthorne"
+              li.validate (day /= Day3) "simeonAtwood"
+              li.validate (day == Day3) "leahAtwood"
+              li "remainingResidents"
+            else do
+              li "riverHawthorne"
+              li "simeonAtwood"
+              li "leahAtwood"
+              li "remainingResidents"
+        li.validate (time == Day) "subterraneanBeast"
         li "scenarioReference"
         li "setOutOfPlay"
         unscoped $ li "shuffleRemainder"
@@ -117,30 +129,12 @@ instance RunMessage WrittenInRock where
 
       setAgendaDeck [Agendas.undergroundSurvey, Agendas.dangerousRide]
       setActDeck [Acts.descentIntoTheMines, Acts.theUndergroundMaze]
-      setScenarioDayAndTime
 
-      day <- getCampaignDay
-      time <- getCampaignTime
-
-      case day of
-        Day1 -> do
-          gather Set.TheFirstDay
-          placeStory $ case time of
-            Day -> Stories.dayOne
-            Night -> Stories.nightOne
-          setAside [Assets.simeonAtwoodDedicatedTroublemaker]
-        Day2 -> do
-          gather Set.TheSecondDay
-          placeStory $ case time of
-            Day -> Stories.dayTwo
-            Night -> Stories.nightTwo
-          setAside [Assets.simeonAtwoodDedicatedTroublemaker]
-        Day3 -> do
-          gather Set.TheFinalDay
-          placeStory $ case time of
-            Day -> Stories.dayThree
-            Night -> Stories.nightThree
-          setAside [Assets.leahAtwoodTheValeCook]
+      setupHemlockDay day time
+      when (time == Day) $ case day of
+        Day1 -> setAside [Assets.simeonAtwoodDedicatedTroublemaker]
+        Day2 -> setAside [Assets.simeonAtwoodDedicatedTroublemaker]
+        Day3 -> setAside [Assets.leahAtwoodTheValeCook]
 
       controlStation <- placeInGrid (Pos 5 1) Locations.controlStation
       placeTokens ScenarioSource controlStation Scrap 1
@@ -153,7 +147,7 @@ instance RunMessage WrittenInRock where
         loc <- placeCardInGrid (Pos x 1) cave
         placeTokens ScenarioSource loc Scrap 1
         when (x == 1) $ startAt loc
-        when (x == 3 && day == Day1) $ assetAt_ Assets.riverHawthorneBigInNewYork loc
+        when (x == 3 && day == Day1 && time == Day) $ assetAt_ Assets.riverHawthorneBigInNewYork loc
 
       when (time == Day) $ removeEvery [Enemies.subterraneanBeast]
       setAside =<< fromGathered (CardFromEncounterSet Set.WrittenInRock)
@@ -167,7 +161,7 @@ instance RunMessage WrittenInRock where
       when (n == 1) $ removeTokens Tablet attrs Scrap 1
       when (n == 2) do
         mineCart <- selectJust $ assetIs Assets.mineCartReliableButBroken
-        whenMatch mineCart (AssetWithModifier CannotMove)
+        whenMatch mineCart (not_ $ AssetWithModifier CannotMove)
           $ scenarioSpecific_ "moveMineCart"
       pure s
     ResolveChaosToken _ ElderThing iid | isHardExpert attrs -> do
@@ -190,7 +184,7 @@ instance RunMessage WrittenInRock where
           when (n == 1) $ removeTokens Tablet attrs Scrap 1
           when (n == 2) do
             mineCart <- selectJust $ assetIs Assets.mineCartReliableButBroken
-            whenMatch mineCart (AssetWithModifier CannotMove)
+            whenMatch mineCart (not_ $ AssetWithModifier CannotMove)
               $ scenarioSpecific_ "moveMineCart"
         ElderThing | isEasyStandard attrs -> do
           n <- getCurrentActStep
@@ -211,6 +205,8 @@ instance RunMessage WrittenInRock where
 
       flavor $ setTitle "theCaveIn" >> p (if isDay then "theCaveIn2" else "theCaveIn3")
       flavor $ setTitle "theCaveIn" >> p "theCaveIn4"
+      scope "slidingAndSwappingLocations" $ flavor $ setTitle "title" >> p "body"
+      scope "theMineCart" $ flavor $ setTitle "title" >> p "body"
       controlStation <- selectJust $ locationIs Locations.controlStation
       push $ PlaceGrid (GridLocation (Pos 1 1) controlStation)
       placeLocationInGrid_ (Pos 5 5) =<< fetchCard Locations.railExit
@@ -250,8 +246,6 @@ instance RunMessage WrittenInRock where
         questionLabeled' "mineCart.facing"
         labeled' "mineCart.faceNorth" $ scenarioSpecific "rotate" North
         labeled' "mineCart.faceEast" $ scenarioSpecific "rotate" East
-        labeled' "mineCart.faceSouth" $ scenarioSpecific "rotate" South
-        labeled' "mineCart.faceWest" $ scenarioSpecific "rotate" West
 
       doStep 3 msg -- ensure set aside cards are updated
       pure
@@ -277,11 +271,12 @@ instance RunMessage WrittenInRock where
           entry "leahAtwood"
           controlled <- selectAny $ assetIs Assets.leahAtwoodTheValeCook <> AssetControlledBy Anyone
           if controlled
-            then placeTokens source ScenarioTarget Switch 1
+            then do
+              codexFinished 2
+              placeTokens source ScenarioTarget Switch 1
             else do
               iids <- allInvestigators
               leah <- selectJust $ assetIs Assets.leahAtwoodTheValeCook
-              clearAbilityUse $ AbilityRef (toSource leah) 1
               leadChooseOneM do
                 unscoped $ nameVar Assets.leahAtwoodTheValeCook $ questionLabeled' "takeControlOf"
                 questionLabeledCard Assets.leahAtwoodTheValeCook
@@ -291,16 +286,18 @@ instance RunMessage WrittenInRock where
           controlled <-
             selectAny $ assetIs Assets.simeonAtwoodDedicatedTroublemaker <> AssetControlledBy Anyone
           if controlled
-            then placeTokens source ScenarioTarget Switch 2
+            then do
+              codexFinished 3
+              placeTokens source ScenarioTarget Switch 2
             else do
               iids <- allInvestigators
               simeon <- selectJust $ assetIs Assets.simeonAtwoodDedicatedTroublemaker
-              clearAbilityUse $ AbilityRef (toSource simeon) 1
               leadChooseOneM do
                 unscoped $ nameVar Assets.simeonAtwoodDedicatedTroublemaker $ questionLabeled' "takeControlOf"
                 questionLabeledCard Assets.simeonAtwoodDedicatedTroublemaker
                 portraits iids (`takeControlOfAsset` simeon)
         5 -> do
+          codexFinished 5
           entry "riverHawthorne"
           iids <- allInvestigators
           river <- selectJust $ assetIs Assets.riverHawthorneBigInNewYork
@@ -312,8 +309,11 @@ instance RunMessage WrittenInRock where
           entry "drRosaMarquez"
           step <- getCurrentActStep
           if step == 1
-            then placeTokens source ScenarioTarget Scrap 1
+            then do
+              codexFinishedUntilNewAct Theta
+              placeTokens source ScenarioTarget Scrap 1
             else do
+              codexFinished Theta
               locations <- select LocationCanBeSwapped
               chooseTargetM iid locations $ handleTarget iid attrs
         _ -> error "invalid codex entry"
@@ -361,8 +361,8 @@ instance RunMessage WrittenInRock where
 
           if
             | time == Night -> do
-              record SimeonCrossedOut
-              push R6
+                record SimeonCrossedOut
+                push R6
             | day `elem` [Day1, Day2] -> push R3
             | otherwise -> push R4
         Resolution 1 -> do

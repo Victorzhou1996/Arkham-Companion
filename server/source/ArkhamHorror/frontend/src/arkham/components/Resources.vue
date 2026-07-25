@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { TokenType } from '@/arkham/types/Token'
 import { keyToId } from '@/arkham/types/Key'
 import PoolItem from '@/arkham/components/PoolItem.vue'
+import TokenPool from '@/arkham/components/TokenPool.vue'
 import KeyToken from '@/arkham/components/Key.vue'
 import Seal from '@/arkham/components/Seal.vue'
 import type { Message } from '@/arkham/types/Message'
@@ -16,7 +17,7 @@ const emits = defineEmits<{
 }>()
 
 export interface Props {
-  choices: Message[]
+  choices: readonly Message[]
   investigator: Arkham.Investigator
   game: Game
   portrait?: boolean
@@ -33,7 +34,7 @@ function findInvestigatorComponentIndex(tokenType: "DamageToken" | "HorrorToken"
   return computed(() =>
     props.choices.findIndex((c) =>
       c.tag === tag
-      && c.component.tag === "InvestigatorComponent"
+      && c.component?.tag === "InvestigatorComponent"
       && c.component.tokenType === tokenType
       && c.component.investigatorId === iid.value
     )
@@ -47,7 +48,7 @@ const sanityAuxAction = findInvestigatorComponentIndex("HorrorToken", MessageTyp
 const takeResourceAction = computed(() =>
   props.choices.findIndex((c) =>
     c.tag === MessageType.COMPONENT_LABEL
-    && c.component.tag === "InvestigatorComponent"
+    && c.component?.tag === "InvestigatorComponent"
     && c.component.tokenType === "ResourceToken"
     && c.component.investigatorId === iid.value
   )
@@ -56,7 +57,7 @@ const takeResourceAction = computed(() =>
 const spendCluesAction = computed(() =>
   props.choices.findIndex((c) =>
     c.tag === MessageType.COMPONENT_LABEL
-    && c.component.tag === "InvestigatorComponent"
+    && c.component?.tag === "InvestigatorComponent"
     && c.component.tokenType === "ClueToken"
     && c.component.investigatorId === iid.value
   )
@@ -64,13 +65,14 @@ const spendCluesAction = computed(() =>
 
 const keys = computed(() => props.investigator.keys)
 const seals = computed(() => props.investigator.seals)
-const doom = computed(() => props.investigator.tokens[TokenType.Doom])
 const clues = computed(() => props.investigator.tokens[TokenType.Clue] || 0)
 const resources = computed(() => props.investigator.tokens[TokenType.Resource] || 0)
 const horror = computed(() => (props.investigator.tokens[TokenType.Horror] || 0) + props.investigator.assignedSanityDamage - props.investigator.assignedSanityHeal)
 const damage = computed(() => (props.investigator.tokens[TokenType.Damage] || 0) + props.investigator.assignedHealthDamage - props.investigator.assignedHealthHeal)
-const alarmLevel = computed(() => props.investigator.tokens[TokenType.AlarmLevel] || 0)
-const leylines = computed(() => props.investigator.tokens[TokenType.Leyline] || 0)
+const otherTokens = computed(() => {
+  const { Resource, Clue, Damage, Horror, ...rest } = props.investigator.tokens
+  return rest
+})
 
 function onSanityClickCapture(e: MouseEvent) {
   if (!e.shiftKey) return
@@ -160,7 +162,7 @@ const hiGradId = computed(() => `auxMagentaHi-${iid.value}`)
     <template v-if="debug.active">
       <button
         @click.exact="debug.send(game.id, {tag: 'GainClues', contents: [iid, {tag: 'GameSource' }, -1]})"
-        @click.shift="debug.send(game.id, {tag: 'InvestigatorDiscardAllClues', contents: [{tag: 'GameSource' }, iid]})"
+        @click.shift="debug.send(game.id, {tag: 'InvestigatorMessage', contents: {tag: 'InvestigatorDiscardAllClues_', contents: [{tag: 'GameSource' }, iid]}})"
       >-</button>
     </template>
 
@@ -196,15 +198,15 @@ const hiGradId = computed(() => `auxMagentaHi-${iid.value}`)
     <template v-if="debug.active">
       <button
         class="plus-button"
-        @click.exact="debug.send(game.id, {tag: 'InvestigatorDirectDamage', contents: [iid, {tag: 'TestSource', contents: []}, 1, 0]})"
-        @click.shift="debug.send(game.id, {tag: 'InvestigatorDirectDamage', contents: [iid, {tag: 'TestSource', contents: []}, 5, 0]})"
+        @click.exact="debug.send(game.id, {tag: 'InvestigatorMessage', contents: {tag: 'InvestigatorDirectDamage_', contents: [iid, {tag: 'TestSource', contents: []}, 1, 0]}})"
+        @click.shift="debug.send(game.id, {tag: 'InvestigatorMessage', contents: {tag: 'InvestigatorDirectDamage_', contents: [iid, {tag: 'TestSource', contents: []}, 5, 0]}})"
       >+</button>
     </template>
 
     <template v-if="debug.active">
       <button
-        @click.exact="debug.send(game.id, {tag: 'HealHorror', contents: [{tag: 'InvestigatorTarget', contents: iid}, {tag: 'TestSource', contents: []}, 1]})"
-        @click.shift="debug.send(game.id, {tag: 'HealHorror', contents: [{tag: 'InvestigatorTarget', contents: iid}, {tag: 'TestSource', contents: []}, investigator.tokens['Horror'] ?? 0]})"
+        @click.exact="debug.send(game.id, {tag: 'HorrorMessage', contents: {tag: 'HealHorror_', contents: [{tag: 'InvestigatorTarget', contents: iid}, {tag: 'TestSource', contents: []}, 1]}})"
+        @click.shift="debug.send(game.id, {tag: 'HorrorMessage', contents: {tag: 'HealHorror_', contents: [{tag: 'InvestigatorTarget', contents: iid}, {tag: 'TestSource', contents: []}, investigator.tokens['Horror'] ?? 0]}})"
       >-</button>
     </template>
 
@@ -225,7 +227,7 @@ const hiGradId = computed(() => `auxMagentaHi-${iid.value}`)
         class="aux-arc"
         role="button"
         tabindex="0"
-        aria-label="Assign all horror"
+        :aria-label="$t('resourcesAria.assignAllHorror')"
         @keydown.enter.prevent="choose(sanityAuxAction)"
         @keydown.space.prevent="choose(sanityAuxAction)"
       >
@@ -265,26 +267,12 @@ const hiGradId = computed(() => `auxMagentaHi-${iid.value}`)
     <template v-if="debug.active">
       <button
         class="plus-button"
-        @click.exact="debug.send(game.id, {tag: 'InvestigatorDirectDamage', contents: [iid, {tag: 'TestSource', contents: []}, 0, 1]})"
-        @click.shift="debug.send(game.id, {tag: 'InvestigatorDirectDamage', contents: [iid, {tag: 'TestSource', contents: []}, 0, 5]})"
+        @click.exact="debug.send(game.id, {tag: 'InvestigatorMessage', contents: {tag: 'InvestigatorDirectDamage_', contents: [iid, {tag: 'TestSource', contents: []}, 0, 1]}})"
+        @click.shift="debug.send(game.id, {tag: 'InvestigatorMessage', contents: {tag: 'InvestigatorDirectDamage_', contents: [iid, {tag: 'TestSource', contents: []}, 0, 5]}})"
       >+</button>
     </template>
 
-    <PoolItem v-if="doom && doom > 0" type="doom" :amount="doom" />
-
-    <PoolItem
-      v-if="alarmLevel > 0"
-      type="doom"
-      :amount="alarmLevel"
-      tooltip="Alarm Level"
-    />
-
-    <PoolItem
-      v-if="leylines > 0"
-      type="resource"
-      :amount="leylines"
-      tooltip="Leyline"
-    />
+    <TokenPool :tokens="otherTokens" />
   </div>
 </template>
 
@@ -300,12 +288,16 @@ const hiGradId = computed(() => `auxMagentaHi-${iid.value}`)
 
 @media (max-width: 800px) and (orientation: portrait) {
   .resources {
-    gap: 8px;
+    gap: 4px;
     margin-top: auto;
     width: fit-content;
+    align-items: center;
   }
   .resources :deep(.poolItem) {
     width: calc(var(--pool-token-width) * 1.2);
+    height: calc(var(--pool-token-width) * 1.2);
+    font-size: 0.9em;
+    overflow: hidden;
   }
 }
 
@@ -354,7 +346,7 @@ const hiGradId = computed(() => `auxMagentaHi-${iid.value}`)
   opacity: 0;
   pointer-events: none;
   padding: 0;
-  z-index: 10;
+  z-index: var(--z-index-10);
   transition: opacity 90ms ease, transform 160ms cubic-bezier(.2,.9,.2,1);
 }
 

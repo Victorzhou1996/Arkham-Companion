@@ -12,7 +12,6 @@ import Arkham.Helpers.Effect as X
 import Arkham.Helpers.Investigator as X (eliminationWindow)
 import Arkham.Helpers.Message as X hiding (
   DeckHasNoCards,
-  EnemyDefeated,
   InvestigatorDamage,
   InvestigatorEliminated,
   RevealChaosToken,
@@ -169,13 +168,10 @@ instance RunMessage TreacheryAttrs where
         Just target | isTarget target (sourceToTarget source) -> toDiscard GameSource (toTarget a)
         _ -> pure ()
       pure a
-    Exhaust (isTarget a -> True) -> do
+    Exhaust ea | a `isTarget` ea.target -> do
       pure $ a & exhaustedL .~ True
-    ReadyExhausted -> do
-      push $ Ready $ toTarget a
-      pure a
-    Ready (isTarget a -> True) -> do
-      pure $ a & exhaustedL .~ False
+    ReadyExhausted -> pure $ a & exhaustedL .~ False
+    Ready (isTarget a -> True) -> pure $ a & exhaustedL .~ False
     Do (AfterRevelation _ tid) | tid == treacheryId -> do
       pure $ a & waitingL .~ False
     UseAbility _ ab _ | isSource a ab.source || isProxySource a ab.source -> do

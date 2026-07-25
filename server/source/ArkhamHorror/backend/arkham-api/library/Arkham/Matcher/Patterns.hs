@@ -2,6 +2,7 @@ module Arkham.Matcher.Patterns where
 
 import Arkham.Card.CardType
 import Arkham.ClassSymbol
+import Arkham.Constants
 import Arkham.ForMovement
 import Arkham.GameValue
 import Arkham.Id
@@ -140,6 +141,11 @@ pattern InvestigatorCanHealDamage :: InvestigatorMatcher
 pattern InvestigatorCanHealDamage <- InvestigatorWithoutModifier CannotHealDamage
   where
     InvestigatorCanHealDamage = InvestigatorWithoutModifier CannotHealDamage
+
+pattern InvestigatorCanBeDamaged :: InvestigatorMatcher
+pattern InvestigatorCanBeDamaged <- InvestigatorWithoutModifier CannotBeDamaged
+  where
+    InvestigatorCanBeDamaged = InvestigatorWithoutModifier CannotBeDamaged
 
 -- ** Event Patterns **
 
@@ -490,9 +496,14 @@ pattern SuccessfulParley timing who <- SkillTestResult timing who WhileParleying
   where
     SuccessfulParley timing who = SkillTestResult timing who WhileParleying (SuccessResult AnyValue)
 
+pattern IfEnemyDefeated_ :: Timing -> EnemyMatcher -> WindowMatcher
+pattern IfEnemyDefeated_ timing ematcher <- IfEnemyDefeated timing Anyone ByAny ematcher
+  where
+    IfEnemyDefeated_ timing ematcher = IfEnemyDefeated timing Anyone ByAny ematcher
+
 -- * Ability Helpers
 
 pattern BasicInvestigate :: LocationId -> AbilityMatcher
-pattern BasicInvestigate lid <- AbilityIs (LocationSource lid) 101
+pattern BasicInvestigate lid <- AbilityIs (LocationSource lid) AbilityInvestigate
   where
-    BasicInvestigate lid = AbilityIs (LocationSource lid) 101
+    BasicInvestigate lid = AbilityIs (LocationSource lid) AbilityInvestigate

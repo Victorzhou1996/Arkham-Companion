@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.Cnidathqua (cnidathqua) where
 import Arkham.Ability
 import Arkham.Card
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Investigator
 import Arkham.Helpers.Modifiers
 import Arkham.Matcher
@@ -14,7 +14,7 @@ newtype Cnidathqua = Cnidathqua EnemyAttrs
 
 cnidathqua :: EnemyCard Cnidathqua
 cnidathqua =
-  enemyWith Cnidathqua Cards.cnidathqua (4, PerPlayer 8, 0) (2, 2)
+  enemyWith Cnidathqua Cards.cnidathqua
     $ (asSelfLocationL ?~ "cnidathqua")
     . (evadeL .~ Nothing)
 

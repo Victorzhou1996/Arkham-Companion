@@ -21,6 +21,7 @@ data EncounterCard = MkEncounterCard
   , ecCardCode :: CardCode
   , ecOriginalCardCode :: CardCode
   , ecIsFlipped :: Maybe Bool
+  , ecFacedown :: Maybe Bool
   , ecAddedPeril :: Bool
   , ecOwner :: Maybe InvestigatorId
   }
@@ -49,10 +50,12 @@ instance HasCardCode EncounterCard where
   toCardCode = ecCardCode
 
 instance HasCardDef EncounterCard where
-  toCardDef c = case lookup (ecCardCode c) allEncounterCards of
-    Just def -> def
-    Nothing ->
-      error $ "missing card def for encounter card " <> show (ecCardCode c)
+  toCardDef c =
+    fromMaybe
+      (error $ "missing card def for encounter card " <> show (ecCardCode c))
+      $ lookup (ecCardCode c) allEncounterCards
+      <|> lookup (ecOriginalCardCode c) allEncounterCards
+      <|> lookup (flippedCardCode $ ecCardCode c) allEncounterCards
 
 instance Named EncounterCard where
   toName = toName . toCardDef
@@ -69,6 +72,7 @@ lookupEncounterCard cardDef cardId =
     , ecOriginalCardCode = toCardCode cardDef
     , ecIsFlipped =
         Just $ isJust (cdRevealedName cardDef) && cdDoubleSided cardDef
+    , ecFacedown = Nothing
     , ecAddedPeril = False
     , ecOwner = Nothing
     }

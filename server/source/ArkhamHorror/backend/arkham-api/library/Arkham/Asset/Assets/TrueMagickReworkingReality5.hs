@@ -11,6 +11,9 @@ import {-# SOURCE #-} Arkham.Entities
 import {-# SOURCE #-} Arkham.Game
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.Ability (getCanPerformAbility)
+import Arkham.Helpers.Criteria (getTrueMagickGrantedTraits)
+import Arkham.Helpers.Modifiers (ModifierType (..), modifySelf)
+import Arkham.I18n
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
 import Arkham.Message qualified as Msg
@@ -26,19 +29,38 @@ newtype Metadata = Metadata {currentAsset :: Maybe Asset}
   deriving anyclass (ToJSON, FromJSON)
 
 newtype TrueMagickReworkingReality5 = TrueMagickReworkingReality5 (AssetAttrs `With` Metadata)
-  deriving anyclass (IsAsset, HasModifiersFor)
+  deriving anyclass IsAsset
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 trueMagickReworkingReality5 :: AssetCard TrueMagickReworkingReality5
 trueMagickReworkingReality5 = asset (TrueMagickReworkingReality5 . (`with` Metadata Nothing)) Cards.trueMagickReworkingReality5
 
+instance HasModifiersFor TrueMagickReworkingReality5 where
+  getModifiersFor (TrueMagickReworkingReality5 (a `With` meta)) = do
+    case currentAsset meta of
+      -- Mid-resolution: True Magick IS the revealed asset, so copy its traits
+      -- exactly (e.g. so Twila / "Spell" triggers see the borrowed asset).
+      Just b -> do
+        let selfTraits = cdCardTraits (toCardDef a)
+        let otherTraits = cdCardTraits (toCardDef b)
+        let removals = toList $ selfTraits `difference` otherTraits
+        let additions = toList $ otherTraits `difference` selfTraits
+        modifySelf a $ map AddTrait additions <> map RemoveTrait removals
+      -- At rest: read as Spell/Ritual ONLY when there is a castable in-hand
+      -- [Spell] asset to borrow, so Sign Magick (3)'s hasAnyTrait [Spell, Ritual]
+      -- criterion can target True Magick. Restricted to Spell/Ritual to avoid
+      -- True Magick being swept up by "all your Spell assets" effects at rest.
+      Nothing -> do
+        traits <- getTrueMagickGrantedTraits a
+        modifySelf a $ map AddTrait traits
+
 -- This tooltip is handled specially
 instance HasAbilities TrueMagickReworkingReality5 where
   getAbilities (TrueMagickReworkingReality5 (With attrs (Metadata Nothing))) =
-    [ withTooltip "Use True Magick"
+    [ (cardI18n $ withI18nTooltip "trueMagickReworkingReality5.useTrueMagick")
         $ doesNotProvokeAttacksOfOpportunity
         $ controlled attrs 1 HasTrueMagick aform
-    | aform <- [ActionAbility [] Nothing mempty, FastAbility Free, freeReaction AnyWindow]
+    | aform <- [ActionAbility mempty Nothing mempty, FastAbility Free, freeReaction AnyWindow]
     ]
   getAbilities (TrueMagickReworkingReality5 (With _ (Metadata (Just inner)))) = getAbilities inner
 
@@ -50,9 +72,10 @@ instance RunMessage TrueMagickReworkingReality5 where
       hand <- fieldMap InvestigatorHand (filterCards (card_ $ #asset <> #spell)) iid
       let adjustCost = overCost (over biplate (const attrs.id))
       choices <- forMaybeM hand \card -> do
-        let a = overAttrs (\attrs' -> attrs {assetCardCode = assetCardCode attrs'})
-                      $ createAsset card
-                      $ unsafeFromCardId card.id
+        let a =
+              overAttrs (\attrs' -> attrs {assetCardCode = assetCardCode attrs'})
+                $ createAsset card
+                $ unsafeFromCardId card.id
         tmpAbilities <-
           getGame >>= runReaderT do
             local (entitiesL %~ addEntity a) do

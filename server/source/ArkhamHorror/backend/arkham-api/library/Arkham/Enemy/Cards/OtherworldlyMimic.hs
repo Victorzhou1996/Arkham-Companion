@@ -10,7 +10,7 @@ newtype OtherworldlyMimic = OtherworldlyMimic EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 otherworldlyMimic :: EnemyCard OtherworldlyMimic
-otherworldlyMimic = enemy OtherworldlyMimic Cards.otherworldlyMimic (3, Static 2, 4) (0, 2)
+otherworldlyMimic = enemy OtherworldlyMimic Cards.otherworldlyMimic
 
 instance HasAbilities OtherworldlyMimic where
   getAbilities (OtherworldlyMimic a) =
@@ -18,12 +18,12 @@ instance HasAbilities OtherworldlyMimic where
       $ restricted a 1 (thisExists a ReadyEnemy)
       $ forced
       $ oneOf
-        [ CommittedCard #when (You <> InvestigatorAt (locationWithEnemy a)) CardWithHollowedCopy
-        , PlayCard #when (You <> InvestigatorAt (locationWithEnemy a)) CardWithHollowedCopy
+        [ CommittedCard #when (You <> InvestigatorAt (locationWithEnemy a)) (CardWithHollowedCopy #any)
+        , PlayCard #when (You <> InvestigatorAt (locationWithEnemy a)) (CardWithHollowedCopy #any)
         , ActivateAbility
             #when
             (You <> InvestigatorAt (locationWithEnemy a))
-            (AbilityOnExtendedCard CardWithHollowedCopy)
+            (AbilityOnExtendedCard $ CardWithHollowedCopy #any)
         ]
 
 instance RunMessage OtherworldlyMimic where

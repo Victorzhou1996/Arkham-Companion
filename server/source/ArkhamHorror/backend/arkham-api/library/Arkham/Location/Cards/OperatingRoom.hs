@@ -18,12 +18,12 @@ instance HasAbilities OperatingRoom where
   getAbilities (OperatingRoom attrs) =
     withRevealedAbilities
       attrs
-      [skillTestAbility $ restrictedAbility attrs 1 Here $ ActionAbility [] Nothing $ ActionCost 2]
+      [skillTestAbility $ restrictedAbility attrs 1 Here $ ActionAbility mempty Nothing $ ActionCost 2]
 
 instance RunMessage OperatingRoom where
   runMessage msg l@(OperatingRoom attrs) = case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
-      investigators <- select $ affectsOthers $ investigatorAt attrs.id
+      investigators <- select $ affectsOthersKnown iid $ investigatorAt attrs.id
       player <- getPlayer iid
       sid <- getRandom
       push

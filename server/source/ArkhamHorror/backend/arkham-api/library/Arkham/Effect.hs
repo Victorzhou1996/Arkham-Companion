@@ -1,10 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Arkham.Effect (
-  module Arkham.Effect,
-) where
-
-import Arkham.Prelude
+module Arkham.Effect (module Arkham.Effect) where
 
 import Arkham.Card
 import Arkham.ChaosToken
@@ -20,13 +16,13 @@ import Arkham.Id
 import Arkham.Matcher
 import Arkham.Message
 import Arkham.Modifier
+import Arkham.Prelude
 import Arkham.Source
 import Arkham.Target
 import Arkham.Tracing
 
--- start importing directly
-
 import Arkham.Act.Acts (
+  curseOfEndlessSleepEffect,
   infiltratingTheLodgeEffect,
   theStrangerACityAflameEffect,
   theStrangerAlaranMistsEffect,
@@ -53,6 +49,7 @@ import Arkham.Asset.Assets (
   daisysToteBagAdvancedEffect,
   deckOfPossibilitiesTychokineticImplementEffect,
   disciplinePrescienceOfFateEffect,
+  dreamersChronicleEffect,
   eldritchTongueEffect,
   empiricalHypothesisEffect,
   eyeOfChaos4Effect,
@@ -89,11 +86,15 @@ import Arkham.Asset.Assets (
   sixthSenseEffect,
   steadyHanded1Effect,
   thirtyFiveWinchesterEffect,
+  valeLanternAFaintHopeEffect,
+  valeLanternBeaconOfHopeEffect,
   wellConnected3Effect,
+  winchesterModel522Effect,
   wither4Effect,
   witherEffect,
   yaotl1Effect,
  )
+import Arkham.Campaigns.TheDrownedCity.Effects.StruggleForAir (struggleForAirEffect)
 import Arkham.Campaigns.TheInnsmouthConspiracy.Effects.NoAir (noAirEffect)
 import Arkham.Campaigns.TheScarletKeys.Key.Cards.TheWellspringOfFortune (
   theWellspringOfFortuneEffect,
@@ -132,6 +133,7 @@ import Arkham.Event.Events (
   imDoneRunninEffect,
   improvisationEffect,
   marksmanship1Effect,
+  mirrorFormEffect,
   mystifyingSongEffect,
   onTheLamAdvancedEffect,
   oneInTheChamberEffect,
@@ -146,6 +148,7 @@ import Arkham.Event.Events (
   thirdTimesACharm2Effect,
   tidesOfFateEffect,
   toeToToeEffect,
+  ultimateSacrifice4Effect,
   vantagePointEffect,
   willToSurviveEffect,
   writtenInTheStarsEffect,
@@ -162,6 +165,7 @@ import Arkham.Investigator.Investigators (
   winifredHabbamockEffect,
  )
 import Arkham.Location.Locations (
+  coterieLibrarySanctumEffect,
   cursedShoresEffect,
   enchantedWoodsLostWoodsEffect,
   longWayAroundEffect,
@@ -196,6 +200,7 @@ import Arkham.Treachery.Treacheries (
   mysteriesOfTheLodgeEffect,
   pushedIntoTheBeyondEffect,
   realityAcid5U21Effect,
+  realityAcidEffect,
   restlessJourneyFallacyEffect,
   restlessJourneyHardshipEffect,
   restlessJourneyLiesEffect,
@@ -554,6 +559,7 @@ allEffects =
     , ("09557b", SomeEffect laChicaRojaYourWatchfulShadowEffect)
     , ("09648", SomeEffect theCornicheEffect)
     , ("09680", SomeEffect theShadeReaperEffect)
+    , ("09708", SomeEffect coterieLibrarySanctumEffect)
     , ("10035", SomeEffect eyesOfValusiaTheMothersCunning4Effect)
     , ("10053", SomeEffect steadyHanded1Effect)
     , ("10056", SomeEffect prismaticSpectaclesLensToTheOtherworld2Effect)
@@ -562,6 +568,8 @@ allEffects =
     , ("10128", SomeEffect eldritchTongueEffect)
     , ("10129", SomeEffect bideYourTimeEffect)
     , ("10131", SomeEffect dawnStar1Effect)
+    , ("10610a", SomeEffect valeLanternBeaconOfHopeEffect)
+    , ("10611a", SomeEffect valeLanternAFaintHopeEffect)
     , ("11018", SomeEffect grimResolveEffect)
     , ("11079", SomeEffect deliverance3Effect)
     , ("11124", SomeEffect dimensionalVortex5Effect)
@@ -577,6 +585,7 @@ allEffects =
     , ("54006", SomeEffect wellConnected3Effect)
     , ("60101", SomeEffect nathanielChoEffect)
     , ("60103", SomeEffect tommyMalloyEffect)
+    , ("60255", SomeEffect dreamersChronicleEffect)
     , ("60220", SomeEffect $ noop "60220")
     , ("60232", SomeEffect miskatonicArchaeologyFunding4Effect)
     , ("60301", SomeEffect winifredHabbamockEffect)
@@ -599,13 +608,18 @@ allEffects =
     , ("60430", SomeEffect $ noop "60430")
     , ("60431", SomeEffect $ noop "60431")
     , ("60432", SomeEffect $ noop "60432")
+    , ("60465", SomeEffect mirrorFormEffect)
+    , ("60480", SomeEffect ultimateSacrifice4Effect)
     , ("60512", SomeEffect willToSurviveEffect)
+    , ("60575", SomeEffect winchesterModel522Effect)
     , ("72002", SomeEffect showbusinessAsUsualEffect)
     , ("81007", SomeEffect cursedShoresEffect)
     , ("82026", SomeEffect gildedVoltoEffect)
     , ("82035", SomeEffect mesmerizeEffect)
+    , ("83005", SomeEffect curseOfEndlessSleepEffect)
     , ("84014", SomeEffect restaurantEffect)
     , ("84042", SomeEffect chillingPresenceEffect)
+    , ("85044", SomeEffect realityAcidEffect)
     , ("88043", SomeEffect deckOfPossibilitiesTychokineticImplementEffect)
     , ("88044", SomeEffect isamaraOrdonezTheTorchSingerEffect)
     , ("88045", SomeEffect theWellspringOfFortuneEffect)
@@ -624,5 +638,6 @@ allEffects =
     , ("maxef", SomeEffect maxEffect)
     , ("abief", SomeEffect abilityEffect)
     , ("noair", SomeEffect noAirEffect)
+    , ("struggleForAir", SomeEffect struggleForAirEffect)
     , ("genef", SomeEffect genericEffect)
     ]

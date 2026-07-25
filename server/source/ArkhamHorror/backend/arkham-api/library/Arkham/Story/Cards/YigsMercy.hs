@@ -30,18 +30,20 @@ instance RunMessage YigsMercy where
           then labeled' "yigsMercy.refuses" nothing
           else do
             labeled' "yigsMercy.reject" do
-              exhaustThis ichtaca
+              exhaustWith attrs ichtaca
               disengageFromAll ichtaca
-              gameModifier attrs iid $ CannotParleyWith $ enemyIs Enemies.ichtacaScionOfYig
+              eachInvestigator \iid' ->
+                gameModifier attrs iid' $ CannotParleyWith $ enemyIs Enemies.ichtacaScionOfYig
             labeled' "yigsMercy.accept" do
               removeEnemy ichtaca
               advanceToAct' attrs 1 Acts.paradiseLost A
-              gameModifiers
-                attrs
-                iid
-                [ CannotParleyWith $ enemyIs Enemies.alejandroVela
-                , CannotBeAttackedBy $ EnemyWithTrait Trait.Cultist
-                , CannotBeEngagedBy $ EnemyWithTrait Trait.Cultist
-                ]
+              eachInvestigator \iid' ->
+                gameModifiers
+                  attrs
+                  iid'
+                  [ CannotParleyWith $ enemyIs Enemies.alejandroVela
+                  , CannotBeAttackedBy $ EnemyWithTrait Trait.Cultist
+                  , CannotBeEngagedBy $ EnemyWithTrait Trait.Cultist
+                  ]
       pure s
     _ -> YigsMercy <$> liftRunMessage msg attrs

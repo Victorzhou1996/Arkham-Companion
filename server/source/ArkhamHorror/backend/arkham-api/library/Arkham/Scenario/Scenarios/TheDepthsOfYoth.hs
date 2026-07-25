@@ -29,7 +29,7 @@ import Arkham.Placement
 import Arkham.Projection
 import Arkham.Resolution
 import Arkham.Scenario.Deck
-import Arkham.Scenario.Import.Lifted hiding (EnemyDamage, getIsReturnTo, questionLabel)
+import Arkham.Scenario.Import.Lifted hiding (getIsReturnTo, questionLabel)
 import Arkham.ScenarioLogKey
 import Arkham.Scenarios.TheDepthsOfYoth.Helpers
 import Arkham.Trait (Trait (Injury, Serpent))
@@ -146,7 +146,7 @@ setupTheDepthsOfYoth attrs = do
   let
     (start, rest) = case locations of
       (x : xs) -> (x, xs)
-      _ -> error "impossible"
+      _ -> error "TheDepthsOfYoth: impossible"
     (inExplore, setAsideLocations) = splitAt 4 rest
 
   explorationDeck <-

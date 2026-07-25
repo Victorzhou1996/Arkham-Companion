@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.TheAmalgam (theAmalgam) where
 import Arkham.Ability
 import Arkham.Classes.HasQueue (withQueue_)
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Enemy.Runner (filterOutEnemyMessages)
 import Arkham.Helpers.Enemy (insteadOfDiscarding)
 import Arkham.I18n
@@ -19,7 +19,7 @@ newtype TheAmalgam = TheAmalgam EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 theAmalgam :: EnemyCard TheAmalgam
-theAmalgam = enemy TheAmalgam Cards.theAmalgam (3, Static 3, 2) (1, 1)
+theAmalgam = enemy TheAmalgam Cards.theAmalgam
 
 instance HasAbilities TheAmalgam where
   getAbilities (TheAmalgam x) =

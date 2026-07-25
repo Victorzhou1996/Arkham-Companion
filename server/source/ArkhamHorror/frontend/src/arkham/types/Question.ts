@@ -1,11 +1,19 @@
 import * as JsonDecoder from 'ts.data.json';
 import { Message, messageDecoder } from '@/arkham/types/Message';
+import { Cost, costDecoder } from '@/arkham/types/Cost';
 import { FlavorText, flavorTextDecoder } from '@/arkham/types/FlavorText';
 import { TarotCard, tarotCardDecoder } from '@/arkham/types/TarotCard';
 import { Token, tokenDecoder } from '@/arkham/types/Token';
 import { Source, sourceDecoder } from '@/arkham/types/Source';
 
-export type Question =
+type QuestionCommon = {
+  choices?: Message[]
+  question?: Question
+  readCards?: string[] | null
+  label?: string
+}
+
+export type Question = QuestionCommon & (
   | ChooseOne 
   | ChooseUpToN 
   | ChooseSome 
@@ -17,21 +25,28 @@ export type Question =
   | ChooseUpgradeDeck 
   | ChoosePaymentAmounts 
   | ChooseAmounts 
-  | QuestionLabel 
-  | Read 
+  | QuestionLabel
+  | PayCostQuestion
+  | QuestionWithSource
+  | Read
   | PickSupplies 
   | DropDown 
   | PickScenarioSettings 
   | PickCampaignSettings 
   | ChooseOneFromEach 
-  | PickDestiny 
+  | PickDestiny
   | PickCampaignSpecific
+  | PickScenarioSpecific
   | ChooseExchangeAmounts
   | ContinueCampaign
+)
 
 export enum QuestionType {
   CHOOSE_ONE = 'ChooseOne',
   PLAYER_WINDOW_CHOOSE_ONE = 'PlayerWindowChooseOne',
+  // A reaction/forced window ask. Renders as a plain ChooseOne; the distinct tag
+  // exists so the backend can drop stale seats of a multi-player window AskMap.
+  WINDOW_CHOOSE_ONE = 'WindowChooseOne',
   CHOOSE_ONE_FROM_EACH = 'ChooseOneFromEach',
   CHOOSE_UP_TO_N = 'ChooseUpToN',
   CHOOSE_SOME = 'ChooseSome',
@@ -44,6 +59,8 @@ export enum QuestionType {
   CHOOSE_PAYMENT_AMOUNTS = 'ChoosePaymentAmounts',
   CHOOSE_AMOUNTS = 'ChooseAmounts',
   QUESTION_LABEL = 'QuestionLabel',
+  PAY_COST_QUESTION = 'PayCostQuestion',
+  QUESTION_WITH_SOURCE = 'QuestionWithSource',
   READ = 'Read',
   PICK_SUPPLIES = 'PickSupplies',
   PICK_DESTINY = 'PickDestiny',
@@ -51,6 +68,7 @@ export enum QuestionType {
   PICK_SCENARIO_SETTINGS = 'PickScenarioSettings',
   PICK_CAMPAIGN_SETTINGS = 'PickCampaignSettings',
   PICK_CAMPAIGN_SPECIFIC = 'PickCampaignSpecific',
+  PICK_SCENARIO_SPECIFIC = 'PickScenarioSpecific',
   CHOOSE_EXCHANGE_AMOUNTS = 'ChooseExchangeAmounts',
   CONTINUE_CAMPAIGN = 'ContinueCampaign'
 }
@@ -80,6 +98,10 @@ export type PickCampaignSettings = {
 export type ChooseOne = {
   tag: QuestionType.CHOOSE_ONE;
   choices: Message[];
+  // True when the backend produced a `PlayerWindowChooseOne` (a fast/action player
+  // window). We normalize the tag to `ChooseOne` for rendering, but preserve this flag
+  // so consumers can tell a genuine play window from an unrelated single-choice prompt.
+  isPlayerWindow?: boolean;
 }
 
 // The backend represents this as a nest list, but we flatten it and pass the flattened index
@@ -92,6 +114,19 @@ export type QuestionLabel = {
   tag: QuestionType.QUESTION_LABEL
   card: string | null
   label: string
+  question: Question
+}
+
+export type PayCostQuestion = {
+  tag: QuestionType.PAY_COST_QUESTION
+  cost: Cost
+  question: Question
+}
+
+export type QuestionWithSource = {
+  tag: QuestionType.QUESTION_WITH_SOURCE
+  source: Source
+  tooltip: string | null
   question: Question
 }
 
@@ -159,7 +194,12 @@ export type PickDestiny = {
 
 export type PickCampaignSpecific = {
   tag: QuestionType.PICK_CAMPAIGN_SPECIFIC
-  contents: any
+  contents: unknown
+}
+
+export type PickScenarioSpecific = {
+  tag: QuestionType.PICK_SCENARIO_SPECIFIC
+  contents: unknown
 }
 
 export type DropDown = {
@@ -212,6 +252,23 @@ export type AmountTarget
   | { tag: 'TotalAmountTarget', contents: number }
   | { tag: "MinAmountTarget", contents: number }
   | { tag: 'AmountOneOf', contents: number[] }
+
+// Returns true when `total` violates `target`'s constraint, or false when it
+// satisfies (or the target is absent/zero). Centralises the logic that used
+// to be three identical switch blocks in Question.vue.
+export function amountTargetUnmet(target: AmountTarget | null | undefined, total: number): boolean {
+  if (!target) return false
+  switch (target.tag) {
+    case 'MaxAmountTarget':
+      return target.contents ? total > target.contents : false
+    case 'MinAmountTarget':
+      return target.contents ? total < target.contents : false
+    case 'TotalAmountTarget':
+      return target.contents ? total !== target.contents : false
+    case 'AmountOneOf':
+      return target.contents.length > 0 ? !target.contents.includes(total) : false
+  }
+}
 
 export type ChooseAmounts = {
   tag: QuestionType.CHOOSE_AMOUNTS
@@ -335,6 +392,25 @@ export const questionLabelDecoder: JsonDecoder.Decoder<QuestionLabel> = JsonDeco
   'QuestionLabel',
 );
 
+export const payCostQuestionDecoder: JsonDecoder.Decoder<PayCostQuestion> = JsonDecoder.object<PayCostQuestion>(
+  {
+    tag: JsonDecoder.literal(QuestionType.PAY_COST_QUESTION),
+    cost: costDecoder,
+    question: JsonDecoder.lazy(() => questionDecoder)
+  },
+  'PayCostQuestion',
+);
+
+export const questionWithSourceDecoder: JsonDecoder.Decoder<QuestionWithSource> = JsonDecoder.object<QuestionWithSource>(
+  {
+    tag: JsonDecoder.literal(QuestionType.QUESTION_WITH_SOURCE),
+    source: sourceDecoder,
+    tooltip: JsonDecoder.nullable(JsonDecoder.string()),
+    question: JsonDecoder.lazy(() => questionDecoder)
+  },
+  'QuestionWithSource',
+);
+
 
 export type ReadChoices
   = { tag: "BasicReadChoices", contents: Message[] }
@@ -401,6 +477,14 @@ export const pickCampaignSpecificDecoder = JsonDecoder.object<PickCampaignSpecif
   'PickCampaignSpecific',
 );
 
+export const pickScenarioSpecificDecoder = JsonDecoder.object<PickScenarioSpecific>(
+  {
+    tag: JsonDecoder.literal(QuestionType.PICK_SCENARIO_SPECIFIC),
+    contents: JsonDecoder.succeed()
+  },
+  'PickScenarioSpecific',
+);
+
 export const dropDownDecoder = JsonDecoder.object<DropDown>(
   {
     tag: JsonDecoder.literal(QuestionType.DROP_DOWN),
@@ -409,16 +493,21 @@ export const dropDownDecoder = JsonDecoder.object<DropDown>(
   'DropDown',
 );
 
-export const chooseOneDecoder = JsonDecoder.object<ChooseOne>(
+export const chooseOneDecoder = JsonDecoder.object<{ tag: QuestionType, choices: Message[] }>(
   {
     tag: JsonDecoder.oneOf(
         [JsonDecoder.literal(QuestionType.CHOOSE_ONE)
-        , JsonDecoder.literal(QuestionType.PLAYER_WINDOW_CHOOSE_ONE).map(() => QuestionType.CHOOSE_ONE)
+        , JsonDecoder.literal(QuestionType.PLAYER_WINDOW_CHOOSE_ONE)
+        , JsonDecoder.literal(QuestionType.WINDOW_CHOOSE_ONE)
         ], "ChooseOne.tag"),
     choices: JsonDecoder.array<Message>(messageDecoder, 'Message[]'),
   },
   'ChooseOne',
-);
+).map<ChooseOne>(({ tag, choices }) => ({
+  tag: QuestionType.CHOOSE_ONE,
+  choices,
+  isPlayerWindow: tag === QuestionType.PLAYER_WINDOW_CHOOSE_ONE,
+}));
 
 export const chooseOneFromEachDecoder = JsonDecoder.object<ChooseOneFromEach>(
   {
@@ -502,10 +591,13 @@ export const questionDecoder = JsonDecoder.oneOf<Question>(
     choosePaymentAmountsDecoder,
     chooseExchangeAmountsDecoder,
     questionLabelDecoder,
+    payCostQuestionDecoder,
+    questionWithSourceDecoder,
     readDecoder,
     pickSuppliesDecoder,
     pickDestinyDecoder,
     pickCampaignSpecificDecoder,
+    pickScenarioSpecificDecoder,
     dropDownDecoder,
     pickScenarioSettingsDecoder,
     pickCampaignSettingsDecoder,

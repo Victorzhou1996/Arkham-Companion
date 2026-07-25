@@ -5,6 +5,7 @@ import Arkham.Agenda.Cards qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaigns.TheFeastOfHemlockVale.Helpers
 import Arkham.Campaigns.TheFeastOfHemlockVale.Key
+import Arkham.Capability
 import Arkham.Card
 import Arkham.Direction
 import Arkham.EncounterSet qualified as Set
@@ -13,6 +14,7 @@ import Arkham.Enemy.Creation (createExhausted)
 import Arkham.Helpers.Enemy (spawnAt)
 import Arkham.Helpers.FlavorText
 import Arkham.Helpers.Location (withLocationOf)
+import Arkham.Helpers.Modifiers (ModifierType (..), modifySelectWith, setActiveDuringSetup)
 import Arkham.Helpers.Query (
   allInvestigators,
   getInvestigators,
@@ -20,6 +22,7 @@ import Arkham.Helpers.Query (
   getSetAsideCard,
   getSetAsideCardMaybe,
  )
+import Arkham.Helpers.Xp
 import Arkham.I18n
 import Arkham.Id
 import Arkham.Location.Cards qualified as Locations
@@ -30,6 +33,7 @@ import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
 import Arkham.Message.Lifted.Placement qualified as Placement
 import Arkham.Placement
+import Arkham.Resolution
 import Arkham.Scenario.Deck
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenarios.TheTwistedHollow.Helpers
@@ -40,11 +44,26 @@ import Arkham.Trait (Trait (Dark))
 import Arkham.Zone
 
 newtype TheTwistedHollow = TheTwistedHollow ScenarioAttrs
-  deriving anyclass (IsScenario, HasModifiersFor)
+  deriving anyclass IsScenario
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 theTwistedHollow :: Difficulty -> TheTwistedHollow
 theTwistedHollow difficulty = scenario TheTwistedHollow "10605" "The Twisted Hollow" difficulty []
+
+instance HasModifiersFor TheTwistedHollow where
+  getModifiersFor (TheTwistedHollow a) = do
+    modifySelectWith
+      a
+      (assetIs Assets.drRosaMarquezBestInHerField)
+      setActiveDuringSetup
+      [DoNotTakeUpSlot #ally]
+    n <- getPlayerCount
+    when (n == 1) do
+      modifySelectWith
+        a
+        (AssetWithTitle "Vale Lantern")
+        setActiveDuringSetup
+        [DoNotTakeUpSlot #hand]
 
 instance HasChaosTokenValue TheTwistedHollow where
   getChaosTokenValue iid tokenFace (TheTwistedHollow attrs) = case tokenFace of
@@ -81,22 +100,28 @@ instance RunMessage TheTwistedHollow where
       pure s
     Setup -> runScenarioSetup TheTwistedHollow attrs do
       setUsesGrid
+      showedTheWay <- getHasRecord MotherRachelShowedTheWay
+      n <- getPlayerCount
+
+      theo <- getRecordCount TheoPetersRelationshipLevel
+      judith <- getRecordCount JudithParkRelationshipLevel
+
       setup $ ul do
         li "gatherSets"
         li "night"
         li.nested "valeLantern.checkCampaignLog" do
-          li "valeLantern.showedTheWay"
-          li "valeLantern.lostThePath"
+          li.validate showedTheWay "valeLantern.showedTheWay"
+          li.validate (not showedTheWay) "valeLantern.lostThePath"
         li.nested "removeLocations" do
-          li "oneOrTwoInvestigators"
-          li "threeOrFourInvestigators"
-        li.nested "glimmeringMeadow.checkCampaignLog" do
-          li "glimmeringMeadow.showedTheWay"
-          li "glimmeringMeadow.lostThePath"
+          li.validate (n == 1 || n == 2) "oneOrTwoInvestigators"
+          li.validate (n == 3 || n == 4) "threeOrFourInvestigators"
+        li.nested "glimmeringWoods.checkCampaignLog" do
+          li.validate showedTheWay "glimmeringWoods.showedTheWay"
+          li.validate (not showedTheWay) "glimmeringWoods.lostThePath"
         li "woodsDeck"
         li.nested "residents" do
-          li "theoPeters"
-          li "judithPark"
+          li.validate (theo >= 2) "theoPeters"
+          li.validate (judith >= 2) "judithPark"
           li "drRosaMarquez"
           li "bertieMusgrave"
           li "rest"
@@ -110,9 +135,8 @@ instance RunMessage TheTwistedHollow where
       gather Set.TheForest
       gather Set.Myconids
 
+      setScenarioDayAndTime
       placeStory Stories.nightOne
-
-      showedTheWay <- getHasRecord MotherRachelShowedTheWay
 
       let lanternVersion = if showedTheWay then Assets.valeLanternBeaconOfHope else Assets.valeLanternAFaintHope
       removeEvery [if showedTheWay then Assets.valeLanternAFaintHope else Assets.valeLanternBeaconOfHope]
@@ -126,19 +150,18 @@ instance RunMessage TheTwistedHollow where
         questionLabeledCard lanternVersion
         portraits investigators (`takeControlOfAsset` lantern)
 
-      setAside [Locations.theTwistedHollow, Locations.glimmeringMeadow]
-      n <- getPlayerCount
+      setAside [Locations.theTwistedHollow, Locations.glimmeringWoods]
       woods <-
         fmap (drop $ if n >= 3 then 1 else 2)
           . shuffle
-          . filterCards (not_ $ mapOneOf cardIs [Locations.theTwistedHollow, Locations.glimmeringMeadow])
+          . filterCards (not_ $ mapOneOf cardIs [Locations.theTwistedHollow, Locations.glimmeringWoods])
           =<< fromGathered (CardWithTitle "Western Woods")
 
-      glimmeringMeadow <- fromSetAside Locations.glimmeringMeadow
+      glimmeringWoods <- fromSetAside Locations.glimmeringWoods
 
       if showedTheWay
         then do
-          startAt =<< placeCardInGrid (Pos 0 0) glimmeringMeadow
+          startAt =<< placeCardInGrid (Pos 0 0) glimmeringWoods
           case woods of
             north : east : south : west : rest -> do
               for_
@@ -146,27 +169,23 @@ instance RunMessage TheTwistedHollow where
                 (uncurry placeCardInGrid_)
               addExtraDeck WoodsDeck rest
             _ -> error "not enough woods"
-        else do
-          case woods of
-            start : rest -> do
-              startAt =<< placeCardInGrid (Pos 0 0) start
-              shuffle (glimmeringMeadow : rest) >>= \case
-                north : east : south : west : rest' -> do
-                  for_
-                    [(Pos 0 (-1), north), (Pos 1 0, east), (Pos 0 1, south), (Pos (-1) 0, west)]
-                    (uncurry placeCardInGrid_)
-                  addExtraDeck WoodsDeck rest'
-                _ -> error "not enough woods"
-            _ -> error "not enough woods"
+        else case woods of
+          start : rest -> do
+            startAt =<< placeCardInGrid (Pos 0 0) start
+            shuffle (glimmeringWoods : rest) >>= \case
+              north : east : south : west : rest' -> do
+                for_
+                  [(Pos 0 (-1), north), (Pos 1 0, east), (Pos 0 1, south), (Pos (-1) 0, west)]
+                  (uncurry placeCardInGrid_)
+                addExtraDeck WoodsDeck rest'
+              _ -> error "not enough woods"
+          _ -> error "not enough woods"
 
       -- do this after locations so the reveal does not trigger
       setAgendaDeck [Agendas.deepeningDark]
       setActDeck [Acts.desperateSearch, Acts.wheresBertie]
 
-      theo <- getRecordCount TheoPetersRelationshipLevel
       when (theo >= 2) $ setAside [Assets.theoPetersJackOfAllTrades]
-
-      judith <- getRecordCount JudithParkRelationshipLevel
       when (judith >= 2) $ setAside [Assets.judithParkTheMuscle]
 
       drRosaMarquez <- createAsset =<< fetchCard Assets.drRosaMarquezBestInHerField
@@ -205,15 +224,38 @@ instance RunMessage TheTwistedHollow where
       let entry x = scope x $ flavor $ setTitle "title" >> p.green "body"
       case n of
         7 -> do
+          codexFinished 7
           selectEach (assetIs Assets.judithParkTheMuscle) \aid ->
             dealAssetDamage aid ScenarioSource 2
           record JudithSavedYourAss
           entry "judithPark"
         8 -> do
+          codexFinished 8
           selectEach (assetIs Assets.theoPetersJackOfAllTrades) \aid ->
             dealAssetHorror aid ScenarioSource 2
           record TheoDistractedTheBear
           entry "theoPeters"
+        Theta -> scope "drRosaMarquez" do
+          codexFinished Theta
+          flavor $ setTitle "title" >> p.green "body"
+          locations <- select UnrevealedLocation
+          chooseOneM iid do
+            labeled' "doNotRevealLocation" nothing
+            targets locations \loc ->
+              temporaryModifier
+                iid
+                source
+                (CannotTriggerAbilityMatching $ AbilityIsForcedAbility <> AbilityOnLocation (LocationWithId loc))
+                (reveal loc)
+        Omega -> scope "bertieMusgrave" do
+          codexFinished Omega
+          flavor $ setTitle "title" >> p.green "body"
+          valeLanternExhausted <- selectAny $ AssetWithTitle "Vale Lantern" <> AssetExhausted
+          cluesOk <- can.gain.clues iid
+          chooseOneM iid do
+            labeledValidate' cluesOk "gainClues" $ eachInvestigator \iid' -> gainClues iid' source 1
+            labeledValidate' valeLanternExhausted "readyValeLantern"
+              $ selectEach (AssetWithTitle "Vale Lantern") readyThis
         Sigma -> scope "sigma" do
           mjudith <- getSetAsideCardMaybe Assets.judithParkTheMuscle
           mtheo <- getSetAsideCardMaybe Assets.theoPetersJackOfAllTrades
@@ -258,17 +300,24 @@ instance RunMessage TheTwistedHollow where
               questionLabeledCard def
               portraits investigators (`takeControlOfAsset` lantern)
 
-          emptyWoods <- selectWithField LocationCard $ EmptyLocation <> LocationWithTrait Dark
+          doStep 1 msg
+          doStep 2 msg
+        _ -> pure ()
+      pure s
+    DoStep 1 (ScenarioSpecific "codex" v) -> do
+      let (_iid :: InvestigatorId, _source :: Source, n :: Int) = toResult v
+      case n of
+        Sigma -> do
+          emptyWoods <- selectWithField LocationCard $ EmptyLocation <> LocationWithPrintedTrait Dark
           woodsDeck <- getScenarioDeck WoodsDeck
           for_ emptyWoods (removeLocation . fst)
           (bottom, top) <- splitAt 3 <$> shuffle (map snd emptyWoods <> woodsDeck)
           theTwistedHollowWoods <- getSetAsideCard Locations.theTwistedHollow
           bottom' <- shuffle (theTwistedHollowWoods : bottom)
           push $ SetScenarioDeck WoodsDeck (top <> bottom')
-          doStep 1 msg
         _ -> pure ()
       pure s
-    DoStep 1 (ScenarioSpecific "codex" v) -> do
+    DoStep 2 (ScenarioSpecific "codex" v) -> do
       let (iid :: InvestigatorId, _source :: Source, n :: Int) = toResult v
       case n of
         Sigma -> do
@@ -283,5 +332,33 @@ instance RunMessage TheTwistedHollow where
                 Just pos -> emptyPositionsInDirections grid pos [GridUp ..]
             for_ (zip locationPositions woodsDeck) (uncurry placeLocationInGrid)
         _ -> pure ()
+      pure s
+    ScenarioResolution r -> scope "resolutions" do
+      case r of
+        NoResolution -> do
+          record BertieWasLostInTheWoods
+          resolution "noResolution"
+          push R3
+        Resolution 1 -> do
+          record BertieWasRescued
+          resolution "resolution1"
+          push R3
+        Resolution 2 -> do
+          record BertieWasLostInTheWoods
+          resolution "resolution2"
+          push R3
+        Resolution 3 -> do
+          let
+            bonus =
+              if toCardCode Assets.bertieMusgraveATrueAesthete `elem` attrs.resignedCardCodes
+                then toBonus "bonus.insight" 1 <> toBonus "bonus.bertie" 1
+                else toBonus "bonus.insight" 1
+
+          hybridWounded <- inVictoryDisplay $ cardIs Enemies.ursineHybridGlowingAbomination
+          when hybridWounded $ record TheBearWasWounded
+          record $ AreasSurveyed WesternWoods
+          resolutionWithXp "resolution3" $ allGainXpWithBonus' attrs bonus
+          endOfScenario
+        _ -> error "invalid resolution"
       pure s
     _ -> TheTwistedHollow <$> liftRunMessage msg attrs

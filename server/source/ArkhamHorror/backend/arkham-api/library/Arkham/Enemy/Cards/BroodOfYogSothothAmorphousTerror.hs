@@ -18,8 +18,6 @@ broodOfYogSothothAmorphousTerror =
   enemy
     BroodOfYogSothothAmorphousTerror
     Cards.broodOfYogSothothAmorphousTerror
-    (6, Static 1, 3)
-    (1, 2)
 
 instance HasModifiersFor BroodOfYogSothothAmorphousTerror where
   getModifiersFor (BroodOfYogSothothAmorphousTerror a) = do
@@ -28,6 +26,7 @@ instance HasModifiersFor BroodOfYogSothothAmorphousTerror where
       a
       [ HealthModifier healthModifier
       , CanOnlyBeAttackedByAbilityOn $ singleton Assets.esotericFormula.cardCode
+      , CannotBeDamagedByPlayerSourcesExcept (SourceIsAsset (AssetIs Assets.esotericFormula.cardCode))
       ]
 
 instance HasAbilities BroodOfYogSothothAmorphousTerror where
@@ -36,7 +35,7 @@ instance HasAbilities BroodOfYogSothothAmorphousTerror where
       a
       [ mkAbility a 1
           $ forced
-          $ EnemyEnters #after YourLocation (be a)
+          $ EnemyEntersYourLocation #after (be a)
       , mkAbility a 2
           $ forced
           $ Enters #after You (locationWithEnemy a)

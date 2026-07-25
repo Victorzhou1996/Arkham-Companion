@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.DeepOneBull (deepOneBull, DeepOneBull (..)) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Message.Discard.Lifted
 import Arkham.Matcher
 import Arkham.Message.Lifted.Move
@@ -13,14 +13,14 @@ newtype DeepOneBull = DeepOneBull EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 deepOneBull :: EnemyCard DeepOneBull
-deepOneBull = enemy DeepOneBull Cards.deepOneBull (4, Static 5, 2) (2, 0)
+deepOneBull = enemy DeepOneBull Cards.deepOneBull
 
 instance HasAbilities DeepOneBull where
   getAbilities (DeepOneBull a) =
     extend
       a
       [ forcedAbility a 1 $ EnemyEngaged #after You (be a)
-      , forcedAbility a 2 $ EnemyDefeated #after investigator ByAny (not_ (be a) <> EnemyWithTrait DeepOne)
+      , forcedAbility a 2 $ IfEnemyDefeated #after investigator ByAny (not_ (be a) <> EnemyWithTrait DeepOne)
       ]
    where
     investigator = if a.exhausted then Anyone else at_ (not_ $ locationWithEnemy a.id)

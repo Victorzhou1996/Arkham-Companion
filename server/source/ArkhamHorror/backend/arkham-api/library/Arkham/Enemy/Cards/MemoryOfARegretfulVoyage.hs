@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.MemoryOfARegretfulVoyage (memoryOfARegretfulVoyage) wh
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyAttacks, EnemyDefeated)
+import Arkham.Enemy.Import.Lifted hiding (EnemyAttacks)
 import Arkham.Helpers.Story
 import Arkham.Helpers.Window (cardsDrawn)
 import Arkham.Matcher
@@ -15,7 +15,7 @@ newtype MemoryOfARegretfulVoyage = MemoryOfARegretfulVoyage EnemyAttrs
 
 memoryOfARegretfulVoyage :: EnemyCard MemoryOfARegretfulVoyage
 memoryOfARegretfulVoyage =
-  enemyWith MemoryOfARegretfulVoyage Cards.memoryOfARegretfulVoyage (2, PerPlayer 5, 5) (0, 1)
+  enemyWith MemoryOfARegretfulVoyage Cards.memoryOfARegretfulVoyage
     $ preyL
     .~ Prey (ControlsAsset $ assetIs Assets.professorWilliamDyerProfessorOfGeology)
 

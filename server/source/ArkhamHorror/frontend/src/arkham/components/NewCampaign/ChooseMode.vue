@@ -1,10 +1,13 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import type { Scenario, Campaign } from '@/arkham/data'
 import { imgsrc } from '@/arkham/helpers'
 
 type GameMode = 'Campaign' | 'SideStory'
 
-defineProps<{
+const CHAPTER_2_CAMPAIGN_IDS = new Set(['12'])
+
+const props = defineProps<{
   campaigns: Campaign[]
   sideStories: Scenario[]
   campaign: Campaign | null | undefined
@@ -16,6 +19,28 @@ const selectedCampaign = defineModel<string | null>('selectedCampaign', { requir
 const selectedScenario = defineModel<string | null>('selectedScenario', { required: true })
 
 const emits = defineEmits(['go'])
+
+const chapter1Campaigns = computed(() =>
+  props.campaigns.filter((c) => !CHAPTER_2_CAMPAIGN_IDS.has(c.id)),
+)
+const chapter2Campaigns = computed(() =>
+  props.campaigns.filter((c) => CHAPTER_2_CAMPAIGN_IDS.has(c.id)),
+)
+const isChallengeScenario = (scenario: Scenario) =>
+  Boolean(scenario.requiredInvestigator) || Boolean(scenario.deckRequirements?.length)
+
+const sideStoryScenarios = computed(() => props.sideStories.filter((s) => !isChallengeScenario(s)))
+const challengeScenarios = computed(() => props.sideStories.filter(isChallengeScenario))
+
+const selectScenario = (id: string) => {
+  selectedScenario.value = id
+  emits('go')
+}
+
+const selectCampaign = (id: string) => {
+  selectedCampaign.value = id
+  emits('go')
+}
 </script>
 
 <template>
@@ -28,48 +53,123 @@ const emits = defineEmits(['go'])
   </div>
 
   <template v-if="gameMode === 'SideStory'">
-    <div class="scenarios">
-      <div
-        v-for="s in sideStories"
-        :key="s.id"
-        class="scenario"
-      >
-        <div
-          class="vt-box"
-          :style="selectedScenario == s.id ? { 'view-transition-name': 'selected-game-box' } : {}"
-          :class="{ beta: s.beta, alpha: s.alpha }"
-        >
-          <img
-            class="scenario-box"
-            :class="{ 'selected-scenario': selectedScenario == s.id }"
-            :src="imgsrc(`boxes/${s.id}.jpg`)"
-            @click="selectedScenario = s.id; emits('go')"
-          />
-        </div>
-      </div>
-    </div>
-  </template>
-
-  <template v-else>
-    <div class="campaigns">
-      <template v-for="c in campaigns" :key="c.id">
-        <div class="campaign">
+    <section v-if="sideStoryScenarios.length" class="chapter">
+      <header class="chapter-header">
+        <span class="chapter-line" />
+        <h3 class="chapter-title">{{ $t('create.sideStoriesHeading') }}</h3>
+        <span class="chapter-line" />
+      </header>
+      <div class="scenarios">
+        <div v-for="s in sideStoryScenarios" :key="s.id" class="scenario">
           <div
             class="vt-box"
-            :style="selectedCampaign == c.id ? { 'view-transition-name': 'selected-game-box' } : {}"
-            :class="{ beta: c.beta, alpha: c.alpha }"
+            :style="selectedScenario == s.id ? { 'view-transition-name': 'selected-game-box' } : {}"
+            :class="{ beta: s.beta, alpha: s.alpha, dev: s.dev }"
           >
-            <input
-              type="image"
-              class="campaign-box"
-              :class="{ 'selected-campaign': selectedCampaign == c.id }"
-              :src="imgsrc(`boxes/${c.id}.jpg`)"
-              @click.prevent="selectedCampaign = c.id; emits('go')"
+            <img
+              class="scenario-box"
+              :class="{ 'selected-scenario': selectedScenario == s.id }"
+              :src="imgsrc(`boxes/${s.id}.jpg`)"
+              @click="selectScenario(s.id)"
             />
           </div>
         </div>
-      </template>
-    </div>
+      </div>
+    </section>
+
+    <section v-if="challengeScenarios.length" class="chapter">
+      <header class="chapter-header">
+        <span class="chapter-line" />
+        <h3 class="chapter-title">{{ $t('create.challengeScenariosHeading') }}</h3>
+        <span class="chapter-line" />
+      </header>
+      <div class="scenarios">
+        <div v-for="s in challengeScenarios" :key="s.id" class="scenario">
+          <div
+            class="vt-box"
+            :style="selectedScenario == s.id ? { 'view-transition-name': 'selected-game-box' } : {}"
+            :class="{ beta: s.beta, alpha: s.alpha, dev: s.dev }"
+          >
+            <img
+              class="scenario-box"
+              :class="{ 'selected-scenario': selectedScenario == s.id }"
+              :src="imgsrc(`boxes/${s.id}.jpg`)"
+              @click="selectScenario(s.id)"
+            />
+          </div>
+          <span v-if="s.requiredInvestigator" class="requires-investigator">
+            {{ $t('create.requiresInvestigator', { name: s.requiredInvestigator }) }}
+          </span>
+          <span
+            v-for="requirement in s.deckRequirements"
+            :key="requirement"
+            class="requires-investigator"
+          >
+            {{ requirement }}
+          </span>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <template v-else>
+    <section v-if="chapter1Campaigns.length" class="chapter">
+      <header class="chapter-header">
+        <span class="chapter-line" />
+        <h3 class="chapter-title">{{ $t('create.chapter1Heading') }}</h3>
+        <span class="chapter-line" />
+      </header>
+      <div class="campaigns">
+        <template v-for="c in chapter1Campaigns" :key="c.id">
+          <div class="campaign">
+            <div
+              class="vt-box"
+              :style="
+                selectedCampaign == c.id ? { 'view-transition-name': 'selected-game-box' } : {}
+              "
+              :class="{ beta: c.beta, alpha: c.alpha, dev: c.dev }"
+            >
+              <input
+                type="image"
+                class="campaign-box"
+                :class="{ 'selected-campaign': selectedCampaign == c.id }"
+                :src="imgsrc(`boxes/${c.id}.jpg`)"
+                @click.prevent="selectCampaign(c.id)"
+              />
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <section v-if="chapter2Campaigns.length" class="chapter">
+      <header class="chapter-header">
+        <span class="chapter-line" />
+        <h3 class="chapter-title">{{ $t('create.chapter2Heading') }}</h3>
+        <span class="chapter-line" />
+      </header>
+      <div class="campaigns">
+        <template v-for="c in chapter2Campaigns" :key="c.id">
+          <div class="campaign">
+            <div
+              class="vt-box"
+              :style="
+                selectedCampaign == c.id ? { 'view-transition-name': 'selected-game-box' } : {}
+              "
+              :class="{ beta: c.beta, alpha: c.alpha, dev: c.dev }"
+            >
+              <input
+                type="image"
+                class="campaign-box"
+                :class="{ 'selected-campaign': selectedCampaign == c.id }"
+                :src="imgsrc(`boxes/${c.id}.jpg`)"
+                @click.prevent="selectCampaign(c.id)"
+              />
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
   </template>
 </template>
 
@@ -82,12 +182,14 @@ input[type='radio'] {
   display: grid;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
 }
 
-.segmented-2 { grid-template-columns: repeat(2, 1fr); }
+.segmented-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
 
 .segmented label {
   display: flex;
@@ -99,9 +201,11 @@ input[type='radio'] {
   font-size: 13px;
   user-select: none;
   cursor: pointer;
-  background: rgba(255,255,255,0.06);
-  border-right: 1px solid rgba(255,255,255,0.08);
-  transition: background 160ms ease, transform 120ms ease;
+  background: rgba(255, 255, 255, 0.06);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  transition:
+    background 160ms ease,
+    transform 120ms ease;
 }
 
 .segmented label:last-of-type {
@@ -109,12 +213,12 @@ input[type='radio'] {
 }
 
 .segmented label:hover {
-  background: rgba(255,255,255,0.10);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 input[type='radio']:checked + label {
   background: rgba(110, 134, 64, 0.95);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .campaigns,
@@ -134,7 +238,8 @@ input[type='radio']:checked + label {
 }
 
 @media (max-width: 1500px) {
-  .campaigns, .scenarios {
+  .campaigns,
+  .scenarios {
     grid-template-columns: repeat(3, 1fr);
   }
 }
@@ -144,21 +249,34 @@ input[type='radio']:checked + label {
   position: relative;
 }
 
+.requires-investigator {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.2;
+  text-align: center;
+  color: rgba(206, 206, 206, 0.88);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
 .vt-box {
   display: block;
   border-radius: 14px;
   position: relative;
   overflow: hidden;
-  background: rgba(0,0,0,0.18);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-  outline: 1px solid rgba(255,255,255,0.08);
-  transition: transform 160ms ease, box-shadow 160ms ease, outline-color 160ms ease;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    outline-color 160ms ease;
 }
 
 .vt-box:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 34px rgba(0,0,0,0.45);
-  outline-color: rgba(255,255,255,0.14);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
+  outline-color: rgba(255, 255, 255, 0.14);
 }
 
 .campaign-box,
@@ -183,18 +301,19 @@ input[type='radio']:checked + label {
   filter: none !important;
 }
 
-.vt-box[style*="view-transition-name"] {
+.vt-box[style*='view-transition-name'] {
   outline-color: rgba(154, 196, 78, 0.55);
   box-shadow:
-    0 18px 40px rgba(0,0,0,0.55),
+    0 18px 40px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(154, 196, 78, 0.25),
     0 0 24px rgba(154, 196, 78, 0.18);
 }
 
 .vt-box.beta:after,
-.vt-box.alpha:after {
+.vt-box.alpha:after,
+.vt-box.dev:after {
   position: absolute;
-  z-index: 1070;
+  z-index: var(--z-index-1070);
   width: 86px;
   height: 26px;
   top: 9px;
@@ -208,7 +327,7 @@ input[type='radio']:checked + label {
   color: white;
   line-height: 28px;
   transform: rotate(-45deg);
-  box-shadow: 0 10px 18px rgba(0,0,0,0.35);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35);
 }
 
 .vt-box.beta:after {
@@ -221,16 +340,22 @@ input[type='radio']:checked + label {
   background: darkred;
 }
 
+.vt-box.dev:after {
+  content: 'dev';
+  background: #6f42c1;
+}
+
 .beta-warning,
-.alpha-warning {
+.alpha-warning,
+.dev-warning {
   margin-top: 12px;
   padding: 12px;
   border-radius: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 13px;
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
 }
 
 .beta-warning {
@@ -241,7 +366,50 @@ input[type='radio']:checked + label {
   background: rgba(139, 0, 0, 0.25);
 }
 
+.dev-warning {
+  background: rgba(111, 66, 193, 0.25);
+}
+
 .mode-toggle {
   margin-bottom: 6px;
+}
+
+.chapter {
+  margin-top: 18px;
+}
+
+.chapter:first-of-type {
+  margin-top: 12px;
+}
+
+.chapter-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 6px;
+}
+
+.chapter-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.chapter-title {
+  margin: 0;
+  padding: 0 4px;
+  font-family: Teutonic, serif;
+  font-size: 1.4em;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(206, 206, 206, 0.92);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
 }
 </style>

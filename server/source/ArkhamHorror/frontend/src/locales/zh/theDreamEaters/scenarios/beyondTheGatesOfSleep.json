@@ -1,5 +1,17 @@
 {
-  "heading": "Scenario I-A",
+  "heading": "剧本 I-A",
+  "specialRules": [
+    {
+      "title": "沉眠步骤",
+      "body": "<p class='basic'>本剧本开始时没有遭遇牌堆。这意味着调查员不能以任何方式使用与遭遇牌堆互动的能力。（例如，搜索遭遇牌堆、从遭遇牌堆抽牌、查看遭遇牌堆等效果都会失败。）</p><p class='basic'>此外，场景1a具有以下文本：“神话阶段期间，不要从遭遇牌堆抽牌。”</p><p class='basic'>在剧本的某个时点，调查员会被指示组成遭遇牌堆，此文本之后不再生效。从那时起，调查员可以正常与遭遇牌堆互动。</p>"
+    }
+  ],
+  "thePath": {
+    "label": {
+      "stepBack": "退后一步，旁观这幕超现实的景象自行发展。",
+      "interrupt": "打断伤疤猫，亲自处理这件事。"
+    }
+  },
   "tokens": {
     "easyStandard": {
       "skull": "-X. 其中X等于你手牌张数的一半(向上取整)。",
@@ -10,6 +22,23 @@
       "skull": "-X. 其中X等于你手牌张数。",
       "cultist": "-X. 其中X为已揭示的 _树林_ 地点数量。",
       "tablet": "-2. 如果本次检定为对蜂拥敌人的攻击或躲避尝试，其增加1张蜂拥卡牌。"
+    }
+  },
+  "label": {
+    "doNotReplace": "不替换",
+    "doNotTakeAny": "不拿取任何卡牌",
+    "replaceWeaknessQuestion": "是否将基础弱点替换为随机基础弱点，并受到1点任意类型创伤？",
+    "chooseUpToTacticSupply": "选择至多{count}张战术和/或补给卡牌，并在本剧本开始时将其作为额外卡牌加入你的起始手牌。"
+  },
+  "enchantedWoodsTheMoonTree": {
+    "label": {
+      "loseAllActions": "失去所有剩余行动"
+    }
+  },
+  "journeyThroughTheGates": {
+    "label": {
+      "testWillpower": "检定{'{'}willpower{'}'} (3)，以记起这一切都是梦",
+      "doNotTest": "不进行检定"
     }
   }
 }

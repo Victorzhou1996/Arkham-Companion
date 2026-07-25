@@ -22,7 +22,11 @@ data ScenarioDeckKey
   | TekeliliDeck -- Edge of the Earth
   | OtherworldDeck -- Without a Trace
   | WoodsDeck -- The Twisted Hollow
+  | CavernsDeck -- The Lost Sister
+  | EnemyDeck -- The Longest Night
+  | AbyssDeck -- Fate of the Vale
   | ReelDeck -- FilmFatale
+  | PropsDeck -- Enthralling Encore
   deriving stock (Show, Ord, Eq, Data)
 
 instance ToDisplay ScenarioDeckKey where
@@ -43,7 +47,11 @@ instance ToDisplay ScenarioDeckKey where
     TekeliliDeck -> "Tekeli-li"
     OtherworldDeck -> "Otherworld"
     WoodsDeck -> "Woods"
+    CavernsDeck -> "Caverns"
+    EnemyDeck -> "Enemy"
+    AbyssDeck -> "The Abyss"
     ReelDeck -> "Reel"
+    PropsDeck -> "Props"
 
 $(deriveJSON defaultOptions ''ScenarioDeckKey)
 

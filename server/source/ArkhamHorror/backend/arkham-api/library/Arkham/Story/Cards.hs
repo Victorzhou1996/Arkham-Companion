@@ -63,12 +63,8 @@ allStoryCards =
       , theArchway
       , theHeightOfTheDepths
       , stepsOfThePalace
-      , theDelusion
-      , theEntity
       , theFall
-      , theWriter
       , hastursEnd
-      , hastursLastStand
       , yigsMercy
       , anotherWay
       , josefsPlan
@@ -162,27 +158,76 @@ allStoryCards =
       , exhumeTheBones
       , sympathyPain
       , familialPain
+      , thePredatoryHouse
+      , barriersDecoysAndTraps
+      , theAbyss
       , dayOne
       , nightOne
       , dayTwo
       , nightTwo
       , dayThree
       , nightThree
+      , westernWinds
+      , ruthlessCharge
+      , hurricaneForce
+      , direGale
+      , dreadsight
+      , demolition
+      , fifthEye
+      , seismicStomp
+      , eldritchCall
+      , psychicRebuke
+      , risingTides
+      , hopeFades
       , returnToSickeningReality_23
       , returnToSickeningReality_24
+      , hastursLastStand
+      , theWriter
+      , theEntity
+      , theDelusion
       , returnToUnfinishedBusiness_38
       , returnToUnfinishedBusiness_39
-      , realityAcid
+      , arcaneRunes
+      , theRift
+      , theVent
+      , theDilemma
+      , theGate
+      , encryptedGlyphs
       , theFoundationAllied
       , theFoundationRival
-      , theSyndicateAllied
-      , theSyndicateRival
       , miskatonicUniversityAllied
       , miskatonicUniversityRival
+      , theSyndicateAllied
+      , theSyndicateRival
       , silverTwilightLodgeAllied
       , silverTwilightLodgeRival
       , localsOfKingsportAllied
       , localsOfKingsportRival
+      , toTheDreamlands
+      , fateOfTheDreamers
+      , prisonersOfConquest
+      , ruinsOfSarkomand
+      , effigyOfNodens
+      , usurpTheNight
+      , theTranslatorsEvidence
+      , theSupplicantsEvidence
+      , thePriestesssEvidence
+      , theSalesmansEvidence
+      , theAssassinsEvidence
+      , theProfessorsEvidence
+      , rescueTheChemist
+      , recoverTheSample
+      , driveOffTheMiGo
+      , defuseTheExplosives
+      , aNobleLegacyPast
+      , aNobleLegacyPresent
+      , aNobleLegacyFuture
+      , aBitterRivalry
+      , redeemAFormerColleague
+      , uneasyAlliance
+      , anomaliesInSpacetime
+      , mobTroubles
+      , unspeakableAbomination
       , theStakeout
       , theHeist
       , ifTheUniformFits
@@ -194,6 +239,8 @@ allStoryCards =
       , fortunesDisfavor27
       , personalEntaglement
       , deckOfPossibilities
+      , realityAcid
+      , triumphAndSubjugation
       ]
 
 victory :: Int -> CardDef -> CardDef
@@ -549,11 +596,20 @@ sympathyPain = story "09676b" "Sympathy Pain" ShadesOfSuffering & otherSideIs "0
 familialPain :: CardDef
 familialPain = story "09676d" "Familial Pain" ShadesOfSuffering & otherSideIs "09676c"
 
+thePredatoryHouse :: CardDef
+thePredatoryHouse = story "10524" "The Predatory House" HemlockHouse & otherSideIs "10524b"
+
+barriersDecoysAndTraps :: CardDef
+barriersDecoysAndTraps = story "10627" "Barriers, Decoys, and Traps" TheLongestNight
+
+theAbyss :: CardDef
+theAbyss = story "10670b" "The Abyss" FateOfTheVale
+
 dayOne :: CardDef
 dayOne = story "10675" "Day One" TheFirstDay & otherSideIs "10675b"
 
 nightOne :: CardDef
-nightOne = story "10675b" "Day One" TheFirstDay & otherSideIs "10675"
+nightOne = story "10675b" "Night One" TheFirstDay & otherSideIs "10675"
 
 dayTwo :: CardDef
 dayTwo = story "10677" "Day Two" TheSecondDay & otherSideIs "10677b"
@@ -562,10 +618,56 @@ nightTwo :: CardDef
 nightTwo = story "10677b" "Night Two" TheSecondDay & otherSideIs "10677"
 
 dayThree :: CardDef
-dayThree = story "10679" "Day One" TheFinalDay & otherSideIs "10679b"
+dayThree = story "10679" "Day Three" TheFinalDay & otherSideIs "10679b"
 
 nightThree :: CardDef
 nightThree = story "10679b" "Night Three" TheFinalDay & otherSideIs "10679"
+
+-- The Drowned City
+
+westernWinds :: CardDef
+westernWinds = doubleSided $ story "11640" "Western Winds" ObsidianCanyons
+
+-- The modular "Cthulhu deck" of action cards (The Doom of Arkham Pt II) shares a
+-- distinct card back.
+cthulhuDeckBack :: Map Text Value
+cthulhuDeckBack = mapFromList [("customBack", String "back_cthulhu_deck.jpg")]
+
+cthulhuDeckCard :: CardCode -> Name -> EncounterSet -> CardDef
+cthulhuDeckCard cCode name encounterSet = (story cCode name encounterSet) {cdMeta = cthulhuDeckBack}
+
+ruthlessCharge :: CardDef
+ruthlessCharge = cthulhuDeckCard "11705" "Ruthless Charge" TheDoomOfArkhamPartII
+
+hurricaneForce :: CardDef
+hurricaneForce = cthulhuDeckCard "11706" "Hurricane Force" TheDoomOfArkhamPartII
+
+direGale :: CardDef
+direGale = cthulhuDeckCard "11707" "Dire Gale" TheDoomOfArkhamPartII
+
+dreadsight :: CardDef
+dreadsight = cthulhuDeckCard "11708" "Dreadsight" TheDoomOfArkhamPartII
+
+demolition :: CardDef
+demolition = cthulhuDeckCard "11709" "Demolition" TheDoomOfArkhamPartII
+
+fifthEye :: CardDef
+fifthEye = cthulhuDeckCard "11710" "Fifth Eye" TheDoomOfArkhamPartII
+
+seismicStomp :: CardDef
+seismicStomp = cthulhuDeckCard "11711" "Seismic Stomp" TheDoomOfArkhamPartII
+
+eldritchCall :: CardDef
+eldritchCall = cthulhuDeckCard "11712" "Eldritch Call" TheDoomOfArkhamPartII
+
+psychicRebuke :: CardDef
+psychicRebuke = cthulhuDeckCard "11713" "Psychic Rebuke" TheDoomOfArkhamPartII
+
+risingTides :: CardDef
+risingTides = cthulhuDeckCard "11714" "Rising Tides" TheDoomOfArkhamPartII
+
+hopeFades :: CardDef
+hopeFades = cthulhuDeckCard "11715" "Hope Fades" TheDoomOfArkhamPartII
 
 returnToSickeningReality_23 :: CardDef
 returnToSickeningReality_23 = doubleSided $ story "52023" "Sickening Reality" ReturnToTheLastKing
@@ -591,13 +693,23 @@ returnToUnfinishedBusiness_38 = victory 1 $ doubleSided $ story "54038b" "Unfini
 returnToUnfinishedBusiness_39 :: CardDef
 returnToUnfinishedBusiness_39 = victory 1 $ doubleSided $ story "54039b" "Unfinished Business" ReturnToTheWagesOfSin
 
-realityAcid :: CardDef
-realityAcid =
-  doubleSided
-    $ (story "89005" "Reality Acid" TheBlobThatAteEverythingELSE)
-      { cdEncounterSet = Nothing
-      , cdEncounterSetQuantity = Nothing
-      }
+arcaneRunes :: CardDef
+arcaneRunes = doubleSided $ story "70033" "Arcane Runes" LabyrinthsOfLunacyEpicMultiplayer
+
+theRift :: CardDef
+theRift = doubleSided $ story "70034" "The Rift" LabyrinthsOfLunacyEpicMultiplayer
+
+theVent :: CardDef
+theVent = doubleSided $ story "70035" "The Vent" LabyrinthsOfLunacyEpicMultiplayer
+
+theDilemma :: CardDef
+theDilemma = doubleSided $ story "70036" "The Dilemma" LabyrinthsOfLunacyEpicMultiplayer
+
+theGate :: CardDef
+theGate = doubleSided $ story "70037" "The Gate" LabyrinthsOfLunacyEpicMultiplayer
+
+encryptedGlyphs :: CardDef
+encryptedGlyphs = doubleSided $ story "70038" "Encrypted Glyphs" LabyrinthsOfLunacyEpicMultiplayer
 
 theFoundationAllied :: CardDef
 theFoundationAllied = doubleSided $ addTrait Allied $ story "71015" "The Foundation [guardian]" TheMidwinterGala
@@ -628,6 +740,98 @@ localsOfKingsportAllied = doubleSided $ addTrait Allied $ story "71039" "Locals 
 
 localsOfKingsportRival :: CardDef
 localsOfKingsportRival = doubleSided $ addTrait Rival $ story "71039b" "Locals of Kingsport [survivor]" TheMidwinterGala
+
+toTheDreamlands :: CardDef
+toTheDreamlands = otherSideIs "83022a" $ story "83022b" "To the Dreamlands" TheNightsUsurper
+
+fateOfTheDreamers :: CardDef
+fateOfTheDreamers = otherSideIs "83023a" $ story "83023b" "Fate of the Dreamers" TheNightsUsurper
+
+prisonersOfConquest :: CardDef
+prisonersOfConquest = otherSideIs "83024a" $ story "83024b" "Prisoners of Conquest" TheNightsUsurper
+
+ruinsOfSarkomand :: CardDef
+ruinsOfSarkomand = otherSideIs "83025a" $ story "83025b" "Ruins of Sarkomand" TheNightsUsurper
+
+effigyOfNodens :: CardDef
+effigyOfNodens = otherSideIs "83026a" $ story "83026b" "Effigy of Nodens" TheNightsUsurper
+
+usurpTheNight :: CardDef
+usurpTheNight = otherSideIs "83027a" $ story "83027b" "Usurp the Night" TheNightsUsurper
+
+theTranslatorsEvidence :: CardDef
+theTranslatorsEvidence =
+  victory 1 $ addTrait Evidence $ otherSideIs "83031a" $ story "83031b" "The Translator's Evidence" BrotherhoodOfTheBeast
+
+theSupplicantsEvidence :: CardDef
+theSupplicantsEvidence =
+  victory 1 $ addTrait Evidence $ otherSideIs "83032a" $ story "83032b" "The Supplicant's Evidence" BrotherhoodOfTheBeast
+
+thePriestesssEvidence :: CardDef
+thePriestesssEvidence =
+  victory 1 $ addTrait Evidence $ otherSideIs "83033a" $ story "83033b" "The Priestess's Evidence" BrotherhoodOfTheBeast
+
+theSalesmansEvidence :: CardDef
+theSalesmansEvidence =
+  victory 1 $ addTrait Evidence $ otherSideIs "83034a" $ story "83034b" "The Salesman's Evidence" BrotherhoodOfTheBeast
+
+theAssassinsEvidence :: CardDef
+theAssassinsEvidence =
+  victory 1 $ addTrait Evidence $ otherSideIs "83035a" $ story "83035b" "The Assassin's Evidence" BrotherhoodOfTheBeast
+
+theProfessorsEvidence :: CardDef
+theProfessorsEvidence =
+  victory 1 $ addTrait Evidence $ otherSideIs "83036a" $ story "83036b" "The Professor's Evidence" BrotherhoodOfTheBeast
+
+rescueTheChemist :: CardDef
+rescueTheChemist =
+  victory 1 $ addTrait Part1 $ doubleSided $ story "85021" "Rescue the Chemist" MiGoIncursion
+
+recoverTheSample :: CardDef
+recoverTheSample =
+  victory 1 $ addTrait Part1 $ doubleSided $ story "85022" "Recover the Sample" MiGoIncursion
+
+driveOffTheMiGo :: CardDef
+driveOffTheMiGo =
+  victory 1 $ addTrait Part1 $ doubleSided $ story "85023" "Drive Off the Mi-Go" MiGoIncursion
+
+defuseTheExplosives :: CardDef
+defuseTheExplosives =
+  victory 1 $ addTrait Part1 $ doubleSided $ story "85024" "Defuse the Explosives" MiGoIncursion
+
+aNobleLegacyPast :: CardDef
+aNobleLegacyPast = doubleSided $ story "87006" "A Noble Legacy (Past)" MachinationsThroughTime
+
+aNobleLegacyPresent :: CardDef
+aNobleLegacyPresent = doubleSided $ story "87015" "A Noble Legacy (Present)" MachinationsThroughTime
+
+aNobleLegacyFuture :: CardDef
+aNobleLegacyFuture = doubleSided $ story "87024" "A Noble Legacy (Future)" MachinationsThroughTime
+
+aBitterRivalry :: CardDef
+aBitterRivalry =
+  doubleSided $ addTrait Machination $ story "87033" "A Bitter Rivalry" MachinationsThroughTime
+
+redeemAFormerColleague :: CardDef
+redeemAFormerColleague =
+  doubleSided
+    $ addTrait Machination
+    $ story "87034" "Redeem a Former Colleague" MachinationsThroughTime
+
+uneasyAlliance :: CardDef
+uneasyAlliance =
+  doubleSided $ addTrait Machination $ story "87035" "Uneasy Alliance" MachinationsThroughTime
+
+anomaliesInSpacetime :: CardDef
+anomaliesInSpacetime =
+  doubleSided $ addTrait Plot $ story "87038" "Anomalies in Spacetime" MachinationsThroughTime
+
+mobTroubles :: CardDef
+mobTroubles = doubleSided $ addTrait Plot $ story "87039" "Mob Troubles" MachinationsThroughTime
+
+unspeakableAbomination :: CardDef
+unspeakableAbomination =
+  doubleSided $ addTrait Plot $ story "87042" "Unspeakable Abomination" MachinationsThroughTime
 
 theStakeout :: CardDef
 theStakeout = doubleSided $ story "88023" "The Stakeout" FortuneAndFolly
@@ -661,3 +865,14 @@ personalEntaglement = doubleSided $ story "88027b" "Personal Entanglement" Fortu
 
 deckOfPossibilities :: CardDef
 deckOfPossibilities = doubleSided $ story "88043b" "Deck of Possibilities" FortuneAndFolly
+
+realityAcid :: CardDef
+realityAcid =
+  doubleSided
+    $ (story "89005" "Reality Acid" TheBlobThatAteEverythingELSE)
+      { cdEncounterSet = Nothing
+      , cdEncounterSetQuantity = Nothing
+      }
+
+triumphAndSubjugation :: CardDef
+triumphAndSubjugation = story "90023b" "Triumph and Subjugation" BadBlood & otherSideIs "90023"

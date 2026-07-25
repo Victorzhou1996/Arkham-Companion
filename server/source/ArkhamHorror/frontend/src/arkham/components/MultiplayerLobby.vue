@@ -1,0 +1,393 @@
+<script lang="ts" setup>
+import { ref, computed, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { fetchJoinGame, fetchOpenSeats, claimSeat, joinGame } from '@/arkham/api'
+import { useClipboard } from '@vueuse/core'
+import { imgsrc, buildShareableUrl } from '@/arkham/helpers'
+import { getGameLocalStorageItem } from '@/arkham/localStorage'
+import type { Game } from '@/arkham/types/Game'
+import InvestigatorRow from '@/arkham/components/InvestigatorRow.vue'
+import LogIcons from '@/arkham/components/LogIcons.vue'
+
+const { t } = useI18n()
+
+const props = defineProps<{
+  gameId: string
+  game: Game
+  playerId: string | null
+}>()
+const emit = defineEmits<{
+  update: [game: Game]
+}>()
+
+const route = useRoute()
+const router = useRouter()
+const openSeats = ref<string[]>([])
+const myClaimed = ref<string | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+const isHost = computed(() =>
+  getGameLocalStorageItem(props.gameId, 'host') === 'true'
+  || localStorage.getItem(`gameHost_${props.gameId}`) === 'true'
+)
+const allClaimed = computed(() => openSeats.value.length === 0)
+const hasJoinedPendingGame = computed(() =>
+  props.playerId !== null
+  && props.game.gameState.tag === 'IsPending'
+  && props.game.gameState.contents.includes(props.playerId)
+)
+const hasPlayerClaimed = computed(() =>
+  isHost.value
+  || myClaimed.value !== null
+  || hasJoinedPendingGame.value
+  || (props.playerId !== null && props.playerId in props.game.investigators)
+)
+const investigators = computed(() => Object.values(props.game.investigators))
+
+const claimSeatUrl = computed(() => {
+  const resolved = router.resolve({ name: 'ClaimSeat', params: { gameId: props.gameId } })
+  return buildShareableUrl(resolved.href)
+})
+const joinUrl = computed(() => {
+  const resolved = router.resolve({ name: 'JoinGame', params: { gameId: props.gameId } })
+  return buildShareableUrl(resolved.href)
+})
+// A "join-style" lobby is a fresh pending game with no pre-chosen investigators
+// (e.g. epic group lobbies). These have nothing to claim, so the shareable
+// invite must point at the JoinGame route, which actually adds the player.
+const isJoinStyleLobby = computed(() =>
+  props.game.gameState.tag === 'IsPending' && investigators.value.length === 0
+)
+const effectiveInviteUrl = computed(() =>
+  isJoinStyleLobby.value ? joinUrl.value : claimSeatUrl.value
+)
+const { copy, copied } = useClipboard({ source: effectiveInviteUrl })
+
+// The viewer can take a seat when it's a join-style lobby and they aren't in the
+// game yet. (Claim-style games keep their per-investigator claim buttons.)
+const canTakeSeat = computed(() =>
+  isJoinStyleLobby.value && !hasPlayerClaimed.value
+)
+
+function isOpen(investigatorId: string) {
+  return openSeats.value.includes(investigatorId)
+}
+
+async function poll() {
+  const [seats, game] = await Promise.allSettled([
+    fetchOpenSeats(props.gameId),
+    fetchJoinGame(props.gameId),
+  ])
+  if (seats.status === 'fulfilled') openSeats.value = seats.value
+  if (game.status === 'fulfilled') emit('update', game.value)
+}
+
+poll()
+const interval = setInterval(poll, 3000)
+onUnmounted(() => clearInterval(interval))
+
+async function claim(investigatorId: string) {
+  loading.value = true
+  error.value = null
+  const normalized = investigatorId.startsWith('c') ? investigatorId : `c${investigatorId}`
+  try {
+    await claimSeat(props.gameId, normalized)
+    myClaimed.value = normalized
+    await poll()
+  } catch {
+    error.value = t('lobby.couldNotClaimSeat')
+  } finally {
+    loading.value = false
+  }
+}
+
+function onContinue() {
+  router.push(`/games/${props.gameId}`)
+}
+
+// Join-style lobby: actually add the viewer to the pending game, then drop them
+// into it. Preserve an ?event context (epic lobbies) like JoinGame.vue does.
+async function takeSeat() {
+  loading.value = true
+  error.value = null
+  const eventId = typeof route.query.event === 'string' ? route.query.event : null
+  try {
+    const game = await joinGame(props.gameId)
+    myClaimed.value = '__joined__'
+    emit('update', game)
+    await router.replace(
+      eventId
+        ? { name: 'Game', params: { gameId: game.id }, query: { event: eventId } }
+        : { name: 'Game', params: { gameId: game.id } }
+    )
+  } catch {
+    error.value = t('lobby.couldNotClaimSeat')
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="lobby scroll-container">
+    <LogIcons />
+
+    <div class="next-scenario">
+      <div class="next-scenario-info">
+        <div class="scenario-info">
+          <h3>{{ game.scenario ? $t('lobby.scenario') : game.campaign ? $t('lobby.campaign') : $t('lobby.multiplayer') }}</h3>
+          <h2>{{ game.scenario?.name.title ?? game.campaign?.name ?? $t('lobby.waitingForPlayers') }}</h2>
+        </div>
+        <div class="invite-section">
+          <p class="invite-label">{{ $t('lobby.inviteOthers') }}</p>
+          <div class="invite-link">
+            <input type="text" :value="effectiveInviteUrl" readonly />
+            <button type="button" @click="copy()">{{ copied ? $t('lobby.copied') : $t('lobby.copy') }}</button>
+          </div>
+        </div>
+      </div>
+      <div v-if="game.scenario" class="next-step-icon">
+        <img :src="imgsrc(`sets/${game.scenario.id.replace(/^c/, '')}.png`)" />
+      </div>
+      <div v-else-if="game.campaign" class="next-step-icon">
+        <img :src="imgsrc(`sets/${game.campaign.id}.png`)" />
+      </div>
+    </div>
+
+    <div v-if="investigators.length > 0" class="investigators">
+      <InvestigatorRow
+        v-for="investigator in investigators"
+        :key="investigator.id"
+        :investigator="investigator"
+        :game="game"
+      >
+        <template #back>
+          <button
+            v-if="isOpen(investigator.id) && !hasPlayerClaimed"
+            class="claim-btn"
+            :disabled="loading"
+            @click="claim(investigator.id)"
+            type="button"
+          >{{ $t('lobby.claim') }}</button>
+          <span v-else-if="investigator.id === myClaimed" class="status-pill joined">{{ $t('lobby.claimed') }}</span>
+          <span v-else-if="isOpen(investigator.id)" class="status-pill open">{{ $t('lobby.waiting') }}</span>
+          <span v-else class="status-pill joined">{{ $t('lobby.joined') }}</span>
+        </template>
+      </InvestigatorRow>
+    </div>
+
+    <p v-if="error" class="error-msg">{{ error }}</p>
+
+    <div v-if="canTakeSeat" class="actions">
+      <button class="continue-btn take-seat-btn" :disabled="loading" @click="takeSeat" type="button">
+        {{ $t('lobby.takeASeat') }}
+      </button>
+    </div>
+
+    <div v-else-if="investigators.length === 0 && game.gameState.tag === 'IsPending'" class="player-count">
+      {{ $t('lobby.waitingForMorePlayers', { remaining: game.playerCount - game.gameState.contents.length }, game.playerCount - game.gameState.contents.length) }}
+    </div>
+
+    <div v-else-if="allClaimed" class="actions">
+      <button class="continue-btn" @click="onContinue" type="button">{{ $t('continue') }}</button>
+    </div>
+
+  </div>
+</template>
+
+<style scoped lang="scss">
+.lobby {
+  margin-top: 5vh;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: min(40vw, 700px);
+
+  @media (max-width: 800px) { width: 90vw; }
+}
+
+.next-scenario {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px;
+  color: #bebebe;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 800px) {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  img { max-height: 150px; }
+}
+
+.next-scenario-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.scenario-info {
+  h3 {
+    margin: 0 0 4px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  h2 {
+    margin: 0;
+    color: white;
+    font-family: "Teutonic", sans-serif;
+    font-size: 1.8em;
+  }
+}
+
+.next-step-icon {
+  width: 150px;
+  filter: invert(100%) brightness(60%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 600px) { display: none; }
+}
+
+.invite-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.invite-label {
+  margin: 0;
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.invite-link {
+  display: flex;
+  gap: 6px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8em;
+    outline: none;
+  }
+
+  button {
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 0;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.82em;
+    white-space: nowrap;
+    &:hover { background: rgba(0, 0, 0, 0.55); }
+  }
+}
+
+.investigators {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.claim-btn {
+  background: rgba(110, 134, 64, 0.85);
+  border: 0;
+  color: white;
+  padding: 7px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: rgba(110, 134, 64, 1); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.72em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+
+  &.joined {
+    background: rgba(110, 134, 64, 0.2);
+    color: rgba(168, 208, 128, 0.9);
+    border: 1px solid rgba(110, 134, 64, 0.35);
+  }
+
+  &.open {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.continue-btn {
+  border: 0;
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 1.2em;
+  padding: 10px 20px;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+
+  &:hover { background: rgba(0, 0, 0, 0.5); }
+}
+
+.take-seat-btn {
+  background: rgba(110, 134, 64, 0.9);
+  font-weight: 600;
+
+  &:hover:not(:disabled) { background: rgba(110, 134, 64, 1); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.player-count {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.9em;
+  padding: 10px;
+}
+
+.error-msg {
+  color: #e05050;
+  font-size: 0.9em;
+  margin: 0;
+}
+</style>

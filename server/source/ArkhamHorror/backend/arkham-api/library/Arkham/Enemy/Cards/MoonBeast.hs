@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.MoonBeast (moonBeast, MoonBeast (..)) where
 
 import Arkham.Classes
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Runner hiding (EnemyDefeated)
+import Arkham.Enemy.Runner
 import Arkham.Matcher
 import Arkham.Message.Lifted
 import Arkham.Prelude
@@ -14,7 +14,7 @@ newtype MoonBeast = MoonBeast EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 moonBeast :: EnemyCard MoonBeast
-moonBeast = enemy MoonBeast Cards.moonBeast (5, Static 5, 1) (1, 1)
+moonBeast = enemy MoonBeast Cards.moonBeast
 
 instance HasAbilities MoonBeast where
   getAbilities (MoonBeast a) =

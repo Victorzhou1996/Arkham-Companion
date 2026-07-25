@@ -26,6 +26,7 @@ mkChooseFightPure sid iid source =
     , chooseFightTarget = Nothing
     , chooseFightSkillType = #combat
     , chooseFightIsAction = False
+    , chooseFightPayCost = False
     , chooseFightOnlyChoose = False
     , chooseFightOverride = False
     , chooseFightSkillTest = sid
@@ -35,6 +36,14 @@ mkChooseFightPure sid iid source =
 mkChooseFight
   :: (Sourceable source, HasGame m) => SkillTestId -> InvestigatorId -> source -> m ChooseFight
 mkChooseFight sid iid source = pure $ mkChooseFightPure sid iid source
+
+mkChooseFightEdit
+  :: (Sourceable source, HasGame m) => SkillTestId -> InvestigatorId -> source -> (ChooseFight -> ChooseFight) -> m ChooseFight
+mkChooseFightEdit sid iid source f = pure $ f $ mkChooseFightPure sid iid source
+
+extendFightMatcher :: EnemyMatcher -> ChooseFight -> ChooseFight
+extendFightMatcher em f = f { chooseFightEnemyMatcher = chooseFightEnemyMatcher f <> em }
+
 
 mkChooseFightMatch
   :: (Sourceable source, HasGame m)

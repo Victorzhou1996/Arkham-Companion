@@ -2,7 +2,7 @@ module Arkham.Agenda.Cards.TheTrueCulpritV3 (theTrueCulpritV3) where
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Enemy.Cards qualified as Cards
 import Arkham.Matcher
@@ -30,7 +30,7 @@ instance HasAbilities TheTrueCulpritV3 where
          , mkAbility attrs 2
              $ Objective
              $ forced
-             $ EnemyDefeated #after Anyone ByAny
+             $ IfEnemyDefeated #after Anyone ByAny
              $ enemyIs Cards.hotelManager
          ]
 

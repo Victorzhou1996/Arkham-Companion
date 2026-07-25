@@ -8,7 +8,7 @@ makeEmSing =
   (event "60160" "\"Make 'em sing\"" 2 Guardian)
     { cdCardTraits = setFromList [Tactic]
     , cdSkills = [#combat, #intellect]
-    , cdActions = [#parley]
+    , cdActions = #parley
     , cdCriteria = Just $ exists $ EnemyAt YourLocation <> CanParleyEnemy You
     }
 
@@ -17,7 +17,8 @@ bounty =
   (event "60161" "Bounty" 0 Guardian)
     { cdCardTraits = setFromList [Fortune]
     , cdSkills = [#combat]
-    , cdFastWindow = Just $ EnemyDefeated #after Anyone ByAny $ AnyEnemy <> EnemyAt YourLocation
+    , cdCriteria = Just $ exists $ affectsColocatedMatch You <> can.gain.resources
+    , cdFastWindow = Just $ IfEnemyDefeated #after Anyone ByAny $ EnemyWasAt YourLocation
     }
 
 customGrip :: CardDef
@@ -43,7 +44,7 @@ physicalFitness =
   (event "60164" "Physical Fitness" 2 Guardian)
     { cdCardTraits = setFromList [Spirit]
     , cdSkills = [#agility, #combat]
-    , cdActions = [#move]
+    , cdActions = #move
     }
 
 restrained :: CardDef
@@ -59,7 +60,7 @@ stakeout =
   (event "60166" "Stakeout" 2 Guardian)
     { cdCardTraits = setFromList [Tactic]
     , cdSkills = [#intellect, #intellect]
-    , cdActions = [#investigate]
+    , cdActions = #investigate
     }
 
 extendedBarrel1 :: CardDef
@@ -86,7 +87,7 @@ physicalFitness2 =
   (event "60174" "Physical Fitness" 1 Guardian)
     { cdCardTraits = setFromList [Spirit]
     , cdSkills = [#agility, #combat]
-    , cdActions = [#move]
+    , cdActions = #move
     , cdLevel = Just 2
     }
 
@@ -104,6 +105,6 @@ stakeout3 =
   (event "60179" "Stakeout" 2 Guardian)
     { cdCardTraits = setFromList [Tactic]
     , cdSkills = [#agility, #intellect]
-    , cdActions = [#investigate]
+    , cdActions = #investigate
     , cdLevel = Just 3
     }

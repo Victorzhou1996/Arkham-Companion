@@ -4,6 +4,7 @@ import { useDebug } from '@/arkham/debug';
 import type { Card } from '@/arkham/types/Card';
 import { cardImage } from '@/arkham/types/Card';
 import { imgsrc } from '@/arkham/helpers';
+import { investigatorPortrait as portraitFor } from '@/arkham/cardImages';
 import { MessageType } from '@/arkham/types/Message'
 import * as ArkhamGame from '@/arkham/types/Game'
 import { Game } from '@/arkham/types/Game'
@@ -12,6 +13,7 @@ export interface Props {
   game: Game
   playerId: string
   deck: [string, Card[]]
+  discardPile?: Card[]
 }
 
 
@@ -26,10 +28,32 @@ const emits = defineEmits<{
 
 const choose = (idx: number) => emits('choose', idx)
 const deckAction = computed(() => {
-  return choices.value.findIndex((c) => c.tag === MessageType.TARGET_LABEL && c.target.tag === "ScenarioDeckTarget")
+  return choices.value.findIndex((c) => {
+    if (c.tag !== MessageType.TARGET_LABEL) return false
+    if (props.deck[0] === 'AbyssDeck') return c.target.tag === "EncounterDeckTarget"
+    return c.target.tag === "ScenarioDeckTarget"
+  })
 })
 
-const showCards = () => emits('show', cards, props.deck[0], false)
+// When the Abyss deck stands in for the encounter deck (Fate of the Vale), show
+// the portrait of the investigator whose turn it is to draw, like EncounterDeck.
+const investigator = computed(() =>
+  Object.values(props.game.investigators).find((i) => i.playerId === props.playerId)
+)
+
+const investigatorPortrait = computed(() => {
+  if (props.deck[0] !== 'AbyssDeck') return null
+  if (deckAction.value === -1 || !investigator.value) return null
+  return portraitFor(props.game, investigator.value.id)
+})
+
+const revealedCards = computed(() => props.deck[1].map(card => {
+  if (card.tag === 'EncounterCard') {
+    return { ...card, contents: { ...card.contents, isFlipped: false } }
+  }
+  return card
+}))
+const showCards = () => emits('show', revealedCards, props.deck[0], false)
 
 const deckImage = computed(() => {
   switch(props.deck[0]) {
@@ -54,9 +78,25 @@ const deckImage = computed(() => {
       }
     case 'WoodsDeck':
       return imgsrc("cards/10612b.avif");
+    case 'CavernsDeck':
+      return imgsrc("cards/10577b.avif");
+    case 'EnemyDeck':
+      return imgsrc("backs/back_the_longest_night.jpg");
+    case 'AbyssDeck':
+      return imgsrc("cards/10670b.avif");
     default:
       return imgsrc("back.png");
   }
+})
+
+const topOfDiscard = computed(() => {
+  if (!props.discardPile || props.discardPile.length === 0) return null
+  return props.discardPile[0]
+})
+
+const topOfDiscardImage = computed(() => {
+  if (!topOfDiscard.value) return null
+  return imgsrc(cardImage(topOfDiscard.value))
 })
 
 const deckLabel = computed(() => {
@@ -76,20 +116,36 @@ const deckLabel = computed(() => {
 </script>
 
 <template>
-  <div class="deck">
-    <img
-      :src="deckImage"
-      class="card"
-      :class="{ 'can-interact': deckAction !== -1 }"
-      @click="choose(deckAction)"
-    />
-    <span v-if="deckLabel" class="deck-label">{{deckLabel}}</span>
-    <span class="deck-size">{{deck[1].length}}</span>
+  <div class="scenario-deck-area">
+    <div v-if="topOfDiscard" class="discard-card">
+      <img :src="topOfDiscardImage ?? undefined" class="card" />
+      <span class="deck-size">{{ discardPile!.length }}</span>
+    </div>
+    <div class="deck">
+      <img
+        :src="deckImage"
+        class="card"
+        :class="{ 'can-interact': deckAction !== -1 }"
+        @click="choose(deckAction)"
+      />
+      <span v-if="deckLabel" class="deck-label">{{deckLabel}}</span>
+      <span class="deck-size" :class="{ 'abyss-deck-size': deck[0] === 'AbyssDeck' }">{{deck[1].length}}</span>
+      <img
+        v-if="investigatorPortrait"
+        class="portrait"
+        :src="investigatorPortrait"
+      />
+    </div>
+    <button v-if="debug.active" @click="showCards">{{ $t('scenarioDeck.showCards') }}</button>
   </div>
-  <button v-if="debug.active" @click="showCards">Show Cards</button>
 </template>
 
 <style scoped>
+.scenario-deck-area {
+  display: flex;
+  gap: 2px;
+}
+
 .card {
   box-shadow: 0 3px 6px rgba(0,0,0,0.23), 0 3px 6px rgba(0,0,0,0.53);
   border-radius: 6px;
@@ -99,6 +155,40 @@ const deckLabel = computed(() => {
 
 .deck {
   position: relative;
+}
+
+.discard-card {
+  position: relative;
+  width: fit-content;
+  line-height: 0;
+  height: min-content;
+
+  box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.45);
+  .card {
+    box-shadow: unset;
+    margin: 0;
+    display: block;
+  }
+  .deck-size {
+    z-index: var(--z-index-1);
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background-color: transparent;
+    color: rgba(255, 255, 255, 1);
+    bottom: 55%;
+    -webkit-text-stroke: 1px black;
+  }
+  &::after {
+    border-radius: 6px;
+    pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: #FFF;
+    opacity: .85;
+    mix-blend-mode: saturation;
+  }
 }
 
 .deck-label {
@@ -128,8 +218,37 @@ const deckLabel = computed(() => {
   pointer-events: none;
 }
 
+.abyss-deck-size {
+  top: 6px;
+  right: 6px;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  min-width: 1.7em;
+  width: auto;
+  height: 1.7em;
+  line-height: 1.7em;
+  padding: 0 0.35em;
+  border-radius: 999px;
+  font-size: 0.95em;
+  color: white;
+  background: rgba(0, 0, 0, 0.75);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
 .can-interact {
   border: 3px solid var(--select);
   cursor: pointer;
+}
+
+.portrait {
+  width: calc(var(--card-width) * 0.55);
+  position: absolute;
+  opacity: 0.8;
+  border-radius: 5px;
+  left: 50%;
+  top: 10%;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 </style>

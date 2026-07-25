@@ -17,8 +17,9 @@ instance RunMessage AChanceEncounter2 where
     PlayThisEvent iid (is attrs -> True) -> do
       discards <-
         select
-          $ InDiscardOf (affectsOthers can.have.cards.leaveDiscard)
+          $ InDiscardOf (affectsOthersKnown iid can.have.cards.leaveDiscard)
           <> basic (#ally <> CardWithCost attrs.payment.resources)
+          <> CardWithoutUniqueCopyInPlay
 
       -- Normally we would not error like this, but verifying card costs to
       -- match what is paid is quite difficult. The front-end should just not

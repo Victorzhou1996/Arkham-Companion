@@ -11,7 +11,6 @@ import * as ArkhamCard from '@/arkham/types/Card';
 import * as ArkhamGame from '@/arkham/types/Game';
 import EnemyView from '@/arkham/components/Enemy.vue';
 import Story from '@/arkham/components/Story.vue';
-import Location from '@/arkham/components/Location.vue';
 import Treachery from '@/arkham/components/Treachery.vue';
 import ScarletKey from '@/arkham/components/ScarletKey.vue';
 import Asset from '@/arkham/components/Asset.vue';
@@ -28,6 +27,10 @@ import Draw from '@/arkham/components/Draw.vue'
 import { IsMobile } from '@/arkham/isMobile';
 import { Modifier } from '@/arkham/types/Modifier';
 import { Enemy } from '@/arkham/types/Enemy';
+import { XMarkIcon } from '@heroicons/vue/20/solid';
+import * as Api from '@/arkham/api';
+import type { CardDef } from '@/arkham/types/CardDef';
+import { fullName } from '@/arkham/types/Name';
 const { t } = useI18n();
 
 interface RefWrapper<T> {
@@ -43,6 +46,7 @@ export interface Props {
 
 const props = defineProps<Props>()
 const solo = inject<Ref<boolean>>('solo')
+const showOtherPlayersHands = inject<Ref<boolean>>('showOtherPlayersHands')
 
 const investigatorId = computed(() => props.investigator.id)
 const ENCOUNTER_BACK = imgsrc("encounter_back.jpg")
@@ -79,8 +83,12 @@ const stories = computed(() =>
 
 const engagedEnemies = computed(() =>
   props.investigator.engagedEnemies.map((e) => props.game.enemies[e]).filter((e) =>
-    e.placement.tag === "InThreatArea" && e.placement.contents === investigatorId.value
+    e && e.placement.tag === "InThreatArea" && e.placement.contents === investigatorId.value
   )
+)
+
+const hasThreatArea = computed(() =>
+  stories.value.length > 0 || engagedEnemies.value.length > 0 || props.investigator.treacheries.length > 0
 )
 
 const inHandEnemies = computed(() =>
@@ -211,8 +219,150 @@ const playerHand = computed(() =>
   props.investigator.hand.filter(card => !committedIdSet.value.has(toCardContents(card).id))
 )
 
-const locations = computed(() => Object.values(props.game.locations).
-  filter((a) => a.placement && a.placement.tag === "InPlayArea" && a.placement.contents === props.investigator.id))
+const showDebugAddCard = ref(false)
+const debugPlayerCards = ref<CardDef[]>([])
+const debugCardSearch = ref('')
+const debugAddCardError = ref<string | null>(null)
+const debugAddCardLoading = ref(false)
+
+const campaignCardPrefixes: Record<string, string[]> = {
+  'nightofthezealot': ['01'],
+  '01': ['01'],
+  'thedunwichlegacy': ['02'],
+  '02': ['02'],
+  'thepathtocarcosa': ['03'],
+  '03': ['03'],
+  'theforgottenage': ['04'],
+  '04': ['04'],
+  'thecircleundone': ['05'],
+  '05': ['05'],
+  'thedreameaters': ['06'],
+  '06': ['06'],
+  'theinnsmouthconspiracy': ['07'],
+  '07': ['07'],
+  'edgeoftheearth': ['08'],
+  '08': ['08'],
+  'thescarletkeys': ['09'],
+  '09': ['09'],
+  'thefeastofhemlockvale': ['10'],
+  '10': ['10'],
+  'thedrownedcity': ['11'],
+  '11': ['11'],
+  'returntonightofthezealot': ['01', '50'],
+  '50': ['01', '50'],
+  'returntothedunwichlegacy': ['02', '51'],
+  '51': ['02', '51'],
+  'returntothepathtocarcosa': ['03', '52'],
+  '52': ['03', '52'],
+  'returntotheforgottenage': ['04', '53'],
+  '53': ['04', '53'],
+  'returntothecircleundone': ['05', '54'],
+  '54': ['05', '54'],
+}
+
+const playerCardTypes = new Set(['AssetType', 'EventType', 'SkillType', 'PlayerTreacheryType', 'PlayerEnemyType'])
+const debugCardTypes = new Set([...playerCardTypes, 'InvestigatorType'])
+
+const currentCampaignPlayerCardCodes = computed(() => new Set([
+  ...Object.values(props.game.campaign?.storyCards ?? {}).flat().map(CardT.asCardCode),
+  ...Object.values(props.game.campaign?.decks ?? {}).flat().map(CardT.asCardCode),
+]))
+
+const filteredDebugPlayerCards = computed(() => {
+  const query = debugCardSearch.value.trim().toLocaleLowerCase()
+  const cards = [...debugPlayerCards.value].sort((a, b) =>
+    debugCardLabel(a).localeCompare(debugCardLabel(b)),
+  )
+
+  if (!query) return cards.slice(0, 50)
+
+  return cards
+    .filter((card) => {
+      const haystack = [
+        card.cardCode,
+        fullName(card.name),
+        card.cardType,
+        ...card.classSymbols,
+        ...card.cardTraits,
+      ]
+        .join(' ')
+        .toLocaleLowerCase()
+
+      return haystack.includes(query)
+    })
+    .slice(0, 50)
+})
+
+function debugCardCode(card: CardDef) {
+  return card.cardCode.replace(/^c/, '')
+}
+
+function debugCardLabel(card: CardDef) {
+  const level = card.level == null ? '' : ` (${card.level})`
+  return `${fullName(card.name)}${level} [${debugCardCode(card)}]`
+}
+
+function campaignKey(value: string) {
+  return value.toLocaleLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function currentCampaignPrefixes() {
+  const campaign = props.game.campaign
+  if (!campaign) return []
+
+  return [campaign.id, campaign.name]
+    .map(campaignKey)
+    .flatMap((key) => campaignCardPrefixes[key] ?? [key])
+}
+
+function isCurrentCampaignPlayerCard(card: CardDef) {
+  if (currentCampaignPlayerCardCodes.value.has(card.cardCode)) return true
+  if (!props.game.campaign || card.encounterSet == null || !playerCardTypes.has(card.cardType)) return false
+
+  const cardCode = card.cardCode.replace(/^c/, '')
+  return currentCampaignPrefixes().some((prefix) => cardCode.startsWith(prefix))
+}
+
+function isDebugPlayerCard(card: CardDef) {
+  return (card.encounterSet == null && debugCardTypes.has(card.cardType)) || isCurrentCampaignPlayerCard(card)
+}
+
+async function openDebugAddCard() {
+  if (!debug.active) return
+  showDebugAddCard.value = true
+  debugAddCardError.value = null
+
+  if (debugPlayerCards.value.length === 0) {
+    debugAddCardLoading.value = true
+    try {
+      const allCards = await Api.fetchCards(true)
+      debugPlayerCards.value = allCards.filter(isDebugPlayerCard)
+    } catch (error) {
+      console.error(error)
+      debugAddCardError.value = 'Unable to load player cards.'
+    } finally {
+      debugAddCardLoading.value = false
+    }
+  }
+}
+
+async function debugAddCardToHand(card: CardDef) {
+  debugAddCardError.value = null
+  const cardId = crypto.randomUUID()
+
+  try {
+    await debug.send(props.game.id, { tag: 'CreateCard', contents: [cardId, card.cardCode] })
+    await debug.send(props.game.id, {
+      tag: 'DebugAddToHand',
+      contents: [props.investigator.id, cardId],
+    })
+    debugCardSearch.value = ''
+    showDebugAddCard.value = false
+  } catch (error) {
+    console.error(error)
+    debugAddCardError.value = `Unable to add ${fullName(card.name)} to hand.`
+  }
+}
 
 const debug = useDebug()
 const events = computed(() => props.investigator.events.map((e) => props.game.events[e]).filter(e => e))
@@ -347,9 +497,11 @@ function onDrop(event: DragEvent) {
   }
 }
 
+const playAreaCollapsed = ref(false)
+
 const handCardHeight = Math.min(7 * window.innerWidth / 50 + 114, 340);
-const handCardExposedHeight_MIN = `${-0.85 * handCardHeight}`;
-const handCardExposedHeight_MAX = `${-0.35 * handCardHeight}`;
+const handCardExposedHeight_MIN = `${-(handCardHeight - 50)}`;
+const handCardExposedHeight_MAX = `0`;
 const handAreaMarginBottom = ref(handCardExposedHeight_MIN);
 const handAreaPointerEvents = ref('none');
 
@@ -365,7 +517,8 @@ onMounted(() => {
       } else {
         handAreaMarginBottom.value = handCardExposedHeight_MIN;
         handAreaPointerEvents.value = 'none';
-        document.addEventListener('click',toggleHandAreaMarginBottom)
+        document.removeEventListener('click', toggleHandAreaMarginBottom)
+        document.addEventListener('click', toggleHandAreaMarginBottom)
       }
     });
   }
@@ -383,24 +536,63 @@ function toggleHandAreaMarginBottom(event: Event) {
     handAreaMarginBottom.value = handCardExposedHeight_MAX;
     handAreaPointerEvents.value = 'auto'
   }
-  else if(!target.classList.contains('in-hand')){
+  else if(!target.closest('.in-hand')){
     handAreaMarginBottom.value = handCardExposedHeight_MIN;
     handAreaPointerEvents.value = 'none'
   }
+}
+
+function closeHand() {
+  handAreaMarginBottom.value = handCardExposedHeight_MIN;
+  handAreaPointerEvents.value = 'none';
 }
 
 </script>
 
 <template>
   <div class="player-cards">
+    <button class="in-play-toggle" @click="playAreaCollapsed = !playAreaCollapsed"></button>
     <transition name="grow">
       <section
         class="in-play"
+        :class="{ 'in-play--collapsed': playAreaCollapsed }"
         @drop="onDrop($event)"
         @dragover.prevent="dragover($event)"
         @dragenter.prevent
       >
         <transition-group @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter">
+          <Story
+            v-for="story in stories"
+            :key="story.id"
+            :story="story"
+            :game="game"
+            :data-index="story.cardId"
+            :playerId="playerId"
+            @choose="$emit('choose', $event)"
+          />
+
+          <EnemyView
+            v-for="enemy in engagedEnemies"
+            :key="enemy.id"
+            :enemy="enemy"
+            :game="game"
+            :data-index="enemy.cardId"
+            :playerId="playerId"
+            @choose="$emit('choose', $event)"
+          />
+
+          <Treachery
+            v-for="treacheryId in investigator.treacheries"
+            :key="treacheryId"
+            :treachery="game.treacheries[treacheryId]"
+            :game="game"
+            :data-index="game.treacheries[treacheryId].cardId"
+            :playerId="playerId"
+            @choose="$emit('choose', $event)"
+          />
+
+          <div v-if="hasThreatArea" :key="'threat-divider'" class="threat-divider" />
+
           <template v-if="tarotCards.length > 0">
             <div v-for="tarotCard in tarotCards" :key="tarotCard.arcana" :data-index="tarotCard.arcana">
               <img :src="imgsrc(`tarot/${tarotCardImage(tarotCard)}`)" class="card tarot-card" :class="{ [tarotCard.facing]: true, 'can-interact': tarotCardAbility(tarotCard) !== -1 }" @click="$emit('choose', tarotCardAbility(tarotCard))"/>
@@ -464,52 +656,10 @@ function toggleHandAreaMarginBottom(event: Event) {
             @showCards="doShowCards"
           />
 
-          <Story
-            v-for="story in stories"
-            :key="story.id"
-            :story="story"
-            :game="game"
-            :data-index="story.cardId"
-            :playerId="playerId"
-            @choose="$emit('choose', $event)"
-          />
-
-
-          <div v-for="(slot, idx) in emptySlots" :key="idx" class="slot" :data-index="`${slot}${idx}`">
+          <div v-for="(slot, idx) in emptySlots" :key="idx" class="slot" :data-index="`${slot.tag}${idx}`">
             <img :src="slotImg(slot)" />
           </div>
 
-          <EnemyView
-            v-for="enemy in engagedEnemies"
-            :key="enemy.id"
-            :enemy="enemy"
-            :game="game"
-            :data-index="enemy.cardId"
-            :playerId="playerId"
-            @choose="$emit('choose', $event)"
-          />
-
-          <Treachery
-            v-for="treacheryId in investigator.treacheries"
-            :key="treacheryId"
-            :treachery="game.treacheries[treacheryId]"
-            :game="game"
-            :data-index="game.treacheries[treacheryId].cardId"
-            :playerId="playerId"
-            @choose="$emit('choose', $event)"
-          />
-
-          <Location
-            v-for="(location, key) in locations"
-            class="location"
-            :key="key"
-            :game="game"
-            :playerId="playerId"
-            :location="location"
-            :data-index="location.cardId"
-            :style="{ 'grid-area': location.label, 'justify-self': 'center' }"
-            @choose="$emit('choose', $event)"
-          />
         </transition-group>
       </section>
     </transition>
@@ -520,6 +670,40 @@ function toggleHandAreaMarginBottom(event: Event) {
       :playerId="playerId"
       @choose="$emit('choose', $event)"
     />
+
+    <div
+      v-if="debug.active && showDebugAddCard"
+      class="debug-add-card-overlay"
+      @click.self="showDebugAddCard = false"
+    >
+      <div class="debug-add-card-modal">
+        <h3>Add player card to {{ fullName(investigator.name) }}'s hand</h3>
+        <label>
+          Search card
+          <input
+            v-model="debugCardSearch"
+            type="search"
+            autofocus
+            placeholder="Name, code, type, class, or trait"
+            @keydown.stop
+          />
+        </label>
+        <p v-if="debugAddCardLoading" class="debug-add-card-status">Loading player cards…</p>
+        <p v-if="debugAddCardError" class="debug-add-card-error">{{ debugAddCardError }}</p>
+        <div v-else class="debug-add-card-results">
+          <button
+            v-for="card in filteredDebugPlayerCards"
+            :key="card.cardCode"
+            type="button"
+            @click="debugAddCardToHand(card)"
+          >
+            <span>{{ debugCardLabel(card) }}</span>
+            <small>{{ card.cardType }} · {{ card.classSymbols.join(', ') || 'Neutral' }}</small>
+          </button>
+        </div>
+        <button type="button" @click="showDebugAddCard = false">{{ $t('close') }}</button>
+      </div>
+    </div>
 
     <div class="player">
       <div v-if="hunchDeck" class="hunch-deck">
@@ -540,7 +724,7 @@ function toggleHandAreaMarginBottom(event: Event) {
           />
           <span class="deck-size">{{hunchDeck.length}}</span>
         </div>
-        <button v-if="debug" @click="showHunchDeck">View Deck</button>
+        <button v-if="debug" @click="showHunchDeck">{{ $t('player.viewDeck') }}</button>
       </div>
 
       <div class="investigator-and-deck">
@@ -581,7 +765,7 @@ function toggleHandAreaMarginBottom(event: Event) {
 
           <template v-for="enemy in inHandEnemies" :key="enemy.id">
             <EnemyView
-              v-if="solo || (playerId == investigator.playerId)"
+              v-if="solo || showOtherPlayersHands || (playerId == investigator.playerId)"
               :enemy="enemy"
               :game="game"
               :data-index="enemy.cardId"
@@ -595,7 +779,7 @@ function toggleHandAreaMarginBottom(event: Event) {
 
           <template v-for="treachery in inHandTreacheries" :key="treachery.id">
             <Treachery
-              v-if="solo || (playerId == investigator.playerId)"
+              v-if="solo || showOtherPlayersHands || (playerId == investigator.playerId)"
               :treachery="treachery"
               :game="game"
               :data-index="treachery.cardId"
@@ -608,10 +792,31 @@ function toggleHandAreaMarginBottom(event: Event) {
           </template>
 
         </transition-group>
-        <div v-if="investigator.handSize" class="hand-size" :class="handSizeClasses" :current-length="totalHandSize">Hand Size: {{totalHandSize}}/{{investigator.handSize}}</div>
+        <div class="hand-debug-actions" v-if="debug.active">
+          <button type="button" @click="openDebugAddCard">+ Card to hand</button>
+        </div>
+        <div v-if="investigator.handSize" class="hand-size" :class="handSizeClasses" :current-length="totalHandSize">{{ t('handSize') }}: {{totalHandSize}}/{{investigator.handSize}}</div>
       </div>
     </div>
-    <div v-if="isMobile" class="hand hand-area-IsMobile" :style="{ marginBottom: `${handAreaMarginBottom}px` }" @click="toggleHandAreaMarginBottom">
+    <div v-if="isMobile" class="hand hand-area-IsMobile" :style="{ bottom: `${handAreaMarginBottom}px` }" @click="toggleHandAreaMarginBottom">
+      <button
+        v-if="debug.active"
+        v-show="handAreaPointerEvents === 'auto'"
+        class="hand-debug-add-button"
+        type="button"
+        @click.stop="openDebugAddCard"
+      >
+        + Card
+      </button>
+      <button
+        v-show="handAreaPointerEvents === 'auto'"
+        class="hand-close-button"
+        type="button"
+        aria-label="Close hand"
+        @click.stop="closeHand"
+      >
+        <XMarkIcon aria-hidden="true" />
+      </button>
       <transition-group tag="section" class="hand" @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter"
         @drop="onDropHand($event)"
         @dragover.prevent="dragover($event)"
@@ -631,7 +836,7 @@ function toggleHandAreaMarginBottom(event: Event) {
         />
         <template v-for="enemy in inHandEnemies" :key="enemy.id">
           <EnemyView
-            v-if="solo || (playerId == investigator.playerId)"
+            v-if="solo || showOtherPlayersHands || (playerId == investigator.playerId)"
             :enemy="enemy"
             :game="game"
             :data-index="enemy.cardId"
@@ -644,7 +849,7 @@ function toggleHandAreaMarginBottom(event: Event) {
         </template>
         <template v-for="treachery in inHandTreacheries" :key="treachery.id">
           <Treachery
-            v-if="solo || (playerId == investigator.playerId)"
+            v-if="solo || showOtherPlayersHands || (playerId == investigator.playerId)"
             :treachery="treachery"
             :game="game"
             :data-index="treachery.cardId"
@@ -679,6 +884,9 @@ function toggleHandAreaMarginBottom(event: Event) {
   align-items: flex-start;
   padding: 10px;
   background: var(--background-dark);
+  @media (max-width: 800px) and (orientation: portrait) {
+    padding-bottom: 0;
+  }
 }
 
 :deep(.location) {
@@ -708,15 +916,62 @@ function toggleHandAreaMarginBottom(event: Event) {
   box-shadow: var(--card-shadow);
 }
 
+.in-play-toggle {
+  display: none;
+  width: 100%;
+  height: 12px;
+  align-items: center;
+  justify-content: center;
+  background: #1e2235;
+  border: none;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &::before {
+    content: '';
+    width: 32px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 2px;
+  }
+
+  @media (max-width: 800px) and (orientation: portrait) {
+    display: flex;
+  }
+}
+
 .in-play {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: auto;
   gap: 5px;
-  background: #999;
-  padding: 10px;
   background: var(--background-dark);
+  padding: 10px;
   border-bottom: 1px solid var(--background);
   border-top: 1px solid var(--background);
+  max-height: 300px;
+  transition: max-height 0.15s cubic-bezier(0.4, 0, 0.2, 1), padding 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.1s ease;
+
+  > * {
+    flex-shrink: 0;
+  }
+
+  .threat-divider {
+    width: 2px;
+    align-self: stretch;
+    margin: 0 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 1px;
+  }
+
+  &.in-play--collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
 }
 
 .hand {
@@ -892,23 +1147,153 @@ function toggleHandAreaMarginBottom(event: Event) {
   max-width: 100%;
 }
 
+.hand-debug-actions button,
+.hand-debug-add-button {
+  border: 1px solid var(--button-highlight);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.hand-debug-actions button:hover,
+.hand-debug-add-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .hand-area-IsMobile {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: var(--z-index-100);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  align-items: flex-start;
-  flex: 1;
-  max-width: 100%;
+  align-items: stretch;
   height: calc(var(--card-height) * 4);
+  background: var(--background-dark);
+  transition: bottom 0.3s ease;
+  overflow: hidden;
   :deep(.card){
     width: calc(var(--card-width) * 4);
     min-width: calc(var(--card-width) * 4);
   }
 }
 
+.hand-debug-add-button {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: var(--z-index-101);
+}
+
+.hand-close-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: var(--z-index-101);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hand-close-button svg {
+  width: 18px;
+  height: 18px;
+}
+
 .card {
   width: var(--card-width);
   min-width: var(--card-width);
   border-radius: 2px;
+}
+
+.debug-add-card-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-index-1000);
+}
+
+.debug-add-card-modal {
+  background: #1a1a2e;
+  border: 1px solid var(--button-highlight);
+  border-radius: 8px;
+  color: #eee;
+  max-width: 700px;
+  min-width: 300px;
+  padding: 1.5rem;
+  width: min(700px, 90vw);
+
+  h3 {
+    color: #adf;
+    font-size: 1.1rem;
+    margin: 0 0 1rem;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+
+  input {
+    background: #111827;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+    color: #eee;
+    padding: 0.5rem;
+  }
+}
+
+.debug-add-card-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 50vh;
+  overflow: auto;
+
+  button {
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid transparent;
+    color: #eee;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0.5rem;
+    text-align: left;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--button-highlight);
+    }
+  }
+
+  small {
+    opacity: 0.75;
+  }
+}
+
+.debug-add-card-error {
+  color: #f88;
+}
+
+.debug-add-card-status {
+  opacity: 0.8;
 }
 </style>

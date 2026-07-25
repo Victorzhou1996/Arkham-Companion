@@ -18,7 +18,7 @@ sledgehammer3 = asset Sledgehammer3 Cards.sledgehammer3
 instance HasAbilities Sledgehammer3 where
   getAbilities (Sledgehammer3 a) =
     [ skillTestAbility $ controlled_ a 1 fightAction_
-    , skillTestAbility $ controlled_ a 2 $ ActionAbility [#fight] #combat (ActionCost 2)
+    , skillTestAbility $ controlled_ a 2 $ ActionAbility #fight #combat (ActionCost 2)
     ]
 
 instance RunMessage Sledgehammer3 where
@@ -35,8 +35,8 @@ instance RunMessage Sledgehammer3 where
       pure a
     PassedThisSkillTest iid (isAbilitySource attrs 2 -> True) | attrs.ready -> do
       withSkillTest \sid -> do
-        chooseOneM iid do
-          labeled "Exhaust Sledgehammer" do
+        chooseOneM iid $ cardI18n $ scope "sledgehammer3" do
+          labeled' "exhaustForDamage" do
             exhaustThis attrs
             skillTestModifier sid (attrs.ability 2) iid (DamageDealt 2)
           withI18n skip_

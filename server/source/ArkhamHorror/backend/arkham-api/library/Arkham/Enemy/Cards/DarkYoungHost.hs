@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.DarkYoungHost (darkYoungHost) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Location
 import Arkham.Matcher
 import Arkham.Trait
@@ -15,7 +15,7 @@ newtype DarkYoungHost = DarkYoungHost EnemyAttrs
 
 darkYoungHost :: EnemyCard DarkYoungHost
 darkYoungHost =
-  enemy DarkYoungHost Cards.darkYoungHost (4, Static 5, 2) (2, 2)
+  enemy DarkYoungHost Cards.darkYoungHost
     & setSpawnAt (LocationWithTrait Bayou)
 
 instance HasAbilities DarkYoungHost where

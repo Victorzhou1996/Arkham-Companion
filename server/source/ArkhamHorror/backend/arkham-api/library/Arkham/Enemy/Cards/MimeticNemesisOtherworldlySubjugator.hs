@@ -19,15 +19,13 @@ mimeticNemesisOtherworldlySubjugator :: EnemyCard MimeticNemesisOtherworldlySubj
 mimeticNemesisOtherworldlySubjugator = enemyWith
   MimeticNemesisOtherworldlySubjugator
   Cards.mimeticNemesisOtherworldlySubjugator
-  (3, Static 1, 4)
-  (1, 1)
   \a -> a {enemyHealth = Nothing}
 
 instance HasAbilities MimeticNemesisOtherworldlySubjugator where
   getAbilities (MimeticNemesisOtherworldlySubjugator a) =
     extend
       a
-      [ mkAbility a 1 $ forced $ EnemyWouldTakeDamage #when SourceIsPlayerCard (be a)
+      [ mkAbility a 1 $ forced $ EnemyWouldTakeDamage #when AnySource (be a)
       , restricted a 2 (exists $ InvestigatorAt $ locationWithEnemy a) $ forced $ RoundEnds #when
       ]
 
@@ -38,13 +36,13 @@ instance RunMessage MimeticNemesisOtherworldlySubjugator where
         hollows <- select $ HollowedCard <> basic (not_ $ cardIs Assets.theRedGlovedManHeWasAlwaysThere)
         chooseNM iid n $ targets hollows $ discardCard iid (attrs.ability 1)
       pure e
-    UseThisAbility _ (isSource attrs -> True) 1 -> do
+    UseThisAbility _ (isSource attrs -> True) 2 -> do
       selectEach (InvestigatorAt $ locationWithEnemy attrs) \iid -> do
         cards <- select $ inHandOf NotForPlay iid <> basic NonWeakness
         chooseOneM iid $ scenarioI18n do
           labeledValidate' (notNull cards) "mimeticNemesis.hollow" do
             chooseTargetM iid cards $ hollow iid
           labeled' "mimeticNemesis.attack" do
-            initiateEnemyAttack attrs (attrs.ability 1) iid
+            initiateEnemyAttack attrs (attrs.ability 2) iid
       pure e
     _ -> MimeticNemesisOtherworldlySubjugator <$> liftRunMessage msg attrs

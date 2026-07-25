@@ -1082,6 +1082,12 @@ allAssets =
       , --- Written in Rock [fhv]
         SomeAssetCard mineCartReliableButBroken
       , SomeAssetCard prismaticShardAlienMeteorite
+      , --- Hemlock House [fhv]
+        SomeAssetCard littleSylvie
+      , --- The Silent Heath [fhv]
+        SomeAssetCard crystalRemainsTheChild
+      , SomeAssetCard crystalRemainsTheFather
+      , SomeAssetCard crystalRemainsTheMother
       , --- The Twisted Hollow [fhv]
         SomeAssetCard valeLanternBeaconOfHope
       , SomeAssetCard valeLanternExtinguishedLightBoon
@@ -1099,8 +1105,16 @@ allAssets =
       , SomeAssetCard bertieMusgraveATrueAesthete
       , SomeAssetCard drRosaMarquezBestInHerField
       , SomeAssetCard helenPetersTheEldestSister
+      , SomeAssetCard littleSylvie
       , --- Heirlooms [fhv]
         SomeAssetCard worryRockTokenOfSafety
+      , SomeAssetCard cornHuskDoll
+      , SomeAssetCard thePearlDiaryAGrimAccount
+      , --- The Longest Night [fhv]
+        SomeAssetCard theCaptives
+      , SomeAssetCard ajax
+      , --- Fate of the Vale [fhv]
+        SomeAssetCard oldMemory
       , -- The Drowned City
         --- signature [tdc]
         SomeAssetCard bookOfVerseUnCommonplaceBook
@@ -1225,6 +1239,9 @@ allAssets =
       , SomeAssetCard handCrankFlashlight
       , --- basic weakness [core2026]
         SomeAssetCard theGoldBug
+      , --- story [core2026]
+        SomeAssetCard drHenryArmitage_SpreadingFlames
+      , SomeAssetCard collector
       , -- Return to Night of the Zealot
         --- guardian [rtnotz]
         SomeAssetCard physicalTraining2
@@ -1404,6 +1421,19 @@ allAssets =
       , SomeAssetCard medicoDellaPeste
       , SomeAssetCard pantalone
       , SomeAssetCard gildedVolto
+      , -- Guardians of the Abyss
+        --- Abyssal Tribute
+        SomeAssetCard johnAndJessieBurke
+      , SomeAssetCard ancientAnkh
+      , --- Abyssal Gifts
+        SomeAssetCard khopeshOfTheAbyss
+      , SomeAssetCard summonedNightgaunt
+      , -- War of the Outer Gods
+        SomeAssetCard cloakOfTheOuterRealm
+      , SomeAssetCard pocketPortal
+      , SomeAssetCard dreadedEnd
+      , SomeAssetCard bladeOfArkat
+      , SomeAssetCard enchantedSkull
       , -- Murder at the Excelsior Hotel
         --- story [hotel]
         SomeAssetCard bloodstainedDagger
@@ -1519,6 +1549,20 @@ allAssets =
       , SomeAssetCard endurance3
       , SomeAssetCard protectiveVest4
       , SomeAssetCard thompsonSubmachineGun5
+      , -- Carolyn Fern
+        SomeAssetCard experimentalPsychology
+      , SomeAssetCard dreamersChronicle
+      , SomeAssetCard occultRecords
+      , SomeAssetCard privatePractice
+      , SomeAssetCard psychologyStudent
+      , SomeAssetCard scrollOfThePharaohs
+      , SomeAssetCard universityArchivist
+      , SomeAssetCard typewriter2
+      , SomeAssetCard autopsyReport3
+      , SomeAssetCard sharpRhetoric3
+      , SomeAssetCard scrollOfThePharaohsWordsOfBast4
+      , SomeAssetCard scrollOfThePharaohsWordsOfRa4
+      , SomeAssetCard scrollOfThePharaohsWordsOfSet4
       , -- André Patel
         SomeAssetCard centerStage
       , SomeAssetCard fame
@@ -1529,6 +1573,99 @@ allAssets =
       , SomeAssetCard theGrapevine2
       , SomeAssetCard marcusSengstacke2
       , SomeAssetCard silverTongue3
+      , -- Marie Lambeau
+        SomeAssetCard grandMeresCharm
+      , SomeAssetCard offeringBowl
+      , SomeAssetCard bloodstone
+      , SomeAssetCard sacrificialDoll
+      , SomeAssetCard shadowmeld
+      , SomeAssetCard ceremonialRobes1
+      , SomeAssetCard dreadCurseOfAzathoth3
+      , SomeAssetCard ritualDagger3
+      , SomeAssetCard spiritualIntuition3
+      , SomeAssetCard arcaneExperience4
+      , SomeAssetCard jimCulver4
+      , SomeAssetCard secondSight5
+      , SomeAssetCard shadowmeld5
+      , -- Miguel de la Cruz
+        SomeAssetCard miguelsKnapsack
+      , SomeAssetCard danielJameson
+      , SomeAssetCard huntingDog
+      , SomeAssetCard loner
+      , SomeAssetCard oldCompass
+      , SomeAssetCard pocketknife
+      , SomeAssetCard sameOldThing
+      , SomeAssetCard extraRations1
+      , SomeAssetCard canteen2
+      , SomeAssetCard huntersInstinct2
+      , SomeAssetCard winchesterModel522
+      , SomeAssetCard levelheaded3
+      , SomeAssetCard longbow3
       , -- Misc
         SomeAssetCard courage
+      , -- Mi-Go Incursion
+        SomeAssetCard universityChemist
+      , SomeAssetCard meteoriteSample
+      , SomeAssetCard theMilitarysPlan
+      , SomeAssetCard universalSolvent
+      , SomeAssetCard petOozeling
+      , SomeAssetCard miGoWeapon
+      , SomeAssetCard ltWilsonStewart
+      , -- The Labyrinths of Lunacy
+        SomeAssetCard eixodolonsNote
+      , SomeAssetCard keyOfMysteries
+      , SomeAssetCard mysteriousSyringe
+      , SomeAssetCard rotDiagram
+      , SomeAssetCard hungerDiagram
+      , SomeAssetCard decayDiagram
+      , -- Machinations Through Time
+        SomeAssetCard thomasCorriganPast
+      , SomeAssetCard maryZielinskiPast
+      , SomeAssetCard nikolaTesla
+      , SomeAssetCard thomasCorriganPresent
+      , SomeAssetCard maryZielinskiPresent
+      , SomeAssetCard ezraGraves
+      , SomeAssetCard thomasCorriganFuture
+      , SomeAssetCard maryZielinskiFuture
+      , SomeAssetCard dimensionalBeamMachine
+      , SomeAssetCard edwinBennetAstuteAssociate
+      , -- Relics of the Past
+        SomeAssetCard jadeCrocodile
+      , SomeAssetCard obsidianJaguar
+      , SomeAssetCard citrineSnake
+      , SomeAssetCard turquoiseEagle
+      , -- Red Tide Rising
+        SomeAssetCard mysteriousPhoto
+      , SomeAssetCard mysteriousPhotoBack
+      , --- The Drowned City
+        SomeAssetCard rubyStandish
+      , SomeAssetCard andyVanNortwick
+      , SomeAssetCard walkInFaith
+      , SomeAssetCard toeTheLine
+      , SomeAssetCard noPlaceLikeHome
+      , SomeAssetCard goodMoney
+      , SomeAssetCard doNoHarm
+      , SomeAssetCard proveYourWorth
+      , SomeAssetCard dreamsOfDestruction
+      , SomeAssetCard plumbTheDepths
+      , SomeAssetCard noPlaceLikeHomeCompleted
+      , SomeAssetCard walkInFaithCompleted
+      , SomeAssetCard toeTheLineCompleted
+      , SomeAssetCard goodMoneyCompleted
+      , SomeAssetCard proveYourWorthCompleted
+      , SomeAssetCard doNoHarmCompleted
+      , SomeAssetCard dreamsOfDestructionCompleted
+      , SomeAssetCard plumbTheDepthsCompleted
+      , SomeAssetCard obsidianRelic
+      , SomeAssetCard barrierNode
+      , SomeAssetCard mariaRivera
+      , SomeAssetCard ancientRelic
+      , SomeAssetCard grislyMask
+      , SomeAssetCard tidalTablet
+      , SomeAssetCard shardOfYchlecht
+      , SomeAssetCard skyRelic
+      , SomeAssetCard obsidianClaw
+      , SomeAssetCard obsidianClawPower
+      , SomeAssetCard johnRaymondLegrasse
+      , SomeAssetCard horrorInClay
       ]

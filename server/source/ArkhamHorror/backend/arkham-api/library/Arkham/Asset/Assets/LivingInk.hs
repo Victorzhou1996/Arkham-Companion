@@ -48,7 +48,7 @@ instance RunMessage LivingInk where
       pure a
     CardEnteredPlay iid card | toCardId card == toCardId attrs -> do
       when (attrs `hasCustomization` ShiftingInk) do
-        iids <- select $ affectsOthers $ colocatedWith iid
+        iids <- select $ affectsOthersKnown iid $ colocatedWith iid
         chooseOrRunOne iid $ targetLabels iids $ only . (`TakeControlOfAsset` (toId attrs))
       LivingInk <$> liftRunMessage msg attrs
     BeginTurn iid | attrs `controlledBy` iid -> do
@@ -56,10 +56,9 @@ instance RunMessage LivingInk where
         then do
           chooseOne
             iid
-            [ Label
-                "Do not charge from Living Ink and ignore its ability for the remainder of the round (Subtle Depiction)"
+            [ Label "$label.cards.livingInk.doNotCharge"
                 []
-            , Label "Remove 1 charge" [RemoveTokens (toSource attrs) (toTarget attrs) Charge 1]
+            , Label "$label.cards.livingInk.remove1Charge" [RemoveTokens (toSource attrs) (toTarget attrs) Charge 1]
             ]
           pure . LivingInk $ setMeta False attrs
         else

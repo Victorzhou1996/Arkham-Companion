@@ -5,6 +5,7 @@ import Arkham.Aspect hiding (aspect)
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.ChaosToken
+import Arkham.Helpers.ChaosToken (getModifiedChaosTokenFace)
 import Arkham.Effect.Import
 import Arkham.Helpers.Cost
 import Arkham.Helpers.Location
@@ -54,7 +55,8 @@ instance RunMessage SixthSense4Effect where
     DoStep 1 (RevealChaosToken (SkillTestSource sid) iid token) | maybe False (isTarget sid) attrs.metaTarget -> do
       case attrs.target of
         InvestigationTarget iid' lid | iid == iid' -> do
-          when (token.face `elem` [Skull, Cultist, Tablet, ElderThing]) do
+          faces <- getModifiedChaosTokenFace token
+          when (any (`elem` [Skull, Cultist, Tablet, ElderThing]) faces) do
             currentShroud <- fieldJust LocationShroud lid
             locations <-
               selectWithField
@@ -71,16 +73,16 @@ instance RunMessage SixthSense4Effect where
             batchId <- getRandom
             currentTarget <- fromMaybe (toTarget lid) <$> getSkillTestTarget
             chooseOneM iid do
-              labeled "Do not choose other location" nothing
+              labeledI "doNotChooseOtherLocation" nothing
               for_ locationsWithAdditionalCosts \((location, shroud), cost) -> do
                 targeting location do
                   batching batchId do
                     push $ PayAdditionalCost iid batchId cost
                     push $ SetSkillTestTarget (BothTarget (toTarget location) currentTarget)
                     chooseOneM iid do
-                      labeled "Use new location's shroud" do
+                      labeledI "useNewLocationShroud" do
                         skillTestModifier sid attrs.source sid (SetDifficulty shroud)
-                      labeled "Use original locations shroud" do
+                      labeledI "useOriginalLocationsShroud" do
                         skillTestModifier sid attrs.source sid (SetDifficulty currentShroud)
             disable attrs
         _ -> error "Invalid target"

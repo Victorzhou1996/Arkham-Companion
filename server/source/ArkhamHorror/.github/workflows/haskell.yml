@@ -1,0 +1,55 @@
+name: Haskell CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./backend
+
+jobs:
+  build:
+    name: stack / ghc ${{ matrix.ghc }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        stack: ["3.7.1"]
+        ghc: ["9.12.2"]
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: haskell-actions/setup@v2
+      name: Setup Haskell Stack
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        stack-version: ${{ matrix.stack }}
+
+    - name: Cache
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-stack
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.stack-work') }}-${{ hashFiles('**/stack.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install pcre
+      run: |
+        sudo apt-get install -y libpcre3 libpcre3-dev
+    - name: Install dependencies
+      run: |
+        stack build --system-ghc --test --no-run-tests --bench --no-run-benchmarks --only-dependencies
+    - name: Build
+      run: stack build --system-ghc --test --no-run-tests --bench --no-run-benchmarks cards-discover && stack build --system-ghc --test --no-run-tests --bench --no-run-benchmarks
+    - name: Run tests
+      run: stack test --system-ghc

@@ -4,13 +4,12 @@ import Arkham.Ability
 import Arkham.Act.Cards qualified as Cards
 import Arkham.Act.Import.Lifted
 import Arkham.Agenda.Cards qualified as Agendas
-import Arkham.Agenda.Types (Field (AgendaDoom))
+import Arkham.Agenda.Sequence qualified as AS
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Helpers.Agenda
 import Arkham.Location.Cards qualified as Locations
 import Arkham.Matcher
 import Arkham.Message (TokenLoss (..))
-import Arkham.Projection
 import Arkham.Token
 import Arkham.Trait (Trait (Cave))
 
@@ -35,14 +34,15 @@ instance RunMessage DescentIntoTheMines where
       pure a
     AdvanceAct (isSide B attrs -> True) _ _ -> do
       selectEach (location_ $ withTrait Cave) removeLocation
+      selectForMaybeM
+        (assetIs Assets.riverHawthorneBigInNewYork <> not_ (AssetControlledBy Anyone))
+        removeFromGame
       eachInvestigator \iid -> do
         push $ LoseTokens iid (toSource attrs) Clue (AllLostBut 2)
 
-      n <- getCurrentAgendaStep
-      when (n == 1) do
-        doom <- field AgendaDoom =<< selectJust AnyAgenda
+      whenM (currentAgendaSequenceIs (== AS.Sequence 1 AS.A)) do
         advanceToAgendaA attrs Agendas.dangerousRide
-        placeDoomOnAgenda doom
+        placeDoomOnAgenda =<< getDoomOnAgenda
 
       scenarioSpecific_ "theCaveIn"
       advanceActDeck attrs

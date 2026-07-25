@@ -39,15 +39,15 @@ gregoryGryEffect = cardEffect GregoryGryEffect Cards.gregoryGry
 
 instance RunMessage GregoryGryEffect where
   runMessage msg e@(GregoryGryEffect attrs) = runQueueT $ case msg of
-    PassedSkillTest _ _ _ _ _ x -> do
+    PassedSkillTest _ _ _ _ _ x | not attrs.finished -> do
       case attrs.metaInt of
         Just n -> do
           when (x >= n) do
             let iid = fromJustNote "Wrong Type" attrs.target.investigator
             whenMatch iid (investigator_ can.gain.resources) do
-              additionalSkillTestOption "Gregory Gry" $ gainResources iid attrs.source n
+              skillTestCardOption Cards.gregoryGry $ gainResources iid attrs.source n
           disable attrs
         _ -> error "Wrong metadata"
-      pure e
+      pure . GregoryGryEffect $ finishedEffect attrs
     SkillTestEnds {} -> disableReturn e
     _ -> GregoryGryEffect <$> liftRunMessage msg attrs

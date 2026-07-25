@@ -4,13 +4,25 @@
 
 module Api.Handler.Arkham.Games.Shared where
 
+import Api.Arkham.Epic (applyEpicDeltasLocked, lookupGameEvent, mkEpicEnv, modifySharedStateLocked)
 import Api.Arkham.Helpers
 import Api.Arkham.Types.MultiplayerVariant
+import Arkham.Achievement.Types (achievementName)
+import Arkham.Act.Sequence qualified as AS
+import Arkham.Act.Types (actSequence)
+import Arkham.Ai.Decision (decideAi, decideAiAssist, isAssistCommitWindow)
+import Arkham.Ai.Helpers (lookupAiPlayer)
+import Arkham.Ai.State (aiEnabled)
+import Arkham.Classes.Entity (attr)
+import Arkham.Entities (entitiesActs)
+import Arkham.Epic.Types (SharedEventState, SharedKey (PendingActAdvance, SharedActProgress), actProgressStages, epicEnvDeltaRef, epicEnvSharedRef, setSharedCounter, sharedCounter, sharedCounters, sharedTotalInvestigators, totalInvestigatorsKey)
+import Arkham.ScenarioLogKey (ScenarioCountKey (EpicShared))
 import Arkham.Campaign.Types (CampaignAttrs)
 import Arkham.Campaigns.TheDreamEaters.Meta qualified as TheDreamEaters
 import Arkham.ClassSymbol
 import Arkham.Classes.GameLogger
 import Arkham.Classes.HasQueue
+import Arkham.Decklist
 import Arkham.Difficulty
 import Arkham.Game
 import Arkham.Game.Diff
@@ -24,19 +36,26 @@ import Arkham.Name
 import Arkham.Queue
 import Conduit
 import Control.Concurrent.MVar
+import Control.Concurrent.STM.TBQueue (readTBQueue)
 import Control.Lens (view)
+import Data.IntMap.Strict qualified as IntMap
 import Control.Monad.Random (mkStdGen)
+import Data.Aeson qualified as Aeson
+import Data.Aeson.KeyMap qualified as KeyMap
 import Data.Aeson.Types (parse)
 import Data.ByteString.Lazy qualified as BSL
 import Data.Map.Strict qualified as Map
 import Data.String.Conversions.Monomorphic (toStrictByteString)
 import Data.Text qualified as T
+import Data.Text.Encoding qualified as TE
 import Data.These
 import Data.Time.Clock
+import Data.Traversable (for)
 import Data.UUID (nil)
 import Database.Esqueleto.Experimental hiding (update, (=.))
-import Database.Redis (msgMessage, pubSub, publish, runRedis, subscribe)
+import Database.Redis (RedisChannel, msgMessage, pubSub, publish, runRedis, subscribe)
 import Entity.Answer
+import Entity.Arkham.Deck
 import Entity.Arkham.GameRaw
 import Entity.Arkham.Step
 import Import hiding (delete, exists, on, (==.), (>=.))
@@ -46,19 +65,34 @@ import Network.WebSockets (ConnectionException)
 import OpenTelemetry.Trace.Monad (MonadTracer (..))
 import UnliftIO.Async (async, cancel)
 import UnliftIO.Exception hiding (Handler)
+import UnliftIO.Timeout (timeout)
 import Yesod.WebSockets
 
 gameStream :: ArkhamGameId -> WebSocketsT Handler ()
 gameStream gameId = catchingConnectionException do
-  writeChannel :: TChan BSL.ByteString <- lift $ (.channel) <$> getRoom gameId
+  room <- lift $ getRoom gameId
   broker <- lift $ getsYesod appMessageBroker
-  roomsVar <- getsYesod appGameRooms
-  liftIO
-    $ modifyMVar_ roomsVar
-    $ pure
-    . Map.adjust (\room -> room {socketClients = room.clients + 1}) gameId
+  let broadcast = broadcastToRoom room
 
-  bracket (atomically $ dupTChan writeChannel) closeConnection \readChannel -> do
+  let cleanup subId = do
+        unsubscribeFromRoom room subId
+        lift $ decrRoomMember gameId
+        -- If this was the last subscriber, drop the room from the map so
+        -- it doesn't accumulate orphaned entries.
+        isEmpty <- liftIO $ atomically do
+          IntMap.null <$> readTVar (roomSubscribers room)
+        when isEmpty do
+          roomsVar <- lift $ getsYesod appGameRooms
+          liftIO $ modifyMVar_ roomsVar $ pure . Map.delete gameId
+          lift $ removeChannel (gameChannel gameId)
+
+  let acquire = do
+        s <- subscribeToRoom room
+        lift $ incrRoomMember gameId
+        pure s
+
+  bracket acquire (\(subId, _) -> cleanup subId) \(_subId, sub) -> do
+    let Subscriber {subQueue, subOverflow} = sub
     mtid <- case broker of
       RedisBroker redisConn _ -> do
         tid <- liftIO
@@ -66,51 +100,103 @@ gameStream gameId = catchingConnectionException do
           $ runRedis redisConn
           $ pubSub (subscribe [gameChannel gameId])
           $ \msg -> do
-            atomically $ writeTChan readChannel (BSL.fromStrict $ msgMessage msg)
+            broadcast (BSL.fromStrict $ msgMessage msg)
             pure mempty
         pure $ Just tid
       WebSocketBroker -> pure Nothing
 
     let stopSub = maybe (pure ()) (liftIO . cancel) mtid
 
+    let sender =
+          forever
+            ( do
+                msg <- atomically do
+                  overflowed <- readTVar subOverflow
+                  if overflowed
+                    then throwSTM SlowSubscriber
+                    else readTBQueue subQueue
+                sendTextData msg
+            )
+            `catch` (\(_ :: SlowSubscriber) -> pure ())
+
     finally
       ( race_
-          (forever $ atomically (readTChan readChannel) >>= sendTextData)
-          (runConduit $ sourceWS .| mapM_C (handleData writeChannel))
+          sender
+          (runConduit $ sourceWS .| mapM_C (handleData room broadcast))
       )
       stopSub
  where
-  handleData writeChannel dataPacket = lift do
+  handleData room broadcast dataPacket = lift do
     case eitherDecodeStrict dataPacket of
       Left err -> $(logWarn) $ tshow err
       Right answer ->
-        updateGame answer gameId writeChannel `catch` \(e :: SomeException) -> do
-          atomically $ writeTChan writeChannel $ encode $ GameError $ tshow e
+        updateGame answer gameId (Just room) `catch` \(e :: SomeException) -> do
+          liftIO $ broadcast $ encode $ GameError $ tshow e
 
-  closeConnection _ = do
-    roomsVar <- getsYesod appGameRooms
-    remove <- liftIO $ modifyMVar roomsVar \rooms -> pure do
-      case Map.lookup gameId rooms of
-        Nothing -> (rooms, False)
-        Just room -> do
-          let room' = room {socketClients = max 0 (room.clients - 1)}
-          if room'.clients == 0
-            then (Map.delete gameId rooms, True)
-            else (Map.insert gameId room' rooms, False)
-
-    when remove $ lift $ removeChannel (gameChannel gameId)
+data SlowSubscriber = SlowSubscriber
+  deriving stock Show
+  deriving anyclass Exception
 
 catchingConnectionException :: WebSocketsT Handler () -> WebSocketsT Handler ()
 catchingConnectionException f =
   f `catch` \e -> $(logWarn) $ tshow (e :: ConnectionException)
 
+-- | Generic read-only room subscription loop: bridge the Redis channel into the
+-- room, fan room messages out to this websocket, and run @onLastLeave@ when the
+-- final subscriber disconnects. Inbound client frames are ignored (read-only).
+-- Used by the Epic Multiplayer event stream; 'gameStream' has its own variant
+-- with per-game member counting and a log cache.
+streamRoom
+  :: RedisChannel -> Room -> WebSocketsT Handler () -> WebSocketsT Handler ()
+streamRoom channel room onLastLeave = catchingConnectionException do
+  broker <- lift $ getsYesod appMessageBroker
+  let broadcast = broadcastToRoom room
+  let cleanup subId = do
+        unsubscribeFromRoom room subId
+        isEmpty <- liftIO $ atomically $ IntMap.null <$> readTVar (roomSubscribers room)
+        when isEmpty onLastLeave
+  bracket (subscribeToRoom room) (\(subId, _) -> cleanup subId) \(_subId, sub) -> do
+    let Subscriber {subQueue, subOverflow} = sub
+    mtid <- case broker of
+      RedisBroker redisConn _ -> do
+        tid <-
+          liftIO
+            $ async
+            $ runRedis redisConn
+            $ pubSub (subscribe [channel])
+            $ \msg -> do
+              broadcast (BSL.fromStrict $ msgMessage msg)
+              pure mempty
+        pure $ Just tid
+      WebSocketBroker -> pure Nothing
+    let stopSub = maybe (pure ()) (liftIO . cancel) mtid
+    let sender =
+          forever
+            ( do
+                msg <- atomically do
+                  overflowed <- readTVar subOverflow
+                  if overflowed then throwSTM SlowSubscriber else readTBQueue subQueue
+                sendTextData msg
+            )
+            `catch` (\(_ :: SlowSubscriber) -> pure ())
+    finally
+      (race_ sender (runConduit $ sourceWS .| mapM_C (\(_ :: ByteString) -> pure ())))
+      stopSub
+
 data GetGameJson = GetGameJson
   { playerId :: Maybe PlayerId
   , multiplayerMode :: MultiplayerVariant
   , game :: PublicGame ArkhamGameId
+  , eventId :: Maybe ArkhamEpicEventId
+  -- ^ the Epic Multiplayer event this game is a group of, if any. Lets the client
+  -- engage the event (shared state, start barrier, time limit) regardless of how
+  -- the player reached the game (so it doesn't depend on a @?event@ URL query).
   }
   deriving stock (Show, Generic)
-  deriving anyclass ToJSON
+
+instance ToJSON GetGameJson where
+  toJSON = genericToJSON defaultOptions
+  toEncoding = genericToEncoding defaultOptions
 
 data InvestigatorDetails = InvestigatorDetails
   { id :: InvestigatorId
@@ -144,6 +230,7 @@ data GameDetails = GameDetails
   , investigators :: [InvestigatorDetails]
   , otherInvestigators :: [InvestigatorDetails]
   , multiplayerVariant :: MultiplayerVariant
+  , hasOpenSeats :: Bool
   }
   deriving stock (Show, Generic)
   deriving anyclass ToJSON
@@ -156,11 +243,48 @@ instance ToJSON GameDetailsEntry where
     FailedGameDetails t -> object ["error" .= t]
     SuccessGameDetails gd -> toJSON gd
 
-updateGame :: Answer -> ArkhamGameId -> TChan BSL.ByteString -> Handler ()
-updateGame response gameId writeChannel = do
+-- | A broadcast callback. Used to fan out log lines and game-state updates
+-- to every WebSocket subscriber on a room. May be a no-op if there are no
+-- subscribers (e.g. a direct REST PUT with no client listening), in which
+-- case messages are silently dropped instead of buffered indefinitely.
+type Broadcast = BSL.ByteString -> IO ()
+
+-- | Hard cap on a single runMessages invocation. If a game's message
+-- processing exceeds this we kill the action and roll back the surrounding
+-- DB transaction so the worker (and the FOR UPDATE lock on the game row)
+-- can be released. Empirically a normal action completes in well under 1s;
+-- 30s gives plenty of headroom for slow-but-legitimate scenario setup
+-- while still preventing one poison game from monopolising a worker.
+runMessagesTimeoutMicros :: Int
+runMessagesTimeoutMicros = 30 * 1000000
+
+-- | Thrown by updateGame when 'runMessages' exceeds 'runMessagesTimeoutMicros'.
+-- The Yesod handler turns this into a 500; the important effect is that the
+-- exception propagates out of runDB, rolls back the transaction, and frees
+-- the worker. Search Honeycomb / logs for this to find poison games.
+data RunMessagesTimeout = RunMessagesTimeout ArkhamGameId Int
+  deriving stock Show
+  deriving anyclass Exception
+
+updateGame :: Answer -> ArkhamGameId -> Maybe Room -> Handler ()
+updateGame response gameId mRoom = do
+  let broadcast :: Broadcast
+      broadcast = case mRoom of
+        Nothing -> \_ -> pure ()
+        Just room -> broadcastToRoom room
   tracer <- getTracer
-  oldLog <- runDB $ getGameLog gameId Nothing
-  (ArkhamGame {..}, updatedLog) <- runDB $ atomicallyWithGame gameId \g@ArkhamGame {..} -> do
+  -- NOTE: not wrapping the whole handler in withSpan_ -- it would rewrap
+  -- Yesod's HCContent control-flow exceptions (notFound, notAuthenticated,
+  -- sendStatusJSON, etc.) and break 404/401 responses (see Undo.hs note).
+  -- The runMessages span below is wrapped where it's safe.
+  (ArkhamGame {..}, oldLogEntries, updatedLog, mSharedUpdate, newAchievements) <- runDB $ atomicallyWithGame gameId \g@ArkhamGame {..} -> do
+    -- Read the prior log from the per-room cache when it's in sync with
+    -- the just-locked game's step; otherwise fall back to the DB. Avoids
+    -- the 217-row-avg getGameLog read on every action in the common case.
+    oldLogEntries <- liftIO (lookupCachedLog mRoom arkhamGameStep) >>= \case
+      Just entries -> pure entries
+      Nothing -> gameLogToLogEntries <$> getGameLog gameId Nothing
+
     mLastStep <- getBy $ UniqueStep gameId arkhamGameStep
     let
       gameJson@Game {..} = arkhamGameCurrentData
@@ -171,27 +295,96 @@ updateGame response gameId writeChannel = do
 
     let playerId = fromMaybe activePlayer (answerPlayer response)
 
+    -- AI seats answer their own parked question: resolve an AiAnswer into a
+    -- concrete Answer by running the read-only decision engine over the parked
+    -- game (HasGame (ReaderT Game m), the same pattern as getActivePlayer
+    -- above), then feed it through the normal handleAnswer path so all
+    -- downstream message synthesis is reused. A disabled/unregistered seat or an
+    -- absent question resolves to Nothing and is treated as a no-op. decideAi
+    -- sets qrQuestionVersion from this same parked game, so it matches
+    -- gameScenarioSteps at apply time (no "Stale question").
+    mResolved <- case response of
+      AiAnswer aiPid -> case lookupAiPlayer aiPid gameSettings of
+        Just st | aiEnabled st -> case Map.lookup aiPid gameQuestion of
+          Just question -> do
+            -- The non-performer skill-test commit window re-asks itself after
+            -- every commit/uncommit and offers no Start/Done, so the auto-drive
+            -- decideAi would loop forever. Decline it (leave the seat parked,
+            -- exactly like a disabled seat / absent question); the performer
+            -- starting the test silently drops the parked window. On-demand
+            -- single commits arrive separately as AiAssist below.
+            isAssist <- runReaderT (isAssistCommitWindow aiPid question) gameJson
+            if isAssist
+              then pure Nothing
+              else Just <$> runReaderT (decideAi st aiPid question) gameJson
+          Nothing -> pure Nothing
+        _ -> pure Nothing
+      -- AiAssist: commit one card from this seat's parked assist window via the
+      -- assist decision engine. Just ans -> apply through the normal answer path
+      -- (commits exactly one card); Nothing -> no-op (nothing worth adding).
+      AiAssist aiPid -> case lookupAiPlayer aiPid gameSettings of
+        Just st | aiEnabled st -> case Map.lookup aiPid gameQuestion of
+          Just question -> runReaderT (decideAiAssist aiPid question) gameJson
+          Nothing -> pure Nothing
+        _ -> pure Nothing
+      _ -> pure (Just response)
+
     logRef <- newIORef []
-    handleAnswer gameJson playerId response >>= \case
-      Unhandled _ -> pure (g, [])
+    reply <- case mResolved of
+      Nothing -> pure (Unhandled "AI seat disabled or no parked question")
+      Just resolved -> handleAnswer gameJson playerId resolved
+    case reply of
+      Unhandled _ -> pure (g, oldLogEntries, [], Nothing, [])
       Handled answerMessages -> do
+        -- Epic Multiplayer: if this game is a group within an event, build an
+        -- EpicEnv so Shared* messages emitted during the action are captured as
+        -- deltas. 'Nothing' (every ordinary game) means zero behavior change.
+        mEpicCtx <- lookupGameEvent gameId
+        mEpicEnv <- traverse (uncurry mkEpicEnv) mEpicCtx
+
+        -- Epic Multiplayer: mirror the current shared counters into this group's
+        -- scenario state (as EpicShared counts) before the action runs, so the
+        -- scenario/enemy read up-to-date shared values purely. Refreshed every
+        -- action (pull), keyed by sharedKeyText, plus the frozen total.
+        syncMsgs <- case mEpicEnv of
+          Nothing -> pure []
+          Just epic -> epicSyncMessages <$> liftIO (readIORef (epicEnvSharedRef epic))
+
         let
           messages =
             [SetActivePlayer playerId | activePlayer /= playerId]
               <> answerMessages
               <> [SetActivePlayer activePlayer | activePlayer /= playerId]
         gameRef <- newIORef gameJson
-        queueRef <- newQueue ((ClearUI : messages) <> currentQueue)
+        queueRef <- newQueue ((ClearUI : syncMsgs <> messages) <> currentQueue)
         genRef <- newIORef $ mkStdGen gameSeed
 
-        runGameApp (GameApp gameRef queueRef genRef (handleMessageLog logRef writeChannel) tracer) do
-          runMessages (gameIdToText gameId) Nothing
+        -- Circuit breaker: cap runMessages at runMessagesTimeoutMicros so a
+        -- pathological game state (infinite loop / message-handler explosion)
+        -- can't hold a worker hostage and pin a FOR UPDATE lock on the game
+        -- row indefinitely. On timeout, throw RunMessagesTimeout -- this
+        -- aborts the surrounding DB transaction (rollback releases the lock)
+        -- and lets the worker return to the pool.
+        -- Above-the-table achievements: collect EarnAchievement messages via
+        -- the (otherwise unused) runMessages message logger; persisted below.
+        achievementsRef <- newIORef []
+        let
+          collectAchievements = \case
+            EarnAchievement a -> modifyIORef' achievementsRef (a :)
+            _ -> pure ()
+        mResult <- liftIO $ timeout runMessagesTimeoutMicros do
+          runGameApp (GameApp gameRef queueRef genRef (handleMessageLog logRef broadcast) tracer mEpicEnv) do
+            runMessages (gameIdToText gameId) (Just collectAchievements)
+        case mResult of
+          Just () -> pure ()
+          Nothing -> liftIO $ throwIO $ RunMessagesTimeout gameId runMessagesTimeoutMicros
 
         ge <- readIORef gameRef
         let diffDown = diff ge arkhamGameCurrentData
 
         updatedQueue <- readIORef $ queueToRef queueRef
-        updatedLog <- readIORef logRef
+        -- handleMessageLog conses for O(1) inserts; reverse here to restore order.
+        updatedLog <- reverse <$> readIORef logRef
 
         now <- liftIO getCurrentTime
         deleteWhere [ArkhamStepArkhamGameId P.==. gameId, ArkhamStepStep P.>. arkhamGameStep]
@@ -216,15 +409,89 @@ updateGame response gameId writeChannel = do
             [ ArkhamStepChoice =. Choice diffDown updatedQueue
             , ArkhamStepActionDiff =. ActionDiff (view actionDiffL ge)
             ]
-        pure (g', updatedLog)
+
+        -- Epic Multiplayer: drain any shared-counter deltas emitted this action
+        -- and apply them to the authoritative event row under a short FOR UPDATE
+        -- lock (taken late, only when there are deltas), within this same
+        -- transaction so the game step and shared mutation commit atomically.
+        mSharedUpdate <- case mEpicCtx of
+          Just (eventEntity, _) -> do
+            deltas <- maybe (pure []) (liftIO . readIORef . epicEnvDeltaRef) mEpicEnv
+            if null deltas
+              then pure Nothing
+              else do
+                s <-
+                  applyEpicDeltasLocked
+                    (entityKey eventEntity)
+                    (Just gameId)
+                    (Just (arkhamGameStep + 1))
+                    deltas
+                pure $ Just (entityKey eventEntity, s)
+          Nothing -> pure Nothing
+
+        earned <- liftIO $ ordNub . reverse <$> readIORef achievementsRef
+        newAchievements <-
+          if null earned
+            then pure []
+            else do
+              players <- P.selectList [ArkhamPlayerArkhamGameId P.==. gameId] []
+              let userIds = ordNub $ map (arkhamPlayerUserId . entityVal) players
+              fmap concat $ for earned \achievement -> do
+                inserted <- for userIds \uid ->
+                  P.insertUnique
+                    $ ArkhamAchievement uid achievement (Just now) (Just gameId) Null
+                pure [achievement | any isJust inserted]
+
+        pure (g', oldLogEntries, updatedLog, mSharedUpdate, newAchievements)
+
+  -- Update the per-room cache after the DB transaction has committed,
+  -- so the cache is never ahead of durably-stored state.
+  let publishLog = oldLogEntries <> updatedLog
+  liftIO $ writeCachedLog mRoom arkhamGameStep publishLog
+  when (gameGameState arkhamGameCurrentData == IsOver) $
+    runDB $ completeCampaignDecks gameId
 
   publishToRoom gameId
     $ GameUpdate
     $ PublicGame
       gameId
       arkhamGameName
-      (gameLogToLogEntries $ oldLog <> GameLog updatedLog)
+      publishLog
       arkhamGameCurrentData
+
+  -- Achievement unlock toasts, after the rows are durably committed.
+  for_ newAchievements \achievement ->
+    publishToRoom gameId $ GameAchievement (achievementName achievement)
+
+  -- Epic Multiplayer: propagate a shared-counter change across the event — update
+  -- every client's shared store AND sync the other groups' game-state boards to
+  -- it (so countermeasures / blob health change live in every group, not just on
+  -- that group's next action). The acting group is skipped (already reflected).
+  for_ mSharedUpdate \(eid, s) -> propagateShared eid (Just gameId) s
+
+  -- Epic Multiplayer: cross-group act-clue advance. Evaluated POST-COMMIT, after
+  -- the placing group's game lock has been released (so the coordinator can take
+  -- the OTHER groups' game locks + the event lock without a game->game deadlock).
+  for_ mSharedUpdate \(eid, s) -> coordinateEpicActAdvance eid s
+
+-- | Read the cached log entries IF the cache is consistent with the locked
+-- game's current step. Returns Nothing on a mismatch (so the caller refetches
+-- from the DB and refreshes the cache).
+lookupCachedLog :: Maybe Room -> Int -> IO (Maybe [Text])
+lookupCachedLog Nothing _ = pure Nothing
+lookupCachedLog (Just room) currentStep = atomically do
+  cachedVal <- readTVar (roomLogCache room)
+  pure $ case cachedVal of
+    Just c | c.cacheStep == currentStep -> Just c.cacheEntries
+    _ -> Nothing
+
+-- | Write the cache after a successful update. The step recorded is the new
+-- post-update step; the next action will read the game at that step and find
+-- a consistent cache.
+writeCachedLog :: Maybe Room -> Int -> [Text] -> IO ()
+writeCachedLog Nothing _ _ = pure ()
+writeCachedLog (Just room) newStep entries =
+  atomically $ writeTVar (roomLogCache room) $ Just $ RoomLogCache newStep entries
 
 newtype RawGameJsonPut = RawGameJsonPut
   { gameMessage :: Message
@@ -233,16 +500,20 @@ newtype RawGameJsonPut = RawGameJsonPut
   deriving anyclass FromJSON
 
 handleMessageLog
-  :: MonadIO m => IORef [Text] -> TChan BSL.ByteString -> ClientMessage -> m ()
-handleMessageLog logRef writeChannel msg = liftIO $ do
+  :: MonadIO m => IORef [Text] -> Broadcast -> ClientMessage -> m ()
+handleMessageLog logRef broadcast msg = liftIO $ do
+  -- Cons in O(1); the caller reverses once when reading the IORef.
+  -- The previous (logs <> [txt]) was O(n) per call -> O(n^2) per action,
+  -- which mattered during scenario setup with hundreds of log lines.
   for_ (toClientText msg) $ \txt ->
-    atomicModifyIORef' logRef (\logs -> (logs <> [txt], ()))
-  atomically $ writeTChan writeChannel (encode $ toGameMessage msg)
+    atomicModifyIORef' logRef (\logs -> (txt : logs, ()))
+  broadcast (encode $ toGameMessage msg)
  where
   toGameMessage = \case
     ClientText txt -> GameMessage txt
     ClientError txt -> GameError txt
     ClientUI txt -> GameUI txt
+    ClientAudio txt -> GameAudio txt
     ClientCard t v -> GameCard t v
     ClientCardOnly i t v -> GameCardOnly i t v
     ClientTarot v -> GameTarot v
@@ -253,6 +524,7 @@ handleMessageLog logRef writeChannel msg = liftIO $ do
     ClientText txt -> Just txt
     ClientError {} -> Nothing
     ClientUI {} -> Nothing
+    ClientAudio {} -> Nothing
     ClientCard {} -> Nothing
     ClientCardOnly {} -> Nothing
     ClientTarot {} -> Nothing
@@ -271,40 +543,281 @@ publishToRoom gameId a = do
         $ publish (gameChannel gameId)
         $ toStrictByteString
         $ encode a
-    WebSocketBroker -> do
-      writeChannel <- (.channel) <$> getRoom gameId
-      atomically $ writeTChan writeChannel $ encode a
+    WebSocketBroker ->
+      -- Don't create a Room here. If nobody is subscribed, drop the
+      -- update on the floor; the next subscriber will read the latest
+      -- state from the database when they connect.
+      lookupRoom gameId >>= traverse_ (`broadcastToRoom` encode a)
 
-toGameDetailsEntry :: Entity ArkhamGameRaw -> GameDetailsEntry
-toGameDetailsEntry (Entity gameId game) =
+-- | Epic Multiplayer sibling of 'publishToRoom', keyed by event id.
+publishToEventRoom :: (MonadIO m, ToJSON a, HasApp m) => ArkhamEpicEventId -> a -> m ()
+publishToEventRoom eid a = do
+  broker <- getsApp appMessageBroker
+  case broker of
+    RedisBroker redisConn _ ->
+      void
+        $ liftIO
+        $ runRedis redisConn
+        $ publish (eventChannel eid)
+        $ toStrictByteString
+        $ encode a
+    WebSocketBroker ->
+      lookupEventRoom eid >>= traverse_ (`broadcastToRoom` encode a)
+
+-- | The (non-null) game ids of every group in an event.
+getEventGroupGameIds :: ArkhamEpicEventId -> Handler [ArkhamGameId]
+getEventGroupGameIds eid = do
+  rows <- runDB $ select do
+    grp <- from $ table @ArkhamEpicGroup
+    where_ $ grp.arkhamEpicEventId ==. val eid
+    pure grp.arkhamGameId
+  pure $ mapMaybe (\(Value m) -> m) rows
+
+-- | Broadcast a shared-state update to the event's dashboard feed AND to every
+-- group's own game stream, so all connected clients (organizer dashboard,
+-- organizer bars, shared displays) reflect the new shared counters live.
+broadcastSharedToEvent :: ArkhamEpicEventId -> SharedEventState -> Handler ()
+broadcastSharedToEvent eid s = do
+  publishToEventRoom eid (SharedStateUpdate s)
+  gameIds <- getEventGroupGameIds eid
+  for_ gameIds \gid -> publishToRoom gid (SharedStateUpdate s)
+
+-- | The ScenarioCountSet messages that mirror the authoritative shared counters
+-- into a group's scenario state (as EpicShared counts), keyed by sharedKeyText,
+-- plus the frozen total. The scenario/enemy reconcile their local board
+-- representations (Resource tokens, Subject 8L-08 health) from these.
+epicSyncMessages :: SharedEventState -> [Message]
+epicSyncMessages shared =
+  -- total-investigators FIRST: entities that derive a value from it (e.g. Subject
+  -- 8L-08's max health = 15 * total) must see it before their own counter syncs.
+  ScenarioCountSet (EpicShared totalInvestigatorsKey) (sharedTotalInvestigators shared)
+    : [ScenarioCountSet (EpicShared k) v | (k, v) <- Map.toList (sharedCounters shared)]
+
+-- | Server-initiated run of @msgs@ inside one group's game, under the same
+-- FOR UPDATE lock / GameApp machinery a normal action uses. Runs only when the
+-- game is still actively playing AND @p@ holds for its current state; the
+-- predicate is evaluated INSIDE the lock so concurrent callers serialize on it
+-- (e.g. the Epic time-up forcing checks the agenda stage here so duplicate
+-- countdown-expiry calls can't double-advance). Persists a new step whose pending
+-- queue is the queue produced by the run (e.g. the continuation of a question the
+-- run parked) followed by the group's previously-pending queue, then broadcasts
+-- the GameUpdate. Games that are not active, or fail @p@, are left untouched.
+-- appEvent = Nothing: these server-initiated runs must not themselves emit shared
+-- deltas (they reconcile board state directly), so there is no feedback loop.
+runMessagesInGroupWhen :: (Game -> Bool) -> [Message] -> ArkhamGameId -> Handler ()
+runMessagesInGroupWhen p msgs gid = do
+  tracer <- getTracer
+  now <- liftIO getCurrentTime
+  mUpdate <- runDB $ atomicallyWithGame gid \ArkhamGame {..} ->
+    case gameGameState arkhamGameCurrentData of
+      IsActive | p arkhamGameCurrentData -> do
+        mLastStep <- getBy (UniqueStep gid arkhamGameStep)
+        let currentQueue = maybe [] (choiceMessages . arkhamStepChoice . entityVal) mLastStep
+        gameRef <- liftIO $ newIORef arkhamGameCurrentData
+        queueRef <- liftIO $ newQueue msgs
+        genRef <- liftIO $ newIORef (mkStdGen (gameSeed arkhamGameCurrentData))
+        liftIO
+          $ runGameApp (GameApp gameRef queueRef genRef (pure . const ()) tracer Nothing)
+          $ runMessages (gameIdToText gid) Nothing
+        updatedGame <- liftIO $ readIORef gameRef
+        -- The queue left after the run: empty for a pure board sync (it drains to
+        -- empty), or the continuation of a question the run parked (e.g. the
+        -- lead-player confirm of a forced agenda advance). Persist it AHEAD of the
+        -- group's previously-pending queue so a forced advance resolves to
+        -- completion while an undisturbed sync simply preserves the in-flight
+        -- queue (producedQueue is [] there).
+        producedQueue <- liftIO $ readIORef (queueToRef queueRef)
+        let
+          game' =
+            ArkhamGame
+              arkhamGameName
+              updatedGame
+              (arkhamGameStep + 1)
+              arkhamGameMultiplayerVariant
+              arkhamGameCreatedAt
+              now
+        replace gid game'
+        insert_
+          $ ArkhamStep
+            gid
+            (Choice mempty (producedQueue <> currentQueue))
+            (arkhamGameStep + 1)
+            (ActionDiff $ view actionDiffL updatedGame)
+        pure (Just game')
+      _ -> pure Nothing
+  for_ mUpdate \g' ->
+    publishToRoom gid
+      $ GameUpdate
+      $ PublicGame gid (arkhamGameName g') [] (arkhamGameCurrentData g')
+
+completeCampaignDecks :: ArkhamGameId -> DB ()
+completeCampaignDecks gameId = do
+  decks <- select do
+    deck <- from $ table @ArkhamDeck
+    pure deck
+  for_ decks \(Entity deckId deck) ->
+    when (isActiveCampaignDeck gameId deck.arkhamDeckList) do
+      let decklist' = setCampaignDeckStatus "completed" deck.arkhamDeckList
+      P.update deckId [ArkhamDeckList P.=. decklist']
+
+isActiveCampaignDeck :: ArkhamGameId -> ArkhamDBDecklist -> Bool
+isActiveCampaignDeck gameId decklist =
+  campaignMetaText "arkham_horror_campaign_status" decklist == Just "active"
+    && campaignMetaText "arkham_horror_campaign_game_id" decklist == Just (gameIdToText gameId)
+
+setCampaignDeckStatus :: Text -> ArkhamDBDecklist -> ArkhamDBDecklist
+setCampaignDeckStatus status decklist =
+  decklist
+    { meta =
+        Just
+          $ encodeCampaignMeta
+          $ KeyMap.insert "arkham_horror_campaign_status" (Aeson.String status)
+          $ decodeCampaignMeta decklist
+    }
+
+campaignMetaText :: Text -> ArkhamDBDecklist -> Maybe Text
+campaignMetaText key decklist = do
+  Aeson.String value <- KeyMap.lookup (fromString $ T.unpack key) (decodeCampaignMeta decklist)
+  pure value
+
+decodeCampaignMeta :: ArkhamDBDecklist -> Aeson.Object
+decodeCampaignMeta decklist = fromMaybe mempty do
+  raw <- meta decklist
+  Aeson.Object value <- Aeson.decode $ BSL.fromStrict $ TE.encodeUtf8 raw
+  pure value
+
+encodeCampaignMeta :: Aeson.Object -> Text
+encodeCampaignMeta = TE.decodeUtf8 . BSL.toStrict . Aeson.encode . Aeson.Object
+
+-- | 'runMessagesInGroupWhen' with no extra guard beyond the game being active.
+runMessagesInGroup :: [Message] -> ArkhamGameId -> Handler ()
+runMessagesInGroup = runMessagesInGroupWhen (const True)
+
+-- | Server-initiated sync of one (other) group's game state to the current
+-- shared counters, so its BOARD (countermeasures, blob health) reflects the
+-- change live without that group having to take an action. Runs only the sync
+-- messages (the group's own pending queue/question is preserved), persists a new
+-- step, and broadcasts the resulting GameUpdate. Skips games that aren't active.
+syncOneGroup :: SharedEventState -> ArkhamGameId -> Handler ()
+syncOneGroup shared = runMessagesInGroup (epicSyncMessages shared)
+
+-- | Propagate a shared-state change across an event: update every client's
+-- shared store (organizer dashboard/bars) AND sync each group's game-state board
+-- to it. @mOrigin@ (the acting group) is skipped — its own action already
+-- reflected the change locally.
+propagateShared :: ArkhamEpicEventId -> Maybe ArkhamGameId -> SharedEventState -> Handler ()
+propagateShared eid mOrigin shared = do
+  broadcastSharedToEvent eid shared
+  gameIds <- getEventGroupGameIds eid
+  for_ gameIds \gid ->
+    when (Just gid /= mOrigin)
+      $ syncOneGroup shared gid
+        `catch` \(e :: SomeException) ->
+          $(logWarn) $ "Epic syncOneGroup failed for " <> tshow gid <> ": " <> tshow e
+
+-- | The total clues on the act(s) at @stage@ in a group's game (0 if none). Acts
+-- in play is normally a singleton; this sums defensively.
+stageActClues :: Int -> Game -> Int
+stageActClues stage game =
+  sum
+    [ attr (.clues) act
+    | act <- toList (entitiesActs (gameEntities game))
+    , AS.unActStep (AS.actStep (attr actSequence act)) == stage
+    ]
+
+-- | For each group in an event (in ordinal order) that has a game, the clues
+-- currently on its stage-@stage@ act, paired with its game id and ordinal. Shared
+-- by 'coordinateEpicActAdvance' and the organizer's allocation endpoint so they
+-- size the per-group spend the same way.
+getEventGroupActClues :: ArkhamEpicEventId -> Int -> Handler [(Int, ArkhamGameId, Int)]
+getEventGroupActClues eid stage = do
+  rows <- runDB $ select do
+    grp <- from $ table @ArkhamEpicGroup
+    where_ $ grp.arkhamEpicEventId ==. val eid
+    orderBy [asc grp.ordinal]
+    pure (grp.ordinal, grp.arkhamGameId)
+  fmap catMaybes $ traverse resolveRow rows
+ where
+  resolveRow (Value ordinal, Value mGid) = case mGid of
+    Nothing -> pure Nothing
+    Just gid -> do
+      mGame <- runDB $ selectOne do
+        g <- from $ table @ArkhamGame
+        where_ $ g.id ==. val gid
+        pure g
+      pure $ (\ent -> (ordinal, gid, stageActClues stage (arkhamGameCurrentData (entityVal ent)))) <$> mGame
+
+{- | Epic Multiplayer cross-group coordinator for the shared act-clue advance
+(The Blob). Runs POST-COMMIT, after the placing group's game lock has been
+released (co-located with 'propagateShared' in 'updateGame'), NOT inside the
+group's runMessages — so it can take the OTHER groups' game locks and the event
+lock without a game->game lock-order deadlock.
+
+Given the just-committed shared state @s@, it evaluates each @act-progress:N@
+pool against THRESHOLD = 2 * sharedTotalInvestigators. For a stage that has
+reached threshold and is not already awaiting organizer allocation
+('PendingActAdvance' unset):
+
+  * EXACT (pool == threshold): each group spends exactly its own stage-N act's
+    clues. Push 'ResolveEpicActAdvance' to every group, then reset the pool to 0
+    (a single direct-set; the server owns the pool, the per-group handler must
+    not touch it). The reset means the next check won't re-fire.
+  * EXCESS (pool > threshold): flag 'PendingActAdvance' and wait for the
+    organizer's allocation (@postApiV1ArkhamEventResolveAdvanceR@). Do NOT
+    resolve. The flag guards against re-firing on subsequent placements.
+-}
+coordinateEpicActAdvance :: ArkhamEpicEventId -> SharedEventState -> Handler ()
+coordinateEpicActAdvance eid s = do
+  let threshold = 2 * sharedTotalInvestigators s
+  when (threshold > 0) $ for_ (actProgressStages s) \stage -> do
+    let pool = sharedCounter (SharedActProgress stage) s
+    when (pool >= threshold && sharedCounter (PendingActAdvance stage) s == 0) do
+      if pool == threshold
+        then do
+          groupClues <- getEventGroupActClues eid stage
+          for_ groupClues \(_ord, gid, clues) ->
+            runMessagesInGroup [ResolveEpicActAdvance stage clues] gid
+          newState <- runDB $ modifySharedStateLocked eid (setSharedCounter (SharedActProgress stage) 0)
+          broadcastSharedToEvent eid newState
+        else do
+          newState <- runDB $ modifySharedStateLocked eid (setSharedCounter (PendingActAdvance stage) 1)
+          broadcastSharedToEvent eid newState
+
+toGameDetailsEntry :: Entity ArkhamGameRaw -> Int -> GameDetailsEntry
+toGameDetailsEntry (Entity gameId game) playerCount =
   case fromJSON @Game (arkhamGameRawCurrentData game) of
     Success a ->
-      SuccessGameDetails
-        $ GameDetails
-          { id = coerce gameId
-          , scenario = case a.gameMode of
-              This _ -> Nothing
-              That s -> Just $ ScenarioDetails s.id s.difficulty s.name
-              These _ s -> Just $ ScenarioDetails s.id s.difficulty s.name
-          , campaign = case a.gameMode of
-              This c -> Just $ CampaignDetails c.id c.difficulty c.currentCampaignMode
-              That _ -> Nothing
-              These c _ -> Just $ CampaignDetails c.id c.difficulty c.currentCampaignMode
-          , gameState = a.gameGameState
-          , name = arkhamGameRawName game
-          , investigators =
-              map (\(i :: Investigator) -> InvestigatorDetails i.id i.classSymbol)
-                $ toList a.gameEntities.investigators
-          , otherInvestigators =
-              let
-                ins = case a.gameMode of
-                  This c -> campaignOtherInvestigators (toJSON c.meta)
-                  That _ -> mempty
-                  These c _ -> campaignOtherInvestigators (toJSON c.meta)
-               in
-                map (\i -> InvestigatorDetails i.id i.classSymbol) ins
-          , multiplayerVariant = arkhamGameRawMultiplayerVariant game
-          }
+      let
+        investigators =
+          map (\(i :: Investigator) -> InvestigatorDetails i.id i.classSymbol)
+            $ toList a.gameEntities.investigators
+        variant = arkhamGameRawMultiplayerVariant game
+       in
+        SuccessGameDetails
+          $ GameDetails
+            { id = coerce gameId
+            , scenario = case a.gameMode of
+                This _ -> Nothing
+                That s -> Just $ ScenarioDetails s.id s.difficulty s.name
+                These _ s -> Just $ ScenarioDetails s.id s.difficulty s.name
+            , campaign = case a.gameMode of
+                This c -> Just $ CampaignDetails c.id c.difficulty c.currentCampaignMode
+                That _ -> Nothing
+                These c _ -> Just $ CampaignDetails c.id c.difficulty c.currentCampaignMode
+            , gameState = a.gameGameState
+            , name = arkhamGameRawName game
+            , investigators
+            , otherInvestigators =
+                let
+                  ins = case a.gameMode of
+                    This c -> campaignOtherInvestigators (toJSON c.meta)
+                    That _ -> mempty
+                    These c _ -> campaignOtherInvestigators (toJSON c.meta)
+                 in
+                  map (\i -> InvestigatorDetails i.id i.classSymbol) ins
+            , multiplayerVariant = variant
+            , hasOpenSeats = variant == WithFriends && playerCount < length investigators
+            }
     Error e -> FailedGameDetails ("Failed to load " <> tshow gameId <> ": " <> T.pack e)
  where
   campaignOtherInvestigators j = case parse (withObject "" (.: "otherCampaignAttrs")) j of
@@ -315,3 +828,8 @@ deleteRoom :: ArkhamGameId -> Handler ()
 deleteRoom gameId = do
   roomsVar <- getsYesod appGameRooms
   liftIO $ modifyMVar_ roomsVar $ pure . Map.delete gameId
+
+deleteEventRoom :: ArkhamEpicEventId -> Handler ()
+deleteEventRoom eid = do
+  roomsVar <- getsYesod appEventRooms
+  liftIO $ modifyMVar_ roomsVar $ pure . Map.delete eid

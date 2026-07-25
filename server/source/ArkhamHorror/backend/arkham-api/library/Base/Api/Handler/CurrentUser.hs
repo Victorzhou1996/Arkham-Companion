@@ -9,6 +9,7 @@ data CurrentUser = CurrentUser
   { username :: Text
   , email :: Text
   , beta :: Bool
+  , dev :: Bool
   , admin :: Bool
   }
   deriving stock (Generic)
@@ -19,4 +20,4 @@ getApiV1CurrentUserR = do
   userId <- getRequestUserId
   runDB do
     User {..} <- get404 userId
-    pure $ CurrentUser userUsername userEmail userBeta userAdmin
+    pure $ CurrentUser userUsername userEmail userBeta userDev userAdmin

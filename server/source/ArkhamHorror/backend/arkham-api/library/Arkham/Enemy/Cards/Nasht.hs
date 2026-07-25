@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.Nasht (nasht) where
 import Arkham.Ability
 import Arkham.Card
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue
 import Arkham.Helpers.SkillTest.Lifted (parley)
 import Arkham.Matcher
@@ -16,14 +16,14 @@ newtype Nasht = Nasht EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 nasht :: EnemyCard Nasht
-nasht = enemy Nasht Cards.nasht (2, Static 3, 2) (0, 1)
+nasht = enemy Nasht Cards.nasht
 
 instance HasAbilities Nasht where
   getAbilities (Nasht x) =
     withBaseAbilities
       x
       [ skillTestAbility $ mkAbility x 1 parleyAction_
-      , mkAbility x 2 $ forced $ EnemyDefeated #after You ByAny $ be x
+      , mkAbility x 2 $ forced $ IfEnemyDefeated #after You ByAny $ be x
       ]
 
 instance RunMessage Nasht where

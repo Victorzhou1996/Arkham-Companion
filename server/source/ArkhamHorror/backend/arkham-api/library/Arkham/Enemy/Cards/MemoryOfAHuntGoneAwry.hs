@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.MemoryOfAHuntGoneAwry (memoryOfAHuntGoneAwry) where
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Story
 import Arkham.Matcher
 import Arkham.Story.Cards qualified as Stories
@@ -14,7 +14,7 @@ newtype MemoryOfAHuntGoneAwry = MemoryOfAHuntGoneAwry EnemyAttrs
 
 memoryOfAHuntGoneAwry :: EnemyCard MemoryOfAHuntGoneAwry
 memoryOfAHuntGoneAwry =
-  enemyWith MemoryOfAHuntGoneAwry Cards.memoryOfAHuntGoneAwry (5, PerPlayer 3, 2) (1, 1)
+  enemyWith MemoryOfAHuntGoneAwry Cards.memoryOfAHuntGoneAwry
     $ preyL
     .~ Prey (ControlsAsset $ assetIs Assets.roaldEllsworthIntrepidExplorer)
 

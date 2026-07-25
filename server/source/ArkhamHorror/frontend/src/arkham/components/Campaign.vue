@@ -7,17 +7,25 @@ import Scenario from '@/arkham/components/Scenario.vue';
 import UpgradeDeck from '@/arkham/components/UpgradeDeck.vue';
 import ChooseDeck from '@/arkham/components/ChooseDeck.vue';
 import ContinueCampaign from '@/arkham/components/ContinueCampaign.vue';
+import UltimatumsAndBoonsQuestion from '@/arkham/components/UltimatumsAndBoonsQuestion.vue';
+import { handleEmbeddedI18n } from '@/arkham/i18n';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps<{
   game: Game
   campaign: Campaign
   playerId: string
+  realityAcidLightDevoured?: boolean
+  realityAcidLightActive?: boolean
 }>()
 
 const emit = defineEmits<{
   update: [game: Game]
   choose: [idx: number]
+  toggleRealityAcidLight: []
 }>()
+
+const { t } = useI18n()
 
 async function update(game: Game) {
   emit('update', game);
@@ -58,11 +66,41 @@ const questionLabel = computed(() => {
 
   if (!question) return null
 
-  return question.tag === 'QuestionLabel' ? question.label : null
+  // Ultimatums/Boons questions render their own titled panel inside ChooseDeck
+  if (question.tag === 'QuestionLabel' && question.label?.startsWith('$label.ultimatumsAndBoons')) return null
+
+  return question.tag === 'QuestionLabel' ? handleEmbeddedI18n(question.label, t) : null
 })
 
+// Boon of the Morrígan's weakness choice is deferred to just after decks are
+// chosen, so the campaign step is already a ContinueCampaignStep (e.g. the
+// prologue) while the choice is still pending. Suppress the campaign "Continue"
+// screen while any player has a pending Ultimatums & Boons question so the
+// asking player's question surfaces (via StoryQuestion) instead of being masked.
+const ultimatumsAndBoonsQuestion = computed(() => {
+  const entry = Object.entries(props.game.question).find(
+    ([, q]) => q?.tag === 'QuestionLabel' && q.label?.startsWith('$label.ultimatumsAndBoons')
+  )
+  return entry ? { playerId: entry[0] } : null
+})
+
+const pendingUltimatumsAndBoonsQuestion = computed(() => ultimatumsAndBoonsQuestion.value !== null)
+
 const continueCampaign = computed(() => {
-  if (props.game.campaign && props.game.campaign.step?.tag === 'ContinueCampaignStep') return props.game.campaign.step.contents
+  if (!props.game.campaign) return null
+  if (pendingUltimatumsAndBoonsQuestion.value) return null
+  // The campaign step records where play will continue, but deferred deck setup
+  // (such as In the Thick of It trauma) can still have its own question pending.
+  // Only render the continuation when the server is actually asking for it.
+  const hasContinueQuestion = Object.values(props.game.question)
+    .some((question) => question?.tag === 'ContinueCampaign')
+  if (!hasContinueQuestion) return null
+
+  const step = props.game.campaign.step
+  if (step?.tag === 'ContinueCampaignStep') return step.contents
+  if (step?.tag === 'StandaloneScenarioStep' && step.contents[1]?.tag === 'ContinueCampaignStep') {
+    return step.contents[1].contents
+  }
   return null
 })
 
@@ -110,7 +148,15 @@ const questionHash = computed(() => {
 })
 
 const continueScenario = computed(() => {
-  if (props.game.scenario?.campaignStep?.tag === 'ContinueCampaignStep') return props.game.scenario?.campaignStep.contents
+  const step = props.game.scenario?.campaignStep
+  if (!step) return null
+  if (step.tag === 'ContinueCampaignStep') return step.contents
+
+  // ContinueCampaignStep was already unwrapped by the backend but question is still pending
+  const question = props.game.question[props.playerId] ?? Object.values(props.game.question)[0]
+  if (question?.tag === 'ContinueCampaign') {
+    return { nextStep: step, canUpgradeDecks: false, chooseSideStory: false, canChooseSideStory: false }
+  }
   return null
 })
 
@@ -131,36 +177,42 @@ const inScenarioStep = computed(() => {
     <ContinueCampaign
       :game="game"
       :campaign="campaign"
-      :playerId="playerId"
       :canUpgradeDecks="continueCampaign.canUpgradeDecks"
       :step="continueCampaign.nextStep"
       :chooseSideStory="continueCampaign.chooseSideStory"
       :canChooseSideStory="continueCampaign.canChooseSideStory"
-      @choose="choose"
     />
   </div>
   <div v-else-if="game.gameState.tag === 'IsActive'" id="game" class="game">
-    <template v-if="pickDestiny">
+    <UltimatumsAndBoonsQuestion
+      v-if="ultimatumsAndBoonsQuestion"
+      :game="game"
+      :playerId="ultimatumsAndBoonsQuestion.playerId"
+      :viewOnly="ultimatumsAndBoonsQuestion.playerId !== playerId"
+      @choose="choose"
+    />
+    <template v-else-if="pickDestiny">
       <StoryQuestion :game="game" :key="questionHash" :playerId="playerId" @choose="choose" />
     </template>
     <ContinueCampaign
-      v-if="continueScenario"
+      v-else-if="continueScenario"
       :game="game"
       :scenario="game.scenario ?? undefined"
-      :playerId="playerId"
       :canUpgradeDecks="continueScenario.canUpgradeDecks"
       :step="continueScenario.nextStep"
       :chooseSideStory="continueScenario.chooseSideStory"
       :canChooseSideStory="continueScenario.canChooseSideStory"
-      @choose="choose"
     />
     <Scenario
       v-else-if="game.scenario && game.scenario.started && Object.entries(game.investigators).length > 0 && !inScenarioStep"
       :game="game"
       :scenario="game.scenario"
       :playerId="playerId"
+      :realityAcidLightDevoured="realityAcidLightDevoured"
+      :realityAcidLightActive="realityAcidLightActive"
       @choose="choose"
       @update="update"
+      @toggleRealityAcidLight="$emit('toggleRealityAcidLight')"
     />
     <template v-else>
       <StoryQuestion :game="game" :key="questionHash" :playerId="playerId" @choose="choose" />
@@ -190,7 +242,7 @@ const inScenarioStep = computed(() => {
 }
 
 .clue--can-investigate {
-  border: 3px solid #ff00ff;
+  border: 3px solid var(--select);
   border-radius: 100px;
   cursor: pointer;
 }
@@ -213,13 +265,13 @@ const inScenarioStep = computed(() => {
     left: 0;
     right: 0;
     margin: auto;
-    z-index: -1;
+    z-index: var(--z-index-neg-1);
   }
 }
 
 .game {
   width: 100%;
-  z-index: 1;
+  z-index: var(--z-index-1);
 }
 
 .location-cards {

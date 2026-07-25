@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.InconspicuousZoog (inconspicuousZoog) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.ForMovement
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
@@ -15,7 +15,7 @@ newtype InconspicuousZoog = InconspicuousZoog EnemyAttrs
 
 inconspicuousZoog :: EnemyCard InconspicuousZoog
 inconspicuousZoog =
-  enemyWith InconspicuousZoog Cards.inconspicuousZoog (2, Static 1, 2) (1, 1)
+  enemyWith InconspicuousZoog Cards.inconspicuousZoog
     $ spawnAtL
     ?~ SpawnAt (ConnectedLocation NotForMovement)
 
@@ -38,7 +38,7 @@ instance RunMessage InconspicuousZoog where
           connectingLocations <-
             select $ connectedFrom (locationWithEnemy host) <> LocationCanBeEnteredBy host
           unless (null connectingLocations) do
-            exhaustThis host
+            exhaustWith attrs host
             chooseOrRunOneM iid $ targets connectingLocations $ enemyMoveTo (attrs.ability 1) host
         _ -> error "should not trigger"
       pure e

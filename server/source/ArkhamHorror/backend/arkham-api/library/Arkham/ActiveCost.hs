@@ -7,6 +7,7 @@ import Arkham.ActiveCost.Base as X
 import Arkham.Ability hiding (PaidCost)
 import Arkham.Action hiding (TakenAction)
 import Arkham.Action qualified as Action
+import Arkham.Actions
 import Arkham.Asset.Types (
   Field (
     AssetCard,
@@ -32,9 +33,10 @@ import Arkham.Deck qualified as Deck
 import Arkham.Distance
 import Arkham.Effect.Window
 import Arkham.EffectMetadata
-import Arkham.Enemy.Types (Field (EnemySealedChaosTokens))
+import Arkham.Enemy.Types (Field (EnemySealedChaosTokens, EnemyTokens))
 import Arkham.Event.Types (Field (EventCard, EventController))
 import Arkham.Exception
+import Arkham.Exhaust (mkExhaustion)
 import Arkham.GameValue
 import Arkham.Helpers
 import Arkham.Helpers.Ability
@@ -70,7 +72,6 @@ import Arkham.Matcher hiding (
   SkillCard,
  )
 import Arkham.Message.Lifted qualified as Lifted
-import Arkham.Message.Lifted.Choose
 import Arkham.Name
 import Arkham.Prelude
 import Arkham.Projection
@@ -92,16 +93,16 @@ import GHC.Records
 activeCostActions :: ActiveCost -> [Action]
 activeCostActions ac = case ac.target of
   ForAbility a -> #activate : a.actions
-  ForCard isPlayAction c -> [#play | isPlayAction == IsPlayAction] <> c.actions
+  ForCard isPlayAction c ->
+    [#play | isPlayAction == IsPlayAction]
+      <> case ac.activeCostChosenOrAction of
+        Just chosen -> [chosen]
+        Nothing -> actionsToList (cdActions (toCardDef c))
   ForCost _ -> []
   ForAdditionalCost _ -> []
 
 instance HasField "actions" ActiveCost [Action] where
   getField = activeCostActions
-
-addActiveCostCost :: Cost -> ActiveCost -> ActiveCost
-addActiveCostCost cost ac = ac & costsL <>~ cost
-
 activeCostSource :: ActiveCost -> Source
 activeCostSource ac = case activeCostTarget ac of
   ForAbility a -> toSource a
@@ -116,10 +117,6 @@ instance HasField "canModify" ActiveCost Bool where
   getField c = case c.target of
     ForCard {} -> False
     _ -> True
-
-costsL :: Lens' ActiveCost Cost
-costsL = lens activeCostCosts $ \m x -> m {activeCostCosts = x}
-
 costPaymentsL :: Lens' ActiveCost Payment
 costPaymentsL = lens activeCostPayments $ \m x -> m {activeCostPayments = x}
 
@@ -134,15 +131,12 @@ getActionCostModifier ac = do
   modifiers <- getModifiers iid
   pure $ foldr (applyModifier takenActions performedActions) 0 modifiers
  where
-  actions = case ac.actions of
-    [] -> error "expected action"
-    as -> as
   applyModifier takenActions performedActions (AdditionalActionCostOf match m) n =
     -- For cards we've already calculated the cost as an additional cost for
     -- the action specifically
     case ac.target of
       ForCard {} -> n
-      _ -> if any (matchTarget takenActions performedActions match) actions then n + m else n
+      _ -> if any (matchTarget takenActions performedActions match) ac.actions then n + m else n
   applyModifier _ _ _ n = n
 
 countAdditionalActionPayments :: Payment -> Int
@@ -173,15 +167,16 @@ startAbilityPayment activeCost@ActiveCost {activeCostId} iid window abilityType 
     ForcedAbilityWithCost {} -> push (PayCosts activeCostId)
     AbilityEffect {} -> push (PayCosts activeCostId)
     FastAbility' _ mAction ->
-      pushAll $ PayCosts activeCostId : [PerformedActions iid [action] | action <- toList mAction]
+      pushAll $ PayCosts activeCostId : [PerformedActions iid [action] | action <- actionsToList mAction]
     ForcedWhen _ aType -> startAbilityPayment activeCost iid window aType source noAooFrom
     CustomizationReaction {} -> push (PayCosts activeCostId)
     ConstantReaction {} -> push (PayCosts activeCostId)
-    ReactionAbility  _ _ [] -> push (PayCosts activeCostId)
-    ReactionAbility  _ _ actions' -> do
-      beforeWindowMsg <- checkWindows [mkWhen $ Window.PerformAction iid action | action <- actions']
+    ReactionAbility _ _ actions' | null (actionsToList actions') -> push (PayCosts activeCostId)
+    ReactionAbility _ _ actions' -> do
+      beforeWindowMsg <-
+        checkWindows [mkWhen $ Window.PerformAction iid action | action <- actionsToList actions']
       pushAll [beforeWindowMsg, PayCosts activeCostId]
-    ActionAbility actions' _ _ -> handleActions $ Action.Activate : actions'
+    ActionAbility actions' _ _ -> handleActions $ Action.Activate : actionsToList actions'
  where
   checkAttackOfOpportunity mods actions =
     (noAooFrom /= Just AnyEnemy)
@@ -256,7 +251,7 @@ payCost msg c iid skipAdditionalCosts cost = do
           _ -> pure Nothing
       mVal <- fromMaybe 100 <$> go inner
       push
-        $ questionLabel "Spend X" player
+        $ questionLabel "$label.spendX" player
         $ DropDown
           [ (tshow n, pay (mconcat $ replicate n inner))
           | n <- [1 .. mVal]
@@ -287,12 +282,17 @@ payCost msg c iid skipAdditionalCosts cost = do
       ts <-
         select tm >>= filterM \case
           ScenarioTarget -> scenarioFieldMap ScenarioTokens ((> 0) . Token.countTokens tkn)
+          LocationTarget lid -> fieldMap LocationTokens ((> 0) . Token.countTokens tkn) lid
+          EnemyTarget lid -> fieldMap EnemyTokens ((> 0) . Token.countTokens tkn) lid
           _ -> pure False
       case ts of
         [] -> error "Empty list for SpendTokenCost"
-        [x] -> runQueueT $ Lifted.removeTokens source x tkn 1
-        xs -> runQueueT $ chooseTargetM iid xs \x -> Lifted.removeTokens source x tkn 1
-      pure c
+        [x] -> do
+          runQueueT $ Lifted.removeTokens source x tkn 1
+          withPayment $ SpendTokenPayment tkn x
+        xs -> do
+          push $ chooseOne player $ targetLabels xs $ only . pay . SpendTokenCost tkn . TargetIs
+          pure c
     PlaceKeyCost target key -> do
       push $ PlaceKey target key
       pure c
@@ -402,10 +402,12 @@ payCost msg c iid skipAdditionalCosts cost = do
             ]
       pure c
     EnemyAttackCost eid -> do
-      push $ toMessage $ (enemyAttack eid source iid) {attackCanBeCanceled = False}
+      push
+        $ toMessage
+        $ (enemyAttack eid source iid) {attackCanBeCanceled = False, attackDespiteExhausted = True}
       pure c
     DrawEncounterCardsCost n -> do
-      pushAll $ replicate n $ drawEncounterCard iid source
+      push $ drawEncounterCards iid source n
       pure c
     SkillTestCost stsource sType n -> do
       sid <- getRandom
@@ -438,11 +440,11 @@ payCost msg c iid skipAdditionalCosts cost = do
       xs' <- filterM (getCanAffordCost_ iid c.source actions c.windows c.canModify) xs
       push
         $ chooseOrRunOne player
-        $ map (\x -> Label (displayCostType x) [pay x]) xs'
+        $ map (\x -> CostLabel x [pay x]) xs'
       pure c
     OptionalCost x -> do
       canAfford <- getCanAffordCost iid c.source actions [] x
-      pushWhen canAfford $ chooseOne player [Label (displayCostType x) [pay x], Label "Do not pay" []]
+      pushWhen canAfford $ chooseOne player [CostLabel x [pay x], Label "$label.doNotPay" []]
       pure c
     Costs xs -> do
       pushAll $ map pay xs
@@ -463,8 +465,9 @@ payCost msg c iid skipAdditionalCosts cost = do
           choiceId <- getRandom
           pushWhen canAfford
             $ Ask player
+            $ PayCostQuestion cost
             $ ChoosePaymentAmounts
-              ("Pay " <> displayCostType cost)
+              ""
               Nothing
               [PaymentAmountChoice choiceId iid 0 maxUpTo name $ pay cost']
           pure c
@@ -484,8 +487,9 @@ payCost msg c iid skipAdditionalCosts cost = do
           choiceId <- getRandom
           pushWhen canAfford
             $ Ask player
+            $ PayCostQuestion cost
             $ ChoosePaymentAmounts
-              ("Pay " <> displayCostType cost)
+              ""
               Nothing
               [PaymentAmountChoice choiceId iid 1 maxUpTo name $ pay cost']
           pure c
@@ -514,7 +518,7 @@ payCost msg c iid skipAdditionalCosts cost = do
       push $ CreateWindowModifierEffect (EffectCardCostWindow cardId) ems c.source (toTarget cardId)
       pure c
     ExhaustCost target -> do
-      push $ Exhaust target
+      push $ Exhaust (mkExhaustion c.source target)
       withPayment $ ExhaustPayment [target]
     ExhaustAssetCost matcher -> do
       assets <- select $ matcher <> AssetReady
@@ -611,8 +615,15 @@ payCost msg c iid skipAdditionalCosts cost = do
       push $ chooseOne player $ targetLabels assets $ only . pay . discardCost
       pure c
     DiscardRandomCardCost -> do
-      push $ toMessage $ randomDiscard iid source
-      pure c
+      hand <- field InvestigatorHand iid
+      candidates <- filterM (`matches` CardWithoutModifier CannotLeaveYourHand) hand
+      case nonEmpty candidates of
+        Nothing -> pure c
+        Just cards -> do
+          card <- sample cards
+          wouldDiscard <- checkWhen (Window.WouldDiscardFromHand iid source)
+          pushAll [wouldDiscard, DiscardCard iid source (toCardId card)]
+          withPayment $ DiscardCardPayment [card]
     DiscardCardCost card -> do
       push $ toMessage $ discardCard iid source card
       withPayment $ DiscardCardPayment [card]
@@ -732,14 +743,21 @@ payCost msg c iid skipAdditionalCosts cost = do
           withPayment $ DirectDamagePayment x <> DirectHorrorPayment y
         _ -> error "exactly one investigator expected for direct damage"
     InvestigatorDamageCost source' investigatorMatcher damageStrategy x -> do
+      let damageStrategy' = if damageStrategy == DamageAny then DamageAnyDeferred else damageStrategy
       investigators <- select investigatorMatcher
       push
         $ chooseOrRunOne
           player
-          [ targetLabel iid' [InvestigatorAssignDamage iid' source' damageStrategy x 0]
+          [ targetLabel iid' [InvestigatorAssignDamage iid' source' damageStrategy' x 0]
           | iid' <- investigators
           ]
       withPayment $ InvestigatorDamagePayment x
+    EachInvestigatorDamageCost source' investigatorMatcher damageStrategy x -> do
+      let damageStrategy' = if damageStrategy == DamageAny then DamageAnyDeferred else damageStrategy
+      investigators <- select investigatorMatcher
+      for_ investigators $ \iid' ->
+        push $ InvestigatorAssignDamage iid' source' damageStrategy' x 0
+      withPayment $ InvestigatorDamagePayment (x * length investigators)
     FieldResourceCost (FieldCost mtchr fld) -> do
       ns <- nub <$> selectFields fld mtchr
       case ns of
@@ -776,6 +794,10 @@ payCost msg c iid skipAdditionalCosts cost = do
       n <- calculate calc
       push $ PayCost acId iid True (ResourceCost n)
       pure c
+    CalculatedClueCost calc -> do
+      n <- calculate calc
+      push $ PayCost acId iid True (ClueCost $ Static n)
+      pure c
     CalculatedHandDiscardCost calc matcher -> do
       n <- calculate calc
       push $ PayCost acId iid True (HandDiscardCost n matcher)
@@ -801,13 +823,16 @@ payCost msg c iid skipAdditionalCosts cost = do
       x <- min n <$> getRemainingCurseTokens
       if x < n
         then do
-          -- we need to parallel rex
+          -- we need to parallel rex; his reaction only triggers when 2+ curse tokens would be added
           canParallelRex <-
-            iid
-              <=~> ( InvestigatorIs "90078"
-                       <> InvestigatorAt Anywhere
-                       <> InvestigatorWithAnyClues
-                   )
+            if n < 2
+              then pure False
+              else
+                iid
+                  <=~> ( InvestigatorIs "90078"
+                           <> InvestigatorAt Anywhere
+                           <> InvestigatorWithAnyClues
+                       )
           if canParallelRex
             then do
               batchId <- getRandom
@@ -840,14 +865,17 @@ payCost msg c iid skipAdditionalCosts cost = do
         iid <=~> (InvestigatorIs "90078" <> InvestigatorAt Anywhere <> InvestigatorWithAnyClues)
       rex <- if canParallelRex then fieldMap InvestigatorClues (* 2) iid else pure 0
 
-      maxTokens <- min m . (+ rex) <$> getRemainingCurseTokens
+      remaining <- getRemainingCurseTokens
+      let maxTokens = min m (remaining + rex)
+      let payable k = k <= remaining || (k >= 2 && k - remaining <= rex)
 
       push
         $ Ask player
-        $ QuestionLabel ("Pay " <> displayCostType cost) Nothing
+        $ PayCostQuestion cost
         $ DropDown
           [ (tshow x, pay (AddCurseTokenCost x))
           | x <- [n .. maxTokens]
+          , payable x
           ]
       pure c
     AddCurseTokensEqualToShroudCost -> do
@@ -920,7 +948,8 @@ payCost msg c iid skipAdditionalCosts cost = do
                   rs2 <- getRandoms
                   push
                     $ Ask player
-                    $ ChoosePaymentAmounts ("Pay " <> tshow x <> " resources") (Just $ TotalAmountTarget x)
+                    $ PayCostQuestion (ResourceCost x)
+                    $ ChoosePaymentAmounts "" (Just $ TotalAmountTarget x)
                     $ map
                       ( \(choiceId, (iid', name, resources)) -> PaymentAmountChoice choiceId iid' 0 resources name (SpendResources iid' 1)
                       )
@@ -998,8 +1027,7 @@ payCost msg c iid skipAdditionalCosts cost = do
         modifiedActionCost = max 0 (x + costModifier')
         actions' = case c.target of
           ForAbility a -> a.actions
-          ForCard IsPlayAction c' -> #play : c'.actions
-          ForCard NotPlayAction c' -> c'.actions
+          ForCard {} -> c.actions
           _ -> []
         source' = case activeCostTarget c of
           ForAbility a -> toSource a
@@ -1081,7 +1109,7 @@ payCost msg c iid skipAdditionalCosts cost = do
       withPayment $ UsesPayment n
     UseCostUpTo assetMatcher uType n m -> do
       assets <- select assetMatcher
-      uses <- sum <$> traverse (fieldMap AssetUses (findWithDefault 0 uType)) assets
+      uses <- getSpendableUseCount assets uType
       let maxUses = min uses m
 
       name <- fieldMap InvestigatorName toTitle iid
@@ -1089,8 +1117,9 @@ payCost msg c iid skipAdditionalCosts cost = do
 
       push
         $ Ask player
+        $ PayCostQuestion cost
         $ ChoosePaymentAmounts
-          ("Pay " <> displayCostType cost)
+          ""
           Nothing
           [ PaymentAmountChoice choiceId iid n maxUses name
               $ pay (UseCost assetMatcher uType 1)
@@ -1136,32 +1165,36 @@ payCost msg c iid skipAdditionalCosts cost = do
       x <- perPlayer 1
       if mVal == x
         then push $ pay (GroupClueCost (PerPlayer 1) Anywhere)
-        else
+        else do
+          let maxX = mVal `div` x
           push
-            $ questionLabel ("Spend 1-" <> tshow mVal <> " {perPlayer} clues, as a group") player
+            $ questionLabel ("Spend 1-" <> tshow maxX <> " {perPlayer} clues, as a group") player
             $ DropDown
               [ (tshow n, pay (GroupClueCost (PerPlayer n) Anywhere))
-              | n <- [1 .. (mVal `div` x)]
+              | n <- [1 .. maxX]
               ]
       pure c
     PlaceClueOnLocationCost x -> do
-      push $ InvestigatorPlaceCluesOnLocation iid source x
-      withPayment $ CluePayment iid x
+      n <- getPlayerCountValue x
+      push $ InvestigatorPlaceCluesOnLocation iid source n
+      withPayment $ CluePayment iid n
     GroupClueCostRange (sVal, eVal) locationMatcher -> do
-      mVal <- min eVal . getSum <$> selectAgg Sum InvestigatorClues (InvestigatorAt locationMatcher)
+      let lm = replaceYouMatcher iid locationMatcher
+      mVal <- min eVal . getSum <$> selectAgg Sum InvestigatorClues (InvestigatorAt lm)
       if mVal == sVal
-        then push $ pay (GroupClueCost (Static sVal) locationMatcher)
+        then push $ pay (GroupClueCost (Static sVal) lm)
         else
           push
             $ questionLabel ("Spend " <> tshow sVal <> "-" <> tshow mVal <> " clues, as a group") player
             $ DropDown
-              [ (tshow n, pay (GroupClueCost (Static n) locationMatcher))
+              [ (tshow n, pay (GroupClueCost (Static n) lm))
               | n <- [sVal .. mVal]
               ]
       pure c
     GroupClueCost x locationMatcher -> do
       totalClues <- getPlayerCountValue x
-      iids <- select $ InvestigatorAt locationMatcher <> InvestigatorWithAnyClues
+      let lm = replaceYouMatcher iid locationMatcher
+      iids <- select $ InvestigatorAt lm <> InvestigatorWithAnyClues
       iidsWithClues <- forMaybeM iids \iid' -> do
         clues <- getSpendableClueCount [iid']
         if clues > 0
@@ -1187,14 +1220,18 @@ payCost msg c iid skipAdditionalCosts cost = do
               lead <- getLeadPlayer
               push
                 $ Ask lead
-                $ ChoosePaymentAmounts (displayCostType cost) (Just $ TotalAmountTarget totalClues) paymentOptions
+                $ ChoosePaymentAmounts
+                  ("$cluesPerPlayerAsGroup total=i:" <> tshow totalClues)
+                  (Just $ TotalAmountTarget totalClues)
+                  paymentOptions
       pure c
     -- push (SpendClues totalClues iids)
     -- withPayment $ CluePayment totalClues
     SameLocationGroupClueCost x locationMatcher -> do
       totalClues <- getPlayerCountValue x
+      let lm = replaceYouMatcher iid locationMatcher
       locations <-
-        select locationMatcher >>= filterM \lid -> do
+        select lm >>= filterM \lid -> do
           total <- getSpendableClueCount =<< select (investigatorAt lid)
           pure $ total >= totalClues
       lead <- getLeadPlayer
@@ -1207,7 +1244,8 @@ payCost msg c iid skipAdditionalCosts cost = do
     -- withPayment $ CluePayment totalClues
     GroupResourceCost x locationMatcher -> do
       totalResources <- getPlayerCountValue x
-      iids <- select $ InvestigatorAt locationMatcher <> InvestigatorWithAnyResources
+      let lm = replaceYouMatcher iid locationMatcher
+      iids <- select $ InvestigatorAt lm <> InvestigatorWithAnyResources
       iidsWithResources <- forMaybeM iids \iid' -> do
         resources <- getSpendableResources iid'
         if resources > 0
@@ -1233,11 +1271,13 @@ payCost msg c iid skipAdditionalCosts cost = do
               lead <- getLeadPlayer
               push
                 $ Ask lead
-                $ ChoosePaymentAmounts (displayCostType cost) (Just $ TotalAmountTarget totalResources) paymentOptions
+                $ PayCostQuestion cost
+                $ ChoosePaymentAmounts "" (Just $ TotalAmountTarget totalResources) paymentOptions
       pure c
     GroupDiscardCost x extendedCardMatcher locationMatcher -> do
       totalCards <- getPlayerCountValue x
-      iids <- select $ InvestigatorAt locationMatcher <> HandWith (HasCard DiscardableCard)
+      let lm = replaceYouMatcher iid locationMatcher
+      iids <- select $ InvestigatorAt lm <> HandWith (HasCard DiscardableCard)
       iidsWithCards <- forMaybeM iids \iid' -> do
         cards <- select $ inHandOf NotForPlay iid' <> basic DiscardableCard <> extendedCardMatcher
         if not (null cards)
@@ -1264,7 +1304,8 @@ payCost msg c iid skipAdditionalCosts cost = do
               lead <- getLeadPlayer
               push
                 $ Ask lead
-                $ ChoosePaymentAmounts (displayCostType cost) (Just $ TotalAmountTarget totalCards) paymentOptions
+                $ PayCostQuestion cost
+                $ ChoosePaymentAmounts "" (Just $ TotalAmountTarget totalCards) paymentOptions
       pure c
     HandDiscardCost x extendedCardMatcher -> do
       handCards <- fieldMap InvestigatorHand (mapMaybe (preview _PlayerCard)) iid
@@ -1351,8 +1392,34 @@ payCost msg c iid skipAdditionalCosts cost = do
           | (zone', card) <- cards
           ]
       pure c
+    GroupSkillIconCost x skillTypes locationMatcher -> do
+      let lm = replaceYouMatcher iid locationMatcher
+      iids <- select $ InvestigatorAt lm
+      options <- concatForM iids \iid' -> do
+        handCards <-
+          mapMaybe (preview _PlayerCard) <$> select (inHandOf NotForPlay iid' <> basic DiscardableCard)
+        let countF = if null skillTypes then const True else (`member` insertSet WildIcon skillTypes)
+        pure
+          [ (iid', n, card)
+          | (n, card) <- map (toFst (count countF . cdSkills . toCardDef)) handCards
+          , n > 0
+          ]
+      lead <- getLeadPlayer
+      let
+        cardMsgs =
+          map
+            ( \(iid', n, card) ->
+                targetLabel (toCardId card)
+                  $ toMessage (discardCard iid' source card)
+                  : PaidAbilityCost iid' Nothing (SkillIconPayment card.skills)
+                  : [pay (GroupSkillIconCost (x - n) skillTypes locationMatcher) | n < x]
+            )
+            options
+      push $ chooseOne lead cardMsgs
+      pure c
     SkillIconCost x skillTypes -> do
-      handCards <- fieldMap InvestigatorHand (mapMaybe (preview _PlayerCard)) iid
+      handCards <-
+        mapMaybe (preview _PlayerCard) <$> select (inHandOf NotForPlay iid <> basic DiscardableCard)
       let countF = if null skillTypes then const True else (`member` insertSet WildIcon skillTypes)
       let
         cards =
@@ -1471,54 +1538,62 @@ instance RunMessage ActiveCost where
         ForCost _ -> do
           pushAll [PayCosts acId, PayCostFinished acId]
           pure c
-        ForCard isPlayAction card -> do
-          modifiers' <- (<>) <$> getModifiers iid <*> getModifiers card
+        ForCard _isPlayAction card -> do
           let cardDef = toCardDef card
-          enabled <-
-            createCardEffect
-              cardDef
-              (Just $ EffectCost acId)
-              (BothSource (InvestigatorSource iid) (CardIdSource card.id))
-              (toCardId card)
+          -- For OrActions with no prior BeforePlayEvent, create a pending event
+          -- so the event itself can ask the player before costs begin
+          case (cardDef.cardActions, c.pendingEventId) of
+            (OrActions _, Nothing) -> do
+              eid <- getRandom
+              pushAll [CreatePendingEvent card iid eid, BeforePlayEvent iid eid acId]
+              pure $ c {activeCostPendingEventId = Just eid}
+            _ -> do
+              modifiers' <- (<>) <$> getModifiers iid <*> getModifiers card
+              enabled <-
+                createCardEffect
+                  cardDef
+                  (Just $ EffectCost acId)
+                  (BothSource (InvestigatorSource iid) (CardIdSource card.id))
+                  (toCardId card)
 
-          let
-            modifiersPreventAttackOfOpportunity = ActionDoesNotCauseAttacksOfOpportunity #play `elem` modifiers'
-            actions = [Action.Play | isPlayAction == IsPlayAction] <> cardDef.actions
-            mEffect =
-              guard cardDef.beforeEffect
-                *> [ enabled
-                   , CheckAdditionalCosts acId
+              let
+                modifiersPreventAttackOfOpportunity = ActionDoesNotCauseAttacksOfOpportunity #play `elem` modifiers'
+                actions = c.actions
+                mEffect =
+                  guard cardDef.beforeEffect
+                    *> [ enabled
+                       , CheckAdditionalCosts acId
+                       ]
+              batchId <- getRandom
+              beforeWindowMsg <- checkWindows $ map (mkWhen . Window.PerformAction iid) actions
+              wouldPayWindowMsg <- checkWindows [mkWhen $ Window.WouldPayCardCost iid acId batchId card]
+              -- We only need to check attacks of opportunity if we spend actions,
+              -- indepdent of the card being fast (for example the card you would
+              -- play off of Uncage the Soul)
+              pushAll
+                $ (guard (notNull actions) *> [BeginAction, beforeWindowMsg])
+                <> mEffect
+                <> [ wouldPayWindowMsg
+                   , Would
+                       batchId
+                       $ [ Will (CheckAttackOfOpportunity iid False Nothing)
+                         | not modifiersPreventAttackOfOpportunity
+                             && (DoesNotProvokeAttacksOfOpportunity `notElem` cardDef.attackOfOpportunityModifiers)
+                             && isNothing cardDef.fastWindow
+                             && all (`notElem` nonAttackOfOpportunityActions) actions
+                             && (totalActionCost c.costs > 0)
+                         ]
+                       <> [PayCosts acId]
+                       <> [ CheckAttackOfOpportunity iid False Nothing
+                          | not modifiersPreventAttackOfOpportunity
+                              && (DoesNotProvokeAttacksOfOpportunity `notElem` cardDef.attackOfOpportunityModifiers)
+                              && isNothing cardDef.fastWindow
+                              && all (`notElem` nonAttackOfOpportunityActions) actions
+                              && (totalActionCost c.costs > 0)
+                          ]
+                       <> [PayCostFinished acId]
                    ]
-          batchId <- getRandom
-          beforeWindowMsg <- checkWindows $ map (mkWhen . Window.PerformAction iid) actions
-          wouldPayWindowMsg <- checkWindows [mkWhen $ Window.WouldPayCardCost iid acId batchId card]
-          -- We only need to check attacks of opportunity if we spend actions,
-          -- indepdent of the card being fast (for example the card you would
-          -- play off of Uncage the Soul)
-          pushAll
-            $ (guard (notNull actions) *> [BeginAction, beforeWindowMsg])
-            <> mEffect
-            <> [ wouldPayWindowMsg
-               , Would
-                   batchId
-                   $ [ Will (CheckAttackOfOpportunity iid False Nothing)
-                     | not modifiersPreventAttackOfOpportunity
-                         && (DoesNotProvokeAttacksOfOpportunity `notElem` cardDef.attackOfOpportunityModifiers)
-                         && isNothing cardDef.fastWindow
-                         && all (`notElem` nonAttackOfOpportunityActions) actions
-                         && (totalActionCost c.costs > 0)
-                     ]
-                   <> [PayCosts acId]
-                   <> [ CheckAttackOfOpportunity iid False Nothing
-                      | not modifiersPreventAttackOfOpportunity
-                          && (DoesNotProvokeAttacksOfOpportunity `notElem` cardDef.attackOfOpportunityModifiers)
-                          && isNothing cardDef.fastWindow
-                          && all (`notElem` nonAttackOfOpportunityActions) actions
-                          && (totalActionCost c.costs > 0)
-                      ]
-                   <> [PayCostFinished acId]
-               ]
-          pure c
+              pure c
         ForAbility a@(Ability {..}) -> do
           modifiers' <- getCombinedModifiers [toTarget iid, AbilityTarget iid $ abilityToRef a]
           let
@@ -1601,6 +1676,8 @@ instance RunMessage ActiveCost where
                 else throw $ InvalidState $ "Can't afford cost (b): " <> tshow cost
     SetCost acId cost | acId == c.id -> do
       pure $ c {activeCostCosts = cost}
+    SetActiveCostChosenAction acId action | acId == c.id -> do
+      pure $ c {activeCostChosenOrAction = Just action}
     PaidCost acId _ _ payment | acId == c.id -> do
       pure $ c & costPaymentsL <>~ payment
     PayCostFinished acId | acId == c.id -> do
@@ -1612,6 +1689,23 @@ instance RunMessage ActiveCost where
               let
                 isAction = isActionAbility ability && ability.index > 0 && not (isFastAbility ability)
                 actions = nub $ [Action.Activate | abilityIsActivate ability] <> ability.actions
+                -- A *fast* ability with a bold Parley designator still performs a
+                -- parley: "Parley abilities are exclusively resolved by ...
+                -- activating abilities" (Grimoire, "Parley"), and there is no
+                -- basic parley action, so nothing else opens its after-window.
+                -- Its reactors are worded as the verb ("after an investigator
+                -- parleys" -- End of Negotiations vs Questioning the Gangs' fast
+                -- Parley), so open PerformAction #parley here (no FinishAction /
+                -- TakenActions; a fast ability takes no action).
+                --
+                -- Restricted to Parley on purpose: the other designators
+                -- (fight/evade/investigate/move) DO have basic actions, and an
+                -- ability-initiated one passes isAction=False so it opens no
+                -- window -- a fast one must stay window-less too, or forced
+                -- "after you perform an action" cards (Arm Injury, Dreadful
+                -- Mechanism, Serpent's Haven, Time Warp) mis-fire on it.
+                fastDesignatedActions =
+                  if isFastAbility ability then filter (== Action.Parley) ability.actions else []
                 iid = c.investigator
               whenActivateAbilityWindow <- checkWindows [mkWhen (Window.ActivateAbility iid c.windows ability)]
               afterActivateAbilityWindow <- checkWindows [mkAfter (Window.ActivateAbility iid c.windows ability)]
@@ -1620,7 +1714,13 @@ instance RunMessage ActiveCost where
                   then do
                     afterWindowMsgs <- checkWindows [mkAfter (Window.PerformAction iid action) | action <- actions]
                     pure [afterWindowMsgs, FinishAction, TakenActions iid actions]
-                  else pure []
+                  else
+                    if notNull fastDesignatedActions
+                      then do
+                        afterWindowMsgs <-
+                          checkWindows [mkAfter (Window.PerformAction iid action) | action <- fastDesignatedActions]
+                        pure [afterWindowMsgs]
+                      else pure []
               -- TODO: this will not work for ForcedWhen, but this currently only applies to IntelReport
               isForced <- isForcedAbility iid ability
               card <- sourceToCard ability.source
@@ -1632,10 +1732,10 @@ instance RunMessage ActiveCost where
                 <> [afterActivateAbilityWindow | not isForced]
         ForCard isPlayAction card -> do
           let iid = c.investigator
-          let actions = [#play | isPlayAction == IsPlayAction] <> card.actions
-          let ability = restricted iid PlayAbility (Self <> Never) (ActionAbility [#play] Nothing $ ActionCost 1)
+          let ability = restricted iid PlayAbility (Self <> Never) (ActionAbility #play Nothing $ ActionCost 1)
           whenActivateAbilityWindow <- checkWindows [mkWhen (Window.ActivateAbility iid c.windows ability)]
           afterActivateAbilityWindow <- checkWindows [mkAfter (Window.ActivateAbility iid c.windows ability)]
+          let actions = c.actions
           afterWindowMsgs <- checkWindows [mkAfter (Window.PerformAction iid action) | action <- actions]
           pushAll
             $ [whenActivateAbilityWindow | isPlayAction == IsPlayAction]

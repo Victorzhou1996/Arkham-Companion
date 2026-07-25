@@ -17,17 +17,17 @@ enraptured2 = skill Enraptured2 Cards.enraptured2
 instance RunMessage Enraptured2 where
   runMessage msg s@(Enraptured2 attrs) = runQueueT $ case msg of
     PassedSkillTest _ (Just Action.Investigate) _ (isTarget attrs -> True) _ _ -> do
-      additionalSkillTestOption "Enraptured (2)" $ doStep 3 msg
+      skillTestCardOption attrs $ doStep 3 msg
       pure s
     DoStep n msg'@(PassedSkillTest _ (Just Action.Investigate) _ (isTarget attrs -> True) _ _) -> do
       when (n > 0) do
         chargeAssets <-
           select
-            $ AssetControlledBy (affectsOthers $ colocatedWith attrs.owner)
+            $ AssetControlledBy (affectsOthersKnown attrs.owner $ colocatedWith attrs.owner)
             <> AssetCanHaveUses Uses.Charge
         secretAssets <-
           select
-            $ AssetControlledBy (affectsOthers $ colocatedWith attrs.owner)
+            $ AssetControlledBy (affectsOthersKnown attrs.owner $ colocatedWith attrs.owner)
             <> AssetCanHaveUses Uses.Secret
         unless (null chargeAssets && null secretAssets) do
           chooseOneM attrs.owner do

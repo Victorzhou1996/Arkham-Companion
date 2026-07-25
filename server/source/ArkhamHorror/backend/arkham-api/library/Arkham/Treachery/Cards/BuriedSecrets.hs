@@ -20,7 +20,8 @@ buriedSecrets :: TreacheryCard BuriedSecrets
 buriedSecrets = treachery BuriedSecrets Cards.buriedSecrets
 
 instance HasAbilities BuriedSecrets where
-  getAbilities (BuriedSecrets a) = [restrictedAbility a 1 OnSameLocation investigateAction_]
+  getAbilities (BuriedSecrets a) =
+    [restrictedAbility a 1 (OnSameLocation <> exists (YourLocation <> InvestigatableLocation)) investigateAction_]
 
 instance HasModifiersFor BuriedSecrets where
   getModifiersFor (BuriedSecrets a) = case a.placement of
@@ -48,10 +49,9 @@ instance RunMessage BuriedSecrets where
         when canManipulateDeck $ do
           chooseOne
             iid
-            [ Label
-                "Take 2 horror to shuffle into your deck"
+            [ Label "$cards.label.buriedSecrets.takeHorror"
                 [Msg.assignHorror iid (attrs.ability 1) 2, Msg.shuffleIntoDeck iid attrs]
-            , Label "Do Nothing" []
+            , Label "$label.doNothing" []
             ]
       pure t
     _ -> BuriedSecrets <$> liftRunMessage msg attrs

@@ -1,29 +1,40 @@
 <script lang="ts" setup>
 import * as Arkham from '@/arkham/types/Game'
 import { LogContents, LogKey, formatKey, logContentsDecoder } from '@/arkham/types/Log'
-import { toCapitalizedWords } from '@/arkham/helpers'
-import { computed, ref, onMounted, watch, type Component } from 'vue'
-import { fetchCard } from '@/arkham/api'
+import { toCapitalizedWords, formatContent } from '@/arkham/helpers'
+import { cardArt } from '@/arkham/cardImages'
+import { computed, ref, onMounted, onUnmounted, watch, type Component } from 'vue'
+import { fetchCard, fetchGameAchievements } from '@/arkham/api'
+import type { Achievement } from '@/arkham/types/Achievement'
 import type { CardDef } from '@/arkham/types/CardDef'
 import { type Name, simpleName } from '@/arkham/types/Name'
-import { scenarioToI18n, type Remembered } from '@/arkham/types/Scenario'
+import { scenarioToI18n, scenarioToKeyI18n, campaignIdToI18n, type Remembered } from '@/arkham/types/Scenario'
 import LogIcons from '@/arkham/components/LogIcons.vue'
 import Calendar from '@/arkham/components/TheScarletKeys/Calendar.vue'
 import KeysStatus from '@/arkham/components/TheScarletKeys/KeysStatus.vue'
 import WorldMap from '@/arkham/components/TheScarletKeys/WorldMap.vue'
 import Supplies from '@/arkham/components/Supplies.vue'
 import XpBreakdown from '@/arkham/components/XpBreakdown.vue'
+import type { XpBreakdownStep } from '@/arkham/types/Xp'
 import InvestigatorRow from '@/arkham/components/InvestigatorRow.vue'
 import CampaignLogSection from '@/arkham/components/CampaignLogSection.vue'
+import CampaignLogSpecialRules from '@/arkham/components/CampaignLogSpecialRules.vue'
 import CampaignLogRecordedSets from '@/arkham/components/CampaignLogRecordedSets.vue'
 import CampaignLogInvestigatorSection from '@/arkham/components/CampaignLogInvestigatorSection.vue'
 import CampaignLogPartners from '@/arkham/components/CampaignLogPartners.vue'
+import { achievementCatalog } from '@/arkham/achievements'
 import CampaignLogChaosBag from '@/arkham/components/CampaignLogChaosBag.vue'
+import CampaignLogAchievements from '@/arkham/components/CampaignLogAchievements.vue'
+import CampaignLogUltimatumsAndBoons from '@/arkham/components/CampaignLogUltimatumsAndBoons.vue'
+import CampaignLogAdditionalSection from '@/arkham/components/CampaignLogAdditionalSection.vue'
+import campaignJSON from '@/arkham/data/campaigns.json'
 import { useI18n } from 'vue-i18n'
 import { useDbCardStore } from '@/stores/dbCards'
 
+import DiscoveredRunes from '@/arkham/components/TheDrownedCity/DiscoveredRunes.vue'
 import ResidentNotes from '@/arkham/components/TheFeastOfHemlockVale/ResidentNotes.vue'
 import AreasSurveyed from '@/arkham/components/TheFeastOfHemlockVale/AreasSurveyed.vue'
+import DayTimeTracker from '@/arkham/components/TheFeastOfHemlockVale/DayTimeTracker.vue'
 
 export interface Props {
   game: Arkham.Game
@@ -32,8 +43,26 @@ export interface Props {
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{ refresh: [] }>()
 const store = useDbCardStore()
-const { t } = useI18n()
+const { t, tm } = useI18n()
+
+type LogTab = 'log' | 'investigators' | 'rules' | 'achievements' | `additional:${number}`
+const activeTab = ref<LogTab>('log')
+
+const achievements = ref<Achievement[]>([])
+const campaignAchievementEntries = computed(() =>
+  achievementCatalog.filter((entry) => entry.campaignId === props.game.campaign?.id)
+)
+const achievementsEnabled = computed(() =>
+  !!props.game.settings.settingsAchievementsEnabled && campaignAchievementEntries.value.length > 0
+)
+
+onMounted(() => {
+  fetchGameAchievements(props.game.id)
+    .then((rows) => { achievements.value = rows })
+    .catch(() => { achievements.value = [] })
+})
 
 const sectionComponentById: Record<string, Component> = {
   motherRachelNotes: ResidentNotes,
@@ -48,19 +77,54 @@ const sectionComponentById: Record<string, Component> = {
 }
 
 // --- Utilities -----------------------------------------------------------------
-const EMPTY_LOG: LogContents = { recorded: [], recordedSets: {} as any, recordedCounts: [], partners: {} as any }
+const EMPTY_LOG: LogContents = { recorded: [], recordedSets: {}, recordedCounts: [], partners: {}, options: [] }
 
 const fullName = (name: Name): string => (name.subtitle ? `${name.title}: ${name.subtitle}` : name.title)
 
 
 const time = computed(() =>
-  selectedLog.value.recordedCounts.find((r) => r[0].tag === 'TheScarletKeysKey' && r[0].contents === 'Time')
+  selectedLog.value.recordedCounts.find((r) => r[0].tag === 'TheScarletKeysKey' && r[0].contents === 'Time')?.[1] ?? null
 )
 
 const theta = computed(() => props.game.campaign?.meta?.theta)
 const delta = computed(() => props.game.campaign?.meta?.delta)
 const psi = computed(() => props.game.campaign?.meta?.psi)
 const scarletKeys = computed(() => props.game.campaign?.meta?.keyStatus)
+
+type AdditionalLogSection = { title: string; body: string }
+type ConfiguredLogSection = string | { id: string; baseKey?: string }
+type CampaignDefinition = { id: string; additional?: AdditionalLogSection[]; logSections?: ConfiguredLogSection[] }
+
+const campaignDefinition = computed<CampaignDefinition | null>(() => {
+  const campaignId = props.game.campaign?.id
+  if (!campaignId) return null
+  return (campaignJSON as CampaignDefinition[]).find((c) => c.id === campaignId) ?? null
+})
+
+const additionalLogSections = computed(() => campaignDefinition.value?.additional ?? [])
+const additionalTabId = (index: number): `additional:${number}` => `additional:${index}`
+const isAdditionalTab = (tab: LogTab): tab is `additional:${number}` => tab.startsWith('additional:')
+
+const hemlockDayTime = computed(() => {
+  if (props.game.campaign?.id !== '10') return null
+  const meta = props.game.campaign?.meta
+  if (!meta?.day || !meta?.time) return null
+  return { day: meta.day as string, time: meta.time as string }
+})
+
+const hemlockAreasSurveyedSection = computed(() => {
+  if (props.game.campaign?.id !== '10') return null
+  return sections.value.find((s) => s.id === 'areasSurveyed') ?? null
+})
+
+const visibleSections = computed(() => {
+  if (props.game.campaign?.id !== '10') return sections.value
+  return sections.value.filter((s) => s.id !== 'areasSurveyed')
+})
+
+// --- Ultimatums and Boons variants -----------------------------------------------
+const ultimatumsAndBoonsEnabled = computed(() => props.game.settings.settingsUltimatumsAndBoonsEnabled)
+const ultimatumsAndBoons = computed(() => props.game.settings.settingsUltimatumsAndBoons)
 
 // --- Determine available logs & titles -----------------------------------------
 const mainLog = computed<LogContents>(() => props.game.campaign?.log || props.game.scenario?.standaloneCampaignLog || EMPTY_LOG)
@@ -122,23 +186,115 @@ const remembered = computed(() => {
   const log = props.game.scenario?.log
   if (!log || !props.game.scenario) return [] as string[]
   const prefix = scenarioToI18n(props.game.scenario)
+  const toKey = (s: string) => (s.charAt(0).toLowerCase() + s.slice(1)).replace(/'/g, '')
   return log.map((record: Remembered) => {
     if (record.tag == 'YouOweBiancaResources') return `You owe Bianca resources (${record.contents})`
-    if (record.tag === 'RememberedName') {
-      return t(`${prefix}.remembered.${record.actualTag.charAt(0).toLowerCase() + record.actualTag.slice(1)}`, {
+    if (record.tag === 'RememberedName' && record.actualTag && record.name) {
+      return t(`${prefix}.remembered.${toKey(record.actualTag)}`, {
         name: simpleName(record.name),
       })
     }
-    return t(`${prefix}.remembered.${record.tag.charAt(0).toLowerCase() + record.tag.slice(1)}`)
+    return t(`${prefix}.remembered.${toKey(record.tag)}`)
   })
 })
 
-const breakdowns =
-  props.game.campaign?.xpBreakdown ||
-  (props.game.scenario && props.game.scenario.xpBreakdown
-    ? [[{ tag: 'ScenarioStep', contents: props.game.scenario.id } as any, props.game.scenario.xpBreakdown]]
-    : undefined) ||
-  []
+// --- Special Rules (scenario-only) ----------------------------------------------
+// Scenarios with printed special rules store them as an array of `{ title?, body }`
+// blocks under `<scenarioI18n>.specialRules` in their locale files. Values may use
+// vue-i18n linked messages (`@:path.to.key`) to reuse existing setup text rather than
+// duplicating it. The section is shown only while that scenario is in play.
+type SpecialRule = { title?: string; bodyKey: string }
+
+const rulesAtScope = (scope: string | null): SpecialRule[] => {
+  if (!scope) return []
+  const key = `${scope}.specialRules`
+  const raw = tm(key) as unknown
+  if (!Array.isArray(raw)) return []
+  return raw.map((rule: any, i: number) => ({
+    title: rule.title ? formatContent(t(`${key}[${i}].title`)) : undefined,
+    bodyKey: `${key}[${i}].body`,
+  }))
+}
+
+const specialRules = computed<SpecialRule[]>(() =>
+  rulesAtScope(props.game.scenario ? scenarioToI18n(props.game.scenario) : null)
+)
+
+// Campaign-wide rules live at the campaign's i18n scope root (`<campaign>.specialRules`)
+// and are shown for the entire campaign, regardless of which scenario is active.
+const campaignSpecialRulesScope = computed(() => {
+  if (props.game.scenario) return scenarioToKeyI18n(props.game.scenario)
+  if (props.game.campaign) return campaignIdToI18n(props.game.campaign.id)
+  return null
+})
+
+const campaignSpecialRules = computed<SpecialRule[]>(() =>
+  rulesAtScope(campaignSpecialRulesScope.value)
+)
+
+// Keywords and Concepts live at the scenario's i18n scope as
+// `<scenario>.keywordsAndConcepts = { title, entries: [{ title, body }] }` and are
+// shown while that scenario is in play. The title is per-scenario (e.g. some scenarios
+// introduce "New Keywords and Concepts"), so it travels with the data.
+type KeywordsSection = { title: string; rules: SpecialRule[] }
+
+const keywordsAtScope = (scope: string | null): KeywordsSection | null => {
+  if (!scope) return null
+  const key = `${scope}.keywordsAndConcepts`
+  const raw = tm(key) as unknown
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const entries = (raw as any).entries
+  if (!Array.isArray(entries) || entries.length === 0) return null
+  return {
+    title: t(`${key}.title`),
+    rules: entries.map((rule: any, i: number) => ({
+      title: rule.title ? formatContent(t(`${key}.entries[${i}].title`)) : undefined,
+      bodyKey: `${key}.entries[${i}].body`,
+    })),
+  }
+}
+
+const keywordsAndConcepts = computed<KeywordsSection | null>(() =>
+  keywordsAtScope(props.game.scenario ? scenarioToI18n(props.game.scenario) : null)
+)
+
+const hasRules = computed(() =>
+  campaignSpecialRules.value.length > 0 ||
+  specialRules.value.length > 0 ||
+  (keywordsAndConcepts.value?.rules.length ?? 0) > 0
+)
+
+watch(hasRules, (has) => {
+  if (!has && activeTab.value === 'rules') activeTab.value = 'log'
+})
+
+watch(additionalLogSections, (sections) => {
+  if (!isAdditionalTab(activeTab.value)) return
+  const index = Number(activeTab.value.split(':')[1])
+  if (!Number.isInteger(index) || index < 0 || index >= sections.length) activeTab.value = 'log'
+})
+
+const allGameInvestigators = computed(() => ({
+  ...props.game.investigators,
+  ...props.game.killedInvestigators,
+}))
+
+const breakdowns = computed<XpBreakdownStep[]>(() => {
+  if (props.game.campaign?.xpBreakdown) {
+    return props.game.campaign.xpBreakdown
+  }
+  if (props.game.scenario?.xpBreakdown) {
+    return [{
+      step: { tag: 'ScenarioStep', contents: props.game.scenario.id } as any,
+      investigators: Object.keys(props.game.investigators),
+      entries: props.game.scenario.xpBreakdown as any,
+    }]
+  }
+  return []
+})
+
+const breakdownInvestigators = (breakdown: XpBreakdownStep) =>
+  breakdown.investigators.map(iid => allGameInvestigators.value[iid]).filter(Boolean)
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
 
@@ -151,7 +307,7 @@ const isSection = (r: LogKey): r is SectionLogKey => {
   return typeof r.contents.tag === 'string' && typeof r.contents.contents === 'string'
 }
 
-const lowerFirst = (s: string) => s.slice(0, 1).toLowerCase() + s.slice(1)
+const lowerFirst = (s: string) => (s.slice(0, 1).toLowerCase() + s.slice(1)).replace(/'/g, '')
 const clamp6 = (n: unknown) => Math.max(0, Math.min(6, Math.floor(Number(n) || 0)))
 
 const recorded = computed(() => {
@@ -166,7 +322,9 @@ type SectionModel = {
   id: string
   titleKey: string
   orderKey: string
+  prefix: string
   records: string[]
+  recordCounts: Record<string, number>
   relationshipLevel: number
   component?: Component
 }
@@ -175,9 +333,9 @@ const relationshipLevelBySectionId = computed<Record<string, number>>(() => {
   const m: Record<string, number> = {}
 
   for (const [k, value] of selectedLog.value.recordedCounts) {
-    const sectionTag = k?.contents?.tag
-    const leafTag = k?.contents?.contents
-    if (!sectionTag || !leafTag) continue
+    if (!isSection(k)) continue
+    const sectionTag = k.contents.tag
+    const leafTag = k.contents.contents
 
     const sectionId = lowerFirst(sectionTag)
     if (!/RelationshipLevel$/.test(leafTag)) continue
@@ -188,13 +346,33 @@ const relationshipLevelBySectionId = computed<Record<string, number>>(() => {
   return m
 })
 
+const recordCountsBySectionId = computed<Record<string, Record<string, number>>>(() => {
+  const m: Record<string, Record<string, number>> = {}
+
+  for (const [k, value] of selectedLog.value.recordedCounts) {
+    if (!isSection(k)) continue
+    const sectionTag = k.contents.tag
+    const leafTag = k.contents.contents
+    if (/RelationshipLevel$/.test(leafTag)) continue
+
+    const baseKey = lowerFirst(k.tag.replace(/Key$/, ''))
+    const sectionId = lowerFirst(sectionTag)
+    const leaf = lowerFirst(leafTag)
+    const recordKey = `${baseKey}.key['[${sectionId}]'].${leaf}`
+
+    m[sectionId] = { ...(m[sectionId] ?? {}), [recordKey]: value }
+  }
+
+  return m
+})
+
 const sectionsFromCounts = computed<Record<string, { baseKey: string; id: string; titleKey: string; orderKey: string }>>(
   () => {
     const m: Record<string, { baseKey: string; id: string; titleKey: string; orderKey: string }> = {}
 
     for (const [k] of selectedLog.value.recordedCounts) {
-      const sectionTag = k?.contents?.tag
-      if (!sectionTag) continue
+      if (!isRecord(k.contents) || typeof k.contents.tag !== 'string') continue
+      const sectionTag = k.contents.tag
 
       const baseKey = lowerFirst(k.tag.replace(/Key$/, ''))
       const sectionId = lowerFirst(sectionTag)
@@ -238,7 +416,9 @@ const sections = computed<SectionModel[]>(() => {
       id: sectionId,
       titleKey,
       orderKey,
+      prefix: baseKey,
       records: [recordKey],
+      recordCounts: recordCountsBySectionId.value[sectionId] ?? {},
       relationshipLevel: relationshipLevelBySectionId.value[sectionId] ?? 0,
       component: sectionComponentById[sectionId],
     }
@@ -247,6 +427,7 @@ const sections = computed<SectionModel[]>(() => {
   for (const [key, meta] of Object.entries(sectionsFromCounts.value)) {
     const existing = byKey[key]
     if (existing) {
+      existing.recordCounts = recordCountsBySectionId.value[existing.id] ?? existing.recordCounts
       existing.relationshipLevel = relationshipLevelBySectionId.value[existing.id] ?? existing.relationshipLevel
       continue
     }
@@ -256,9 +437,34 @@ const sections = computed<SectionModel[]>(() => {
       id: meta.id,
       titleKey: meta.titleKey,
       orderKey: meta.orderKey,
+      prefix: meta.baseKey,
       records: [],
+      recordCounts: recordCountsBySectionId.value[meta.id] ?? {},
       relationshipLevel: relationshipLevelBySectionId.value[meta.id] ?? 0,
       component: sectionComponentById[meta.id],
+    }
+  }
+
+  for (const entry of campaignDefinition.value?.logSections ?? []) {
+    const id = typeof entry === 'string' ? entry : entry.id
+    const baseKey = typeof entry === 'string'
+      ? (props.game.campaign ? campaignIdToI18n(props.game.campaign.id) : '')
+      : (entry.baseKey ?? (props.game.campaign ? campaignIdToI18n(props.game.campaign.id) : ''))
+    if (!baseKey) continue
+
+    const key = `${baseKey}:${id}`
+    if (byKey[key]) continue
+
+    byKey[key] = {
+      key,
+      id,
+      titleKey: t(`${baseKey}.key['[${id}]'].title`),
+      orderKey: t(`${baseKey}.key['[${id}]'].orderKey`),
+      prefix: baseKey,
+      records: [],
+      recordCounts: recordCountsBySectionId.value[id] ?? {},
+      relationshipLevel: relationshipLevelBySectionId.value[id] ?? 0,
+      component: sectionComponentById[id],
     }
   }
 
@@ -325,6 +531,7 @@ const NON_CARD_KEYS = new Set([
   'edgeOfTheEarth.key.suppliesRecovered',
   'edgeOfTheEarth.key.sealsPlaced',
   'edgeOfTheEarth.key.sealsRecovered',
+  'theDrownedCity.key.discoveredGlyphs',
 ])
 
 const findCard = (cardCode: string): CardDef | undefined =>
@@ -410,7 +617,7 @@ const cardCodeToTitle = (cardCode: string): string => {
   const language = localStorage.getItem('language') || 'en'
 
   if (language !== 'en') {
-    const code = card ? card.art : cardCode.replace(/^c/, '')
+    const code = card ? card.art : cardArt(cardCode)
     const dbCard = store.getDbCard(code)
     if (dbCard) return dbCard.subname ? `${dbCard.name}: ${dbCard.subname}` : dbCard.name
   }
@@ -428,6 +635,7 @@ const emptyLog = computed(() => {
   if (hasSupplies.value) return false
   if (recorded.value.length > 0) return false
   if (remembered.value.length > 0) return false
+  if (visibleSections.value.length > 0) return false
   if (Object.entries(recordedSets.value ?? {}).length > 0) return false
   return true
 })
@@ -437,13 +645,9 @@ const bonusXp = computed(() => props.game.campaign?.meta?.bonusXp ?? null)
 const mapData = computed(() => {
   const current = props.game.campaign?.meta?.currentLocation || 'London'
   const unlocked = props.game.campaign?.meta?.unlockedLocations || []
-  return {
-    current,
-    hasTicket: false,
-    available: unlocked,
-    locations: [
-      ['Alexandria', { unlocked: false }],
-      ['Anchorage', { unlocked: false }],
+  const locations: [string, { unlocked: boolean }][] = [
+    ['Alexandria', { unlocked: false }],
+    ['Anchorage', { unlocked: false }],
       ['Arkham', { unlocked: false }],
       ['Bermuda', { unlocked: false }],
       ['BermudaTriangle', { unlocked: false }],
@@ -477,20 +681,80 @@ const mapData = computed(() => {
       ['Tokyo', { unlocked: false }],
       ['Tunguska', { unlocked: false }],
       ['Venice', { unlocked: false }],
-      ['YborCity', { unlocked: false }],
-    ],
+    ['YborCity', { unlocked: false }],
+  ]
+  return {
+    current,
+    hasTicket: false,
+    available: unlocked,
+    locations,
   }
+})
+
+// --- Back-to-top (the .content element is the scroll container) ---------------
+const contentEl = ref<HTMLElement | null>(null)
+const showBackToTop = ref(false)
+
+const onContentScroll = () => {
+  showBackToTop.value = (contentEl.value?.scrollTop ?? 0) > 400
+}
+
+const scrollToTop = () => {
+  contentEl.value?.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  contentEl.value?.addEventListener('scroll', onContentScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  contentEl.value?.removeEventListener('scroll', onContentScroll)
 })
 </script>
 
 <template>
   <LogIcons />
-  <div class="content column">
+  <div class="content column" ref="contentEl">
     <div class="log-column">
       <div class="campaign-log column">
-        <h1>Campaign Log: {{ game.name }}</h1>
+        <div class="campaign-log-header">
+          <slot name="header-leading" />
+          <h1>{{ game.name }}</h1>
+        </div>
 
-        <div class="investigators-log">
+        <nav class="log-tabs">
+          <button
+            type="button"
+            :class="{ active: activeTab === 'log' }"
+            @click="activeTab = 'log'"
+          >{{ t('campaignLog.tabs.log') }}</button>
+          <button
+            type="button"
+            :class="{ active: activeTab === 'investigators' }"
+            @click="activeTab = 'investigators'"
+          >{{ t('campaignLog.tabs.investigators') }}</button>
+          <button
+            v-if="hasRules"
+            type="button"
+            :class="{ active: activeTab === 'rules' }"
+            @click="activeTab = 'rules'"
+          >{{ t('campaignLog.tabs.rules') }}</button>
+          <button
+            v-if="achievementsEnabled"
+            type="button"
+            :class="{ active: activeTab === 'achievements' }"
+            @click="activeTab = 'achievements'"
+          >{{ t('achievements.tabTitle') }}</button>
+          <button
+            v-for="(section, index) in additionalLogSections"
+            :key="section.title"
+            type="button"
+            :class="{ active: activeTab === additionalTabId(index) }"
+            @click="activeTab = additionalTabId(index)"
+          >{{ t(section.title) }}</button>
+        </nav>
+
+        <div v-show="activeTab === 'investigators'" class="investigators-log">
           <InvestigatorRow
             v-for="investigator in investigators"
             :key="investigator.id"
@@ -500,6 +764,41 @@ const mapData = computed(() => {
           />
         </div>
 
+        <template v-if="activeTab === 'rules'">
+          <CampaignLogSpecialRules
+            v-if="campaignSpecialRules.length > 0"
+            :title="t('campaignLog.campaignRules')"
+            :rules="campaignSpecialRules"
+          />
+
+          <CampaignLogSpecialRules
+            v-if="specialRules.length > 0"
+            :title="t('campaignLog.specialRules')"
+            :rules="specialRules"
+          />
+
+          <CampaignLogSpecialRules
+            v-if="keywordsAndConcepts"
+            :title="keywordsAndConcepts.title"
+            :rules="keywordsAndConcepts.rules"
+          />
+        </template>
+
+        <CampaignLogAchievements
+          v-if="activeTab === 'achievements'"
+          :achievements="achievements"
+          :campaign-id="game.campaign?.id"
+        />
+
+        <template v-for="(section, index) in additionalLogSections" :key="section.title">
+          <CampaignLogAdditionalSection
+            v-if="activeTab === additionalTabId(index)"
+            :title="t(section.title)"
+            :bodyKey="section.body"
+          />
+        </template>
+
+        <template v-if="activeTab === 'log'">
         <div v-if="time || scarletKeys" class="scarlet-keys-row">
           <div class="scarlet-keys-sidebar">
             <Calendar v-if="time" :time="time" :theta="theta" :delta="delta" :psi="psi" />
@@ -510,11 +809,11 @@ const mapData = computed(() => {
           </div>
         </div>
 
-        <div v-if="emptyLog" class="empty-state">No entries yet.</div>
+        <div v-if="emptyLog" class="empty-state">{{ $t('campaignLogView.noEntriesYet') }}</div>
 
         <CampaignLogSection
           v-if="remembered.length > 0"
-          title="Remembered"
+          :title="t('campaignLog.remembered')"
           :items="remembered"
         />
 
@@ -548,26 +847,59 @@ const mapData = computed(() => {
             </div>
           </div>
 
+          <div v-if="hemlockDayTime || hemlockAreasSurveyedSection" class="hemlock-overview">
+            <DayTimeTracker
+              v-if="hemlockDayTime"
+              :day="hemlockDayTime.day"
+              :time="hemlockDayTime.time"
+              :meta="game.campaign?.meta"
+              :gameId="game.id"
+              @refresh="emit('refresh')"
+            />
+            <component
+              v-if="hemlockAreasSurveyedSection"
+              :is="hemlockAreasSurveyedSection.component"
+              class="hemlock-overview-grow"
+              :sectionId="hemlockAreasSurveyedSection.id"
+              :prefix="hemlockAreasSurveyedSection.prefix"
+              :records="hemlockAreasSurveyedSection.records"
+              :recordCounts="hemlockAreasSurveyedSection.recordCounts"
+              :relationshipLevel="hemlockAreasSurveyedSection.relationshipLevel"
+              :gameId="game.id"
+              @refresh="emit('refresh')"
+            />
+          </div>
+
           <CampaignLogChaosBag
             v-if="chaosBag.length > 0"
             :chaosBag="chaosBag"
           />
 
+          <CampaignLogUltimatumsAndBoons
+            v-if="ultimatumsAndBoons.length > 0"
+            :entries="ultimatumsAndBoons"
+            :enabled="ultimatumsAndBoonsEnabled"
+            :rolled="game.settings.settingsRolledUltimatumOrBoon"
+          />
+
           <CampaignLogSection
             v-if="recorded.length > 0"
-            title="Campaign Notes"
+            :title="t('campaignLog.campaignNotes')"
             :items="recorded.map(r => t(r))"
           />
 
           <!-- Campaign sections -->
-          <template v-for="section in sections" :key="section.key">
+          <template v-for="section in visibleSections" :key="section.key">
             <component
               v-if="section.component"
               :is="section.component"
               :sectionId="section.id"
-              :prefix="section.titleKey.split('.').slice(0, 1).join('.')"
+              :prefix="section.prefix"
               :records="section.records"
+              :recordCounts="section.recordCounts"
               :relationshipLevel="section.relationshipLevel"
+              :gameId="game.id"
+              @refresh="emit('refresh')"
             />
             <CampaignLogSection
               v-else
@@ -586,9 +918,11 @@ const mapData = computed(() => {
             :displayRecordValue="displayRecordValue"
           />
 
+          <DiscoveredRunes v-if="game.campaign?.id === '11'" :log="selectedLog" :game-id="game.id" @refresh="emit('refresh')" />
+
           <!-- Campaign recorded sets + counts -->
           <CampaignLogRecordedSets
-            :entries="Object.entries(recordedSets)"
+            :entries="(Object.entries(recordedSets) as [string, any[]][]).filter(([k]) => !k.toLowerCase().includes('discoveredglyph'))"
             :counts="recordedCounts"
             :displayRecordValue="displayRecordValue"
           />
@@ -599,20 +933,35 @@ const mapData = computed(() => {
             :cardCodeToTitle="cardCodeToTitle"
           />
         </div>
+        </template>
       </div>
 
-      <XpBreakdown
-        v-for="([step, entries], idx) in breakdowns"
-        :key="idx"
-        :game="game"
-        :step="step"
-        :entries="entries"
-        :playerId="playerId"
-        :showAll="true"
-        :investigators="investigators"
-        :defaultCollapsed="idx > 0"
-      />
+      <template v-if="activeTab === 'log'">
+        <XpBreakdown
+          v-for="(breakdown, idx) in breakdowns"
+          :key="idx"
+          :game="game"
+          :step="breakdown.step"
+          :entries="breakdown.entries"
+          :playerId="playerId"
+          :showAll="true"
+          :investigators="breakdownInvestigators(breakdown)"
+          :defaultCollapsed="idx > 0"
+        />
+      </template>
     </div>
+
+    <button
+      type="button"
+      class="back-to-top"
+      :class="{ visible: showBackToTop }"
+      :aria-hidden="!showBackToTop"
+      :tabindex="showBackToTop ? 0 : -1"
+      :title="t('campaignLog.backToTop')"
+      @click="scrollToTop"
+    >
+      <font-awesome-icon :icon="['fas', 'arrow-up']" />
+    </button>
   </div>
 </template>
 
@@ -620,9 +969,103 @@ const mapData = computed(() => {
 /* ── Page ────────────────────────────────────────────────── */
 
 .content {
-  overflow: auto;
+  flex: 1;
+  min-height: 0;
   width: 100%;
+  overflow: auto;
   padding-bottom: 60px;
+  box-sizing: border-box;
+}
+
+.back-to-top {
+  position: sticky;
+  bottom: 18px;
+  align-self: flex-end;
+  margin-right: 18px;
+  /* last child: overlay the bottom padding instead of adding scroll height */
+  margin-bottom: -48px;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  background: #2b3140;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  z-index: var(--z-index-100);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.back-to-top :deep(svg) {
+  width: 15px;
+  height: 15px;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.back-to-top:hover {
+  background: var(--spooky-green);
+  border-color: var(--spooky-green);
+  color: #1b1f29;
+}
+
+.back-to-top:active {
+  transform: translateY(1px);
+}
+
+.back-to-top:focus-visible {
+  outline: none;
+  border-color: var(--spooky-green);
+}
+
+/* ── Tabs ────────────────────────────────────────────────── */
+
+.log-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.log-tabs button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 10px 18px;
+  font-family: teutonic, sans-serif;
+  font-size: 1.05em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.log-tabs button:hover {
+  color: rgba(255,255,255,0.85);
+}
+
+.log-tabs button.active {
+  color: var(--title);
+  border-bottom-color: var(--select, var(--button-1));
 }
 
 /* ── Investigators ───────────────────────────────────────── */
@@ -651,15 +1094,23 @@ const mapData = computed(() => {
   color: var(--title);
 }
 
+.campaign-log-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 20px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
 h1 {
   font-family: teutonic, sans-serif;
   font-size: 2.2em;
-  margin: 0 0 20px;
-  padding: 0 0 14px;
+  margin: 0;
+  padding: 0;
   color: var(--title);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 /* ── Empty state ─────────────────────────────────────────── */
@@ -681,6 +1132,19 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.hemlock-overview {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.hemlock-overview-grow {
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 /* ── Log tabs (Dream Eaters split) ───────────────────────── */

@@ -3,7 +3,8 @@ module Arkham.Asset.Assets.TimewornBrand5 (timewornBrand5, TimewornBrand5 (..)) 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
-import Arkham.Matcher hiding (EnemyDefeated)
+import Arkham.I18n
+import Arkham.Matcher
 import Arkham.Modifier
 import Arkham.Trait (Trait (Elite))
 
@@ -16,11 +17,9 @@ timewornBrand5 = asset TimewornBrand5 Cards.timewornBrand5
 
 instance HasAbilities TimewornBrand5 where
   getAbilities (TimewornBrand5 a) =
-    [ withTooltip
-        "{action} If Timeworn Brand is ready: _Fight_. You get +2 {combat} and deal +1 damage for this attack."
+    [ (cardI18n $ withI18nTooltip "timewornBrand5.actionIfTimeworn")
         $ controlled a 1 (thisIs a $ asset_ #ready) fightAction_
-    , withTooltip
-        "{action} Exhaust Timeworn Brand: _Fight_. Add your {willpower} to your skill value for this attack. This attack deals +3 damage. If this attack defeats an _Elite_ enemy, draw 3 cards. (Max once per game.)"
+    , (cardI18n $ withI18nTooltip "timewornBrand5.actionExhaustTimeworn")
         $ limitedAbility (MaxPer Cards.timewornBrand5 PerGame 1)
         $ restricted a 2 ControlsThis
         $ fightAction (exhaust a)
@@ -40,7 +39,7 @@ instance RunMessage TimewornBrand5 where
       skillTestModifiers sid source iid [AddSkillValue #willpower, DamageDealt 3]
       chooseFightEnemy sid iid source
       pure a
-    EnemyDefeated _ _ (isAbilitySource attrs 2 -> True) traits | Elite `elem` traits -> do
+    Defeated (EnemyTarget _) _ (isAbilitySource attrs 2 -> True) traits | Elite `elem` traits -> do
       for_ attrs.controller \iid -> drawCardsIfCan iid (attrs.ability 2) 3
       pure a
     _ -> TimewornBrand5 <$> liftRunMessage msg attrs

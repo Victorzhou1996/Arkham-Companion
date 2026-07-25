@@ -30,6 +30,7 @@ import Arkham.Investigator.Types (
 import Arkham.Location.Cards qualified as Locations
 import Arkham.Matcher hiding (enemyAt)
 import Arkham.Message.Lifted.Choose
+import Arkham.Message.Lifted.Log (record)
 import Arkham.Message.Lifted.Placement qualified as Placement
 import Arkham.Message.Lifted.Story
 import Arkham.Placement
@@ -286,7 +287,7 @@ instance RunMessage TheMidwinterGala where
 
       theBloodlessMan <- enemyAt Enemies.theBloodlessMan lanternChamber
       placeAsset_ Assets.thePaleLanternHypnoticGlow (AttachedToEnemy theBloodlessMan)
-      exhaustThis theBloodlessMan
+      exhaustWith attrs theBloodlessMan
 
       monsters <-
         asDefs <$> amongGathered (CardWithTrait Monster <> not_ (cardIs Enemies.theBloodlessManUnleashed))
@@ -328,21 +329,23 @@ instance RunMessage TheMidwinterGala where
       push $ SetScenarioMeta $ toJSON $ Meta {ally, rival, score}
       do_ msg
       pure s
-    Do (ScenarioResolution r) -> scope "resolutions" do
+    Do msg'@(ScenarioResolution r) -> scope "resolutions" do
       case r of
         NoResolution -> do
+          unlessStandalone $ record TheInvestigatorsWereDefeatedAtTheMidwinterGala
           resolution "noResolution" >> do_ R7
         Resolution 1 -> do
           let Meta {ally} = toResult attrs.meta
-          storyBuild do
-            h "resolution1.title"
+          resolutionFlavor do
+            setTitle "resolution1.title"
             p "resolution1.body"
             ul do
               li "chooseGuest"
               li "jewelOfSarnath"
               for_ [minBound ..] \faction -> li.validate (ally == faction) (unpack $ factionLabel faction)
-          eachInvestigator (`forTarget` msg)
-          do_ $ case ally of
+          unlessStandalone $ record TheInvestigatorsSurvivedTheMidwinterGala
+          eachInvestigator (`forTarget` msg')
+          do_ case ally of
             TheFoundation -> R2
             MiskatonicUniversity -> R3
             TheSyndicate -> R4
@@ -408,7 +411,7 @@ instance RunMessage TheMidwinterGala where
         _ -> throw $ UnknownResolution r
       pure s
     ForTarget (InvestigatorTarget iid) (ScenarioResolution (Resolution 1)) -> scope "resolutions" do
-      guests <- selectWithField Field.AssetCard $ AssetWithTrait Guest <> AssetControlledBy Anyone
+      guests <- selectWithField Field.AssetCard $ AssetWithTrait Guest <> AssetControlledBy Anyone <> SingleSidedAsset
       when (notNull guests) do
         chooseOneM iid do
           questionLabeled' "chooseGuest"

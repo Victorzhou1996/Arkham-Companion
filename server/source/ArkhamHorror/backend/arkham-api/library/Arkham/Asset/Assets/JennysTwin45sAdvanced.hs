@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.JennysTwin45sAdvanced (jennysTwin45sAdvanced) where
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Asset.Import.Lifted
 import Arkham.Asset.Uses
 import Arkham.Card
 import Arkham.Enemy.Types (Field (EnemyHealthActual))
@@ -24,7 +24,7 @@ instance HasAbilities JennysTwin45sAdvanced where
     [ restricted a 1 ControlsThis $ fightAction $ assetUseCost a Ammo 1
     , restricted a 2 ControlsThis
         $ triggered
-          (EnemyDefeated #after You (BySource $ SourceIs $ a.ability 1) EnemyWithHealth)
+          (IfEnemyDefeated #after You (BySource $ SourceIs $ a.ability 1) EnemyWithHealth)
           (exhaust a)
     ]
 

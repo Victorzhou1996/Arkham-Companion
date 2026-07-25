@@ -10,7 +10,7 @@ data AreasSurveyed
   | EastwickBog
   | WesternWoods
   | SouthernFields
-  deriving stock (Show, Eq, Ord, Generic, Data)
+  deriving stock (Show, Eq, Ord, Bounded, Enum, Generic, Data)
   deriving anyclass (ToJSON, FromJSON)
 
 data SimeonAtwoodNotes
@@ -92,6 +92,7 @@ data WilliamHemlockNotes
 data RiverHawthorneNotes
   = RiverSharedTheirAmbitions
   | TheSchemeIsInMotion
+  | RiverAskedForHelp
   | RiverSharedADance
   | RiverStoodByYou
   | RiverIsReclaimingTheirLegacy

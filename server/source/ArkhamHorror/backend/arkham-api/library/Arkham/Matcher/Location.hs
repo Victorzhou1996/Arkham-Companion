@@ -17,8 +17,10 @@ import Arkham.Label
 import Arkham.Location.Brazier
 import Arkham.Location.Grid
 import Arkham.LocationSymbol
+import {-# SOURCE #-} Arkham.Matcher.Ability
 import {-# SOURCE #-} Arkham.Matcher.Asset
 import Arkham.Matcher.Base
+import Arkham.Matcher.ChaosToken
 import Arkham.Matcher.Card
 import Arkham.Matcher.Enemy
 import {-# SOURCE #-} Arkham.Matcher.Event
@@ -95,6 +97,7 @@ data LocationMatcher
   | LocationWithMostClues LocationMatcher
   | LocationWithMostInvestigators LocationMatcher
   | LocationWithMostEnemies LocationMatcher EnemyMatcher
+  | LocationWithFewestEnemies LocationMatcher EnemyMatcher
   | LocationWithEnemy EnemyMatcher
   | LocationCanBeEnteredBy EnemyId
   | LocationWithAsset AssetMatcher
@@ -116,11 +119,13 @@ data LocationMatcher
   | --                           ^ start
     FarthestLocationFromInvestigator InvestigatorMatcher LocationMatcher
   | FarthestLocationFromAll LocationMatcher
+  | NearestLocationToMost LocationMatcher
   | NearestLocationToYou LocationMatcher
   | NearestLocationTo InvestigatorId LocationMatcher
   | NearestLocationToAny LocationMatcher
   | LocationSharesTraitWith LocationMatcher
   | LocationWithTrait Trait
+  | LocationWithPrintedTrait Trait
   | LocationWithoutTrait Trait
   | LocationInDirection Direction LocationMatcher
   | LocationWithSpaceInDirection Direction LocationMatcher
@@ -173,8 +178,11 @@ data LocationMatcher
   | LocationInColumnOf LocationMatcher
   | LocationInPosition Pos
   | LocationWhenCriteria Criterion
+  | LocationWithAbility AbilityMatcher
   | OutOfGameLocation
   | LocationWithPlacement Placement
+  | LocationWithSealedChaosToken ChaosTokenMatcher
+  | LocationWithPlacedChaosToken ChaosTokenMatcher
   | -- | Must be replaced
     ThatLocation
   deriving stock (Show, Eq, Ord, Data)

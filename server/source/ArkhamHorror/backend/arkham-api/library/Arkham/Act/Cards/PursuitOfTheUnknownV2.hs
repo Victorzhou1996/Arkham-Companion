@@ -41,10 +41,12 @@ instance RunMessage PursuitOfTheUnknownV2 where
 
       pure a
     SearchFound iid (isTarget attrs -> True) _ [] -> do
-      chooseOneM iid $ labeled "No Cards Found" nothing
+      chooseOneM iid $ labeledI "noCardsFound" nothing
       pure a
     SearchFound iid (isTarget attrs -> True) _ cards -> do
-      chooseTargetM iid cards \_ -> shuffleCardsIntoDeck TekeliliDeck cards
+      highlightCards cards
+      continue_ iid
+      shuffleCardsIntoDeck TekeliliDeck cards
       pure a
     UseThisAbility _ (isSource attrs -> True) 2 -> do
       advancedWithOther attrs

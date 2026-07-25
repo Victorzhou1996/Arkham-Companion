@@ -384,7 +384,7 @@ const submit = () => updateCampaignSettings(props.game.id, campaignLog.value)
 
 <template>
   <div class="container scroll-container">
-    <h2 class="title">Campaign Settings</h2>
+    <h2 class="title">{{ $t('campaignSettings.title') }}</h2>
     <CampaignScenarioSetting
       v-for="setting in activeSettings"
       :step="setting"
@@ -400,7 +400,7 @@ const submit = () => updateCampaignSettings(props.game.id, campaignLog.value)
       @toggle:record="toggleRecordable"
       @set:option="setOption"
     />
-    <button @click="submit" :disabled="!completedCampaignSettings">Begin</button>
+    <button @click="submit" :disabled="!completedCampaignSettings">{{ $t('scenarioSettings.begin') }}</button>
   </div>
 </template>
 
@@ -442,7 +442,7 @@ input[type=radio] + label {
 }
 
 input[type=radio]:checked + label {
-  background: #6E8640;
+  background: var(--button-1);
 }
 
 input[type=checkbox] {
@@ -459,25 +459,25 @@ input[type=checkbox] + label {
   }
 
   &.invert {
-    background: #6E8640;
+    background: var(--button-1);
     &:hover {
-      background: #6E8640;
+      background: var(--button-1);
     }
   }
   border-color: #ddd;
 }
 
 input[type=checkbox]:checked + label {
-  background: #6E8640;
+  background: var(--button-1);
   &.invert {
     background-color: hsl(80, 5%, 39%);
   }
 }
 
 .invert[type=checkbox] + label {
-    background: #6E8640;
+    background: var(--button-1);
     &:hover {
-      background: #6E8640;
+      background: var(--button-1);
     }
 }
 

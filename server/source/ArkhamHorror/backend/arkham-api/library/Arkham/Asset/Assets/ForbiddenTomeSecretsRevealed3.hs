@@ -30,7 +30,7 @@ instance HasAbilities ForbiddenTomeSecretsRevealed3 where
         a
         1
         (exists $ oneOf [AccessibleLocation, YourLocation <> LocationWithAnyClues])
-        $ ActionAbility [] Nothing (ActionCost 4 <> exhaust a)
+        $ ActionAbility mempty Nothing (ActionCost 4 <> exhaust a)
     ]
 
 instance RunMessage ForbiddenTomeSecretsRevealed3 where
@@ -38,7 +38,7 @@ instance RunMessage ForbiddenTomeSecretsRevealed3 where
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       lids <- getAccessibleLocations iid attrs
       chooseOrRunOneM iid do
-        labeled "Do not move" nothing
+        labeledI "doNotMove" nothing
         targets lids $ moveTo (attrs.ability 1) iid
       discoverAtYourLocation NotInvestigate iid (attrs.ability 1) 1
       pure a

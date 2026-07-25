@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.RoaldEllsworthIntrepidExplorer (roaldEllsworthIntrepid
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Helpers.SkillTest.Lifted (parley)
 import Arkham.Matcher
@@ -14,7 +14,7 @@ newtype RoaldEllsworthIntrepidExplorer = RoaldEllsworthIntrepidExplorer EnemyAtt
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 roaldEllsworthIntrepidExplorer :: EnemyCard RoaldEllsworthIntrepidExplorer
-roaldEllsworthIntrepidExplorer = enemy RoaldEllsworthIntrepidExplorer Cards.roaldEllsworthIntrepidExplorer (3, Static 2, 1) (1, 2)
+roaldEllsworthIntrepidExplorer = enemy RoaldEllsworthIntrepidExplorer Cards.roaldEllsworthIntrepidExplorer
 
 instance HasAbilities RoaldEllsworthIntrepidExplorer where
   getAbilities (RoaldEllsworthIntrepidExplorer a) =

@@ -1,11 +1,15 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import { useDbCardStore } from '@/stores/dbCards'
 import type { ArkhamDBCard } from '@/stores/dbCards'
 import * as Arkham from '@/arkham/types/CardDef'
 import { localizeArkhamDBBaseUrl } from '@/arkham/helpers'
 import sets from '@/arkham/data/sets.json'
 
-defineProps<{ cards: Arkham.CardDef[] }>()
+const props = withDefaults(defineProps<{ cards: Arkham.CardDef[], attachments?: Record<string, Arkham.CardDef[]>, showCounts?: boolean }>(), {
+  attachments: () => ({}),
+  showCounts: true,
+})
 
 const store = useDbCardStore()
 
@@ -56,9 +60,16 @@ const cardIcons = (card: Arkham.CardDef) => {
   })
 }
 
+const cardSetCache = new Map<string, (typeof sets)[number] | undefined>()
+
 const cardSet = (card: Arkham.CardDef) => {
+  const cached = cardSetCache.get(card.art)
+  if (cached !== undefined || cardSetCache.has(card.art)) return cached
+
   const cardCode = parseInt(card.art)
-  return sets.find((s) => cardCode >= s.min && cardCode <= s.max)
+  const set = sets.find((s) => cardCode >= s.min && cardCode <= s.max)
+  cardSetCache.set(card.art, set)
+  return set
 }
 
 const cardSetText = (card: Arkham.CardDef) => {
@@ -79,6 +90,56 @@ const cardSetText = (card: Arkham.CardDef) => {
   if (setName) return `${setName} ${setNumber % 500}`
   return "Unknown"
 }
+
+const ungroupedWarOfTheOuterGodsCards = new Set(['c86038a', 'c86044a', 'c86049a'])
+
+const groupKey = (card: Arkham.CardDef) => ungroupedWarOfTheOuterGodsCards.has(card.cardCode) ? card.cardCode : card.art
+
+const groupCards = (cards: Arkham.CardDef[]) => {
+  const grouped = new Map<string, { card: Arkham.CardDef; count: number }>()
+
+  for (const card of cards) {
+    const key = groupKey(card)
+    const existing = grouped.get(key)
+    if (existing) existing.count += 1
+    else grouped.set(key, { card, count: 1 })
+  }
+
+  return Array.from(grouped.values())
+}
+
+const groupedCards = computed(() => groupCards(props.cards))
+
+const attachedCards = (card: Arkham.CardDef) => props.attachments[card.art] ?? []
+
+const groupedAttachedCards = (card: Arkham.CardDef) => groupCards(attachedCards(card))
+
+const underworldMarketCards = () => props.attachments['09077'] ?? []
+const spiritDeckCards = () => props.attachments['90052'] ?? []
+
+const countCards = (cards: Arkham.CardDef[]) => {
+  const counts = new Map<string, number>()
+  for (const card of cards) counts.set(card.art, (counts.get(card.art) ?? 0) + 1)
+  return counts
+}
+
+const marketCardCounts = computed(() => countCards(underworldMarketCards()))
+const spiritCardCounts = computed(() => countCards(spiritDeckCards()))
+
+const marketCardCount = (card: Arkham.CardDef) => marketCardCounts.value.get(card.art) ?? 0
+const spiritCardCount = (card: Arkham.CardDef) => spiritCardCounts.value.get(card.art) ?? 0
+
+const marketTooltip = (card: Arkham.CardDef) => `Attached to Market deck (x ${marketCardCount(card)})`
+const spiritTooltip = (card: Arkham.CardDef) => `In Spirit deck (x ${spiritCardCount(card)})`
+
+const isUnderworldMarketCard = (card: Arkham.CardDef) => marketCardCount(card) > 0
+const isSpiritDeckCard = (card: Arkham.CardDef) => spiritCardCount(card) > 0
+
+const attachmentHeading = (card: Arkham.CardDef) => {
+  if (card.art === '90052') return 'Spirit deck'
+  if (card.art === '09077') return 'Underworld Market'
+  return `Attached cards for ${cardName(card)}`
+}
 </script>
 
 <template>
@@ -86,34 +147,70 @@ const cardSetText = (card: Arkham.CardDef) => {
     <table class="card-table">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Class</th>
-          <th>Cost</th>
-          <th>Type</th>
-          <th>Icons</th>
-          <th class="traits-col">Traits</th>
-          <th class="set-col">Set</th>
+          <th>{{ $t('cardsList.name') }}</th>
+          <th>{{ $t('cardsList.class') }}</th>
+          <th>{{ $t('cardsList.cost') }}</th>
+          <th>{{ $t('cardsList.type') }}</th>
+          <th>{{ $t('cardsList.icons') }}</th>
+          <th class="traits-col">{{ $t('cardsList.traits') }}</th>
+          <th class="set-col">{{ $t('cardsList.set') }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(card, idx) in cards" :key="idx">
-          <td><a target="_blank" :href="`${localizeArkhamDBBaseUrl()}/card/${card.art}`">{{ cardName(card) }}{{ levelText(card) }}</a></td>
-          <td>
-            <span class="class-text">
-              <span v-for="(sym, i) in card.classSymbols" :key="sym" :class="`class-sym ${sym.toLowerCase()}-sym`">{{ sym }}{{ i < card.classSymbols.length - 1 ? ', ' : '' }}</span>
-            </span>
-            <span class="class-icons">
-              <span v-for="sym in card.classSymbols" :key="sym" :class="[`${sym.toLowerCase()}-icon`, `${sym.toLowerCase()}-sym`]"></span>
-            </span>
-          </td>
-          <td>{{ cardCost(card) }}</td>
-          <td>{{ cardType(card) }}</td>
-          <td>
-            <i v-for="(icon, index) in cardIcons(card)" :key="index" :class="[icon, `${icon}-icon`]"></i>
-          </td>
-          <td class="traits-col">{{ cardTraits(card) }}</td>
-          <td class="set-col">{{ cardSetText(card) }}</td>
-        </tr>
+        <template v-for="{ card, count } in groupedCards" :key="groupKey(card)">
+          <tr>
+            <td>
+              <div class="card-name-cell">
+                <span v-if="showCounts" class="deck-card-count">x {{ count }}</span>
+                <a target="_blank" :href="`${localizeArkhamDBBaseUrl()}/card/${card.art}`">{{ cardName(card) }}{{ levelText(card) }}</a>
+                <span v-if="isUnderworldMarketCard(card)" class="market-badge" v-tooltip="marketTooltip(card)" :aria-label="marketTooltip(card)">
+                  <font-awesome-icon icon="store" />
+                  <span>x {{ marketCardCount(card) }}</span>
+                </span>
+                <span v-if="isSpiritDeckCard(card)" class="spirit-badge" v-tooltip="spiritTooltip(card)" :aria-label="spiritTooltip(card)">
+                  <font-awesome-icon :icon="['fas', 'ghost']" />
+                  <span>x {{ spiritCardCount(card) }}</span>
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="class-text">
+                <span v-for="(sym, i) in card.classSymbols" :key="sym" :class="`class-sym ${sym.toLowerCase()}-sym`">{{ sym }}{{ i < card.classSymbols.length - 1 ? ', ' : '' }}</span>
+              </span>
+              <span class="class-icons">
+                <span v-for="sym in card.classSymbols" :key="sym" :class="[`${sym.toLowerCase()}-icon`, `${sym.toLowerCase()}-sym`]"></span>
+              </span>
+            </td>
+            <td>{{ cardCost(card) }}</td>
+            <td>{{ cardType(card) }}</td>
+            <td>
+              <i v-for="(icon, index) in cardIcons(card)" :key="index" :class="[icon, `${icon}-icon`]"></i>
+            </td>
+            <td class="traits-col">{{ cardTraits(card) }}</td>
+            <td class="set-col">{{ cardSetText(card) }}</td>
+          </tr>
+          <tr v-if="attachedCards(card).length > 0" class="attachments-row">
+            <td colspan="7">
+              <div class="attachments-list">
+                <div class="attachments-heading" :class="{ 'attachments-heading--spirit': card.art === '90052' }">
+                  <font-awesome-icon :icon="card.art === '90052' ? ['fas', 'ghost'] : 'paperclip'" /> {{ attachmentHeading(card) }}
+                </div>
+                <div class="attachment-pills">
+                  <a
+                    v-for="entry in groupedAttachedCards(card)"
+                    :key="groupKey(entry.card)"
+                    class="attachment-pill"
+                    target="_blank"
+                    :href="`${localizeArkhamDBBaseUrl()}/card/${entry.card.art}`"
+                  >
+                    <span class="attachment-name">{{ cardName(entry.card) }}{{ levelText(entry.card) }}</span>
+                    <span class="attachment-count">x {{ entry.count }}</span>
+                  </a>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </template>
       </tbody>
     </table>
   </div>
@@ -139,7 +236,7 @@ const cardSetText = (card: Arkham.CardDef) => {
 .card-table th {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--z-index-1);
   text-align: left;
   padding: 11px 12px;
   color: #a8a8a8;
@@ -195,6 +292,130 @@ a {
   text-decoration: none;
   font-weight: 500;
   &:hover { opacity: 0.8; }
+}
+
+.card-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.deck-card-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 20px;
+  padding: 0 6px;
+  color: #cfcfcf;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.market-badge,
+.spirit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  color: #c8a96e;
+  background: rgba(200, 169, 110, 0.14);
+  border: 1px solid rgba(200, 169, 110, 0.32);
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.spirit-badge {
+  color: #b8d7ff;
+  background: rgba(120, 170, 255, 0.14);
+  border-color: rgba(120, 170, 255, 0.34);
+}
+
+.attachments-row td {
+  padding-top: 0;
+  padding-bottom: 10px;
+  background: rgba(200, 169, 110, 0.035);
+}
+
+.attachments-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 10px;
+  background: linear-gradient(135deg, rgba(200, 169, 110, 0.14), rgba(255, 255, 255, 0.035));
+  border: 1px solid rgba(200, 169, 110, 0.24);
+  border-radius: 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.attachments-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 3px;
+  color: #c8a96e;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.attachments-heading--spirit {
+  color: #b8d7ff;
+}
+
+.attachment-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.attachment-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 240px;
+  padding: 3px 5px 3px 8px;
+  color: #f0e2c0;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  &:hover { background: rgba(200, 169, 110, 0.16); opacity: 1; }
+}
+
+.attachment-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 16px;
+  padding: 0 5px;
+  color: #1d170f;
+  background: #c8a96e;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .class-icons {

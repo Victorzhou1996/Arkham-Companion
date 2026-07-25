@@ -2,6 +2,7 @@
 
 module Arkham.Effect.Window (module Arkham.Effect.Window) where
 
+import Arkham.ScenarioLogKey
 import Arkham.Ability.Types
 import Arkham.Card.Id
 import Arkham.Id
@@ -47,6 +48,7 @@ data EffectWindow
   | EffectRevelationWindow TreacheryId
   | EffectDefeatWindow EnemyId
   | EffectHollowWindow CardId
+  | EffectRememberedWindow ScenarioLogKey
   deriving stock (Ord, Eq, Show, Data)
 
 instance IsLabel "endOfCurrentPhase" EffectWindow where
@@ -57,6 +59,9 @@ instance IsLabel "endOfNextSkillTest" (InvestigatorId -> EffectWindow) where
 
 instance IsLabel "nextSkillTest" (InvestigatorId -> EffectWindow) where
   fromLabel = EffectNextSkillTestWindow
+
+instance IsLabel "remembered" (ScenarioLogKey -> EffectWindow) where
+  fromLabel = EffectRememberedWindow
 
 instance IsLabel "round" EffectWindow where
   fromLabel = EffectRoundWindow
@@ -81,6 +86,29 @@ instance IsLabel "skillTestMatching" (SkillTestMatcher -> EffectWindow) where
 
 firstWindow :: [EffectWindow] -> EffectWindow
 firstWindow = FirstEffectWindow
+
+-- | Decision for whether and how a 'FirstEffectWindow' should emit modifiers.
+-- The most specific gating window in the list determines the gate; an inner
+-- 'EffectNextSkillTestWindow' suppresses emission entirely until 'replaceNextSkillTest'
+-- rewrites it into 'EffectSkillTestWindow'.
+data FirstEffectWindowGate
+  = FirstWindowSuppress
+  | FirstWindowSkillTest SkillTestId
+  | FirstWindowTurn InvestigatorId
+  | FirstWindowPhase Phase
+  | FirstWindowEmit
+  deriving stock (Eq, Show)
+
+firstEffectWindowGate :: [EffectWindow] -> FirstEffectWindowGate
+firstEffectWindowGate ws
+  | any isNextSkillTest ws = FirstWindowSuppress
+  | Just sid <- listToMaybe [s | EffectSkillTestWindow s <- ws] = FirstWindowSkillTest sid
+  | Just iid <- listToMaybe [i | EffectTurnWindow i <- ws] = FirstWindowTurn iid
+  | Just p <- listToMaybe [ph | EffectPhaseWindowFor ph <- ws] = FirstWindowPhase p
+  | otherwise = FirstWindowEmit
+ where
+  isNextSkillTest (EffectNextSkillTestWindow _) = True
+  isNextSkillTest _ = False
 
 $(deriveToJSON defaultOptions ''EffectWindow)
 

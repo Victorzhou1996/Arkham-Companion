@@ -82,3 +82,13 @@ terraform.tfvars
 # Local env / secrets
 secrets.*
 kubeconfig*
+
+.pi/
+.claude/
+CLAUDE.md
+.mcp.json
+AGENTS.md
+tmp/
+.agents/
+.windsurf/
+skills-lock.json

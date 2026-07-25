@@ -10,10 +10,14 @@ module Arkham.FlavorText (
   compose,
   h,
   h_,
+  h1,
+  h3,
   hr,
   p,
   cols,
   img,
+  chaosTokenImg,
+  chaosTokenMorph,
   UlItems,
 )
 where
@@ -22,6 +26,7 @@ import Arkham.I18n as X
 import Arkham.Text as X
 
 import Arkham.Card.CardCode
+import Arkham.ChaosToken.Types (ChaosTokenFace)
 import Arkham.Prelude
 import Control.Monad.Writer.Strict
 import Data.Text qualified as T
@@ -36,10 +41,16 @@ ul :: UlItems -> FlavorTextEntry
 ul = ListEntry . execWriter
 
 h :: HasI18n => Scope -> FlavorTextEntry
-h t = HeaderEntry 1 (intercalate "." (?scope <> [t]))
+h = h_ 1
 
 h_ :: HasI18n => Int -> Scope -> FlavorTextEntry
 h_ n t = HeaderEntry n (intercalate "." (?scope <> [t]))
+
+h1 :: HasI18n => Scope -> FlavorTextEntry
+h1 = h_ 1
+
+h3 :: HasI18n => Scope -> FlavorTextEntry
+h3 = h_ 3
 
 p :: HasI18n => Scope -> FlavorTextEntry
 p = i18nEntry
@@ -52,6 +63,12 @@ cols = ColumnEntry
 
 img :: CardCode -> FlavorTextEntry
 img = (`CardEntry` [])
+
+chaosTokenImg :: ChaosTokenFace -> FlavorTextEntry
+chaosTokenImg = ChaosTokenEntry
+
+chaosTokenMorph :: ChaosTokenFace -> ChaosTokenFace -> FlavorTextEntry
+chaosTokenMorph = ChaosTokenMorphEntry
 
 hr :: FlavorTextEntry
 hr = EntrySplit
@@ -112,6 +129,9 @@ instance HasField "blue" (Scope -> FlavorTextEntry) (Scope -> FlavorTextEntry) w
 
 instance HasField "green" (Scope -> FlavorTextEntry) (Scope -> FlavorTextEntry) where
   getField f = extendModifiers GreenEntry . f
+
+instance HasField "codex" (Scope -> FlavorTextEntry) (Scope -> FlavorTextEntry) where
+  getField f = extendModifiers CodexEntry . f
 
 instance HasField "bordered" (Scope -> FlavorTextEntry) (Scope -> FlavorTextEntry) where
   getField f = extendModifiers BorderedEntry . f

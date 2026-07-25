@@ -13,14 +13,14 @@ newtype GuardianElderThing = GuardianElderThing EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 guardianElderThing :: EnemyCard GuardianElderThing
-guardianElderThing = enemy GuardianElderThing Cards.guardianElderThing (3, Static 4, 1) (1, 1)
+guardianElderThing = enemy GuardianElderThing Cards.guardianElderThing
 
 instance HasAbilities GuardianElderThing where
   getAbilities (GuardianElderThing a) =
     extend1 a
       $ mkAbility a 1
       $ forced
-      $ EnemyDealtDamage #when AnyDamageEffect (be a) (SourceOwnedBy You)
+      $ EnemyDealtDamage #when AnyDamageEffect (be a) (SourceUsedBy You)
 
 instance RunMessage GuardianElderThing where
   runMessage msg e@(GuardianElderThing attrs) = runQueueT $ case msg of

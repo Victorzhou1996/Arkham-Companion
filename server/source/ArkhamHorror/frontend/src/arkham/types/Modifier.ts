@@ -42,17 +42,22 @@ export type ModifierType
   | AnySkillValue
   | BaseSkill
   | BaseSkillOf
+  | Blank
+  | BlankExceptForcedAbilities
   | CannotEnter
   | Hollow
   | CannotDiscoverCluesAt
+  | CannotBeDamaged
   | DamageDealt
   | DiscoveredClues
   | SkillTestResultValueModifier
+  | AutomaticallyFailIfSucceedByAtLeast
   | CancelEffects
   | CannotPerformSkillTest
   | GainVictory
   | ActionCostSetToModifier
   | OtherModifier
+  | RemoveTrait
   | UIModifier
   | SkillModifier
   | SetSkillValue
@@ -72,6 +77,14 @@ export type BaseSkillOf = {
   tag: "BaseSkillOf"
   skillType: string
   value: number
+}
+
+export type Blank = {
+  tag: "Blank"
+}
+
+export type BlankExceptForcedAbilities = {
+  tag: "BlankExceptForcedAbilities"
 }
 
 export type Difficulty = {
@@ -139,6 +152,11 @@ export type SkillTestResultValueModifier = {
   contents: number
 }
 
+export type AutomaticallyFailIfSucceedByAtLeast = {
+  tag: "AutomaticallyFailIfSucceedByAtLeast"
+  contents: number
+}
+
 export type DamageDealt = {
   tag: "DamageDealt"
   contents: number
@@ -203,6 +221,10 @@ export type CannotDiscoverCluesAt = {
   contents: string
 }
 
+export type CannotBeDamaged = {
+  tag: "CannotBeDamaged"
+}
+
 export type CannotEnter = {
   tag: "CannotEnter"
   contents: string
@@ -218,13 +240,20 @@ export type OtherModifier = {
   contents: string
 }
 
+export type RemoveTrait = {
+  tag: "RemoveTrait"
+  contents: string
+}
+
 type UIModifierType =
   | 'Locus'
   | 'Ethereal'
   | 'Explosion'
+  | 'Oversized'
   | { tag: 'ImportantToScenario', contents: string }
   | { tag: 'OverlayCheckmark', top: number, left: number }
   | { tag: 'Rotated', contents: number}
+  | { tag: 'Positioned', x: number, y: number }
 
 export type UIModifier = {
   tag: "UIModifier"
@@ -245,6 +274,14 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
       skillType: JsonDecoder.string(),
       value: JsonDecoder.number()
     }, 'BaseSkillOf'),
+  JsonDecoder.object<Blank>(
+    {
+      tag: JsonDecoder.literal('Blank')
+    }, 'Blank'),
+  JsonDecoder.object<BlankExceptForcedAbilities>(
+    {
+      tag: JsonDecoder.literal('BlankExceptForcedAbilities')
+    }, 'BlankExceptForcedAbilities'),
   JsonDecoder.object<BaseSkill>(
     {
       tag: JsonDecoder.literal('BaseSkill'),
@@ -285,6 +322,11 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
       tag: JsonDecoder.literal('SkillTestResultValueModifier'),
       contents: JsonDecoder.number()
     }, 'SkillTestResultValueModifier'),
+  JsonDecoder.object<AutomaticallyFailIfSucceedByAtLeast>(
+    {
+      tag: JsonDecoder.literal('AutomaticallyFailIfSucceedByAtLeast'),
+      contents: JsonDecoder.number()
+    }, 'AutomaticallyFailIfSucceedByAtLeast'),
   JsonDecoder.object<CancelEffects>(
     {
       tag: JsonDecoder.literal('CancelEffects')
@@ -325,6 +367,11 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
       tag: JsonDecoder.literal('CannotEnter'),
       contents: JsonDecoder.string()
     }, 'CannotEnter'),
+  JsonDecoder.object<RemoveTrait>(
+    {
+      tag: JsonDecoder.literal('RemoveTrait'),
+      contents: JsonDecoder.string()
+    }, 'RemoveTrait'),
   JsonDecoder.object<Hollow>(
     {
       tag: JsonDecoder.literal('Hollow'),
@@ -388,9 +435,10 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
     {
       tag: JsonDecoder.literal('UIModifier'),
       contents: JsonDecoder.oneOf<UIModifierType>([
-        JsonDecoder.literal('Locus'),
-        JsonDecoder.literal('Ethereal'),
-        JsonDecoder.literal('Explosion'),
+        JsonDecoder.object({ tag: JsonDecoder.literal('Locus') }, 'Locus').map(() => "Locus"),
+        JsonDecoder.object({ tag: JsonDecoder.literal('Ethereal') }, 'Ethereal').map(() => "Ethereal"),
+        JsonDecoder.object({ tag: JsonDecoder.literal('Explosion') }, 'Explosion').map(() => "Explosion"),
+        JsonDecoder.object({ tag: JsonDecoder.literal('Oversized') }, 'Oversized').map(() => "Oversized"),
         JsonDecoder.object({ tag: JsonDecoder.literal('ImportantToScenario'), contents: JsonDecoder.string() }, 'ImportantToScenario'),
         JsonDecoder.object({
           tag: JsonDecoder.literal('OverlayCheckmark'),
@@ -398,6 +446,11 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
           left: JsonDecoder.number()
         }, 'OverlayCheckmark'),
         JsonDecoder.object({ tag: JsonDecoder.literal('Rotated'), contents: JsonDecoder.number() }, 'Rotated'),
+        JsonDecoder.object({
+          tag: JsonDecoder.literal('Positioned'),
+          x: JsonDecoder.number(),
+          y: JsonDecoder.number()
+        }, 'Positioned'),
       ], 'UIModifierType')
     }, 'UIModifier'),
   JsonDecoder.object({

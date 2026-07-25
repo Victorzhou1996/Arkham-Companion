@@ -6,6 +6,9 @@ import Arkham.ChaosBag.Base
 import Arkham.ChaosBag.RevealStrategy
 import Arkham.ChaosBagStepState
 import Arkham.ChaosToken
+import Arkham.ChaosToken.Types
+import Arkham.Game.Settings (activeUltimatumsAndBoons)
+import Arkham.UltimatumsAndBoons.Types
 import Arkham.Classes
 import Arkham.Classes.HasGame
 import {-# SOURCE #-} Arkham.GameEnv
@@ -26,7 +29,7 @@ import Arkham.Source
 import Arkham.Target
 import Arkham.Timing qualified as Timing
 import Arkham.Tracing
-import Arkham.Window (Window (..), mkAfter, mkWhen)
+import Arkham.Window (Window (..), mkAfter, mkCancel, mkWhen)
 import Arkham.Window qualified as Window
 import Control.Monad.State.Strict (StateT, execStateT, gets, modify', put, runStateT)
 import Data.Map.Strict qualified as Map
@@ -545,11 +548,14 @@ replaceDeciding current replacement = case current of
     Choose chooseSource n tokenStrategy steps tokens' nested ->
       Deciding
         $ Choose chooseSource n tokenStrategy (replaceDecidingList steps replacement) tokens' nested
-  Decided inner -> Decided $ case inner of
-    Choose s n st steps gs after -> Choose s n st (replaceDecidingList steps replacement) gs after
-    ChooseMatch s n st steps gs mtchr after -> ChooseMatch s n st (replaceDecidingList steps replacement) gs mtchr after
-    ChooseMatchChoice steps gs choices -> ChooseMatchChoice (replaceDecidingList steps replacement) gs choices
-    _ -> error $ "should be impossible, seen: Deciding " <> show inner
+  -- A 'Decided' chaos-bag choice happens when a previous reactor (e.g. Eyes
+  -- of the Dreamer) committed its structure and the bag was advanced before
+  -- a second reactor (e.g. Jacqueline Fine) fires on the same plural
+  -- WouldRevealChaosTokens window. We replace wholesale: the second reactor
+  -- captured the outgoing structure in its own 'chooseAndThen' (so the
+  -- first reactor's effect is preserved through that nested pipeline) and
+  -- the new top-level structure is what should drive the rest of the test.
+  Decided _ -> replacement
   Undecided _ -> replacement
   _ -> error $ "should be impossible, seen: " <> show current
 
@@ -618,7 +624,17 @@ instance RunMessage ChaosBag where
       pure $ c & forceDrawL ?~ face
     ForceChaosTokenDrawToken token -> do
       pure $ c & forceDrawL ?~ token.face
-    SetChaosTokens tokens' -> do
+    SetChaosTokens rawTokens -> do
+      -- Ultimatums that alter chaos bag construction. Applied whenever the bag
+      -- is (re)built from a face list, which in practice is setup.
+      variants <- activeUltimatumsAndBoons <$> getSettings
+      let
+        brokenPromises = Ultimatum UltimatumOfBrokenPromises `member` variants
+        failure = Ultimatum UltimatumOfFailure `member` variants
+        tokens' =
+          (if brokenPromises then filter (/= ElderSign) else id)
+            $ rawTokens
+            <> [AutoFail | failure]
       tokens'' <- traverse createChaosToken tokens'
       blessTokens <- replicateM 10 $ createChaosToken #bless
       curseTokens <- replicateM 10 $ createChaosToken #curse
@@ -686,8 +702,8 @@ instance RunMessage ChaosBag where
                     [ FocusChaosTokens [token]
                     , chooseOne
                         player
-                        [ Label "Remove to Token Pool" [UnfocusChaosTokens, removeWindowMessage]
-                        , Label "Return to Bag" [UnfocusChaosTokens, ReturnChaosTokens [token]]
+                        [ Label "$label.chaosTokenRemoveToPool" [UnfocusChaosTokens, removeWindowMessage]
+                        , Label "$label.chaosTokenReturnToBag" [UnfocusChaosTokens, ReturnChaosTokens [token]]
                         ]
                     ]
 
@@ -804,18 +820,17 @@ instance RunMessage ChaosBag where
     ReplaceCurrentDraw source iid step -> case chaosBagChoice of
       Nothing -> error "unexpected"
       Just choice' -> do
-        -- When we replace we need to remove the original would reveal chaos
-        -- token message as it will still be on the stack even though that
-        -- token draw is gone
+        -- Remove only the singular per-draw "would reveal chaos token" window
+        -- that referred to the draw we are about to replace. Do NOT remove
+        -- the plural "would reveal chaos tokens" window for this test — it is
+        -- still open and other reactors (Jacqueline Fine + Eyes of the
+        -- Dreamer, etc.) must still be able to fire on it.
         removeAllMessagesMatching $ \case
           CheckWindows [Window Timing.When (Window.WouldRevealChaosToken {}) _] -> True
           Do (CheckWindows [Window Timing.When (Window.WouldRevealChaosToken {}) _]) -> True
-          CheckWindows [Window Timing.When (Window.WouldRevealChaosTokens {}) _] -> True
-          Do (CheckWindows [Window Timing.When (Window.WouldRevealChaosTokens {}) _]) -> True
           _ -> False
 
         iids <- getInvestigators
-        -- if we have not decided we can use const to replace
         let
           choice'' = replaceDeciding choice' (Undecided step)
           (updatedChoice, messages) = decideFirstUndecided source iid iids SetAside toDecided choice''
@@ -839,26 +854,30 @@ instance RunMessage ChaosBag where
             pure token'
           -- let tokens' = filter (not . chaosTokenCancelled) tokens''
 
-          -- If we are dealing with the skill test, then the after window will be managed by it
+          -- If we are dealing with the skill test, then the when/after windows will be managed by it
           let
             sourceIsSkillTest = case source of
               SkillTestSource _ -> True
               _ -> False
 
           checkWindowMsgs <- case miid of
-            Just iid ->
-              (\x y -> [x, y])
-                <$> checkWindows
-                  [ mkWhen (Window.RevealChaosToken iid token)
-                  | token <- tokens'
-                  , not token.cancelled
-                  ]
-                <*> checkWindows
-                  [ mkAfter (Window.RevealChaosToken iid token)
-                  | not sourceIsSkillTest
-                  , token <- tokens'
-                  , not token.cancelled
-                  ]
+            Just iid -> do
+              cancelMsgs <-
+                traverse
+                  (\token -> checkWindows [mkCancel (Window.RevealChaosToken iid token)])
+                  [token | token <- tokens', not token.cancelled]
+              whenMsgs <-
+                traverse
+                  (\token -> checkWindows [mkWhen (Window.RevealChaosToken iid token)])
+                  [token | token <- tokens', not token.cancelled]
+              afterMsgs <-
+                if sourceIsSkillTest
+                  then pure []
+                  else
+                    traverse
+                      (\token -> checkWindows [mkAfter (Window.RevealChaosToken iid token)])
+                      [token | token <- tokens', not token.cancelled]
+              pure $ cancelMsgs <> whenMsgs <> afterMsgs
             Nothing -> pure []
           for_ miid \iid -> do
             investigator <- getAttrs @Investigator iid
@@ -914,7 +933,8 @@ instance RunMessage ChaosBag where
       push $ RequestChaosTokens s (Just iid) (Reveal 1) SetAside
       pure c
     FinalizeRequestedChaosTokens source miid -> do
-      for_ (Map.lookup source chaosBagPendingRequests) $ push . RequestedChaosTokens source miid
+      for_ (Map.lookup source chaosBagPendingRequests) \tokens ->
+        unless (null tokens) $ push (RequestedChaosTokens source miid tokens)
       -- why do we just clear the tokens and not the source? Because when
       -- dealing with a skill test we might want to draw more tokens later, but
       -- not include them in the tokens to reveal
@@ -973,7 +993,7 @@ instance RunMessage ChaosBag where
     SwapChaosToken originalFace newFace -> do
       let
         replaceToken _needle _new [] = []
-        replaceToken needle new (token : rest) | chaosTokenFace token == needle = token {chaosTokenFace = new} : rest
+        replaceToken needle new (token : rest) | chaosTokenFace token == needle = token {Arkham.ChaosToken.Types.chaosTokenFace = new} : rest
         replaceToken needle new (token : rest) = token : replaceToken needle new rest
 
       -- if we are replacing with a token in the token pool, we need to change its face too
@@ -988,9 +1008,26 @@ instance RunMessage ChaosBag where
         & (setAsideChaosTokensL %~ filter (/= token))
         & (revealedChaosTokensL %~ filter (/= token))
         & (tokenPoolL %~ filter (/= token))
+    PlaceChaosToken token ->
+      pure
+        $ c
+        & (chaosTokensL %~ filter (/= token))
+        & (setAsideChaosTokensL %~ filter (/= token))
+        & (revealedChaosTokensL %~ filter (/= token))
+        & (tokenPoolL %~ filter (/= token))
     SetChaosTokenAside token -> do
       pure $ c & setAsideChaosTokensL %~ (<> [token {chaosTokenSealed = False}])
     UnsealChaosToken token -> do
+      pure
+        $ c
+        & ( chaosTokensL
+              %~ sort
+              . (token {chaosTokenCancelled = False, chaosTokenSealed = False} :)
+              . filter (/= token)
+          )
+        & (setAsideChaosTokensL %~ filter (/= token))
+        & (revealedChaosTokensL %~ filter (/= token))
+    RemovePlacedChaosToken token -> do
       pure
         $ c
         & ( chaosTokensL
@@ -1025,9 +1062,18 @@ instance RunMessage ChaosBag where
                 & (setAsideChaosTokensL %~ delete token)
                 & (revealedChaosTokensL %~ delete token)
     RemoveAllChaosTokens face ->
-      pure
-        $ c
-        & (chaosTokensL %~ filter ((/= face) . chaosTokenFace))
-        & (setAsideChaosTokensL %~ filter ((/= face) . chaosTokenFace))
-        & (revealedChaosTokensL %~ filter ((/= face) . chaosTokenFace))
+      case filter ((== face) . chaosTokenFace) chaosBagChaosTokens of
+        [] -> pure c
+        xs -> do
+          let shouldReturnToPool = face `elem` [#bless, #curse, #frost]
+          if shouldReturnToPool
+            then do
+              push $ ReturnChaosTokensToPool xs
+              pure c
+            else
+              pure
+                $ c
+                & (chaosTokensL %~ filter (`notElem` xs))
+                & (setAsideChaosTokensL %~ filter (`notElem` xs))
+                & (revealedChaosTokensL %~ filter (`notElem` xs))
     _ -> pure c

@@ -3,20 +3,23 @@ require-stack-version: ">= 3.7.1"
 concurrent-tests: true
 system-ghc: true
 install-ghc: false
-resolver: nightly-2025-09-16
+resolver: nightly-2025-12-30
 compiler: ghc-9.12.2
 notify-if-nix-on-path: false
 build:
   jobs: 16
 
 ghc-options:
-  "$targets":       -j
+  "$targets":       -j +RTS -A128M -n4m -RTS
   "$locals":
     -O0
     -fwrite-ide-info
     -hiedir=.hie
     -fhide-source-paths
     -fignore-optim-changes
+    -fwrite-if-simplified-core
+    -fprefer-byte-code
+    -fwrite-if-compression=1
     -Weverything
     -Wno-unused-packages
     -Wno-missing-exported-signatures
@@ -48,14 +51,6 @@ allow-newer: true
 extra-deps:
 - github: halogenandtoast/monad-validate
   commit: e5f36d4a82875c09c6000fed8f8ced50e21b75ce
-- github: brendanhay/amazonka
-  commit: 4873cc451113147d071721c97704ac648d71e9ee
-  subdirs:
-    - lib/amazonka
-    - lib/amazonka-core
-    - lib/services/amazonka-sso
-    - lib/services/amazonka-sts
-    - lib/services/amazonka-s3
 - yesod-test-1.6.19@sha256:faac869ab6fa86113cde99d28928e196373a04879c03204071956954ed7ba2a3,3003
 - opentelemetry-plugin-1.1.2
 - hs-opentelemetry-api-0.3.0.0@sha256:d864e4e1758bdeb8310d99e18084b77cff875a7b56589db55dfaf1dd17864dd3,4162

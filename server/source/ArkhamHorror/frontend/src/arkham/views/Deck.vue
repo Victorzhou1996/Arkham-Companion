@@ -12,6 +12,9 @@ import CardImageView from '@/arkham/components/CardImageView.vue'
 import { useToast } from "vue-toastification";
 import { useDbCardStore, ArkhamDBCard } from '@/stores/dbCards'
 import { displayTabooId } from '@/arkham/taboo'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 export interface Props {
   deckId: string
@@ -59,43 +62,109 @@ fetchCards(true).then((response) => {
 
 const view = ref(View.List)
 
+function localizeCard(result: Arkham.CardDef | undefined): Arkham.CardDef | undefined {
+  if (!result) return undefined
+
+  const language = localStorage.getItem('language') || 'en'
+  if (language === 'en') return result
+
+  const match: ArkhamDBCard | null = store.getDbCard(result.art)
+  if (!match) return result
+
+  const localized = { ...result, name: { ...result.name }, classSymbols: [...result.classSymbols], cardTraits: [...result.cardTraits] }
+
+  // Name
+  localized.name.title = match.name
+  if (match.subname) localized.name.subtitle = match.subname
+
+  // Class
+  if (match.faction_name && localized.classSymbols.length > 0) localized.classSymbols[0] = match.faction_name
+  if (match.faction2_name && localized.classSymbols.length > 1) {
+    localized.classSymbols[1] = match.faction2_name
+    if (match.faction3_name && localized.classSymbols.length > 2) localized.classSymbols[2] = match.faction3_name
+  }
+
+  // Type
+  localized.cardType = match.type_name
+
+  // Traits
+  if (match.traits) localized.cardTraits = match.traits.split('.').filter(item => item != "" && item != " ")
+
+  return localized
+}
+
+function findCardByDeckCode(code: string): Arkham.CardDef | undefined {
+  if (code === "c01000") {
+    return { cardCode: code, doubleSided: false, classSymbols: [], cardType: "Treachery", art: "01000", level: 0, name: { title: "Random Basic Weakness", subtitle: null }, cardTraits: [], skills: [], cost: null, otherSide: null, meta: {} }
+  }
+
+  const normalized = code.replace(/^c/, '')
+  return localizeCard(allCards.value.find((c) => c.art === normalized))
+}
+
 const cards = computed(() => {
   if (deck.value === undefined || deck.value === null) {
     return []
   }
 
   return Object.entries(deck.value.list.slots).flatMap(([key, value]) => {
-    if (key === "c01000") {
-      return Array(value).fill({ cardCode: key, classSymbols: [], cardType: "Treachery", art: "01000", level: 0, name: { title: "Random Basic Weakness", subtitle: null }, cardTraits: [], skills: [], cost: null })
-    }
-
-    const result: Arkham.CardDef | undefined = allCards.value.find((c) => `c${c.art}` === key)
-    const language = localStorage.getItem('language') || 'en'
-    if (language === 'en') return Array(value).fill(result)
-
-    if (!result) return
-    const match: ArkhamDBCard | null = store.getDbCard(result.art)
-    if (!match) return Array(value).fill(result)
-
-    // Name
-    result.name.title = match.name
-    if (match.subname) result.name.subtitle = match.subname
-
-    // Class
-    if (match.faction_name && result.classSymbols.length > 0) result.classSymbols[0] = match.faction_name
-    if (match.faction2_name && result.classSymbols.length > 1) {
-      result.classSymbols[1] = match.faction2_name
-      if (match.faction3_name && result.classSymbols.length > 2) result.classSymbols[2] = match.faction3_name
-    }
-
-    // Type
-    result.cardType = match.type_name
-
-    // Traits
-    if (match.traits) result.cardTraits = match.traits.split('.').filter(item => item != "" && item != " ")
-
+    const result = findCardByDeckCode(key)
+    if (!result) return []
     return Array(value).fill(result)
   })
+})
+
+const attachments = computed<Record<string, Arkham.CardDef[]>>(() => {
+  const result: Record<string, Arkham.CardDef[]> = {}
+
+  try {
+    const meta = deck.value?.list.meta ? JSON.parse(deck.value.list.meta) as Record<string, unknown> : {}
+    Object.entries(meta).forEach(([key, value]) => {
+      const match = key.match(/^attachments_(\d+)$/)
+      if (!match || typeof value !== 'string') return
+
+      const attachedCards = value
+        .split(',')
+        .map((code) => findCardByDeckCode(code.trim()))
+        .filter((card): card is Arkham.CardDef => !!card)
+
+      if (attachedCards.length > 0) result[match[1]] = attachedCards
+    })
+
+    const hiddenSlots = (meta.hidden_slots as { slots?: Record<string, number> } | undefined)?.slots
+    if (hiddenSlots) {
+      const hiddenCards = Object.entries(hiddenSlots).flatMap(([code, quantity]) => {
+        const card = findCardByDeckCode(code)
+        return card ? Array(quantity).fill(card) : []
+      })
+      if (hiddenCards.length > 0) {
+        const hasFromTheBeyond = !!deck.value?.list.slots['90052'] || !!deck.value?.list.slots['c90052']
+        if (hasFromTheBeyond && !result['90052']) result['90052'] = hiddenCards
+        else if (!result['09077']) result['09077'] = hiddenCards
+      }
+    }
+
+    const sideSlots = deck.value?.list.sideSlots
+    if (sideSlots && !result['90052']) {
+      const sideCards = Object.entries(sideSlots).flatMap(([code, quantity]) => {
+        const card = findCardByDeckCode(code)
+        return card ? Array(quantity).fill(card) : []
+      })
+      if (sideCards.length > 0) result['90052'] = sideCards
+    }
+
+    if (typeof meta.extra_deck === 'string' && !result['90052']) {
+      const extraCards = meta.extra_deck
+        .split(',')
+        .map((code) => findCardByDeckCode(code.trim()))
+        .filter((card): card is Arkham.CardDef => !!card)
+      if (extraCards.length > 0) result['90052'] = extraCards
+    }
+
+    return result
+  } catch (_e) {
+    return {}
+  }
 })
 
 async function deleteDeckEvent() {
@@ -109,7 +178,7 @@ async function deleteDeckEvent() {
 async function sync() {
   if (deck.value) {
     syncDeck(deck.value.id).then((newData) => {
-      toast.success("Deck synced successfully", { timeout: 3000 })
+      toast.success(t('deckSyncedSuccessfully'), { timeout: 3000 })
       deck.value = newData
     })
   }
@@ -179,19 +248,19 @@ watch(deckRef, (el) => {
               </button>
             </div>
             <div class="deck-actions">
-              <a v-if="deck.url" class="action-btn" :href="deckUrlToPage(deck.url)" target="_blank" rel="noreferrer noopener" title="View on ArkhamDB"><font-awesome-icon icon="external-link" /></a>
-              <a v-if="deck.url" class="action-btn" href="#" title="Sync deck" @click.prevent="sync"><font-awesome-icon icon="refresh" /></a>
-              <a class="action-btn action-btn--delete" href="#" title="Delete deck" @click.prevent="deleting = true"><font-awesome-icon icon="trash" /></a>
+              <a v-if="deck.url" class="action-btn" :href="deckUrlToPage(deck.url)" target="_blank" rel="noreferrer noopener" :title="$t('deck.viewOnArkhamDb')"><font-awesome-icon icon="external-link" /></a>
+              <a v-if="deck.url" class="action-btn" href="#" :title="$t('deck.syncDeck')" @click.prevent="sync"><font-awesome-icon icon="refresh" /></a>
+              <a class="action-btn action-btn--delete" href="#" :title="$t('deck.deleteDeck')" @click.prevent="deleting = true"><font-awesome-icon icon="trash" /></a>
             </div>
           </div>
         </template>
       </header>
-      <CardImageView v-if="view == View.Image" :cards="cards" />
-      <CardListView v-if="view == View.List" :cards="cards" />
+      <CardImageView v-if="view == View.Image" :cards="cards" :attachments="attachments" />
+      <CardListView v-if="view == View.List" :cards="cards" :attachments="attachments" />
     </div>
     <Prompt
       v-if="deleting"
-      prompt="Are you sure you want to delete this deck?"
+      :prompt="t('areYouSureDeleteDeck')"
       :yes="deleteDeckEvent"
       :no="() => deleting = false"
     />

@@ -36,6 +36,7 @@ import Arkham.Discover
 import Arkham.Enemy.Types
 import Arkham.Enemy.Types qualified as Field
 import Arkham.Entities qualified as Entities
+import Arkham.Exhaust
 import Arkham.Fight
 import Arkham.ForMovement
 import Arkham.Game.Settings
@@ -182,6 +183,7 @@ investigate i l = do
       , investigateSource = TestSource mempty
       , investigateTarget = Nothing
       , investigateIsAction = False
+      , investigatePayCost = False
       , investigateSkillTest = sid
       }
 
@@ -435,7 +437,7 @@ assertHasNoReaction = do
       AbilityLabel {} -> True
       _ -> False
   case mapToList questionMap of
-    [(_, question)] -> case question of
+    [(_, question)] -> case stripQuestionWrappers question of
       ChooseOne msgs -> case find isReaction msgs of
         Just msg -> expectationFailure $ "expected no reaction, but found " <> show msg
         Nothing -> pure ()
@@ -455,14 +457,36 @@ drawsCard i cd = do
   runAll [PutCardOnTopOfDeck (toId i) (Deck.InvestigatorDeck $ toId i) c, drawing]
 
 startSkillTest :: HasCallStack => TestAppT ()
-startSkillTest = chooseOptionMatching "start skill test" \case
+startSkillTest = chooseOptionAcrossQuestions "start skill test" \case
   StartSkillTestButton {} -> True
   _ -> False
 
 applyResults :: TestAppT ()
-applyResults = chooseOptionMatching "apply skill test results" \case
+applyResults = chooseOptionAcrossQuestions "apply skill test results" \case
   SkillTestApplyResultsButton {} -> True
   _ -> False
+
+chooseOptionAcrossQuestions
+  :: HasCallStack => String -> (UI Message -> Bool) -> TestAppT ()
+chooseOptionAcrossQuestions reason f = do
+  questionMap <- gameQuestion <$> getGame
+  let
+    findIn = \case
+      QuestionLabel _ _ q -> findIn q
+      QuestionWithSource _ _ q -> findIn q
+      ChooseOne msgs -> find f msgs
+      PlayerWindowChooseOne msgs -> find f msgs
+      ChooseOneAtATime msgs -> find f msgs
+      ChooseN _ msgs -> find f msgs
+      _ -> Nothing
+  case mapMaybe (findIn . snd) (mapToList questionMap) of
+    [msg] -> push (uiToRun msg) <* runMessages
+    [] -> liftIO $ expectationFailure $ "could not find a matching message for: " <> reason
+    _ ->
+      liftIO
+        $ expectationFailure
+        $ "found multiple matching messages for: "
+        <> reason
 
 inWindow :: Investigator -> TestAppT () -> TestAppT ()
 inWindow self body = do
@@ -616,7 +640,7 @@ applyAllDamage = do
   questionMap <- gameQuestion <$> getGame
   let
     choices = case mapToList questionMap of
-      [(_, question)] -> case question of
+      [(_, question)] -> case stripQuestionWrappers question of
         ChooseOne msgs -> msgs
         PlayerWindowChooseOne msgs -> msgs
         _ -> []
@@ -636,7 +660,7 @@ applyAllHorror = do
   questionMap <- gameQuestion <$> getGame
   let
     choices = case mapToList questionMap of
-      [(_, question)] -> case question of
+      [(_, question)] -> case stripQuestionWrappers question of
         ChooseOne msgs -> msgs
         PlayerWindowChooseOne msgs -> msgs
         _ -> []
@@ -683,7 +707,7 @@ assertNoReaction = do
   questionMap <- gameQuestion <$> getGame
   let
     choices = case mapToList questionMap of
-      [(_, question)] -> case question of
+      [(_, question)] -> case stripQuestionWrappers question of
         ChooseOne msgs -> msgs
         PlayerWindowChooseOne msgs -> msgs
         _ -> []
@@ -706,7 +730,7 @@ assertTarget (toTarget -> target) = do
   let
     choices =
       case mapToList questionMap of
-        [(_, question)] -> case question of
+        [(_, question)] -> case stripQuestionWrappers question of
           ChooseOne msgs -> msgs
           PlayerWindowChooseOne msgs -> msgs
           ChooseN _ msgs -> msgs
@@ -732,7 +756,7 @@ assertNotTarget (toTarget -> target) = do
   let
     choices =
       case mapToList questionMap of
-        [(_, question)] -> case question of
+        [(_, question)] -> case stripQuestionWrappers question of
           ChooseOne msgs -> msgs
           PlayerWindowChooseOne msgs -> msgs
           ChooseN _ msgs -> msgs
@@ -776,7 +800,7 @@ assertDamageIsDirect = do
   questionMap <- gameQuestion <$> getGame
   let
     choices = case mapToList questionMap of
-      [(_, question)] -> case question of
+      [(_, question)] -> case stripQuestionWrappers question of
         ChooseOne msgs -> msgs
         PlayerWindowChooseOne msgs -> msgs
         _ -> []
@@ -795,7 +819,7 @@ assertHorrorIsDirect = do
   questionMap <- gameQuestion <$> getGame
   let
     choices = case mapToList questionMap of
-      [(_, question)] -> case question of
+      [(_, question)] -> case stripQuestionWrappers question of
         ChooseOne msgs -> msgs
         PlayerWindowChooseOne msgs -> msgs
         _ -> []
@@ -893,6 +917,20 @@ assertMaxAmountChoice n = do
     TotalAmountTarget _ -> expectationFailure "expected MaxAmountTarget"
     AmountOneOf _ -> expectationFailure "expected MaxAmountTarget"
 
+-- | Resolve a "spend up to" cost (a 'PayCostQuestion' wrapping a single-choice
+-- 'ChoosePaymentAmounts', e.g. Watch This' additional cost). Asserts the
+-- offered maximum equals @expectedMax@, then pays @amount@ units of it.
+payUpTo :: HasCallStack => Int -> Int -> TestAppT ()
+payUpTo expectedMax amount = do
+  questionMap <- gameQuestion <$> getGame
+  case mapToList questionMap of
+    [(_, PayCostQuestion _ (ChoosePaymentAmounts _ _ [choice]))] -> do
+      choice.maxBound `shouldBe` expectedMax
+      replicateM_ amount (push choice.message)
+      runMessages
+    [(_, question)] -> error $ "expected a PayCostQuestion/ChoosePaymentAmounts, but got: " <> show question
+    _ -> error "expected exactly one question"
+
 beginsWithInPlay :: CardDef -> CardDef -> SpecWith ()
 beginsWithInPlay investigator card = it ("begins with " <> T.unpack (toTitle card) <> " in play") . gameTestWith investigator $ \self -> do
   cards <- testPlayerCards 20
@@ -905,4 +943,4 @@ setActive :: Investigator -> TestAppT ()
 setActive player = run $ SetActiveInvestigator (toId player)
 
 exhaust :: Targetable target => target -> TestAppT ()
-exhaust target = run $ Exhaust (toTarget target)
+exhaust target = run $ Exhaust $ mkExhaustion GameSource (toTarget target)

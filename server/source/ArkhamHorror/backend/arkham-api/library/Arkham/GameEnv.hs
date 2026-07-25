@@ -148,10 +148,6 @@ getsSkillTest f = fmap f . gameSkillTest <$> getGame
 
 getSkillTestId :: HasGame m => m (Maybe SkillTestId)
 getSkillTestId = fmap skillTestId . gameSkillTest <$> getGame
-
-getIsSkillTest :: HasGame m => m Bool
-getIsSkillTest = isJust <$> getSkillTest
-
 getActiveCosts :: HasGame m => m [ActiveCost]
 getActiveCosts = toList . gameActiveCost <$> getGame
 
@@ -192,7 +188,7 @@ getDepthLock :: HasGame m => m Int
 getDepthLock = gameDepthLock <$> getGame
 
 getAllAbilities :: HasGame m => m [Ability]
-getAllAbilities = getAbilities <$> getGame
+getAllAbilities = cached GetAllAbilitiesKey $ getAbilities <$> getGame
 
 getSettings :: HasGame m => m Settings
 getSettings = gameSettings <$> getGame
@@ -280,6 +276,12 @@ getGameInAction = gameInAction <$> getGame
 
 getWindowStack :: HasGame m => m [[Window]]
 getWindowStack = fromMaybe [] . gameWindowStack <$> getGame
+
+getCurrentWindowTick :: HasGame m => m (Maybe Int)
+getCurrentWindowTick = listToMaybe . gameWindowTickStack <$> getGame
+
+getEntryTicks :: HasGame m => m (Map CardId Int)
+getEntryTicks = gameEntryTicks <$> getGame
 
 getIgnoreCanModifiers :: HasGame m => m Bool
 getIgnoreCanModifiers = gameIgnoreCanModifiers <$> getGame

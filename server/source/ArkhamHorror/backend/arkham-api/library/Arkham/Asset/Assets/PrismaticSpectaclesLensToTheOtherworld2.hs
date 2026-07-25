@@ -10,6 +10,7 @@ import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.Effect.Import
 import Arkham.Helpers.SkillTest (getSkillTestId)
+import Arkham.I18n
 import Arkham.Investigate
 import Arkham.Matcher hiding (RevealChaosToken)
 import Arkham.Message.Lifted.Choose
@@ -24,8 +25,7 @@ prismaticSpectaclesLensToTheOtherworld2 = asset PrismaticSpectaclesLensToTheOthe
 
 instance HasAbilities PrismaticSpectaclesLensToTheOtherworld2 where
   getAbilities (PrismaticSpectaclesLensToTheOtherworld2 x) =
-    [ restrictedAbility x 1 ControlsThis $ investigateAction (AddCurseTokenCost 1)
-    ]
+    [investigateAbility x 1 (AddCurseTokenCost 1) ControlsThis]
 
 instance RunMessage PrismaticSpectaclesLensToTheOtherworld2 where
   runMessage msg a@(PrismaticSpectaclesLensToTheOtherworld2 attrs) = runQueueT $ case msg of
@@ -64,10 +64,10 @@ instance RunMessage PrismaticSpectaclesLensToTheOtherworld2Effect where
           metaTarget <- hoistMaybe attrs.metaTarget
           guard $ isTarget sid metaTarget
           lift $ chooseOneM iid do
-            labeled "Exhaust Prismatic Spectacles to discover 1 additional clue at your location" do
-              exhaustThis aid
+            (cardI18n $ labeled' "prismaticSpectaclesLensToTheOtherworld2.exhaustForClue") do
+              exhaustWith attrs aid
               skillTestModifier sid attrs.source iid (DiscoveredClues 1)
-            labeled "Do not exaust" nothing
+            (cardI18n $ labeled' "prismaticSpectaclesLensToTheOtherworld2.doNotExaust") nothing
         _ -> pure ()
       pure e
     SkillTestEnds _ _ _ -> disableReturn e

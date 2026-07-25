@@ -2,7 +2,9 @@ module Arkham.Location.Cards.LibraryOfKos (libraryOfKos) where
 
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Seal
+import Arkham.Helpers.Cost (getSpendableClueCount)
 import Arkham.Helpers.GameValue
+import Arkham.I18n
 import Arkham.Location.Cards qualified as Cards
 import Arkham.Location.Import.Lifted
 import Arkham.Matcher
@@ -20,7 +22,7 @@ instance HasAbilities LibraryOfKos where
   getAbilities (LibraryOfKos a) =
     extendRevealed1 a
       $ skillTestAbility
-      $ restricted a 1 (youExist (InvestigatorWithDormantSeal SealE)) actionAbility
+      $ restricted a 1 (Here <> youExist (InvestigatorWithDormantSeal SealE)) actionAbility
 
 instance RunMessage LibraryOfKos where
   runMessage msg l@(LibraryOfKos attrs) = runQueueT $ case msg of
@@ -31,13 +33,14 @@ instance RunMessage LibraryOfKos where
     PassedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
       targetAmount <- perPlayer 1
       iids <- select $ investigatorAt attrs
+      totalClues <- getSpendableClueCount iids
       sameRing <- getLocationsOnSameRing attrs.label UnrevealedLocation
-      chooseOneM iid do
-        labeled "Spend 1 {perPlayer} clues as a group to activate the seal" do
+      chooseOrRunOneM iid $ withI18n $ countVar targetAmount do
+        labeledValidate' (totalClues >= targetAmount) "spendCluesToActivate" do
           push $ SpendClues targetAmount iids
           activateSeal SealE
           chooseOneAtATimeM iid $ targets sameRing $ lookAtRevealed iid (attrs.ability 1)
-        labeled "Do not spend clues" nothing
+        labeled' "doNotSpendClues" nothing
 
       pure l
     _ -> LibraryOfKos <$> liftRunMessage msg attrs

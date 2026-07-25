@@ -2,11 +2,13 @@
 
 module Arkham.CampaignLogKey where
 
+import Arkham.Campaigns.BrethrenOfAsh.Key
 import Arkham.Campaigns.EdgeOfTheEarth.Key
 import Arkham.Campaigns.NightOfTheZealot.Key
 import Arkham.Campaigns.TheCircleUndone.Key
 import Arkham.Campaigns.TheCircleUndone.Memento
 import Arkham.Campaigns.TheDreamEaters.Key
+import Arkham.Campaigns.TheDrownedCity.Key
 import Arkham.Campaigns.TheDunwichLegacy.Key
 import Arkham.Campaigns.TheFeastOfHemlockVale.Key
 import Arkham.Campaigns.TheForgottenAge.Key
@@ -38,6 +40,8 @@ data CampaignLogKey
   | EdgeOfTheEarthKey EdgeOfTheEarthKey
   | TheScarletKeysKey TheScarletKeysKey
   | TheFeastOfHemlockValeKey TheFeastOfHemlockValeKey
+  | BrethrenOfAshKey BrethrenOfAshKey
+  | TheDrownedCityKey TheDrownedCityKey
   | -- | Curse of the Rougarou
     TheRougarouContinuesToHauntTheBayou
   | TheRougarouIsDestroyed
@@ -46,6 +50,16 @@ data CampaignLogKey
     ManyWereSacrificedToCnidathquaDuringTheCarnivale
   | TheSunBanishedCnidathquaIntoTheDepths
   | CnidathquaRetreatedToNurseItsWounds
+  | -- | Guardians of the Abyss
+    TheCurseOfSlumberWasLifted
+  | YouAreAwareOfXzharahsPlans
+  | TheBrotherhoodsSchemesContinueUnabated
+  | TheDayOfReckoningIsComing
+  | TheAbyssWasSaved
+  | YouJoinedForcesWithXzharah
+  | DreamersInTheAbyss
+  | BrotherhoodAgentsWhoEscaped
+  | WasTakenByTheAbyss
   | -- | Murder at the Excelsior Hotel
     TheExcelsiorClaimsAnotherVictim
   | TheInvestigatorsFledTheSceneOfTheCrime
@@ -56,6 +70,10 @@ data CampaignLogKey
   | TheInvestigatorsWereDefeatedAtTheMidwinterGala
   | -- | Fortune and Folly
     PracticedRoles
+  | -- | The Blob That Ate Everything
+    YouHaveNoSoul
+  | -- | Challenge Scenarios
+    ByTheBookBonusCards
   | -- | Player Cards
     YouHaveIdentifiedTheSolution
   | YouHaveTranslatedTheGlyphs
@@ -71,6 +89,7 @@ data CampaignLogKey
   | Teachings2
   | Teachings3
   | YouHaveCalculatedTheDayOfReckoning
+  | YouHaveUnearthedTheSecretsOfThePharaohs
   deriving stock (Eq, Show, Ord, Data)
 
 $(deriveToJSON defaultOptions ''CampaignLogKey)
@@ -87,6 +106,8 @@ instance FromJSON CampaignLogKey where
       <|> (EdgeOfTheEarthKey <$> parseJSON o)
       <|> (TheScarletKeysKey <$> parseJSON o)
       <|> (TheFeastOfHemlockValeKey <$> parseJSON o)
+      <|> (BrethrenOfAshKey <$> parseJSON o)
+      <|> (TheDrownedCityKey <$> parseJSON o)
       <|> $(mkParseJSON defaultOptions ''CampaignLogKey) o
       <|> parseStringKey o
       <|> fail ("Could not parse CampaignLogKey" <> show o)
@@ -102,6 +123,15 @@ parseStringKey = withText "CampaignLogKey" $ \case
     pure ManyWereSacrificedToCnidathquaDuringTheCarnivale
   "TheSunBanishedCnidathquaIntoTheDepths" -> pure TheSunBanishedCnidathquaIntoTheDepths
   "CnidathquaRetreatedToNurseItsWounds" -> pure CnidathquaRetreatedToNurseItsWounds
+  "TheCurseOfSlumberWasLifted" -> pure TheCurseOfSlumberWasLifted
+  "YouAreAwareOfXzharahsPlans" -> pure YouAreAwareOfXzharahsPlans
+  "TheBrotherhoodsSchemesContinueUnabated" -> pure TheBrotherhoodsSchemesContinueUnabated
+  "TheDayOfReckoningIsComing" -> pure TheDayOfReckoningIsComing
+  "TheAbyssWasSaved" -> pure TheAbyssWasSaved
+  "YouJoinedForcesWithXzharah" -> pure YouJoinedForcesWithXzharah
+  "DreamersInTheAbyss" -> pure DreamersInTheAbyss
+  "BrotherhoodAgentsWhoEscaped" -> pure BrotherhoodAgentsWhoEscaped
+  "WasTakenByTheAbyss" -> pure WasTakenByTheAbyss
   "TheExcelsiorIsQuietForNow" -> pure TheExcelsiorIsQuietForNow
   "TheInvestigatorsFledTheSceneOfTheCrime" -> pure TheInvestigatorsFledTheSceneOfTheCrime
   "TheExcelsiorClaimsAnotherVictim" -> pure TheExcelsiorClaimsAnotherVictim
@@ -239,6 +269,18 @@ instance IsCampaignLogKey MotherRachelNotes where
     TheFeastOfHemlockValeKey (MotherRachelNotes k) -> Just k
     _ -> Nothing
 
+instance IsCampaignLogKey BrethrenOfAshKey where
+  toCampaignLogKey = BrethrenOfAshKey
+  fromCampaignLogKey = \case
+    BrethrenOfAshKey k -> Just k
+    _ -> Nothing
+
+instance IsCampaignLogKey TheDrownedCityKey where
+  toCampaignLogKey = TheDrownedCityKey
+  fromCampaignLogKey = \case
+    TheDrownedCityKey k -> Just k
+    _ -> Nothing
+
 instance ToJSONKey CampaignLogKey
 instance FromJSONKey CampaignLogKey
 
@@ -300,6 +342,8 @@ instance ToGameLoggerFormat CampaignLogKey where
     EdgeOfTheEarthKey k -> pack . go $ show k
     TheScarletKeysKey k -> pack . go $ show k
     TheFeastOfHemlockValeKey k -> pack . go $ show k
+    BrethrenOfAshKey k -> pack . go $ show k
+    TheDrownedCityKey k -> pack . go $ show k
     s -> pack . go $ show s
    where
     go :: String -> String

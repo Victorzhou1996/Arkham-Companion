@@ -1,22 +1,20 @@
-<script lang="ts" setup>   
+<script lang="ts" setup>
 import { useDebug } from '@/arkham/debug'
-import type { Message } from '@/arkham/types/Message'
+import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
 import * as ArkhamCard from '@/arkham/types/Card';
 import * as Arkham from '@/arkham/types/Investigator'
 import * as ArkhamGame from '@/arkham/types/Game';
 import type { Game } from '@/arkham/types/Game'
-import {computed, ComputedRef, ref, reactive, watch} from 'vue'
-import { imgsrc, pluralize } from '@/arkham/helpers';
+import {computed, ref, watch} from 'vue'
+import { imgsrc } from '@/arkham/helpers';
+import { cardImage } from '@/arkham/cardImages';
 import { useI18n } from 'vue-i18n';
+import AbilityButton from '@/arkham/components/AbilityButton.vue';
 import Card from '@/arkham/components/Card.vue';
 import Treachery from '@/arkham/components/Treachery.vue';
-import CardRow from '@/arkham/components/CardRow.vue';
+import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 
 const { t } = useI18n();
-
-interface RefWrapper<T> {
-  ref: ComputedRef<T>
-}
 
 export interface Props {
   game: Game
@@ -31,6 +29,7 @@ const debug = useDebug()
 
 const id = computed(() => props.investigator.id)
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
+const isPlayerWindow = computed(() => ArkhamGame.activeQuestionIsPlayerWindow(props.game, props.playerId))
 
 const topOfDiscard = computed(() => discards.value[0])
 
@@ -41,13 +40,19 @@ const topOfDeckRevealed = computed(() =>
 const topOfDeck = computed(() => {
   const topCard = props.investigator.deck[0]
   if  (topOfDeckRevealed.value && topCard) {
-    return imgsrc(`cards/${topCard.cardCode.replace(/^c/, '')}.avif`)
+    return cardImage(topCard.cardCode)
   }
   return imgsrc("player_back.jpg")
 })
 
 const playTopOfDeckAction = computed(() => {
   if(props.playerId !== props.investigator.playerId) {
+    return -1
+  }
+  // Only offer the deck-side play button inside a genuine play window. Other prompts
+  // (e.g. a Lucky Cigarette Case search) can present the top-of-deck card as a plain
+  // target with the same card id, which must not surface as a "Play" button here.
+  if (!isPlayerWindow.value) {
     return -1
   }
   const topOfDeck = props.investigator.deck[0]
@@ -57,8 +62,34 @@ const playTopOfDeckAction = computed(() => {
   return -1
 })
 
-const viewingDiscard = ref(false)
-const viewDiscardLabel = computed(() => viewingDiscard.value ? t('close') : pluralize(t('scenario.discardCard'), discards.value.length))
+function isTopOfDeckAbility(v: Message, cardId: string): v is AbilityLabel {
+  if (v.tag !== 'AbilityLabel') return false
+  const { source } = v.ability
+  if (source.sourceTag === 'ProxySource') {
+    if ("contents" in source.source) {
+      return source.source.contents === cardId
+    }
+    return false
+  }
+  if (source.tag === 'CardIdSource') return source.contents === cardId
+  if (source.tag === 'EventSource') return source.contents === cardId
+  if (source.tag === 'SkillSource') return source.contents === cardId
+  if (source.tag === 'AssetSource') return source.contents === cardId
+  return false
+}
+
+const topOfDeckAbilities = computed<AbilityMessage[]>(() => {
+  if (!topOfDeckRevealed.value) return []
+  const topCard = props.investigator.deck[0]
+  if (!topCard) return []
+  const cardId = topCard.id
+  return choices.value.reduce<AbilityMessage[]>((acc, v, i) => {
+    if (isTopOfDeckAbility(v, cardId)) {
+      return [...acc, { contents: v, displayAsAction: false, index: i }]
+    }
+    return acc
+  }, [])
+})
 
 const drawCardsAction = computed(() => {
   if(props.playerId !== props.investigator.playerId) {
@@ -80,15 +111,10 @@ const discardCardsAction = computed(() => {
     .some(choice => 
       discards
         .value
-        .some(discardItem => discardItem.contents.id === choice.target?.contents)
+        .some(discardItem => choice.tag === 'TargetLabel' && ArkhamCard.toCardContents(discardItem).id === choice.target.contents)
     )
 })
 
-const noCards = computed<ArkhamCard.Card[]>(() => [])
-
-// eslint-disable-next-line
-const showCards = reactive<RefWrapper<any>>({ ref: noCards })
-const cardRowTitle = ref("")
 
 const topOfDeckTreachery = computed(() => {
   const mTreacheryId = Object.values(props.game.treacheries).
@@ -96,11 +122,6 @@ const topOfDeckTreachery = computed(() => {
     map((t) => t.id)[0]
   return mTreacheryId ? props.game.treacheries[mTreacheryId] : null
 })
-
-const hideCards = () => {
-  showCards.ref = noCards
-  viewingDiscard.value = false
-}
 
 function onDropDiscard(event: DragEvent) {
   event.preventDefault()
@@ -115,6 +136,48 @@ function onDropDiscard(event: DragEvent) {
   }
 }
 
+type DeckDropMode = 'shuffle' | 'top' | 'bottom'
+
+const deckDropMode = ref<DeckDropMode | null>(null)
+const deckDropPosition = ref<{ x: number; y: number } | null>(null)
+
+function deckModeFromEvent(event: DragEvent): DeckDropMode {
+  if (event.shiftKey) return 'top'
+  if (event.altKey) return 'bottom'
+  return 'shuffle'
+}
+
+const deckDropIndicator = computed(() => {
+  switch (deckDropMode.value) {
+    case 'top': return { icon: '↑', label: 'Place on top' }
+    case 'bottom': return { icon: '↓', label: 'Place on bottom' }
+    case 'shuffle': return { icon: '↻', label: 'Shuffle in' }
+    default: return null
+  }
+})
+
+function onDropDeck(event: DragEvent) {
+  event.preventDefault()
+  deckDropMode.value = null
+  deckDropPosition.value = null
+  if (!debug.active) return
+  if (!event.dataTransfer) return
+  const data = event.dataTransfer.getData('text/plain')
+  if (!data) return
+  const json = JSON.parse(data)
+  if (json.tag !== 'CardTarget') return
+  const target = { tag: 'CardIdTarget', contents: json.contents }
+  const deckSig = { tag: 'InvestigatorDeck', contents: id.value }
+  const mode = deckModeFromEvent(event)
+  if (mode === 'top') {
+    debug.send(props.game.id, { tag: 'PutOnTopOfDeck', contents: [id.value, deckSig, target] })
+  } else if (mode === 'bottom') {
+    debug.send(props.game.id, { tag: 'PutOnBottomOfDeck', contents: [id.value, deckSig, target] })
+  } else {
+    debug.send(props.game.id, { tag: 'ShuffleIntoDeck', contents: [deckSig, target] })
+  }
+}
+
 const dragover = (e: DragEvent) => {
   e.preventDefault()
   if (e.dataTransfer) {
@@ -122,19 +185,29 @@ const dragover = (e: DragEvent) => {
   }
 }
 
+function onDragOverDeck(event: DragEvent) {
+  dragover(event)
+  if (debug.active) {
+    deckDropMode.value = deckModeFromEvent(event)
+    deckDropPosition.value = { x: event.clientX, y: event.clientY }
+  }
+}
+
+function onDragLeaveDeck(event: DragEvent) {
+  const target = event.currentTarget
+  const related = event.relatedTarget
+  if (target instanceof Node && related instanceof Node && target.contains(related)) return
+  deckDropMode.value = null
+  deckDropPosition.value = null
+}
+
 const canSelectDraw = computed(() => {
   return Object.entries(props.investigator.foundCards).length == 0
 })
 
-const doShowCards = (event: Event, cards: ComputedRef<ArkhamCard.Card[]>, title: string, isDiscards: boolean) => {
-  cardRowTitle.value = title
-  showCards.ref = cards
-  viewingDiscard.value = isDiscards
-}
-const showDiscards = (e: Event) => doShowCards(e, discards, t('investigator.discards'), true)
 const discards = computed<ArkhamCard.Card[]>(() => props.investigator.discard.map(c => { return { tag: 'PlayerCard', contents: c }}))
+const discardPopoverShown = ref(false)
 
-const forcedShowDiscard = ref(false)
 watch(choices, async (newChoices) => {
   const isDiscardChoice = (c: Message) => {
     if (c.tag === "TargetLabel") {
@@ -142,20 +215,17 @@ watch(choices, async (newChoices) => {
       return props.investigator.discard.some(card => card.id === c.target.contents)
     }
     if (c.tag === "AbilityLabel") {
-      return props.investigator.discard.some(card => {
-        return card.id === c.ability.source.contents
-      })
+      const sourceId = c.ability.source.sourceTag === 'OtherSource' ? c.ability.source.contents : undefined
+      if (!sourceId) return false
+      if (props.investigator.discard.some(card => card.id === sourceId)) return true
+      const asset = props.game.assets[sourceId]
+      return asset && props.investigator.discard.some(card => asset.cardId == card.id)
     }
     return false
   }
-  const showDiscard = newChoices.length > 0 && newChoices.every(isDiscardChoice)
-  if (showDiscard) {
-    showDiscards(new CustomEvent('showDiscards'))
-    forcedShowDiscard.value = true
-  } else {
-    if (!forcedShowDiscard.value) return
-    showCards.ref = noCards
-    forcedShowDiscard.value = false
+
+  if (newChoices.length > 0 && newChoices.every(isDiscardChoice)) {
+    discardPopoverShown.value = true
   }
 }, { immediate: true })
 
@@ -166,24 +236,33 @@ watch(choices, async (newChoices) => {
     @drop="onDropDiscard($event)"
     @dragover.prevent="dragover($event)"
     @dragenter.prevent
-    @click="showDiscards"
   >
     <Card v-if="topOfDiscard" :class="{'discard--can-use': discardCardsAction === true}" :game="game" :card="topOfDiscard" :playerId="playerId" />
-    <button v-if="discards.length > 0" class="view-discard-button" @click="showDiscards">{{viewDiscardLabel}}</button>
-    <button v-if="debug.active && discards.length > 0" class="view-discard-button" @click="debug.send(game.id, {tag: 'ShuffleDiscardBackIn', contents: investigatorId})">Shuffle Back In</button>
+    <CardsUnderIndicator
+      v-if="discards.length > 0"
+      class="view-discard-button"
+      :cards="discards"
+      :game="game"
+      :playerId="playerId"
+      v-model:shown="discardPopoverShown"
+      :label="t('investigator.discards')"
+      :isDiscards="true"
+      :highlighted="discardCardsAction"
+      :fullWidth="true"
+      @choose="emit('choose', $event)"
+    />
+    <button v-if="debug.active && discards.length > 0" class="view-discard-button" @click="debug.send(game.id, {tag: 'ShuffleDiscardBackIn', contents: investigatorId})">{{ $t('draw.shuffleBackIn') }}</button>
   </div>
-  <CardRow
-    v-if="showCards.ref.length > 0"
-    :game="game"
-    :playerId="playerId"
-    :cards="showCards.ref"
-    :isDiscards="viewingDiscard"
-    :title="cardRowTitle"
-    @choose="emit('choose', $event)"
-    @close="hideCards"
-  />
   <div class="deck-container">
-    <div class="top-of-deck">
+    <div
+      class="top-of-deck"
+      :class="{ 'top-of-deck--drop-target': deckDropIndicator }"
+      @drop="onDropDeck($event)"
+      @dragover.prevent="onDragOverDeck($event)"
+      @dragleave="onDragLeaveDeck($event)"
+      @dragend="deckDropMode = null; deckDropPosition = null"
+      @dragenter.prevent="onDragOverDeck($event)"
+    >
       <Treachery
         v-if="topOfDeckTreachery"
         :treachery="topOfDeckTreachery"
@@ -202,11 +281,27 @@ watch(choices, async (newChoices) => {
         @click="emit('choose', drawCardsAction)"
       />
       <span class="deck-size">{{investigator.deckSize}}</span>
-      <button v-if="playTopOfDeckAction !== -1" @click="emit('choose', playTopOfDeckAction)">Play</button>
+      <div
+        v-if="deckDropIndicator && deckDropPosition"
+        class="deck-drop-indicator"
+        :class="`deck-drop-indicator--${deckDropMode}`"
+        :style="{ left: `${deckDropPosition.x}px`, top: `${deckDropPosition.y}px` }"
+      >
+        <span class="deck-drop-indicator__icon">{{ deckDropIndicator.icon }}</span>
+        <span class="deck-drop-indicator__label">{{ deckDropIndicator.label }}</span>
+      </div>
+      <button v-if="playTopOfDeckAction !== -1" @click="emit('choose', playTopOfDeckAction)">{{ $t('label.play') }}</button>
+      <AbilityButton
+        v-for="ability in topOfDeckAbilities"
+        :key="ability.index"
+        :ability="ability.contents"
+        :game="game"
+        @click="emit('choose', ability.index)"
+      />
     </div>
     <template v-if="debug.active">
-      <button v-if="canSelectDraw" @click="debug.send(game.id, {tag: 'Search', contents: ['Looking', investigatorId, {tag: 'GameSource', contents: []}, { tag: 'InvestigatorTarget', contents: investigatorId }, [[{tag: 'FromDeck', contents: []}, 'ShuffleBackIn']], {tag: 'BasicCardMatch', contents: {tag: 'AnyCard', contents: []}}, { tag: 'DrawFound', contents: [investigatorId, 1]}]})">Select Draw</button>
-      <button @click="debug.send(game.id, {tag: 'ShuffleDeck', contents: {tag: 'InvestigatorDeck', contents: investigatorId}})">Shuffle</button>
+      <button v-if="canSelectDraw" @click="debug.send(game.id, {tag: 'SearchMessage', contents: {tag: 'Search_', contents: ['Looking', investigatorId, {tag: 'GameSource', contents: []}, { tag: 'InvestigatorTarget', contents: investigatorId }, [[{tag: 'FromDeck', contents: []}, 'ShuffleBackIn']], {tag: 'BasicCardMatch', contents: {tag: 'AnyCard', contents: []}}, { tag: 'DrawFound', contents: [investigatorId, 1]}]}})">{{ $t('draw.selectDraw') }}</button>
+      <button @click="debug.send(game.id, {tag: 'ShuffleDeck', contents: {tag: 'InvestigatorDeck', contents: investigatorId}})">{{ $t('draw.shuffle') }}</button>
     </template>
   </div>
 </template>
@@ -218,6 +313,15 @@ watch(choices, async (newChoices) => {
   button {
     white-space: nowrap;
     text-wrap: pretty;
+  }
+
+  @media (max-width: 800px) and (orientation: portrait) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    button {
+      width: fit-content;
+    }
   }
 
   @media (min-width: 801px) {
@@ -254,7 +358,7 @@ watch(choices, async (newChoices) => {
     left: 0;
     right: 0;
     bottom: 0;      
-    z-index: 1;
+    z-index: var(--z-index-1);
     box-shadow: inset 0 0 0 2px var(--select);
   }
 }
@@ -274,6 +378,20 @@ watch(choices, async (newChoices) => {
 
 .view-discard-button {
   width: 100%;
+  @media (max-width: 800px) and (orientation: portrait) {
+    width: fit-content;
+  }
+}
+
+.view-discard-button.cards-under-indicator {
+  display: flex;
+  width: var(--card-width);
+  max-width: var(--card-width);
+
+  @media (max-width: 800px) and (orientation: portrait) {
+    width: calc(var(--pool-token-width)*1.2);
+    max-width: calc(var(--pool-token-width)*1.2);
+  }
 }
 
 .deck-container {
@@ -312,6 +430,53 @@ watch(choices, async (newChoices) => {
   display: flex;
   flex-direction: column;
   width: fit-content;
+}
+
+.top-of-deck--drop-target .deck {
+  outline: 3px solid var(--select);
+  outline-offset: 3px;
+}
+
+.deck-drop-indicator {
+  position: fixed;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--select) 45%, rgba(255, 255, 255, 0.3));
+  background: rgba(0, 0, 0, 0.46);
+  color: rgba(255, 255, 255, 0.92);
+  pointer-events: none;
+  z-index: var(--z-index-max);
+  transform: translate(18px, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(2px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.deck-drop-indicator__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--select) 45%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-family: system-ui, sans-serif;
+}
+
+.deck-drop-indicator__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 </style>

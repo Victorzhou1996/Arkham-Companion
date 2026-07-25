@@ -4,8 +4,9 @@ import Arkham.Card
 import Arkham.Cost.Status
 import Arkham.Event.Cards qualified as Cards
 import Arkham.Event.Import.Lifted
-import Arkham.Helpers.Message (handleTargetChoice)
+import Arkham.Helpers.Cost (getSpendableResources)
 import Arkham.Helpers.Modifiers (ModifierType (..))
+import Arkham.Helpers.Playable (getIsPlayableWithResources)
 import Arkham.Matcher
 import Arkham.Window (defaultWindows)
 
@@ -19,18 +20,25 @@ motivationalSpeech = event MotivationalSpeech Cards.motivationalSpeech
 instance RunMessage MotivationalSpeech where
   runMessage msg e@(MotivationalSpeech attrs) = runQueueT $ case msg of
     PlayThisEvent iid (is attrs -> True) -> do
-      ts <- select $ affectsOthers $ colocatedWith iid
-      chooseOrRunOne iid $ targetLabels ts $ only . handleTargetChoice iid attrs
+      ts <- select (affectsColocated iid) >>= filterM (fmap notNull . playableAllies)
+      chooseOrRunOneM iid $ targets ts $ handleTarget iid attrs
       pure e
     HandleTargetChoice _ (isSource attrs -> True) (InvestigatorTarget iid) -> do
-      allies <- select $ PlayableCardWithCostReduction NoAction 3 $ inHandOf ForPlay iid <> #ally
+      allies <- playableAllies iid
       when (notNull allies) do
         focusCards allies do
           chooseOneM iid do
-            labeled "Do not play ally" unfocusCards
+            labeledI "doNotPlayAlly" unfocusCards
             targets allies \ally -> do
               unfocusCards
               costModifier attrs iid (ReduceCostOf (CardWithId $ toCardId ally) 3)
-              push $ PayCardCost iid ally (defaultWindows iid)
+              playCardPayingCost iid ally
       pure e
     _ -> MotivationalSpeech <$> liftRunMessage msg attrs
+   where
+    playableAllies iid = do
+      allies <- select $ inHandOf ForPlay iid <> #ally
+      resources <- (+ 3) <$> getSpendableResources iid
+      filterM
+        (getIsPlayableWithResources iid attrs resources (UnpaidCost NoAction) (defaultWindows iid))
+        allies

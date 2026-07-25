@@ -67,7 +67,7 @@ thinkOnYourFeet2 =
   (event "51006" "Think on Your Feet" 0 Rogue)
     { cdSkills = [#intellect, #agility, #agility]
     , cdCardTraits = singleton Trick
-    , cdFastWindow = Just (EnemyEnters #when YourLocation AnyEnemy)
+    , cdFastWindow = Just (EnemyEntersYourLocation #when AnyEnemy)
     , cdCriteria = Just $ exists AccessibleLocation <> exists (You <> can.move)
     , cdLevel = Just 2
     }
@@ -118,7 +118,7 @@ stormOfSpirits3 =
   (event "52008" "Storm of Spirits" 3 Mystic)
     { cdSkills = [#willpower, #combat, #combat]
     , cdCardTraits = singleton Spell
-    , cdActions = [#fight]
+    , cdActions = #fight
     , cdLevel = Just 3
     }
 
@@ -127,7 +127,7 @@ bloodEclipse1 =
   (event "53001" "Blood Eclipse" 1 Guardian)
     { cdSkills = [#willpower, #combat]
     , cdCardTraits = setFromList [Spell, Spirit]
-    , cdActions = [#fight]
+    , cdActions = #fight
     , cdAdditionalCost = Just $ InvestigatorDamageCost ThisCard You DamageAny 2
     , cdLevel = Just 1
     }

@@ -45,6 +45,7 @@ data ClientMessage
   | ClientShowDiscard InvestigatorId
   | ClientShowUnder InvestigatorId
   | ClientUI Text
+  | ClientAudio Text
   | ClientPlayabilityReport CardId Text [(Text, Maybe Text)]
 
 send :: HasGameLogger m => Text -> m ()
@@ -56,6 +57,11 @@ sendUI :: HasGameLogger m => Text -> m ()
 sendUI msg = do
   f <- getLogger
   liftIO $ f (ClientUI msg)
+
+sendAudio :: HasGameLogger m => Text -> m ()
+sendAudio fileName = do
+  f <- getLogger
+  liftIO $ f (ClientAudio fileName)
 
 sendError :: HasGameLogger m => Text -> m ()
 sendError msg = do
@@ -86,18 +92,7 @@ sendTarot :: HasGameLogger m => Value -> m ()
 sendTarot msg = do
   f <- getLogger
   liftIO $ f (ClientTarot msg)
-
-sendShowDiscard :: HasGameLogger m => InvestigatorId -> m ()
-sendShowDiscard iid = do
-  f <- getLogger
-  liftIO $ f (ClientShowDiscard iid)
-
 sendShowUnder :: HasGameLogger m => InvestigatorId -> m ()
 sendShowUnder iid = do
   f <- getLogger
   liftIO $ f (ClientShowUnder iid)
-
-sendPlayabilityReport :: HasGameLogger m => CardId -> Text -> [(Text, Maybe Text)] -> m ()
-sendPlayabilityReport cid cardCode checks = do
-  f <- getLogger
-  liftIO $ f (ClientPlayabilityReport cid cardCode checks)

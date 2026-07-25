@@ -134,7 +134,7 @@ dealAdditionalDamage iid amount additionalMessages = do
               horror
               []
               []
-          _ -> error "impossible"
+          _ -> error "dealAdditionalDamage: impossible"
       replaceMessage damageMsg $ newMsg : additionalMessages
     Nothing -> throwIO $ InvalidState "No damage occured for additional damage"
 
@@ -162,7 +162,7 @@ dealAdditionalHorror iid amount additionalMessages = do
               []
               []
           CheckDefeated source target -> PlaceAdditionalDamage target source 0 amount
-          _ -> error "impossible"
+          _ -> error "dealAdditionalHorror: impossible"
       replaceMessage horrorMsg $ newMsg : additionalMessages
     Nothing -> throwIO $ InvalidState "No horror occured for additional horror"
 
@@ -419,7 +419,7 @@ findEncounterCard
   -> cardMatcher
   -> Message
 findEncounterCard iid (toTarget -> target) zones (toCardMatcher -> cardMatcher) =
-  FindEncounterCard iid target zones cardMatcher
+  FindEncounterCard iid target zones cardMatcher LeadChooses
 
 placeLabeledLocationCards_ :: (HasGame m, Tracing m, CardGen m) => Text -> [CardDef] -> m [Message]
 placeLabeledLocationCards_ lbl cards = do
@@ -586,12 +586,12 @@ gainResourcesIfCan a source n = do
   pure $ guard canGainResources $> takeResources (asId a) source n
 
 assignEnemyDamage :: DamageAssignment -> EnemyId -> Message
-assignEnemyDamage = flip EnemyDamage
+assignEnemyDamage da eid = DealDamage (EnemyTarget eid) da
 
 nonAttackEnemyDamage
   :: (AsId enemy, IdOf enemy ~ EnemyId, Sourceable a)
   => Maybe InvestigatorId -> a -> Int -> enemy -> Message
-nonAttackEnemyDamage miid source damage enemy = EnemyDamage (asId enemy) (nonAttack miid source damage)
+nonAttackEnemyDamage miid source damage enemy = DealDamage (EnemyTarget (asId enemy)) (nonAttack miid source damage)
 
 placeDoom :: (Sourceable source, Targetable target) => source -> target -> Int -> Message
 placeDoom (toSource -> source) (toTarget -> target) n = PlaceDoom source target n

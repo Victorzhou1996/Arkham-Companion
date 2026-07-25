@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import type { Game } from '@/arkham/types/Game';
-import type { Card } from '@/arkham/types/Card';
+import { type Card, type EncounterCard, type PlayerCard, toCardContents } from '@/arkham/types/Card';
 import CardView from '@/arkham/components/Card.vue'
 import Enemy from '@/arkham/components/Enemy.vue';
-import { pluralize } from '@/arkham/helpers';
+import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
@@ -15,24 +15,37 @@ export interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['show', 'choose'])
+const emit = defineEmits(['choose'])
 
 const choose = async (idx: number) => emit('choose', idx)
+
+const unfinishedBusinessCodes = new Set(['c05178b', 'c05178d', 'c05178f', 'c05178h', 'c05178j', 'c05178l', 'c54038b', 'c54039b'])
+
+function victoryDisplayRegularCard(card: EncounterCard | PlayerCard): EncounterCard | PlayerCard {
+  const contents = toCardContents(card)
+  if (!unfinishedBusinessCodes.has(contents.cardCode)) return card
+  return { ...card, contents: { ...contents, isFlipped: true } }
+}
+
+function victoryDisplayCard(card: Card): Card {
+  if (card.tag === 'VengeanceCard') return { ...card, contents: victoryDisplayRegularCard(card.contents) }
+  return victoryDisplayRegularCard(card)
+}
+
+const displayVictoryDisplay = computed(() => props.victoryDisplay.map(victoryDisplayCard))
 
 const enemiesInVictoryDisplay = computed(() => {
   return Object.values(props.game.enemies).filter((e) => e.placement.tag === 'OutOfPlay' && (['VictoryDisplayZone'] as string[]).includes(e.placement.contents))
 })
 const topOfVictoryDisplay = computed(() => {
   const enemyCardIds = enemiesInVictoryDisplay.value.map(e => e.cardId)
-  return props.victoryDisplay.filter((c) => !enemyCardIds.includes(c.contents.id))[0]
+  return displayVictoryDisplay.value.filter((c) => !enemyCardIds.includes(toCardContents(c).id))[0]
 })
 
-const viewVictoryDisplayLabel = computed(() => pluralize(t('scenario.discardCard'), props.victoryDisplay.length))
-const showVictoryDisplay = () => emit('show')
+const viewVictoryDisplayLabel = computed(() => t('scenario.victoryDisplay'))
 </script>
-i
 <template>
-  <div v-if="topOfVictoryDisplay || enemiesInVictoryDisplay.length > 0" class="victory-display">
+  <div v-if="topOfVictoryDisplay || enemiesInVictoryDisplay.length > 0" class="victory-display" :aria-label="viewVictoryDisplayLabel" :title="viewVictoryDisplayLabel">
     <div v-if="topOfVictoryDisplay" class="victory-display-card">
       <CardView :game="game" :card="topOfVictoryDisplay" :playerId="playerId" />
 
@@ -47,7 +60,17 @@ i
     />
 
 
-    <button v-if="topOfVictoryDisplay" @click="showVictoryDisplay">{{viewVictoryDisplayLabel}}</button>
+    <CardsUnderIndicator
+      v-if="victoryDisplay.length > 0"
+      :cards="displayVictoryDisplay"
+      :label="viewVictoryDisplayLabel"
+      :game="game"
+      :playerId="playerId"
+      :isDiscards="true"
+      :fullWidth="true"
+      placement="right"
+      @choose="choose"
+    />
   </div>
 </template>
 
@@ -59,9 +82,17 @@ i
 }
 
 .victory-display {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 5px;
+  align-items: center;
+  padding: 5px;
+  border: 1px solid rgba(214, 178, 92, 0.55);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(89, 67, 24, 0.38), rgba(0, 0, 0, 0.22));
+  box-shadow: inset 0 0 10px rgba(214, 178, 92, 0.12);
+
 
   &:deep(.card-wrapper) {
     &::after {
@@ -73,7 +104,7 @@ i
       background-color: #FFF;
       opacity: .85;
       mix-blend-mode: saturation;
-      z-index: 20;
+      z-index: var(--z-index-20);
     }
   }
   &:deep(.card) {

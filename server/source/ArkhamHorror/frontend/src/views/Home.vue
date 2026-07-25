@@ -1,49 +1,130 @@
 <script lang="ts" setup>
-import { ref, computed, Ref } from 'vue';
-import { useUserStore } from '@/stores/user';
-import { useRouter, useRoute } from 'vue-router';
-import { debugGame, deleteGame, fetchGames, fetchNotifications } from '@/arkham/api';
-import type { GameDetails } from '@/arkham/types/Game';
-import type { AppNotification } from '@/arkham/api';
-import GameRow from '@/arkham/components/GameRow.vue';
-import NewGame from '@/arkham/views/NewCampaign.vue';
-import PrimaryButton from '@/components/PrimaryButton.vue';
-import { storeToRefs } from 'pinia';
+import { ref, computed, Ref } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { useRouter, useRoute } from 'vue-router'
+import { deleteGame, fetchGames, fetchEvents, fetchNotifications } from '@/arkham/api'
+import { cullGameLocalStorage, removeGameLocalStorage } from '@/arkham/localStorage'
+import type { GameDetails } from '@/arkham/types/Game'
+import type { EventListEntry } from '@/arkham/types/EpicEvent'
+import type { AppNotification } from '@/arkham/api'
+import GameRow from '@/arkham/components/GameRow.vue'
+import EventRow from '@/arkham/components/EventRow.vue'
+import NewGame from '@/arkham/views/NewCampaign.vue'
+import ImportGame from '@/arkham/components/ImportGame.vue'
+import PrimaryButton from '@/components/PrimaryButton.vue'
+import { storeToRefs } from 'pinia'
 
 const route = useRoute()
 const router = useRouter()
 const store = useUserStore()
 const { currentUser } = storeToRefs(store)
-const games: Ref<GameDetails[]> = ref([])
-const notifications: Ref<AppNotification[]> = ref([])
+const homeCacheVersion = 1
+const homeCacheMaxAge = 7 * 24 * 60 * 60 * 1000
 
-const dismissedNotifications = JSON.parse(localStorage.getItem('dismissedNotifications') ?? "[]")
-
-const activeGames = computed(() => games.value.filter(g => g.gameState.tag !== 'IsOver'))
-const finishedGames = computed(() => games.value.filter(g => g.gameState.tag === 'IsOver'))
-
-fetchGames().then((result) => games.value = result.filter((g) => g.tag === 'game') as GameDetails[])
-
-fetchNotifications().then((result) => notifications.value = result.filter((n: AppNotification) => !dismissedNotifications.includes(n.id)))
-
-async function deleteGameEvent(game: GameDetails) {
-  deleteGame(game.id).then(() => {
-    games.value = games.value.filter((g) => g.id !== game.id);
-  });
+interface HomeCache {
+  version: number
+  savedAt: number
+  games: GameDetails[]
+  events: EventListEntry[]
 }
 
-const debugFile = ref<HTMLInputElement | null>(null)
-const submitDebugUpload = async (e: Event) => {
-  e.preventDefault()
-  const file = (debugFile.value?.files || [])[0]
-  if (file) {
-    const formData = new FormData();
-    formData.append("debugFile", file);
-    debugGame(formData).then((game) => router.push(`/games/${game.id}`))
+function tokenCacheKey() {
+  const token = localStorage.getItem('arkham-token') ?? 'guest'
+  let hash = 2166136261
+  for (let i = 0; i < token.length; i += 1) {
+    hash ^= token.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return `arkham-home-summary:${(hash >>> 0).toString(16)}`
+}
+
+function readHomeCache(): HomeCache | null {
+  try {
+    const cached = JSON.parse(localStorage.getItem(tokenCacheKey()) ?? 'null') as HomeCache | null
+    if (
+      cached?.version !== homeCacheVersion ||
+      !Array.isArray(cached.games) ||
+      !Array.isArray(cached.events) ||
+      Date.now() - cached.savedAt > homeCacheMaxAge
+    ) {
+      return null
+    }
+    return cached
+  } catch {
+    return null
   }
 }
 
-const newGame = ref(route.path === "/new-game" || false)
+const cachedHome = readHomeCache()
+const games: Ref<GameDetails[]> = ref(cachedHome?.games ?? [])
+const events: Ref<EventListEntry[]> = ref(cachedHome?.events ?? [])
+const notifications: Ref<AppNotification[]> = ref([])
+
+const dismissedNotifications = JSON.parse(localStorage.getItem('dismissedNotifications') ?? '[]')
+
+const activeGames = computed(() => games.value.filter((g) => g.gameState.tag !== 'IsOver'))
+const finishedGames = computed(() => games.value.filter((g) => g.gameState.tag === 'IsOver'))
+
+function writeHomeCache() {
+  try {
+    localStorage.setItem(tokenCacheKey(), JSON.stringify({
+      version: homeCacheVersion,
+      savedAt: Date.now(),
+      games: games.value,
+      events: events.value,
+    } satisfies HomeCache))
+  } catch {
+    // A fresh server response still remains available for this visit.
+  }
+}
+
+fetchGames().then((result) => {
+  const availableGames = result.filter((g) => g.tag === 'game') as GameDetails[]
+  cullGameLocalStorage(availableGames)
+  games.value = availableGames
+  writeHomeCache()
+}).catch((error) => {
+  console.warn('Could not refresh saved games', error)
+})
+
+// Epic Multiplayer events surface as a single entry each, inline with regular
+// games (group games are hidden from fetchGames by the backend). A user who is
+// both organizer and player of an event gets duplicate membership rows; collapse
+// to one entry, preferring the organizer role.
+fetchEvents().then((result) => {
+  const byId = new Map<string, EventListEntry>()
+  for (const entry of result) {
+    const existing = byId.get(entry.id)
+    if (!existing || entry.role === 'organizer') byId.set(entry.id, entry)
+  }
+  events.value = [...byId.values()]
+  writeHomeCache()
+}).catch((error) => {
+  console.warn('Could not refresh events', error)
+})
+
+fetchNotifications().then((result) => {
+  notifications.value = result.filter(
+    (n: AppNotification) => !dismissedNotifications.includes(n.id) && !isSupportNotification(n),
+  )
+})
+
+async function deleteGameEvent(game: GameDetails) {
+  deleteGame(game.id).then(() => {
+    removeGameLocalStorage(game.id)
+    games.value = games.value.filter((g) => g.id !== game.id)
+    writeHomeCache()
+  })
+}
+
+const newGame = ref(route.path === '/new-game' || false)
+const showImportGame = ref(false)
+const importGameRef = ref<any>(null)
+const supportQrSrc = `${import.meta.env.BASE_URL}wechat_qr.png`
+const importGameSelected = computed(() => !!importGameRef.value?.selectedFile)
+const importGameCanSubmit = computed(() => importGameRef.value?.canSubmit ?? false)
+const importGameLoading = computed(() => importGameRef.value?.loading ?? false)
+const submitImportGame = () => importGameRef.value?.submit()
 
 // View Transition helper
 function withViewTransition(fn: () => void) {
@@ -58,17 +139,36 @@ function withViewTransition(fn: () => void) {
 const toggleNewGame = () => {
   withViewTransition(() => {
     newGame.value = !newGame.value
+    showImportGame.value = false
     if (newGame.value === true) {
-      router.push({ path: "/new-game" })
+      router.push({ path: '/new-game' })
     } else {
-      router.push({ path: "/" })
+      router.push({ path: '/' })
     }
   })
 }
 
+const toggleImportGame = () => {
+  showImportGame.value = !showImportGame.value
+}
+
 const dismissNotification = (notification: AppNotification) => {
-  localStorage.setItem('dismissedNotifications', JSON.stringify([notification.id, ...dismissedNotifications]))
-  notifications.value = notifications.value.filter(n => n.id !== notification.id)
+  localStorage.setItem(
+    'dismissedNotifications',
+    JSON.stringify([notification.id, ...dismissedNotifications]),
+  )
+  notifications.value = notifications.value.filter((n) => n.id !== notification.id)
+}
+
+const isSupportNotification = (notification: AppNotification) => {
+  const body = notification.body.toLowerCase()
+  return (
+    body.includes('wechat_qr') ||
+    body.includes('赞赏码') ||
+    body.includes('赞助码') ||
+    body.includes('捐赠') ||
+    body.includes('二维码')
+  )
 }
 </script>
 
@@ -77,7 +177,7 @@ const dismissNotification = (notification: AppNotification) => {
     <NewGame v-if="currentUser && newGame" @close="toggleNewGame">
       <template #cancel>
         <button @click="toggleNewGame" class="cancel-new-game-button">
-          <span>Cancel</span>
+          <span>{{ $t('cancel') }}</span>
         </button>
       </template>
     </NewGame>
@@ -85,38 +185,81 @@ const dismissNotification = (notification: AppNotification) => {
     <div v-if="!newGame" class="home page-content">
       <div class="notification" v-for="notification in notifications" :key="notification.id">
         <p v-html="notification.body"></p>
-        <a @click.prevent="dismissNotification(notification)" href="#">Dismiss</a>
+        <a @click.prevent="dismissNotification(notification)" href="#">{{ $t('home.dismiss') }}</a>
       </div>
 
-      <div class="container">
-        <section>
-          <header class="main-header">
-            <h2>{{$t('activeGames')}}</h2>
-            <PrimaryButton label="New Game" @click="toggleNewGame" />
-          </header>
-          <div v-if="activeGames.length === 0" class="box">
-            <p>No active games.</p>
-          </div>
-          <GameRow v-for="game in activeGames" :key="game.id" :game="game" :deleteGame="() => deleteGameEvent(game)" />
-        </section>
+      <div class="home-layout">
+        <aside class="support-card" aria-labelledby="support-title">
+          <h3 id="support-title">{{ $t('home.supportTitle') }}</h3>
+          <img :src="supportQrSrc" :alt="$t('home.supportAlt')" />
+          <p>{{ $t('home.supportBody') }}</p>
+        </aside>
 
-        <section>
-          <header><h2 v-if="finishedGames.length > 0">{{$t('finishedGames')}}</h2></header>
-          <GameRow v-for="game in finishedGames" :key="game.id" :game="game" :deleteGame="() => deleteGameEvent(game)" />
+        <div class="container">
+          <section>
+            <header class="main-header">
+              <h2>{{ $t('activeGames') }}</h2>
+              <div class="header-actions">
+                <button
+                  v-if="currentUser"
+                  class="secondary-cta"
+                  type="button"
+                  @click="toggleImportGame"
+                >
+                  {{ $t('home.loadGame') }}
+                </button>
+                <PrimaryButton :label="$t('newGame')" @click="toggleNewGame" />
+              </div>
+            </header>
+            <Transition name="slide">
+              <div v-if="currentUser && showImportGame" class="load-game-panel">
+                <div class="panel-header">
+                  <h3>{{ $t('home.loadGame') }}</h3>
+                  <div class="panel-actions">
+                    <button class="panel-close" type="button" @click="toggleImportGame">
+                      {{ $t('cancel') }}
+                    </button>
+                    <button
+                      v-if="importGameSelected"
+                      class="panel-load"
+                      type="button"
+                      :disabled="!importGameCanSubmit"
+                      @click="submitImportGame"
+                    >
+                      {{ importGameLoading ? $t('home.loadingGame') : $t('home.loadGame') }}
+                    </button>
+                  </div>
+                </div>
+                <ImportGame ref="importGameRef" />
+              </div>
+            </Transition>
+            <div v-if="activeGames.length === 0 && events.length === 0" class="box">
+              <p>{{ $t('home.noActiveGames') }}</p>
+            </div>
+            <EventRow v-for="event in events" :key="event.id" :event="event" />
+            <GameRow
+              v-for="game in activeGames"
+              :key="game.id"
+              :game="game"
+              :deleteGame="() => deleteGameEvent(game)"
+            />
+          </section>
 
-        </section>
-        <section v-if="currentUser && currentUser.beta === true">
-          <header><h2>{{$t('debugGame')}}</h2></header>
-          <form enctype="multipart/form-data" method=POST class="box">
-            <p>Load a game previously exported view the "Debug Export"</p>
-            <input type="file" name="debugFile" accept="application/json" class="input-file" ref="debugFile" />
-            <button @click="submitDebugUpload">{{$t('debugGame')}}</button>
-          </form>
-        </section>
+          <section>
+            <header>
+              <h2 v-if="finishedGames.length > 0">{{ $t('finishedGames') }}</h2>
+            </header>
+            <GameRow
+              v-for="game in finishedGames"
+              :key="game.id"
+              :game="game"
+              :deleteGame="() => deleteGameEvent(game)"
+            />
+          </section>
+        </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <style scoped>
@@ -148,14 +291,77 @@ h2 {
 }
 
 .home {
-  max-width: 98vw;
-  min-width: 60vw;
+  box-sizing: border-box;
   margin: 0 auto;
+  max-width: 1800px;
+  width: 98vw;
   @media (max-width: 768px) {
     min-width: unset;
     width: 100%;
     padding: 0 12px;
     box-sizing: border-box;
+  }
+}
+
+.home-layout {
+  align-items: start;
+  display: grid;
+  gap: clamp(16px, 2vw, 32px);
+  grid-template-columns: minmax(248px, 0.75fr) minmax(0, 4fr) minmax(248px, 0.75fr);
+}
+
+.home-layout::after {
+  content: '';
+}
+
+.container {
+  min-width: 0;
+}
+
+.support-card {
+  background: var(--box-background);
+  border: 1px solid var(--box-border);
+  border-radius: 6px;
+  color: var(--title);
+  padding: 12px;
+  position: sticky;
+  top: 12px;
+  width: 248px;
+
+  h3 {
+    font-family: teutonic, sans-serif;
+    font-size: 1.1em;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+  }
+
+  img {
+    background: white;
+    border-radius: 4px;
+    display: block;
+    margin-bottom: 10px;
+    max-width: 100%;
+    width: 222px;
+  }
+
+  p {
+    color: var(--text);
+    font-size: 0.9em;
+    line-height: 1.45;
+  }
+
+  @media (max-width: 1100px) {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .home-layout {
+    display: block;
+  }
+
+  .home-layout::after {
+    display: none;
   }
 }
 
@@ -227,6 +433,7 @@ header {
   display: flex;
   margin-bottom: 10px;
   align-items: center;
+  gap: 12px;
   h2 {
     flex: 1;
   }
@@ -255,10 +462,109 @@ header {
   gap: 10px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.secondary-cta {
+  align-self: center;
+  background: transparent;
+  border: 1px solid var(--box-border);
+  border-radius: 3px;
+  color: var(--title);
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 700;
+  opacity: 0.8;
+  outline: 0;
+  padding: 8px 12px;
+  text-transform: uppercase;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    padding: 6px 9px;
+    font-size: 0.75em;
+  }
+}
+
+.load-game-panel {
+  background: var(--box-background);
+  border: 1px solid var(--box-border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.panel-header h3 {
+  flex: 1;
+  margin: 0;
+  color: var(--title);
+  font-family: teutonic, sans-serif;
+  font-size: 1.4em;
+  text-transform: uppercase;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-load,
+.panel-close {
+  border: 1px solid var(--box-border);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8em;
+  font-weight: bolder;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.panel-load {
+  background: var(--spooky-green);
+  border-color: var(--spooky-green);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: hsl(80, 35%, 32%);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.panel-close {
+  background: transparent;
+  color: var(--title);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
 .notification {
-  --text: #816F3A;
+  --text: #816f3a;
   --border: var(--text);
-  --background: #FFF8E6;
+  --background: #fff8e6;
   display: flex;
   flex-direction: row;
   box-sizing: border-box;
@@ -286,7 +592,7 @@ header.main-header {
   h2 {
     view-transition-name: main-header-title;
   }
-  button {
+  .primary-btn {
     view-transition-name: main-header-button;
   }
 }

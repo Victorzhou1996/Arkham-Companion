@@ -15,7 +15,6 @@ import Arkham.Matcher hiding (LocationCard)
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Placement
 import Arkham.Scenario.Deck
-import Arkham.Scenario.Types (Field (..))
 import Arkham.Scenarios.TheTwistedHollow.Helpers
 import Arkham.Spawn
 import Arkham.Token
@@ -30,7 +29,7 @@ deepeningDark = agenda (1, A) DeepeningDark Cards.deepeningDark (Static 3)
 
 instance HasModifiersFor DeepeningDark where
   getModifiersFor (DeepeningDark a) =
-    modifySelect a Anyone [CannotCancelHorrorFrom (a.ability 2)]
+    modifySelect a Anyone [CannotCancelHorrorFrom (a.ability 1)]
 
 instance HasAbilities DeepeningDark where
   getAbilities (DeepeningDark x) =
@@ -49,7 +48,7 @@ instance RunMessage DeepeningDark where
       doStep 1 msg
       pure a
     DoStep 1 msg'@(AdvanceAgenda (isSide B attrs -> True)) -> do
-      darknessLevel <- scenarioFieldMap ScenarioTokens (countTokens DarknessLevel)
+      darknessLevel <- getDarknessLevel
       isStandalone <- getIsStandalone
       if (darknessLevel >= 6) && not isStandalone
         then eachInvestigator \iid -> do
@@ -60,7 +59,7 @@ instance RunMessage DeepeningDark where
           unrevealed <- selectField LocationCard $ UnrevealedLocation <> LocationWithTrait Dark
           unless (null unrevealed) do
             shuffleCardsIntoTopOfDeck WoodsDeck 2 unrevealed
-          selectEach (RevealedLocation <> EmptyLocation) \loc -> do
+          selectEach (RevealedLocation <> EmptyLocation <> LocationWithTrait Dark) \loc -> do
             push $ RemoveAllTokens (toSource attrs) (toTarget loc)
             push $ UnrevealLocation loc
           doStep 2 msg'
@@ -74,7 +73,7 @@ instance RunMessage DeepeningDark where
       mowner <- selectOne (HasMatchingAsset $ AssetWithTitle "Vale Lantern")
       for_ mowner \owner -> do
         sid <- getRandom
-        darknessLevel <- scenarioFieldMap ScenarioTokens (countTokens DarknessLevel)
+        darknessLevel <- getDarknessLevel
         beginSkillTest sid owner attrs owner #willpower (Fixed darknessLevel)
       pure a
     FailedThisSkillTest iid (isSource attrs -> True) -> do
@@ -106,8 +105,7 @@ instance RunMessage DeepeningDark where
       enemies <- pursuitEnemiesWithHighestEvade
       chooseOneM iid $ scenarioI18n do
         unscoped $ countVar 1 $ labeled' "takeHorror" (assignHorror iid (attrs.ability 1) 1)
-        labeledValidate' (notNull enemies) "pursuitEnemy" do
-          chooseOrRunOneM iid do
-            targets enemies $ push . InvestigatorDrawEnemy iid
+        labeledValidate' (notNull enemies) "deepiningDark.pursuitEnemy" do
+          chooseOrRunOneM iid $ targets enemies (drawEnemyFromPursuit iid)
       pure a
     _ -> DeepeningDark <$> liftRunMessage msg attrs

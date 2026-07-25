@@ -2,7 +2,7 @@ module Arkham.Agenda.Cards.TheTrueCulpritV8 (theTrueCulpritV8) where
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Matcher
 import Arkham.Name
@@ -32,7 +32,7 @@ instance HasAbilities TheTrueCulpritV8 where
              <> [ skipForAll
                     $ groupLimit PerTestOrAbility
                     $ mkAbility attrs 2
-                    $ freeReaction (EnemyDefeated #after Anyone ByAny $ EnemyWithTrait Staff)
+                    $ freeReaction (IfEnemyDefeated #after Anyone ByAny $ EnemyWithTrait Staff)
                 , restricted
                     attrs
                     3

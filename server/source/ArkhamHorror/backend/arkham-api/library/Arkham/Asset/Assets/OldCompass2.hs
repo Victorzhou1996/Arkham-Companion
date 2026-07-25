@@ -6,6 +6,7 @@ import Arkham.Asset.Import.Lifted
 import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Helpers.SkillTest.Lifted
 import Arkham.I18n
+import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Modifier
 
@@ -17,7 +18,8 @@ oldCompass2 :: AssetCard OldCompass2
 oldCompass2 = asset OldCompass2 Cards.oldCompass2
 
 instance HasAbilities OldCompass2 where
-  getAbilities (OldCompass2 a) = [controlled_ a 1 investigateAction_]
+  getAbilities (OldCompass2 a) =
+    [controlled a 1 (exists $ YourLocation <> InvestigatableLocation) investigateAction_]
 
 instance RunMessage OldCompass2 where
   runMessage msg a@(OldCompass2 attrs) = runQueueT $ case msg of
@@ -28,15 +30,16 @@ instance RunMessage OldCompass2 where
       investigate_ sid iid (attrs.ability 1)
       pure a
     FailedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
-      withSkillTest \stid -> do
-        sid <- getRandom
-        mloc <- getSkillTestTargetedLocation
-        chooseOneM iid do
-          labeled "Exhaust Old Compass" do
-            exhaustThis attrs
-            -- the -1 from above will be retained so we add another -1 to get to -2
-            for_ mloc \loc -> skillTestModifier sid (attrs.ability 1) loc (ShroudModifier (-1))
-            push $ RepeatSkillTest sid stid
-          withI18n skip_
+      when attrs.ready do
+        withSkillTest \stid -> do
+          sid <- getRandom
+          mloc <- getSkillTestTargetedLocation
+          chooseOneM iid $ cardI18n $ scope "oldCompass" do
+            labeled' "exhaustToRepeat" do
+              exhaustThis attrs
+              -- the -1 from above will be retained so we add another -1 to get to -2
+              for_ mloc \loc -> skillTestModifier sid (attrs.ability 1) loc (ShroudModifier (-1))
+              push $ RepeatSkillTest sid stid
+            withI18n skip_
       pure a
     _ -> OldCompass2 <$> liftRunMessage msg attrs

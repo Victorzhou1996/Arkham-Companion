@@ -14,6 +14,7 @@ import Data.Aeson.TH
 
 data DamageStrategy
   = DamageAny
+  | DamageAnyDeferred
   | DamageDirect
   | DamageAssetsFirst AssetMatcher
   | HorrorAssetsFirst AssetMatcher
@@ -24,6 +25,15 @@ data DamageStrategy
   | -- Hastur has specific damage rules
     DamageFromHastur
   deriving stock (Show, Eq, Ord, Data)
+
+-- | Strategies whose asset assignment accumulates (via AssignAssetDamageDeferred)
+-- and places all at once at the end, rather than placing each point immediately.
+-- DamageEvenly and SingleTarget still place per choice and so are excluded.
+isDeferredStrategy :: DamageStrategy -> Bool
+isDeferredStrategy = \case
+  DamageEvenly -> False
+  SingleTarget -> False
+  _ -> True
 
 data ZoneReturnStrategy
   = PutBackInAnyOrder
@@ -87,6 +97,11 @@ data ChosenCardStrategy
   | RemoveChosenCardFromGame
   deriving stock (Show, Eq, Ord, Data)
 
+data FindEncounterCardStrategy
+  = LeadChooses
+  | RandomSelect
+  deriving stock (Show, Eq, Ord, Data)
+
 fromTopOfDeck :: Int -> (Zone, ZoneReturnStrategy)
 fromTopOfDeck n = (FromTopOfDeck n, ShuffleBackIn)
 
@@ -145,3 +160,18 @@ instance FromJSON AfterPlayStrategy where
         _ -> fail "invalid AfterPlayStrategy"
 
 $(deriveJSON defaultOptions ''ChosenCardStrategy)
+$(deriveToJSON defaultOptions ''FindEncounterCardStrategy)
+
+instance FromJSON FindEncounterCardStrategy where
+  parseJSON v = case v of
+    String s -> case s of
+      "LeadChooses" -> pure LeadChooses
+      "RandomSelect" -> pure RandomSelect
+      _ -> pure LeadChooses
+    Object o -> do
+      tag <- o .:? "tag"
+      case tag :: Maybe Text of
+        Just "LeadChooses" -> pure LeadChooses
+        Just "RandomSelect" -> pure RandomSelect
+        _ -> pure LeadChooses
+    _ -> pure LeadChooses

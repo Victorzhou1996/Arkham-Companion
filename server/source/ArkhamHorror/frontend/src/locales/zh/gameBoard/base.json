@@ -1,14 +1,23 @@
 {
+    "applyAll": "全部",
     "skillTestTitle": "技能检定",
+    "toBeCommitted": "待投入",
+    "committedCards": "已投入卡牌",
+    "toBeCommittedNote": "在点击上方的标记前，卡牌尚未正式投入；在此之前，你的技能值可能不会显示所获得的加成。",
 
     "waitingForMorePlayers": "正在等待更多玩家",
     "showInviteLink": "使用此链接邀请玩家：",
 
     "gameOver": "游戏结束",
     "watchReplay": "观看回放",
+    "exportAndArchive": "导出并归档",
+    "archivingGame": "正在导出并归档…",
+    "gameArchived": "此剧本已归档，仅保留结局，不能撤回或观看回放。",
+    "archiveConfirm": "将先下载完整存档，然后永久删除服务器上的步骤记录。归档后不能撤回，是否继续？",
+    "archiveFailed": "归档失败，服务器尚未删除步骤记录。",
 
     "submit": "提交",
-    "sancel": "取消",
+    "cancel": "取消",
     "close": "关闭",
 
     "outOfSyncHint": "连接中断，尝试重连中...",

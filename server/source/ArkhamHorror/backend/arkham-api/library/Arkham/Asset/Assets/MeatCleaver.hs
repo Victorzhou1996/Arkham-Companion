@@ -45,11 +45,11 @@ meatCleaverEffect = cardEffect MeatCleaverEffect Cards.meatCleaver
 
 instance RunMessage MeatCleaverEffect where
   runMessage msg e@(MeatCleaverEffect attrs) = runQueueT $ case msg of
-    EnemyDefeated _ _ source _ | attrs.source == source -> do
+    Defeated (EnemyTarget _) _ source _ | attrs.source == source -> do
       for_ attrs.target.investigator \iid -> do
         whenM (canHaveHorrorHealed attrs.source iid) do
           chooseOneM iid do
-            labeled "Do not heal" nothing
+            labeledI "doNotHeal" nothing
             horrorLabeled iid $ healHorror iid attrs.source 1
       disableReturn e
     SkillTestEnds sid _ _ | maybe False (isTarget sid) attrs.metaTarget -> do

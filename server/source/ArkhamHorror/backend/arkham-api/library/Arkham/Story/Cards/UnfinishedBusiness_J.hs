@@ -36,17 +36,18 @@ instance RunMessage UnfinishedBusiness_J where
             checkWhen $ Window.ScenarioEvent "wouldBanish" (Just iid) (toJSON card)
             send $ format card <> " was \"Banished\""
             for_ mEnemy (push . RemoveEnemy)
-            push $ ReplaceCard attrs.cardId (toCard attrs)
+            push $ ReplaceCard attrs.cardId (flipCard $ toCard attrs)
             addToVictory iid attrs
+          pure . UnfinishedBusiness_J $ attrs & flippedL .~ True
         else do
+          for_ mEnemy (push . RemoveEnemy)
           let card = lookupCard Enemies.heretic_I (toCardId attrs)
           enemy <- createEnemy card attrs.placement
           createCardEffect Cards.unfinishedBusiness_J Nothing attrs (toTarget enemy)
           afterStoryResolution attrs do
             removeStory attrs
             initiateEnemyAttack enemy attrs iid
-
-      pure s
+          pure s
     DoNotResolveThisStory iid (is attrs -> True) -> do
       chooseOneM iid $ abilityLabeled iid (mkAbility attrs 1 $ forced AnyWindow) nothing
       pure s

@@ -3,7 +3,7 @@
 {-# LANGUAGE NoFieldSelectors #-}
 {-# OPTIONS_GHC -O0 #-}
 
-module Arkham.Helpers.Window where
+module Arkham.Helpers.Window (module Arkham.Helpers.Window, module X) where
 
 import Arkham.Ability.Types
 import Arkham.Asset.Types (Field (..))
@@ -15,12 +15,12 @@ import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Cost.Status
-import Arkham.Deck
-import Arkham.DefeatedBy (DefeatedBy)
 import Arkham.Effect.Types (Field (..))
+import Arkham.Enemy.Types (Field (EnemyAttacking))
 import Arkham.Event.Types qualified as Field
 import {-# SOURCE #-} Arkham.Game (abilityMatches)
 import {-# SOURCE #-} Arkham.GameEnv
+import Arkham.Game.Settings (settingsStrictAsIfAt)
 import Arkham.Helpers.Act (actMatches)
 import {-# SOURCE #-} Arkham.Helpers.Action (actionMatches)
 import Arkham.Helpers.Card (cardListMatches, extendedCardMatch)
@@ -47,6 +47,8 @@ import Arkham.Matcher qualified as Matcher
 import Arkham.Message
 import Arkham.Prelude
 import Arkham.Projection
+import Arkham.Search (searchSource)
+import Arkham.Skill.Types qualified as Field
 import Arkham.SkillTest.Base (SkillTest (..))
 import Arkham.SkillTest.Type
 import Arkham.Source
@@ -58,12 +60,13 @@ import Arkham.Tracing
 import Arkham.Treachery.Types (Field (..))
 import Arkham.Window
 import Arkham.Window qualified as Window
-import Arkham.Zone
 import Control.Lens (over, transform)
 import Control.Monad.Trans.Class
 import Data.Data.Lens (biplate)
-import Data.Map.Monoidal.Strict qualified as MonoidalMap
-import Data.Map.Strict qualified as Map
+import Arkham.Helpers.Window.Card as X
+import Arkham.Helpers.Window.Enemy as X
+import Arkham.Helpers.Window.Damage as X
+import Arkham.Helpers.Window.Clue as X
 
 checkWindow :: HasGame m => Window -> m Message
 checkWindow = checkWindows . pure
@@ -73,6 +76,9 @@ checkAfter = checkWindows . pure . mkAfter
 
 checkWhen :: HasGame m => WindowType -> m Message
 checkWhen = checkWindows . pure . mkWhen
+
+checkCancel :: HasGame m => WindowType -> m Message
+checkCancel = checkWindows . pure . mkCancel
 
 checkWindows :: HasGame m => [Window] -> m Message
 checkWindows windows' = do
@@ -167,55 +173,10 @@ wouldDoEach n msg outerWouldWindow wouldWindow outerWindow window = do
 splitWithWindows :: Message -> [WindowType] -> [Message]
 splitWithWindows msg ws = [CheckWindows $ map mkWhen ws] <> [msg] <> [CheckWindows $ map mkAfter ws]
 
-discoveredClues :: HasCallStack => [Window] -> Int
-discoveredClues =
-  fromMaybe (error "missing discovery") . asum . map \case
-    (windowType -> Window.DiscoverClues _ _ _ n) -> Just n
-    (windowType -> Window.WouldDiscoverClues _ _ _ _ n) -> Just n
-    _ -> Nothing
-
-getDiscover :: HasCallStack => [Window] -> DiscoverId
-getDiscover =
-  fromMaybe (error "missing discovery") . asum . map \case
-    (windowType -> Window.WouldDiscoverClues _ _ did _ _) -> Just did
-    _ -> Nothing
-
-discoveredCluesAt :: HasCallStack => [Window] -> (LocationId, Int)
-discoveredCluesAt =
-  fromMaybe (error "missing discovery") . asum . map \case
-    (windowType -> Window.DiscoverClues _ lid _ n) -> Just (lid, n)
-    (windowType -> Window.WouldDiscoverClues _ lid _ _ n) -> Just (lid, n)
-    _ -> Nothing
-
-discoveredLocation :: HasCallStack => [Window] -> LocationId
-discoveredLocation =
-  fromMaybe (error "missing discovery") . asum . map \case
-    (windowType -> Window.DiscoverClues _ lid _ _) -> Just lid
-    (windowType -> Window.DiscoveringLastClue _ lid) -> Just lid
-    _ -> Nothing
-
-locationLeavingPlay :: HasCallStack => [Window] -> LocationId
-locationLeavingPlay =
-  fromMaybe (error "missing locationLeavingPlay") . asum . map \case
-    (windowType -> Window.LeavePlay (LocationTarget lid)) -> Just lid
-    _ -> Nothing
-
 assetLeavingPlay :: HasCallStack => [Window] -> AssetId
 assetLeavingPlay =
   fromMaybe (error "missing assetLeavingPlay") . asum . map \case
     (windowType -> Window.LeavePlay (AssetTarget aid)) -> Just aid
-    _ -> Nothing
-
-maybeDiscoveredLocation :: [Window] -> Maybe LocationId
-maybeDiscoveredLocation =
-  asum . map \case
-    (windowType -> Window.DiscoverClues _ lid _ _) -> Just lid
-    _ -> Nothing
-
-engagedEnemy :: HasCallStack => [Window] -> EnemyId
-engagedEnemy =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.EnemyEngaged _ eid) -> Just eid
     _ -> Nothing
 
 windowSkillTestId :: HasCallStack => [Window] -> SkillTestId
@@ -226,92 +187,10 @@ windowSkillTestId =
     (windowType -> Window.InitiatedSkillTest st) -> Just st.id
     _ -> Nothing
 
-evadingEnemy :: HasCallStack => [Window] -> EnemyId
-evadingEnemy =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.AttemptToEvadeEnemy _ _ eid) -> Just eid
-    _ -> Nothing
-
-enteringEnemy :: HasCallStack => [Window] -> EnemyId
-enteringEnemy =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.EnemyEnters eid _) -> Just eid
-    _ -> Nothing
-
-entering :: HasCallStack => [Window] -> LocationId
-entering =
-  fromMaybe (error "missing enter window") . asum . map \case
-    (windowType -> Window.Entering _ lid) -> Just lid
-    _ -> Nothing
-
-attachedCard :: HasCallStack => [Window] -> Card
-attachedCard =
-  fromMaybe (error "missing Attach card window") . asum . map \case
-    (windowType -> Window.AttachCard _ card _) -> Just card
-    _ -> Nothing
-
-healedAmount :: [Window] -> Int
-healedAmount = sum . mapMaybe toHealedAmount
- where
-  toHealedAmount = \case
-    (windowType -> Healed _ _ _ n) -> Just n
-    _ -> Nothing
-
-discoveredLocationAndClues :: HasCallStack => [Window] -> (LocationId, Int)
-discoveredLocationAndClues =
-  fromMaybe (error "missing discovery") . asum . map \case
-    (windowType -> Window.DiscoverClues _ lid _ n) -> Just (lid, n)
-    _ -> Nothing
-
-defeatedEnemy :: HasCallStack => [Window] -> EnemyId
-defeatedEnemy =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.EnemyDefeated _ _ eid) -> Just eid
-    (windowType -> Window.EnemyWouldBeDefeated eid) -> Just eid
-    _ -> Nothing
-
-attackedEnemy :: HasCallStack => [Window] -> EnemyId
-attackedEnemy =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.AttemptToFightEnemy _ _ eid) -> Just eid
-    (windowType -> Window.EnemyAttacked _ _ eid) -> Just eid
-    (windowType -> Window.SuccessfulAttackEnemy _ _ eid _) -> Just eid
-    (windowType -> Window.FailAttackEnemy _ eid _) -> Just eid
-    _ -> Nothing
-
-attackingInvestigator :: HasCallStack => [Window] -> InvestigatorId
-attackingInvestigator =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.AttemptToFightEnemy _ iid _) -> Just iid
-    (windowType -> Window.EnemyAttacked iid _ _) -> Just iid
-    (windowType -> Window.SuccessfulAttackEnemy iid _ _ _) -> Just iid
-    (windowType -> Window.FailAttackEnemy iid _ _) -> Just iid
-    _ -> Nothing
-
-attackSource :: HasCallStack => [Window] -> Source
-attackSource =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.EnemyAttacked _ source _) -> Just source
-    _ -> Nothing
-
-evadedEnemy :: HasCallStack => [Window] -> EnemyId
-evadedEnemy =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.EnemyEvaded _ eid) -> Just eid
-    (windowType -> Window.SuccessfulEvadeEnemy _ _ eid _) -> Just eid
-    _ -> Nothing
-
 fromAsset :: HasCallStack => [Window] -> AssetId
 fromAsset =
   fromMaybe (error "missing asset") . asum . map \case
     (windowType -> Window.AttackOrEffectSpentLastUse _ (AssetTarget aid) _) -> Just aid
-    _ -> Nothing
-
-spawnedEnemy :: HasCallStack => [Window] -> EnemyId
-spawnedEnemy =
-  fromMaybe (error "missing enemy") . asum . map \case
-    (windowType -> Window.EnemySpawns eid _) -> Just eid
-    (windowType -> Window.EnemyAttemptsToSpawnAt eid _) -> Just eid
     _ -> Nothing
 
 placedTokens :: Token -> [Window] -> Int
@@ -319,86 +198,6 @@ placedTokens _ [] = 0
 placedTokens t ((windowType -> Window.PlacedToken _ _ token n) : xs) | token == t = n + placedTokens t xs
 placedTokens t ((windowType -> Window.InvestigatorPlacedFromTheirPool _ _ _ token n) : xs) | token == t = n + placedTokens t xs
 placedTokens t (_ : xs) = placedTokens t xs
-
-cardPlayed :: HasCallStack => [Window] -> Card
-cardPlayed [] = error "missing play card window"
-cardPlayed ((windowType -> Window.PlayCard _ c) : _) = c.card
-cardPlayed (_ : xs) = cardPlayed xs
-
-data DrawnCard = DrawnCard
-  { card :: Card
-  , drawnBy :: InvestigatorId
-  , drawnFrom :: DeckSignifier
-  }
-
-type instance Element DrawnCard = Card
-
-instance MonoFoldable DrawnCard where
-  ofoldr f b x = f x.card b
-  ofoldl' f a x = f a x.card
-  otoList x = [x.card]
-  ofoldMap f x = f x.card
-  ofoldr1Ex f x = f x.card x.card
-  ofoldl1Ex' f x = f x.card x.card
-
-drawnCard :: HasCallStack => [Window] -> DrawnCard
-drawnCard [] = error "missing play card window"
-drawnCard ((windowType -> Window.DrawCard iid c deck) : _) = DrawnCard c iid deck
-drawnCard (_ : xs) = drawnCard xs
-
-cardDrawn :: HasCallStack => [Window] -> Card
-cardDrawn [] = error "missing play card window"
-cardDrawn ((windowType -> Window.DrawCard _ c _) : _) = c
-cardDrawn (_ : xs) = cardDrawn xs
-
-cancelledCard :: HasCallStack => [Window] -> CardId
-cancelledCard [] = error "missing play card window"
-cancelledCard ((windowType -> Window.CancelledOrIgnoredCardOrGameEffect _ (Just c)) : _) = c
-cancelledCard (_ : xs) = cancelledCard xs
-
-getPlayedEvent :: [Window] -> EventId
-getPlayedEvent = \case
-  [] -> error "impossible"
-  ((windowType -> Window.PlayEventDiscarding _ eventId) : _) -> eventId
-  ((windowType -> Window.PlayEvent _ eventId) : _) -> eventId
-  (_ : rest) -> getPlayedEvent rest
-
-cardDiscarded :: HasCallStack => [Window] -> Card
-cardDiscarded [] = error "missing play card window"
-cardDiscarded ((windowType -> Window.DiscardedFromHand _ _ c) : _) = c
-cardDiscarded ((windowType -> Window.Discarded _ _ c) : _) = c
-cardDiscarded (_ : xs) = cardDiscarded xs
-
-cardsDiscarded :: HasCallStack => [Window] -> [Card]
-cardsDiscarded [] = []
-cardsDiscarded ((windowType -> Window.DiscardedFromHand _ _ c) : ws) = c : cardsDiscarded ws
-cardsDiscarded ((windowType -> Window.Discarded _ _ c) : ws) = c : cardsDiscarded ws
-cardsDiscarded (_ : xs) = cardsDiscarded xs
-
-cardDrawnBy :: HasCallStack => [Window] -> (InvestigatorId, Card)
-cardDrawnBy [] = error "missing play card window"
-cardDrawnBy ((windowType -> Window.DrawCard iid c _) : _) = (iid, c)
-cardDrawnBy (_ : xs) = cardDrawnBy xs
-
-cardsDrawn :: [Window] -> [Card]
-cardsDrawn [] = []
-cardsDrawn ((windowType -> Window.DrawCards _ cs) : rest) = cs <> cardsDrawn rest
-cardsDrawn (_ : xs) = cardsDrawn xs
-
-damagedInvestigator :: [Window] -> InvestigatorId
-damagedInvestigator [] = error "no damaged investigator"
-damagedInvestigator ((windowType -> Window.WouldTakeDamageOrHorror _ (InvestigatorTarget iid) _ _) : _) = iid
-damagedInvestigator (_ : xs) = damagedInvestigator xs
-
-dealtDamage :: [Window] -> Int
-dealtDamage [] = 0
-dealtDamage ((windowType -> Window.WouldTakeDamageOrHorror _ _ n _) : _) = n
-dealtDamage (_ : xs) = dealtDamage xs
-
-dealtHorror :: [Window] -> Int
-dealtHorror [] = 0
-dealtHorror ((windowType -> Window.WouldTakeDamageOrHorror _ _ _ n) : _) = n
-dealtHorror (_ : xs) = dealtDamage xs
 
 wouldRevealChaosToken :: HasCallStack => [Window] -> InvestigatorId
 wouldRevealChaosToken =
@@ -440,16 +239,10 @@ moves timing who source destination =
 getRevealedChaosTokens :: [Window] -> [ChaosToken]
 getRevealedChaosTokens = \case
   [] -> []
-  ((windowType -> Window.SkillTestEnded st) : _) -> st.revealedChaosTokens
+  ((windowType -> Window.SkillTestEnded st) : _) -> st.revealedChaosTokens <> st.additionalRevealedChaosTokens
   ((windowType -> Window.RevealChaosTokensDuringSkillTest _ _ ts) : _) -> ts
   ((windowType -> Window.RevealChaosToken _ t) : rest) -> t : getRevealedChaosTokens rest
   (_ : rest) -> getRevealedChaosTokens rest
-
-getRevealedLocation :: [Window] -> LocationId
-getRevealedLocation = \case
-  [] -> error "No location revealed"
-  ((windowType -> Window.RevealLocation _ lid) : _) -> lid
-  (_ : rest) -> getRevealedLocation rest
 
 getTreacheryResolver :: HasCallStack => [Window] -> InvestigatorId
 getTreacheryResolver = \case
@@ -467,27 +260,15 @@ getChaosToken = \case
     Nothing -> getChaosToken rest
   (_ : rest) -> getChaosToken rest
 
-getThatEnemy :: [Window] -> Maybe EnemyId
-getThatEnemy = \case
-  [] -> Nothing
-  ((windowType -> Window.WouldReady (EnemyTarget eid)) : _) -> Just eid
-  ((windowType -> Window.WouldPlaceDoom _ (EnemyTarget eid) _) : _) -> Just eid
-  (_ : rest) -> getThatEnemy rest
-
-getAttackDetails :: HasCallStack => [Window] -> EnemyAttackDetails
-getAttackDetails = \case
-  [] -> error "No attack details"
-  ((windowType -> Window.EnemyWouldAttack details) : _) -> details
-  ((windowType -> Window.EnemyAttacks details) : _) -> details
-  ((windowType -> Window.EnemyAttacksEvenIfCancelled details) : _) -> details
-  (_ : rest) -> getAttackDetails rest
-
-getInvestigatedLocation :: HasCallStack => [Window] -> LocationId
-getInvestigatedLocation = \case
-  [] -> error "No fail or pass skill test"
-  ((windowType -> Window.FailInvestigationSkillTest _ lid _) : _) -> lid
-  ((windowType -> Window.PassInvestigationSkillTest _ lid _) : _) -> lid
-  (_ : rest) -> getInvestigatedLocation rest
+getChaosTokens :: HasCallStack => [Window] -> [ChaosToken]
+getChaosTokens = \case
+  [] -> []
+  ((windowType -> Window.RevealChaosToken _ token) : rest) -> token : getChaosTokens rest
+  ((windowType -> Window.ResolvesChaosToken _ token) : rest) -> token : getChaosTokens rest
+  ((windowType -> Window.ScenarioEvent _ _ val) : rest) -> case maybeResult val of
+    Just token -> token : getChaosTokens rest
+    Nothing -> getChaosTokens rest
+  (_ : rest) -> getChaosTokens rest
 
 getPassedBy :: [Window] -> Int
 getPassedBy = \case
@@ -496,13 +277,6 @@ getPassedBy = \case
   ((windowType -> Window.SuccessfulEvadeEnemy _ _ _ n) : _) -> n
   ((windowType -> Window.PassSkillTest _ _ _ n) : _) -> n
   (_ : rest) -> getPassedBy rest
-
-getDefeatedDetails :: [Window] -> (Maybe InvestigatorId, DefeatedBy, EnemyId)
-getDefeatedDetails = \case
-  ((windowType -> Window.EnemyDefeated miid dBy eid) : _) -> (miid, dBy, eid)
-  (_ : rest) -> getDefeatedDetails rest
-  [] -> error "missing"
-
 getDoomAmount :: [Window] -> Int
 getDoomAmount = \case
   ((windowType -> Window.PlacedDoom _ _ n) : _) -> n
@@ -527,100 +301,6 @@ getAsset = \case
   (_ : rest) -> getAsset rest
   _ -> error "invalid window"
 
-getEnemy :: [Window] -> EnemyId
-getEnemy = \case
-  ((windowType -> Window.EnemySpawns eid _) : _) -> eid
-  ((windowType -> Window.EnemyDefeated _ _ eid) : _) -> eid
-  ((windowType -> Window.EnemyMoves eid _) : _) -> eid
-  ((windowType -> Window.EnemyEnters eid _) : _) -> eid
-  ((windowType -> Window.EnemyWouldSpawnAt eid _) : _) -> eid
-  ((windowType -> Window.EnemyAttacks details) : _) -> details.enemy
-  ((windowType -> Window.WouldReady (EnemyTarget eid)) : _) -> eid
-  ((windowType -> Window.WouldPlaceDoom _ (EnemyTarget eid) _) : _) -> eid
-  ((windowType -> Window.PlacedDoom _ (EnemyTarget eid) _) : _) -> eid
-  ((windowType -> Window.EnemyMovesTo _ _ eid) : _) -> eid
-  ((windowType -> Window.EnemyWouldMove eid _ _ _) : _) -> eid
-  ((windowType -> Window.WouldPatrol eid) : _) -> eid
-  ((windowType -> Window.EnemyEngaged _ eid) : _) -> eid
-  ((windowType -> Window.EnterPlay (EnemyTarget eid)) : _) -> eid
-  (_ : rest) -> getEnemy rest
-  _ -> error "invalid window"
-
-getLocation :: [Window] -> Maybe LocationId
-getLocation = \case
-  [] -> Nothing
-  ((windowType -> Window.EnemyEnters _ lid) : _) -> Just lid
-  ((windowType -> Window.EnemyLeaves _ lid) : _) -> Just lid
-  (_ : rest) -> getLocation rest
-
-getEnemies :: [Window] -> [EnemyId]
-getEnemies = \case
-  [] -> []
-  ((windowType -> Window.EnemyEnters eid _) : rest) -> eid : getEnemies rest
-  ((windowType -> Window.EnemyLeaves eid _) : rest) -> eid : getEnemies rest
-  (_ : rest) -> getEnemies rest
-
-damagedEnemy :: [Window] -> EnemyId
-damagedEnemy = \case
-  ((windowType -> Window.WouldTakeDamage _ (EnemyTarget eid) _ _) : _) -> eid
-  ((windowType -> Window.DealtDamage _ _ (EnemyTarget eid) _) : _) -> eid
-  _ -> error "Expected DealtDamage window"
-
-damagedEnemyAmount :: [Window] -> Int
-damagedEnemyAmount = \case
-  ((windowType -> Window.WouldTakeDamage _ (EnemyTarget _) n _) : _) -> n
-  ((windowType -> Window.DealtDamage _ _ (EnemyTarget _) n) : _) -> n
-  _ -> error "Expected DealtDamage window"
-
-damagedEnemyWithSource :: [Window] -> (EnemyId, Source)
-damagedEnemyWithSource = \case
-  ((windowType -> Window.WouldTakeDamage s (EnemyTarget eid) _ _) : _) -> (eid, s)
-  ((windowType -> Window.DealtDamage s _ (EnemyTarget eid) _) : _) -> (eid, s)
-  _ -> error "Expected DealtDamage window"
-
-damagedAsset :: [Window] -> AssetId
-damagedAsset = \case
-  [] -> error "Expected DealtDamageOrHorro to asset window"
-  ((windowType -> Window.DealtDamage _ _ (AssetTarget aid) _) : _) -> aid
-  ((windowType -> Window.DealtHorror _ (AssetTarget aid) _) : _) -> aid
-  (_ : rest) -> damagedAsset rest
-
-getDamageSource :: HasCallStack => [Window] -> Source
-getDamageSource = \case
-  [] -> error "No damage"
-  ((windowType -> Window.DealtDamage source _ _ _) : _) -> source
-  ((windowType -> Window.DealtExcessDamage source _ _ _) : _) -> source
-  (_ : rest) -> getDamageSource rest
-
-getDamageSourceEnemy :: HasCallStack => [Window] -> EnemyId
-getDamageSourceEnemy ws = case (getDamageSource ws).enemy of
-  Nothing -> error "Source was not enemy"
-  Just eid -> eid
-
-getDamageOrHorrorSource :: HasCallStack => [Window] -> Source
-getDamageOrHorrorSource = \case
-  [] -> error "No damage"
-  ((windowType -> Window.DealtDamage source _ _ _) : _) -> source
-  ((windowType -> Window.DealtHorror source _ _) : _) -> source
-  ((windowType -> Window.DealtExcessDamage source _ _ _) : _) -> source
-  (_ : rest) -> getDamageOrHorrorSource rest
-
-getTotalDamageAmounts :: Targetable target => target -> [Window] -> Map Source (Int, Int)
-getTotalDamageAmounts target =
-  Map.map (bimap getSum getSum) . MonoidalMap.getMonoidalMap . foldMap \case
-    (windowType -> Window.DealtDamage source _ (isTarget target -> True) d) -> MonoidalMap.singleton source (Sum d, Sum 0)
-    (windowType -> Window.DealtHorror source (isTarget target -> True) h) -> MonoidalMap.singleton source (Sum 0, Sum h)
-    (windowType -> Window.DealtExcessDamage source _ (isTarget target -> True) d) -> MonoidalMap.singleton source (Sum d, Sum 0)
-    (windowType -> Window.WouldTakeDamage source (isTarget target -> True) d _) -> MonoidalMap.singleton source (Sum d, Sum 0)
-    (windowType -> Window.WouldTakeHorror source (isTarget target -> True) h) -> MonoidalMap.singleton source (Sum 0, Sum h)
-    _ -> mempty
-
-getTotalDamage :: [Window] -> Int
-getTotalDamage ((windowType -> Window.DealtDamage _ _ _ n) : rest) = n + getTotalDamage rest
-getTotalDamage ((windowType -> Window.TakeDamage _ _ _ n) : rest) = n + getTotalDamage rest
-getTotalDamage (_ : rest) = getTotalDamage rest
-getTotalDamage [] = 0
-
 replaceWindow
   :: (HasCallStack, HasQueue Message m) => (Window -> Bool) -> (Window -> Window) -> m ()
 replaceWindow f wf = do
@@ -632,7 +312,7 @@ replaceWindow f wf = do
     \case
       CheckWindows ws -> [CheckWindows $ map (\w -> if f w then wf w else w) ws]
       Do (CheckWindows ws) -> [Do (CheckWindows $ map (\w -> if f w then wf w else w) ws)]
-      _ -> error "impossible"
+      _ -> error "replaceWindow: impossible"
 
 replaceWindowMany
   :: (HasCallStack, HasQueue Message m) => (WindowType -> Bool) -> (WindowType -> [WindowType]) -> m ()
@@ -657,7 +337,7 @@ replaceWindowMany f wf = do
                   ws
             )
         ]
-      _ -> error "impossible"
+      _ -> error "replaceWindowMany: impossible"
 
 windowSkillTest :: [Window] -> Maybe SkillTest
 windowSkillTest = \case
@@ -665,16 +345,11 @@ windowSkillTest = \case
   ((windowType -> Window.InitiatedSkillTest st) : _) -> Just st
   (_ : rest) -> windowSkillTest rest
 
-getCommittedCard :: [Window] -> Card
-getCommittedCard [] = error "missing card"
-getCommittedCard ((windowType -> Window.CommittedCard _ c) : _) = c
-getCommittedCard (_ : ws) = getCommittedCard ws
-
 getDefeatedAsset :: [Window] -> AssetId
 getDefeatedAsset = \case
   ((windowType -> Window.AssetDefeated aid _) : _) -> aid
   (_ : rest) -> getDefeatedAsset rest
-  _ -> error "impossible"
+  _ -> error "getDefeatedAsset: impossible"
 
 getAbility :: [Window] -> (Ability, [Window])
 getAbility [] = error "No windows"
@@ -683,14 +358,9 @@ getAbility (_ : rest) = getAbility rest
 
 getWindowAsset :: [Window] -> Maybe AssetId
 getWindowAsset [] = Nothing
-getWindowAsset ((windowType -> Window.ActivateAbility _ _ ability) : xs) = case abilitySource ability of
-  AssetSource aid -> Just aid
-  _ -> getWindowAsset xs
+getWindowAsset ((windowType -> Window.ActivateAbility _ _ ability) : xs) =
+  (abilitySource ability).asset <|> getWindowAsset xs
 getWindowAsset (_ : xs) = getWindowAsset xs
-
-enemyMatches :: (HasGame m, Tracing m) => EnemyId -> EnemyMatcher -> m Bool
-enemyMatches _eid Matcher.AnyEnemy = pure True
-enemyMatches eid matcher = orM [matches eid matcher, matches eid (Matcher.OutOfPlayEnemy RemovedZone matcher)]
 
 inFastWindow :: HasGame m => m Bool
 inFastWindow = any (any (\w -> windowType w == Window.FastPlayerWindow)) <$> getWindowStack
@@ -703,8 +373,7 @@ windowMatches
   -> Matcher.WindowMatcher
   -> m Bool
 windowMatches _ _ (windowType -> Window.DoNotCheckWindow) _ = pure True
-windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wType)) umtchr = withSpan' "windowMatches" \currentSpan -> do
-  addAttribute currentSpan "window" (tshow window')
+windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wType)) umtchr = do
   (source, mcard) <-
     case rawSource of
       BothSource s (CardIdSource cid) -> do
@@ -715,6 +384,9 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
   let noMatch = pure False
   let isMatch' = pure True
   let guardTiming t body = if timing' == t then body wType else noMatch
+  let isAttackCancelled details = do
+        liveDetails <- fieldMayJoin EnemyAttacking (attackEnemy details)
+        pure $ details.cancelled || maybe False (.cancelled) liveDetails
   let mtchr = Matcher.replaceYouMatcher iid umtchr
   case mtchr of
     Matcher.NotWindow inner -> not <$> windowMatches iid rawSource window' inner
@@ -816,6 +488,12 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
     Matcher.ScenarioCountIncremented timing k -> guardTiming timing \case
       Window.ScenarioCountIncremented k' -> pure $ k == k'
       _ -> noMatch
+    Matcher.ScenarioCountDecremented timing k -> guardTiming timing \case
+      Window.ScenarioCountDecremented k' -> pure $ k == k'
+      _ -> noMatch
+    Matcher.RememberedLogKey timing k -> guardTiming timing \case
+      Window.RememberedLogKey k' -> pure $ k == k'
+      _ -> noMatch
     Matcher.IncreasedAlarmLevel timing whoMatcher -> guardTiming timing \case
       Window.IncreasedAlarmLevel who -> matchWho iid who whoMatcher
       _ -> noMatch
@@ -913,6 +591,13 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             ]
         Window.RevealChaosTokenEventEffect who tokens' eventId -> do
           card <- field Field.EventCard eventId
+          andM
+            [ pure $ any ((`elem` tokens) . chaosTokenFace) tokens'
+            , pure $ card `cardMatch` cardMatcher
+            , matchWho iid who whoMatcher
+            ]
+        Window.RevealChaosTokenSkillEffect who tokens' skillId -> do
+          card <- field Field.SkillCard skillId
           andM
             [ pure $ any ((`elem` tokens) . chaosTokenFace) tokens'
             , pure $ card `cardMatch` cardMatcher
@@ -1163,9 +848,16 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
       Window.AmongSearchedCards _ who -> do
         field InvestigatorSearch who >>= \case
           Nothing -> pure False
-          Just search' ->
+          Just search' -> do
+            -- During setup we suppress scenario/encounter-initiated searches (e.g. searching
+            -- the collection for a random weakness) but still allow player-card-initiated
+            -- searches (e.g. Whitton Greene's reveal-location search) to trigger reactions.
+            allowedInSetup <-
+              getInSetup >>= \case
+                False -> pure True
+                True -> sourceMatches (searchSource search') Matcher.SourceIsPlayerCard
             andM
-              [ not <$> getInSetup
+              [ pure allowedInSetup
               , maybe False (`elem` search'.allFoundCards) <$> sourceToMaybeCard source
               , matchWho iid who whoMatcher
               ]
@@ -1173,6 +865,14 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
     Matcher.WouldDiscardFromHand timing whoMatcher sourceMatcher ->
       guardTiming timing $ \case
         Window.WouldDiscardFromHand who source' ->
+          andM
+            [ matchWho iid who whoMatcher
+            , sourceMatches source' sourceMatcher
+            ]
+        _ -> noMatch
+    Matcher.WouldDiscardFromDeck timing whoMatcher sourceMatcher ->
+      guardTiming timing $ \case
+        Window.WouldDiscardFromDeck who source' ->
           andM
             [ matchWho iid who whoMatcher
             , sourceMatches source' sourceMatcher
@@ -1186,6 +886,15 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
                 (pure True)
                 (\matcher -> maybe (pure False) (\who -> matchWho iid who matcher) mWho)
                 mWhoMatcher
+            , sourceMatches source' sourceMatcher
+            , extendedCardMatch card cardMatcher
+            ]
+        _ -> noMatch
+    Matcher.DiscardedFromDeck timing whoMatcher sourceMatcher cardMatcher ->
+      guardTiming timing $ \case
+        Window.DiscardedFromDeck who source' card ->
+          andM
+            [ matchWho iid who whoMatcher
             , sourceMatches source' sourceMatcher
             , extendedCardMatch card cardMatcher
             ]
@@ -1378,6 +1087,12 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             , sourceMatches source' sourceMatcher
             , gameValueMatches n valueMatcher
             ]
+        Window.PlacedDamage source' (EnemyTarget enemyId) n | counterMatcher == Matcher.DamageCounter -> do
+          andM
+            [ matches enemyId enemyMatcher
+            , sourceMatches source' sourceMatcher
+            , gameValueMatches n valueMatcher
+            ]
         _ -> noMatch
     Matcher.PlacedCounterOnAgenda timing agendaMatcher sourceMatcher counterMatcher valueMatcher ->
       guardTiming timing $ \case
@@ -1409,6 +1124,19 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
           andM
             [ matchWho iid who whoMatcher
             , locationMatches iid source window' locationId locationMatcher
+            ]
+        _ -> noMatch
+    Matcher.RevealLocationForcedAbilities timing whoMatcher locationMatcher fromLocationMatcher ->
+      guardTiming timing \case
+        Window.RevealLocationForcedAbilities who locationId mFromLid ->
+          andM
+            [ matchWho iid who whoMatcher
+            , locationMatches iid source window' locationId locationMatcher
+            , case (fromLocationMatcher, mFromLid) of
+                (Nothing, _) -> pure True
+                (Just _, Nothing) -> noMatch
+                (Just fromMatcher, Just fromLid) ->
+                  locationMatches iid source window' fromLid fromMatcher
             ]
         _ -> noMatch
     Matcher.UnrevealedRevealLocation timing whoMatcher locationMatcher ->
@@ -1483,6 +1211,9 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
           , locationMatches iid source window' lid whereMatcher
           ]
       _ -> noMatch
+    Matcher.EntersLocationWithEnemy timing whoMatcher -> guardTiming timing $ \case
+      Window.EnteringLocationWithEnemy iid' _lid -> matchWho iid iid' whoMatcher
+      _ -> noMatch
     Matcher.Leaves timing whoMatcher whereMatcher -> guardTiming timing $ \case
       Window.Leaving iid' lid ->
         andM
@@ -1546,9 +1277,9 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
         andM [matchWho iid iid' whoMatcher, anyM (\a -> actionMatches iid a actionMatcher) actions]
       _ -> noMatch
     Matcher.PerformedDifferentTypesOfActionsInARow timing whoMatcher n actionMatcher -> guardTiming timing $ \case
-      Window.PerformedDifferentTypesOfActionsInARow iid' m actions
+      Window.PerformedDifferentTypesOfActionsInARow iid' m groups
         | m >= n ->
-            andM [matchWho iid iid' whoMatcher, anyM (\a -> actionMatches iid a actionMatcher) actions]
+            andM [matchWho iid iid' whoMatcher, anyM (\a -> actionMatches iid a actionMatcher) (concat groups)]
       _ -> noMatch
     Matcher.WouldHaveSkillTestResult timing whoMatcher skillTestMatcher skillTestResultMatcher -> do
       -- The #when is questionable, but "Would" based timing really is
@@ -1697,7 +1428,22 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
                   Window.PassSkillTest _ _ who _ -> matchWho iid who whoMatcher
                   _ -> noMatch
             isWindowMatch skillTestResultMatcher
+    -- "It is genuinely your turn." Matches only a real DuringTurn window (and the
+    -- fast player window via the actual turn investigator) -- NOT the NonFast
+    -- action-taking window, so "Play during your turn" Fast cards cannot be played
+    -- with a granted "as if it were your turn" action. See #4894.
     Matcher.DuringTurn whoMatcher -> guardTiming #when $ \case
+      Window.DuringTurn who -> matchWho iid who whoMatcher
+      Window.FastPlayerWindow -> do
+        miid <- selectOne Matcher.TurnInvestigator
+        case miid of
+          Nothing -> pure False
+          Just who -> matchWho iid who whoMatcher
+      _ -> noMatch
+    -- "You have an action to take": matches the NonFast action-taking window
+    -- (real turn or granted action), the genuine DuringTurn window, and the fast
+    -- player window. See #4894.
+    Matcher.DuringYourAction whoMatcher -> guardTiming #when $ \case
       Window.NonFast -> matchWho iid iid whoMatcher
       Window.DuringTurn who -> matchWho iid who whoMatcher
       Window.FastPlayerWindow -> do
@@ -1724,7 +1470,8 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
         Window.EnemyWouldAttack details -> case attackTarget details of
           SingleAttackTarget (InvestigatorTarget who) ->
             andM
-              [ matchWho iid who whoMatcher
+              [ not <$> isAttackCancelled details
+              , matchWho iid who whoMatcher
               , matches (attackEnemy details) enemyMatcher
               , enemyAttackMatches iid details enemyAttackMatcher
               ]
@@ -1735,7 +1482,22 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
         Window.EnemyAttacks details -> case attackTarget details of
           SingleAttackTarget (InvestigatorTarget who) ->
             andM
-              [ matchWho iid who whoMatcher
+              [ not <$> isAttackCancelled details
+              , matchWho iid who whoMatcher
+              , matches (attackEnemy details) enemyMatcher
+              , enemyAttackMatches iid details enemyAttackMatcher
+              ]
+          -- An asset attacked "as if it were an engaged investigator" (Dogs of
+          -- War's Key Locus). Treat it as an investigator at its location, so
+          -- "an investigator at your location" matchers fire for anyone there.
+          -- Under the Chapter 2 "as if" ruling this only applies during action
+          -- resolution, not window triggers, so the window does not match.
+          SingleAttackTarget (AssetTarget aid) ->
+            andM
+              [ not . settingsStrictAsIfAt <$> getSettings
+              , aid <=~> AssetAt (locationWithInvestigator iid)
+              , not <$> isAttackCancelled details
+              , matchWho iid iid whoMatcher
               , matches (attackEnemy details) enemyMatcher
               , enemyAttackMatches iid details enemyAttackMatcher
               ]
@@ -1747,6 +1509,14 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
           SingleAttackTarget (InvestigatorTarget who) ->
             andM
               [ matchWho iid who whoMatcher
+              , matches (attackEnemy details) enemyMatcher
+              , enemyAttackMatches iid details enemyAttackMatcher
+              ]
+          SingleAttackTarget (AssetTarget aid) ->
+            andM
+              [ not . settingsStrictAsIfAt <$> getSettings
+              , aid <=~> AssetAt (locationWithInvestigator iid)
+              , matchWho iid iid whoMatcher
               , matches (attackEnemy details) enemyMatcher
               , enemyAttackMatches iid details enemyAttackMatcher
               ]
@@ -1911,15 +1681,16 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
                     else matches enemyId enemyMatcher
             , defeatedByMatches
                 defeatedBy
-                (defeatedByMatcher <> Matcher.BySource (Matcher.SourceOwnedBy $ Matcher.InvestigatorWithId iid))
+                (defeatedByMatcher <> Matcher.BySource (Matcher.SourceUsedBy $ Matcher.InvestigatorWithId iid))
             ]
         Window.EnemyDefeated Nothing defeatedBy enemyId | whoMatcher == Matcher.Anyone -> do
           andM
             [ case enemyMatcher of
                 AnyEnemy -> pure True
                 _ ->
-                  matches enemyId
-                    $ if timing == #after then oneOf [DefeatedEnemy enemyMatcher, enemyMatcher] else enemyMatcher
+                  if timing == #after
+                    then orM [matches enemyId $ DefeatedEnemy enemyMatcher, matches enemyId enemyMatcher]
+                    else matches enemyId enemyMatcher
             , defeatedByMatches defeatedBy defeatedByMatcher
             ]
         _ -> noMatch
@@ -1946,15 +1717,16 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
                     else matches enemyId (InPlayEnemy enemyMatcher)
             , defeatedByMatches
                 defeatedBy
-                (defeatedByMatcher <> Matcher.BySource (Matcher.SourceOwnedBy $ Matcher.InvestigatorWithId iid))
+                (defeatedByMatcher <> Matcher.BySource (Matcher.SourceUsedBy $ Matcher.InvestigatorWithId iid))
             ]
         Window.EnemyDefeated Nothing defeatedBy enemyId | whoMatcher == Matcher.Anyone -> do
           andM
             [ case enemyMatcher of
                 AnyEnemy -> pure True
                 _ ->
-                  matches enemyId
-                    $ if timing == #after then oneOf [DefeatedEnemy enemyMatcher, enemyMatcher] else enemyMatcher
+                  if timing == #after
+                    then orM [matches enemyId $ DefeatedEnemy enemyMatcher, matches enemyId enemyMatcher]
+                    else matches enemyId (InPlayEnemy enemyMatcher)
             , defeatedByMatches defeatedBy defeatedByMatcher
             ]
         _ -> noMatch
@@ -1966,8 +1738,9 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             , case enemyMatcher of
                 AnyEnemy -> pure True
                 _ ->
-                  matches enemyId
-                    $ if timing == #after then oneOf [DefeatedEnemy enemyMatcher, enemyMatcher] else enemyMatcher
+                  if timing == #after
+                    then orM [matches enemyId $ DefeatedEnemy enemyMatcher, matches enemyId enemyMatcher]
+                    else matches enemyId enemyMatcher
             , defeatedByMatches defeatedBy defeatedByMatcher
             ]
         Window.IfEnemyDefeated Nothing defeatedBy enemyId | whoMatcher == Matcher.You -> do
@@ -1975,21 +1748,28 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             [ case enemyMatcher of
                 AnyEnemy -> pure True
                 _ ->
-                  matches enemyId
-                    $ if timing == #after then oneOf [DefeatedEnemy enemyMatcher, enemyMatcher] else enemyMatcher
+                  if timing == #after
+                    then orM [matches enemyId $ DefeatedEnemy enemyMatcher, matches enemyId enemyMatcher]
+                    else matches enemyId enemyMatcher
             , defeatedByMatches
                 defeatedBy
-                (defeatedByMatcher <> Matcher.BySource (Matcher.SourceOwnedBy $ Matcher.InvestigatorWithId iid))
+                (defeatedByMatcher <> Matcher.BySource (Matcher.SourceUsedBy $ Matcher.InvestigatorWithId iid))
             ]
         Window.IfEnemyDefeated Nothing defeatedBy enemyId | whoMatcher == Matcher.Anyone -> do
           andM
             [ case enemyMatcher of
                 AnyEnemy -> pure True
                 _ ->
-                  matches enemyId
-                    $ if timing == #after then oneOf [DefeatedEnemy enemyMatcher, enemyMatcher] else enemyMatcher
+                  if timing == #after
+                    then orM [matches enemyId $ DefeatedEnemy enemyMatcher, matches enemyId enemyMatcher]
+                    else matches enemyId enemyMatcher
             , defeatedByMatches defeatedBy defeatedByMatcher
             ]
+        _ -> noMatch
+    Matcher.EnemyFlipped timing enemyMatcher ->
+      guardTiming timing $ \case
+        Window.EnemyFlipped enemyId ->
+          matches enemyId enemyMatcher
         _ -> noMatch
     Matcher.EnemyEnters timing whereMatcher enemyMatcher ->
       guardTiming timing $ \case
@@ -1998,6 +1778,12 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             [ matches enemyId enemyMatcher
             , locationMatches iid source window' lid whereMatcher
             ]
+        _ -> noMatch
+    Matcher.EnemyEntersYourLocation timing enemyMatcher ->
+      guardTiming timing $ \case
+        Window.EnemyEntersYourLocation iid' enemyId _
+          | iid == iid' ->
+              matches enemyId enemyMatcher
         _ -> noMatch
     Matcher.EnemyLeaves timing whereMatcher enemyMatcher ->
       guardTiming timing $ \case
@@ -2021,39 +1807,18 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
       _ -> noMatch
     Matcher.FastPlayerWindow -> guardTiming #when (pure . (== Window.FastPlayerWindow))
     Matcher.DealtDamageOrHorror timing sourceMatcher whoMatcher -> guardTiming timing $ \case
+      -- NB. an ally (asset) you control taking damage/horror is not "you" being dealt
+      -- damage/horror; use AssetDealtDamageOrHorror for that. See issue #4910.
       Window.WouldTakeDamageOrHorror source' (InvestigatorTarget iid') _ _ ->
         andM [matchWho iid iid' whoMatcher, sourceMatches source' sourceMatcher]
-      Window.WouldTakeDamageOrHorror source' (AssetTarget aid) _ _ ->
-        andM
-          [ elem aid
-              <$> select
-                ( Matcher.AssetControlledBy
-                    $ Matcher.replaceYouMatcher iid whoMatcher
-                )
-          , sourceMatches source' sourceMatcher
-          ]
       _ -> noMatch
     Matcher.DealtDamage timing sourceMatcher whoMatcher -> guardTiming timing $ \case
       Window.DealtDamage source' _ (InvestigatorTarget iid') _ ->
         andM [matchWho iid iid' whoMatcher, sourceMatches source' sourceMatcher]
-      Window.DealtDamage source' _ (AssetTarget aid) _ ->
-        andM
-          [ elem aid
-              <$> select
-                (Matcher.AssetControlledBy $ Matcher.replaceYouMatcher iid whoMatcher)
-          , sourceMatches source' sourceMatcher
-          ]
       _ -> noMatch
     Matcher.DealtHorror timing sourceMatcher whoMatcher -> guardTiming timing $ \case
       Window.DealtHorror source' (InvestigatorTarget iid') _ ->
         andM [matchWho iid iid' whoMatcher, sourceMatches source' sourceMatcher]
-      Window.DealtHorror source' (AssetTarget aid) _ ->
-        andM
-          [ elem aid
-              <$> select
-                (Matcher.AssetControlledBy $ Matcher.replaceYouMatcher iid whoMatcher)
-          , sourceMatches source' sourceMatcher
-          ]
       _ -> noMatch
     Matcher.AssignedHorror timing whoMatcher targetListMatcher ->
       guardTiming timing $ \case
@@ -2177,6 +1942,9 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
           , cardListMatches cards cardListMatcher
           , gameValueMatches (length cards) valueMatcher
           ]
+      _ -> noMatch
+    Matcher.DrewCardsFromOwnDeck timing whoMatcher -> guardTiming timing $ \case
+      Window.DrewCardsFromOwnDeck who -> matchWho iid who whoMatcher
       _ -> noMatch
     Matcher.DrawCard timing whoMatcher cardMatcher deckMatcher ->
       guardTiming timing \case

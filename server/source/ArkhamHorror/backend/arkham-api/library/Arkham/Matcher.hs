@@ -176,6 +176,10 @@ instance WithTrait LocationMatcher where
   withTrait = LocationWithTrait
   {-# INLINE withTrait #-}
 
+instance WithTrait TreacheryMatcher where
+  withTrait = TreacheryWithTrait
+  {-# INLINE withTrait #-}
+
 -- ** Investigator Helpers **
 
 investigatorIs :: HasCardCode a => a -> InvestigatorMatcher
@@ -287,10 +291,6 @@ canParleyEnemy = CanParleyEnemy . InvestigatorWithId
 
 enemyEngagedWith :: InvestigatorId -> EnemyMatcher
 enemyEngagedWith = EnemyIsEngagedWith . InvestigatorWithId
-
-enemyWillMoveWith :: InvestigatorId -> EnemyMatcher
-enemyWillMoveWith = EnemyWillMoveWith . InvestigatorWithId
-
 onlyEnemyEngagedWith :: InvestigatorId -> EnemyMatcher
 onlyEnemyEngagedWith = OnlyEnemyEngagedWith . InvestigatorWithId
 
@@ -337,11 +337,6 @@ locationWithInvestigator = IncludeEmptySpace . LocationWithInvestigator . Invest
 
 instance HasField "location" InvestigatorId LocationMatcher where
   getField = locationWithInvestigator
-
-locationWithLowerPrintedShroudThan :: (AsId a, IdOf a ~ LocationId) => a -> LocationMatcher
-locationWithLowerPrintedShroudThan = LocationWithLowerPrintedShroudThan . LocationWithId . asId
-{-# INLINE locationWithLowerPrintedShroudThan #-}
-
 locationWithDiscoverableCluesBy :: InvestigatorId -> LocationMatcher
 locationWithDiscoverableCluesBy = LocationWithDiscoverableCluesBy . InvestigatorWithId
 {-# INLINE locationWithDiscoverableCluesBy #-}
@@ -355,8 +350,12 @@ locationWithoutTreachery = LocationWithoutTreachery . treacheryIs
 {-# INLINE locationWithoutTreachery #-}
 
 accessibleFrom :: (AsId a, IdOf a ~ LocationId) => ForMovement -> a -> LocationMatcher
-accessibleFrom forMovement = IncludeEmptySpace . AccessibleFrom forMovement . LocationWithId . asId
+accessibleFrom forMovement = accessibleFromMatch forMovement . LocationWithId . asId
 {-# INLINE accessibleFrom #-}
+
+accessibleFromMatch :: ForMovement -> LocationMatcher -> LocationMatcher
+accessibleFromMatch forMovement = IncludeEmptySpace . AccessibleFrom forMovement
+{-# INLINE accessibleFromMatch #-}
 
 accessibleTo :: (AsId a, IdOf a ~ LocationId) => ForMovement -> a -> LocationMatcher
 accessibleTo forMovement = IncludeEmptySpace . AccessibleTo forMovement . LocationWithId . asId
@@ -448,6 +447,9 @@ inDiscardOf = InDiscardOf . InvestigatorWithId . asId
 basic :: CardMatcher -> ExtendedCardMatcher
 basic = BasicCardMatch
 
+instance HasField "level" (CardMatcher -> ExtendedCardMatcher) (Int -> ExtendedCardMatcher) where
+  getField f n = f (CardWithLevel n)
+
 basicCardIs :: HasCardCode a => a -> ExtendedCardMatcher
 basicCardIs = basic . cardIs
 
@@ -465,6 +467,9 @@ targetIs = TargetIs . toTarget
 
 sourceOwnedBy :: (AsId iid, IdOf iid ~ InvestigatorId) => iid -> SourceMatcher
 sourceOwnedBy = SourceOwnedBy . InvestigatorWithId . asId
+
+sourceUsedBy :: (AsId iid, IdOf iid ~ InvestigatorId) => iid -> SourceMatcher
+sourceUsedBy = SourceUsedBy . InvestigatorWithId . asId
 
 -- ** Ability Helpers **
 
@@ -534,6 +539,7 @@ instance Has InvestigatorMatcher CardDef where
     InvestigatorType -> error "invalid matcher"
     ScenarioType -> error "invalid matcher"
     KeyType -> error "invalid matcher"
+    EnemyLocationCardType -> error "invalid matcher"
 
 instance Exists CardDef where
   exists def = case cdCardType def of
@@ -553,3 +559,4 @@ instance Exists CardDef where
     InvestigatorType -> exists $ investigatorIs def
     ScenarioType -> error "Not implemented"
     KeyType -> error "Not implemented"
+    EnemyLocationCardType -> error "Not implemented"

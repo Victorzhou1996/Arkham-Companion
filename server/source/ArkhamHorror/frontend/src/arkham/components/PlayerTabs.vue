@@ -1,18 +1,19 @@
 <script lang="ts" setup>
 import { useStorage } from '@vueuse/core'
-import { computed, ref, watchEffect, inject } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Ref } from 'vue';
 import type { Game } from '@/arkham/types/Game';
 import Tab from '@/arkham/components/Tab.vue';
 import Player from '@/arkham/components/Player.vue';
+import { ArrowPathIcon } from '@heroicons/vue/20/solid';
 import * as ArkhamGame from '@/arkham/types/Game';
-import { Message, AbilityLabel } from '@/arkham/types/Message';
 import type { Investigator } from '@/arkham/types/Investigator';
+import type { Question } from '@/arkham/types/Question';
 import type { TarotCard } from '@/arkham/types/TarotCard';
-import type { Placement } from '@/arkham/types/Placement';
-import type { Source } from '@/arkham/types/Source';
 import { imgsrc } from '@/arkham/helpers';
+import { gameLocalStorageKey } from '@/arkham/localStorage';
 import { IsMobile } from '@/arkham/isMobile';
+import { useSettings } from '@/stores/settings'
 import { useDbCardStore } from '@/stores/dbCards'
 
 export interface Props {
@@ -26,13 +27,17 @@ export interface Props {
 
 const props = defineProps<Props>()
 
-const storageKey = computed(() => `selected-tab:${props.game.id}`)
+const storageKey = computed(() => gameLocalStorageKey(props.game.id, 'selected-tab'))
 const selectedTab = useStorage<string>(storageKey, props.playerId)
-const userPicked = ref(false)
+const playerInfo = ref<HTMLElement | null>(null)
 
 const solo = inject<Ref<boolean>>('solo')
+const spectate = inject<Ref<boolean>>('spectate', ref(false))
+const processing = inject<Ref<boolean>>('processing', ref(false))
+const uiLock = inject<Ref<boolean>>('uiLock', ref(false))
 const switchInvestigator = inject<((i: string) => void)>('switchInvestigator')
 const hasChoices = (iid: string) => ArkhamGame.choices(props.game, iid).length > 0
+const isWaiting = (investigator: Investigator) => props.playerOrder.length > 1 && investigator.playerId in props.game.question
 const investigators = computed(() => 
   props.playerOrder.filter(iid => !props.game.investigators[iid]?.eliminated).map(iid => props.players[iid])
 )
@@ -40,6 +45,13 @@ const inactiveInvestigators = computed(() => props.playerOrder.filter(iid => pro
 const lead = computed(() => `url('${imgsrc(`lead-investigator.png`)}')`)
 const { isMobile } = IsMobile();
 const store = useDbCardStore()
+
+// AI-investigator seats carry an entry in settings.aiPlayers. The seat badge is
+// only shown when the dev-only "AI Investigators" flag is enabled.
+const settings = useSettings()
+function isAiSeat(investigator: Investigator): boolean {
+  return settings.aiInvestigatorsEnabled && !!props.game.settings.aiPlayers[investigator.playerId]
+}
 
 function tabClass(investigator: Investigator) {
   const pid = investigator.playerId
@@ -71,15 +83,34 @@ function instructions(investigator: Investigator) {
   return null
 }
 
+type SwitchReason = 'baseline' | 'tab-action' | 'sole-question' | 'covered-question'
+interface SwitchFrame {
+  tab: string
+  perspective: string
+  reason: SwitchReason
+}
+
+const switchStack = ref<SwitchFrame[]>([
+  { tab: selectedTab.value, perspective: props.playerId, reason: 'baseline' },
+])
+const pendingPerspective = ref<string | null>(null)
+let manualSelectionAtStep: number | null = null
+
+function resetSwitchStack(tab: string, perspective: string) {
+  switchStack.value = [{ tab, perspective, reason: 'baseline' }]
+}
+
 function selectTab(i: string) {
+  manualSelectionAtStep = props.game.scenarioSteps
   selectedTab.value = i
-  userPicked.value = true
+  resetSwitchStack(i, props.playerId)
 }
 
 function selectTabExtended(i: string) {
   selectedTab.value = i
-  userPicked.value = true
+  resetSwitchStack(i, i)
   if (solo?.value && props.playerId !== i && switchInvestigator) {
+    pendingPerspective.value = i
     switchInvestigator(i)
   }
 }
@@ -93,65 +124,263 @@ function getInvestigatorName(cardTitle: string): string {
   return language === 'en'? cardTitle : store.getCardName(cardTitle, "investigator")
 }
 
-const isForcedAbility = (ability: Message): ability is AbilityLabel => {
-  return ability.tag === "AbilityLabel" && ability.ability.type.tag === "ForcedAbility"
+// New actionable controls should use data-game-actionable. The class selectors
+// keep existing card/target controls participating while they migrate to the
+// shared marker.
+const ACTIONABLE_SELECTOR = [
+  '[data-game-actionable="true"]',
+  '[class*="--can-interact"]',
+  '[class*="--can-progress"]',
+  '.can-interact',
+  '.deck--can-draw',
+  '.clue--can-spend',
+  '.resource--can-take',
+].join(',')
+
+function isAiPlayer(playerId: string) {
+  return playerId in props.game.settings.aiPlayers
 }
 
-const sourceToPlacement = (source: Source): Placement | null => {
-  switch (source.tag) {
-    case "EnemySource":
-      {
-        const { contents } = source
-        if (contents) return props.game.enemies[contents].placement
-      }
-    case "TreacherySource":
-      {
-        const { contents } = source
-        if (contents) return props.game.treacheries[contents].placement
-      }
-    default:
+function isEnabledAction(element: Element): element is HTMLElement {
+  if (!(element instanceof HTMLElement)) return false
+  if (element.matches(':disabled,[aria-disabled="true"]')) return false
+  return !element.closest('[inert]')
+}
+
+function actionLocations() {
+  const scope = playerInfo.value?.closest<HTMLElement>('#scenario') ?? playerInfo.value
+  const tabs = new Set<string>()
+  let outsideTab = false
+
+  for (const element of scope?.querySelectorAll(ACTIONABLE_SELECTOR) ?? []) {
+    if (!isEnabledAction(element)) continue
+    const tab = element.closest<HTMLElement>('.tab[data-player-tab]')
+    if (!tab) {
+      outsideTab = true
+      continue
+    }
+    const playerId = tab.dataset.playerTab
+    if (playerId && !isAiPlayer(playerId)) tabs.add(playerId)
   }
 
-  return null
+  return { tabs, outsideTab }
 }
 
-watchEffect(() => {
-  // determines which tab will be active, it should be the player who is
-  // playing the game, but on occasion there will be a forced effect in another
-  // players tab and we'd like to direct the player there
-  const playersWithForced = ArkhamGame
-    .choices(props.game, props.playerId)
-    .reduce((acc, c) => {
-      if (isForcedAbility(c)) {
-        const { source } = c.ability
-        const placement = sourceToPlacement(source)
-        if (placement?.tag == 'InThreatArea') {
-          const investigator = props.game.investigators[placement.contents]
-          if (investigator) acc.push(investigator.playerId)
-        }
-      }
-      return acc
-    }, [] as string[])
+function humanQuestionPlayers() {
+  return Object.keys(props.game.question).filter(pid => !isAiPlayer(pid))
+}
 
-  const playerIds = [...new Set(playersWithForced)]
+function skillTestPlayerId() {
+  if (solo?.value !== true) return undefined
+  const investigatorId = props.game.skillTest?.investigator
+  return investigatorId ? props.game.investigators[investigatorId]?.playerId : undefined
+}
 
-  if (playerIds.length == 0) {
-    const investigator = Object.values(props.players).find(i => i.playerId === props.playerId)
-    if (investigator && investigator.id == props.activePlayerId) {
-      selectedTab.value = props.playerId
+function activeInvestigatorPlayerId() {
+  return props.game.investigators[props.game.activeInvestigatorId]?.playerId
+}
+
+function questionKind(playerId: string) {
+  let question: Question | undefined = props.game.question[playerId]
+  const tags: string[] = []
+  while (question) {
+    tags.push(question.tag)
+    question = 'question' in question ? question.question : undefined
+  }
+  return tags.join('/')
+}
+
+function playerCanAnswerAllQuestionsFrom(playerId: string, otherPlayerId: string) {
+  if (questionKind(playerId) !== questionKind(otherPlayerId)) return false
+  const available = new Set(ArkhamGame.choices(props.game, playerId).map(choice => JSON.stringify(choice)))
+  return ArkhamGame.choices(props.game, otherPlayerId).every(choice => available.has(JSON.stringify(choice)))
+}
+
+function frameIsStillNeeded(frame: SwitchFrame, tabs: Set<string>) {
+  const skillTestPlayer = skillTestPlayerId()
+  // Once an automatic switch has brought us to the investigator taking the
+  // test, transient fast-window questions must not unwind us to an older tab.
+  // A sole actionable tab can still add a temporary frame above this one.
+  if (frame.reason !== 'baseline' && skillTestPlayer && frame.tab === skillTestPlayer) {
+    return true
+  }
+  if (frame.reason === 'tab-action') return tabs.has(frame.tab)
+  if (frame.reason === 'sole-question') {
+    const questionPlayers = humanQuestionPlayers()
+    return questionPlayers.length === 1 && questionPlayers[0] === frame.perspective
+  }
+  if (frame.reason === 'covered-question') return false
+  return true
+}
+
+function applyFrame(frame: SwitchFrame) {
+  selectedTab.value = frame.tab
+  if (solo?.value === true && props.playerId !== frame.perspective && switchInvestigator) {
+    pendingPerspective.value = frame.perspective
+    switchInvestigator(frame.perspective)
+  }
+}
+
+const automaticSwitchStackEnabled = false
+
+function pushAutomaticFrame(tab: string, perspective: string, reason: Exclude<SwitchReason, 'baseline'>) {
+  if (!automaticSwitchStackEnabled) {
+    // One-way routing: meeting another criterion may switch again, but ending a
+    // criterion never restores an earlier tab. The user can always choose one.
+    applyFrame({ tab, perspective, reason })
+    return
+  }
+
+  // Retained stack implementation. This is deliberately unreachable while
+  // automaticSwitchStackEnabled is false.
+  const current = switchStack.value.at(-1)
+  if (current?.tab === tab && current.perspective === perspective) return
+  switchStack.value.push({ tab, perspective, reason })
+  applyFrame(switchStack.value.at(-1)!)
+}
+
+function unwindSwitchStack(tabs: Set<string>) {
+  while (switchStack.value.length > 1) {
+    const current = switchStack.value.at(-1)!
+    if (frameIsStillNeeded(current, tabs)) break
+    switchStack.value.pop()
+  }
+  applyFrame(switchStack.value.at(-1)!)
+}
+
+let actionObserver: MutationObserver | null = null
+let inspectionFrame: number | null = null
+let automaticSwitchCandidate: string | null = null
+let automaticSwitchCandidateSince = 0
+
+function scheduleActionInspection() {
+  if (inspectionFrame !== null) cancelAnimationFrame(inspectionFrame)
+  inspectionFrame = requestAnimationFrame(async () => {
+    inspectionFrame = null
+    await nextTick()
+    inspectActions()
+  })
+}
+
+function automaticSwitchIsStable(candidate: string) {
+  const now = performance.now()
+  if (automaticSwitchCandidate === candidate) {
+    // Two adjacent animation frames were still short enough to catch the
+    // intermediate DOM produced while playing assets such as Flashlight. Wait
+    // for the destination to remain unchanged before routing.
+    if (now - automaticSwitchCandidateSince >= 120) {
+      automaticSwitchCandidate = null
+      return true
+    }
+  } else {
+    automaticSwitchCandidate = candidate
+    automaticSwitchCandidateSince = now
+  }
+
+  // Vue can briefly remove one tab's controls while replacing a question. Do
+  // not route on that intermediate DOM (for example, while Old Book of Lore
+  // replaces its investigator target prompt with focused cards).
+  scheduleActionInspection()
+  return false
+}
+
+function inspectActions() {
+  if (pendingPerspective.value === props.playerId) pendingPerspective.value = null
+  if (spectate.value || processing.value || uiLock.value || pendingPerspective.value !== null) {
+    automaticSwitchCandidate = null
+    return
+  }
+
+  // Clicking a tab mutates the observed DOM. Keep the user's selection stable
+  // for the current game state rather than immediately routing away and back.
+  if (manualSelectionAtStep === props.game.scenarioSteps) {
+    automaticSwitchCandidate = null
+    return
+  }
+  manualSelectionAtStep = null
+
+  const { tabs, outsideTab } = actionLocations()
+  const questionPlayers = humanQuestionPlayers()
+  const soleQuestionPlayer = questionPlayers.length === 1 ? questionPlayers[0] : null
+  const skillTestPlayer = skillTestPlayerId()
+  const activeQuestionPlayer = activeInvestigatorPlayerId()
+  const activePlayerCoversOtherQuestions = solo?.value === true
+    && questionPlayers.length > 1
+    && activeQuestionPlayer !== undefined
+    && questionPlayers.includes(activeQuestionPlayer)
+    && questionPlayers.every(pid => pid === activeQuestionPlayer || playerCanAnswerAllQuestionsFrom(activeQuestionPlayer, pid))
+
+  // Keep the active investigator in view when they can answer every question
+  // offered to the other investigators. Switching tabs adds no capability and
+  // needlessly interrupts their turn.
+  if (activePlayerCoversOtherQuestions && activeQuestionPlayer) {
+    if (selectedTab.value !== activeQuestionPlayer || props.playerId !== activeQuestionPlayer) {
+      if (!automaticSwitchIsStable(`covered-question:${activeQuestionPlayer}`)) return
+      pushAutomaticFrame(activeQuestionPlayer, activeQuestionPlayer, 'covered-question')
+    } else {
+      automaticSwitchCandidate = null
+    }
+    return
+  }
+
+  // A sole question owns the tab even if Vue has left stale actionable controls
+  // on another tab. During a skill test, however, another investigator's fast
+  // window does not pull focus away from the test taker unless that
+  // investigator's tab is the sole place with an actionable control.
+  if (solo?.value === true && soleQuestionPlayer && (!skillTestPlayer || soleQuestionPlayer === skillTestPlayer)) {
+    if (selectedTab.value !== soleQuestionPlayer || props.playerId !== soleQuestionPlayer) {
+      if (!automaticSwitchIsStable(`sole-question:${soleQuestionPlayer}`)) return
+      pushAutomaticFrame(soleQuestionPlayer, soleQuestionPlayer, 'sole-question')
+    } else {
+      automaticSwitchCandidate = null
+    }
+    return
+  }
+
+  // A unique tab is the only place where the current perspective can act.
+  // Controls elsewhere in the scenario deliberately suppress the switch.
+  if (!outsideTab && tabs.size === 1) {
+    const [onlyTab] = tabs
+    if (onlyTab !== selectedTab.value) {
+      if (!automaticSwitchIsStable(`tab-action:${onlyTab}:${props.playerId}`)) return
+      pushAutomaticFrame(onlyTab, props.playerId, 'tab-action')
       return
     }
-    if (userPicked.value) return
   }
 
-  selectedTab.value = playerIds.length > 0 && !playerIds.includes(props.playerId)
-    ? playerIds[0]
-    : props.playerId
+  automaticSwitchCandidate = null
+  if (automaticSwitchStackEnabled) unwindSwitchStack(tabs)
+}
+
+onMounted(() => {
+  const scope = playerInfo.value?.closest<HTMLElement>('#scenario') ?? playerInfo.value
+  if (scope) {
+    actionObserver = new MutationObserver(scheduleActionInspection)
+    actionObserver.observe(scope, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['class', 'disabled', 'aria-disabled', 'data-game-actionable'],
+    })
+  }
+  scheduleActionInspection()
 })
+
+onBeforeUnmount(() => {
+  actionObserver?.disconnect()
+  if (inspectionFrame !== null) cancelAnimationFrame(inspectionFrame)
+})
+
+watch(
+  () => [props.playerId, props.game.scenarioSteps, props.game.question, processing.value, uiLock.value] as const,
+  scheduleActionInspection,
+  { deep: true },
+)
 </script>
 
 <template>
-  <div class="player-info">
+  <div ref="playerInfo" class="player-info">
+    <div class="tabs-row">
     <ul class='tabs__header'>
       <li v-for='investigator in investigators'
         :key='investigator.name.title'
@@ -160,12 +389,18 @@ watchEffect(() => {
       >
         <span v-if="isMobile">{{ getInvestigatorName(investigator.name.title).split(' ')[0] }}</span>
         <span v-else>{{ getInvestigatorName(investigator.name.title) }}</span>
+        <span v-if="isAiSeat(investigator)" class="ai-badge" v-tooltip="'AI controlled'">AI</span>
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
           :disabled="investigator.playerId === props.playerId"
           class="switch-investigators"
-          @click="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>
+          @click.stop="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>
+        <span
+          v-else-if="isWaiting(investigator)"
+          class="waiting-indicator"
+          v-tooltip="$t('waitingOn.label')"
+        ><ArrowPathIcon class="waiting-spinner" aria-hidden="true" /></span>
       </li>
       <li v-for='investigator in inactiveInvestigators'
         :key='investigator.name.title'
@@ -174,14 +409,22 @@ watchEffect(() => {
         :class='tabClass(investigator)'
       >
         <span>{{ investigator.name.title }}</span>
+        <span v-if="isAiSeat(investigator)" class="ai-badge" v-tooltip="'AI controlled'">AI</span>
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
           :disabled="investigator.playerId === props.playerId"
           class="switch-investigators"
-          @click="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>
+          @click.stop="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>
+        <span
+          v-else-if="isWaiting(investigator)"
+          class="waiting-indicator"
+          v-tooltip="$t('waitingOn.label')"
+        ><ArrowPathIcon class="waiting-spinner" aria-hidden="true" /></span>
       </li>
     </ul>
+    <slot />
+    </div>
     <Tab
       v-for="investigator in investigators"
       :key="investigator.id"
@@ -224,13 +467,20 @@ watchEffect(() => {
 </template>
 
 <style scoped>
+.tabs-row {
+  display: flex;
+  align-items: flex-end;
+}
+
 ul.tabs__header {
+  flex: 1;
   display: flex;
   list-style: none;
   padding: 0;
   margin: 0;
   user-select: none;
   padding-left: 5px;
+  padding-top: 5px;
   font-size: min(16px, 2vw);
   @media (max-width: 800px) and (orientation: portrait) {
     font-size: min(16px, 3vw);
@@ -239,11 +489,12 @@ ul.tabs__header {
 
 ul.tabs__header > li {
   margin: 0;
-  margin-right: 5px;
+  margin-right: 3px;
   cursor: pointer;
   color: white;
-  filter: contrast(50%);
-  border-radius: 5px 5px 0 0;
+  opacity: 0.5;
+  border-radius: 2px 2px 0 0;
+  position: relative;
   display: inline-flex;
   align-items: center;
   span {
@@ -255,7 +506,7 @@ ul.tabs__header > li {
 
 ul.tabs__header > li.tab--selected {
   font-weight: bold;
-  filter: contrast(100%);
+  opacity: 1;
 }
 
 .tab--Guardian {
@@ -292,9 +543,6 @@ ul.tabs__header > li.tab--selected {
   }
 }
 
-.player-info {
-  margin-top: -32px;
-}
 
 .tab--lead-player {
   &:after {
@@ -319,7 +567,7 @@ ul.tabs__header > li.tab--selected {
   border-left: 1px solid rgba(0, 0, 0, 0.5);
   padding: 4px 8px;
   background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 0 5px 0 0;
+  border-radius: 0 2px 0 0;
   margin: 0;
   cursor: pointer;
 
@@ -333,18 +581,57 @@ ul.tabs__header > li.tab--selected {
   }
 }
 
+.ai-badge {
+  align-self: center;
+  margin-right: 5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.65em;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  color: #d7e8b0;
+  background: rgba(110, 134, 64, 0.45);
+  border: 1px solid rgba(110, 134, 64, 0.7);
+  text-transform: uppercase;
+}
+
 .fa-icon {
   animation: glow 1.5s infinite alternate;
+}
+
+.waiting-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 4px 8px;
+  border-left: 1px solid rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0 2px 0 0;
+  color: var(--select);
+}
+
+.waiting-spinner {
+  width: 0.85em;
+  height: 0.85em;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--select) 60%, transparent));
+  animation: waiting-on-spin 5s linear infinite;
+}
+
+@keyframes waiting-on-spin {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes glow {
   from {
     color: #000; /* Or any other default color */
-    text-shadow: 0 0 0px #ff00ff;
+    text-shadow: 0 0 0px var(--select);
   }
   to {
-    color: #ff00ff; /* Glowing color */
-    text-shadow: 0 0 10px #ff00ff;
+    color: var(--select); /* Glowing color */
+    text-shadow: 0 0 10px var(--select);
   }
 }
 
@@ -361,4 +648,5 @@ ul.tabs__header > li.inactive {
 .glow-effect {
   box-shadow: inset 0 -10px 20px -10px rgba(0, 255, 0, 0.7); /* Inset shadow for glow effect */
 }
+
 </style>

@@ -1,0 +1,140 @@
+module Arkham.Campaign.Campaigns.TheDrownedCity (theDrownedCity) where
+
+import Arkham.Asset.Cards qualified as Assets
+import Arkham.Campaign.Import.Lifted
+import Arkham.Campaigns.TheDrownedCity.CampaignSteps
+import Arkham.Campaigns.TheDrownedCity.Import
+import Arkham.Card.CardDef (CardDef)
+import Arkham.Helpers.FlavorText
+import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
+import Arkham.Message.Lifted.Log
+import Arkham.Trait (Trait (Agency, Criminal, Detective))
+import Data.Text qualified as T
+
+newtype TheDrownedCity = TheDrownedCity CampaignAttrs
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity, HasModifiersFor)
+
+theDrownedCity :: Difficulty -> TheDrownedCity
+theDrownedCity = campaign TheDrownedCity (CampaignId "11") "The Drowned City"
+
+instance IsCampaign TheDrownedCity where
+  campaignTokens = chaosBagContents
+  nextStep a = case (toAttrs a).normalizedStep of
+    PrologueStep -> continue OneLastJob
+    OneLastJob -> continue AnOfferYouCantRefuse
+    AnOfferYouCantRefuse -> continue ExpeditionToRlyeh
+    -- The west/east branch out of Expedition to R'lyeh is pushed explicitly from
+    -- that interlude's handler via setNextCampaignStep.
+    other -> defaultNextStep other
+
+-- Each Task: campaign-log key, the story-asset card, and its i18n label.
+tasks :: [(TheDrownedCityKey, CardDef, Text)]
+tasks =
+  [ (WalkInFaith, Assets.walkInFaith, "walkInFaith")
+  , (ToeTheLine, Assets.toeTheLine, "toeTheLine")
+  , (NoPlaceLikeHome, Assets.noPlaceLikeHome, "noPlaceLikeHome")
+  , (GoodMoney, Assets.goodMoney, "goodMoney")
+  , (DoNoHarm, Assets.doNoHarm, "doNoHarm")
+  , (ProveYourWorth, Assets.proveYourWorth, "proveYourWorth")
+  , (DreamsOfDestruction, Assets.dreamsOfDestruction, "dreamsOfDestruction")
+  , (PlumbTheDepths, Assets.plumbTheDepths, "plumbTheDepths")
+  ]
+
+instance RunMessage TheDrownedCity where
+  runMessage msg c = runQueueT $ campaignI18n $ case msg of
+    CampaignStep PrologueStep -> do
+      -- Intro: the epigraph and the April 15 journal entry that open the campaign.
+      scope "intro" $ flavor $ setTitle "title" >> p "body"
+      -- The Prologue, as its own thing after the intro: the campaign's additional
+      -- rules and new keywords, before the first scenario.
+      scope "additionalRulesAndClarifications" do
+        flavor $ setTitle "title" >> p "floodTokens"
+        flavor $ setTitle "title" >> p "artifacts"
+        flavor $ setTitle "title" >> p "alienGlyphs"
+      scope "newKeywords" $ flavor $ setTitle "title" >> p "body"
+      scope "prologue" $ flavor $ setTitle "title" >> p "body"
+      nextCampaignStep
+      pure c
+    CampaignStep (InterludeStep 1 _) -> scope "anOfferYouCantRefuse" do
+      agencyDetectiveOrCriminal <-
+        selectAny $ mapOneOf InvestigatorWithTrait [Agency, Detective, Criminal]
+      flavor do
+        setTitle "title"
+        p "interlude1"
+        p.validate agencyDetectiveOrCriminal "agencyDetectiveOrCriminal"
+        p "interlude1Continued"
+      eachInvestigator (`forInvestigator` msg)
+      doStep 2 msg
+      pure c
+    ForInvestigator iid (CampaignStep (InterludeStep 1 _)) -> scope "anOfferYouCantRefuse" do
+      takenFlags <- traverse (\(k, _, _) -> getHasRecord k) tasks
+      let isTaken key = or [t | ((k, _, _), t) <- zip tasks takenFlags, k == key]
+      investigatorStoryWithChooseOneM' iid (setTitle "title" >> p "chooseTask") do
+        for_ tasks \(key, cardDef, lbl) ->
+          labeledValidate' (not (isTaken key)) lbl do
+            record key
+            addCampaignCardToDeck iid DoNotShuffleIn cardDef
+            scope "task" $ scope lbl $ flavor $ setTitle "title" >> p "body"
+      pure c
+    DoStep 2 (CampaignStep (InterludeStep 1 _)) -> scope "anOfferYouCantRefuse" do
+      storyWithChooseOneM' (setTitle "title" >> p "interlude2") do
+        labeled' "refuse" do
+          flavor $ setTitle "title" >> p "interlude3"
+          gameOver
+        labeled' "accept" do
+          flavor $ setTitle "title" >> p "interlude4"
+          nextCampaignStep
+      pure c
+    CampaignStep (InterludeStep 2 _) -> scope "expeditionToRlyeh" do
+      storyWithChooseOneM' (setTitle "title" >> p "body") do
+        labeled' "west" do
+          record TheExpeditionHeadedWest
+          flavor do
+            setTitle "title"
+            p "westernExpedition"
+            ul do
+              li "theExpeditionHeadedWest"
+              li "andyVanNortwick"
+              li "westernChaosTokens"
+              li "proceedToTheWesternWall"
+          addCampaignCardToDeckChoice_ Assets.andyVanNortwick
+          setNextCampaignStep TheWesternWall
+        labeled' "east" do
+          record TheExpeditionHeadedEast
+          flavor do
+            setTitle "title"
+            p "easternExpedition"
+            ul do
+              li "theExpeditionHeadedEast"
+              li "rubyStandish"
+              li "proceedToObsidianCanyons"
+          addCampaignCardToDeckChoice_ Assets.rubyStandish
+          -- TODO: swap a chaos token (remove 1 / add 1) for the remainder of the
+          -- campaign, per the Eastern Expedition setup.
+          setNextCampaignStep ObsidianCanyons
+      pure c
+    -- Interlude III: The Awakening — the Sleeper rises; both expeditions reunite.
+    CampaignStep (InterludeStep 3 _) -> scope "theAwakening" do
+      flavor $ setTitle "title" >> p "body"
+      setNextCampaignStep ReturnToArkham
+      pure c
+    -- Interlude IV: Return to Arkham — the voyage home and the dreams that follow.
+    CampaignStep (InterludeStep 4 _) -> scope "returnToArkham" do
+      flavor $ setTitle "title" >> p "body"
+      setNextCampaignStep TheDoomOfArkhamPartI
+      pure c
+    -- Glyph cards push @campaignSpecific "translateGlyph" ("rune_<letter>", "<word>")@
+    -- when translated; record the rune letter into the DiscoveredGlyphs set so the
+    -- Campaign Log glyph page (DiscoveredRunes.vue) lights it up.
+    CampaignSpecific "translateGlyph" v -> do
+      let (glyph, _word) = toResult v :: (Text, Text)
+      for_ (glyphLetter glyph) \letter -> recordSetInsert DiscoveredGlyphs [String letter]
+      pure c
+    _ -> lift $ defaultCampaignRunner msg c
+
+-- | Extract the uppercase rune letter from a @"rune_<letter>"@ glyph id.
+glyphLetter :: Text -> Maybe Text
+glyphLetter g = case T.stripPrefix "rune_" g of
+  Just s | not (T.null s) -> Just (T.toUpper (T.take 1 s))
+  _ -> Nothing

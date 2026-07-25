@@ -3,6 +3,7 @@ module Arkham.Enemy.Cards.ValeriyaAntonovaDontMessWithHer (valeriyaAntonovaDontM
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
 import Arkham.Enemy.Import.Lifted
+import Arkham.Exhaust (mkExhaustion)
 import Arkham.Helpers.Modifiers
 import Arkham.Matcher
 import Arkham.SkillType (allSkills)
@@ -14,7 +15,7 @@ newtype ValeriyaAntonovaDontMessWithHer = ValeriyaAntonovaDontMessWithHer EnemyA
 
 valeriyaAntonovaDontMessWithHer :: EnemyCard ValeriyaAntonovaDontMessWithHer
 valeriyaAntonovaDontMessWithHer =
-  enemy ValeriyaAntonovaDontMessWithHer Cards.valeriyaAntonovaDontMessWithHer (2, Static 3, 3) (0, 1)
+  enemy ValeriyaAntonovaDontMessWithHer Cards.valeriyaAntonovaDontMessWithHer
 
 instance HasModifiersFor ValeriyaAntonovaDontMessWithHer where
   getModifiersFor (ValeriyaAntonovaDontMessWithHer a) = do
@@ -31,13 +32,12 @@ instance HasModifiersFor ValeriyaAntonovaDontMessWithHer where
 
 instance HasAbilities ValeriyaAntonovaDontMessWithHer where
   getAbilities (ValeriyaAntonovaDontMessWithHer a) =
-    [ mkAbility a 1 $ forced $ RoundEnds #when
-    ]
+    extend1 a $ mkAbility a 1 $ forced $ RoundEnds #when
 
 instance RunMessage ValeriyaAntonovaDontMessWithHer where
   runMessage msg e@(ValeriyaAntonovaDontMessWithHer attrs) = runQueueT $ case msg of
     UseThisAbility _iid (isSource attrs -> True) 1 -> do
       assets <- select $ AssetWithTrait Guest <> at_ (locationWithEnemy attrs)
-      pushAll [Exhaust (toTarget aid) | aid <- assets]
+      pushAll [Exhaust (mkExhaustion attrs aid) | aid <- assets]
       pure e
     _ -> ValeriyaAntonovaDontMessWithHer <$> liftRunMessage msg attrs

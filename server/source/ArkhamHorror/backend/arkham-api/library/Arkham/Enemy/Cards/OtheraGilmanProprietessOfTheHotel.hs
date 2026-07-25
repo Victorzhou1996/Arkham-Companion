@@ -4,6 +4,7 @@ import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
 import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue
+import Arkham.Helpers.Modifiers (ModifierType (..), withoutModifier)
 
 newtype OtheraGilmanProprietessOfTheHotel = OtheraGilmanProprietessOfTheHotel EnemyAttrs
   deriving anyclass (IsEnemy, HasModifiersFor)
@@ -14,8 +15,6 @@ otheraGilmanProprietessOfTheHotel =
   enemy
     OtheraGilmanProprietessOfTheHotel
     Cards.otheraGilmanProprietessOfTheHotel
-    (3, Static 5, 3)
-    (0, 2)
 
 instance HasAbilities OtheraGilmanProprietessOfTheHotel where
   getAbilities (OtheraGilmanProprietessOfTheHotel a) =
@@ -31,6 +30,7 @@ instance RunMessage OtheraGilmanProprietessOfTheHotel where
       doStep 2 msg
       pure e
     DoStep 2 (UseThisAbility iid (isSource attrs -> True) 1) -> do
-      when (attrs.token #clue == 0) $ addToVictory iid attrs
+      whenM (withoutModifier attrs (ScenarioModifier "victoryRequiresMysteriousPhoto")) do
+        when (attrs.token #clue == 0) $ addToVictory iid attrs
       pure e
     _ -> OtheraGilmanProprietessOfTheHotel <$> liftRunMessage msg attrs

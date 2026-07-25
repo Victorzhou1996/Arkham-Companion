@@ -104,7 +104,7 @@ stored k = do
 matchingCardsAlreadyInDeck
   :: (HasGame m, Tracing m) => CardMatcher -> m (Map InvestigatorId (Set CardCode))
 matchingCardsAlreadyInDeck matcher = do
-  decks <- campaignField CampaignDecks
+  decks <- withStandalone (field CampaignDecks) (field ScenarioPlayerDecks)
   pure $ Map.map (setFromList . map toCardCode . filter (`cardMatch` matcher) . unDeck) decks
 
 addCampaignCardToDeckChoice
@@ -115,13 +115,24 @@ addCampaignCardToDeckChoice leadPlayer investigators shouldShuffleIn card =
 addCampaignCardToDeckChoiceWith
   :: PlayerId -> [InvestigatorId] -> ShuffleIn -> Card -> (InvestigatorId -> [Message]) -> Message
 addCampaignCardToDeckChoiceWith leadPlayer investigators shouldShuffleIn card f =
+  addCampaignCardToDeckChoiceWhenDeclined leadPlayer investigators shouldShuffleIn card f []
+
+addCampaignCardToDeckChoiceWhenDeclined
+  :: PlayerId
+  -> [InvestigatorId]
+  -> ShuffleIn
+  -> Card
+  -> (InvestigatorId -> [Message])
+  -> [Message]
+  -> Message
+addCampaignCardToDeckChoiceWhenDeclined leadPlayer investigators shouldShuffleIn card f declined =
   questionLabelWithCard ("Add " <> display card.name <> " to a deck") card.cardCode leadPlayer
     $ ChooseOne
     $ [ PortraitLabel investigator $ AddCampaignCardToDeck investigator shouldShuffleIn card
           : f investigator
       | investigator <- investigators
       ]
-    <> [Label ("Do not add " <> display card.name <> " to any deck") []]
+    <> [Label ("Do not add " <> display card.name <> " to any deck") declined]
 
 forceAddCampaignCardToDeckChoice
   :: PlayerId -> [InvestigatorId] -> ShuffleIn -> Card -> Message
@@ -134,15 +145,16 @@ forceAddCampaignCardToDeckChoice leadPlayer investigators shouldShuffleIn card =
       ]
 
 getCurrentDeck
-  :: (HasGame m, Tracing m, ToId investigator InvestigatorId) => investigator -> m (Deck PlayerCard)
+  :: (HasCallStack, HasGame m, Tracing m, ToId investigator InvestigatorId)
+  => investigator -> m (Deck PlayerCard)
 getCurrentDeck (asId -> iid) =
   field InvestigatorDeck iid >>= \case
     Deck [] -> do
-      decks <- campaignField CampaignDecks
+      decks <- withStandalone (field CampaignDecks) (field ScenarioPlayerDecks)
       case Map.lookup iid decks of
         Nothing -> pure $ Deck []
         Just deck -> do
-          allStoryCards <- campaignField CampaignStoryCards
+          allStoryCards <- withStandalone (field CampaignStoryCards) (field ScenarioStoryCards)
           let storyCards = findWithDefault [] iid allStoryCards
           let storyCardCodes = map toCardCode storyCards
           let deck' = filter (\card -> card.cardCode `notElem` storyCardCodes) (unDeck deck)

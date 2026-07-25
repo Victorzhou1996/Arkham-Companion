@@ -16,11 +16,11 @@ correlateAllItsContents = event CorrelateAllItsContents Cards.correlateAllItsCon
 
 instance HasAbilities CorrelateAllItsContents where
   getAbilities (CorrelateAllItsContents a) =
-    [ displayAsAction
+    [ limited (PlayerLimit PerTest 1)
         $ restricted a 1 OwnsThis
         $ ConstantReaction
           "Cancel Token"
-          (RevealChaosToken #after You FirstChaosTokenRevealedThisSkillTest)
+          (RevealChaosToken #cancel You FirstChaosTokenRevealedThisSkillTest)
           Free
     ]
 
@@ -38,7 +38,7 @@ instance RunMessage CorrelateAllItsContents where
       investigate sid iid attrs
       pure e
     PassedThisSkillTestBy iid (isSource attrs -> True) n -> do
-      let controlledBy = AssetControlledBy (affectsOthers $ colocatedWith attrs.owner)
+      let controlledBy = AssetControlledBy (affectsOthersKnown attrs.owner $ colocatedWith attrs.owner)
       chargeAssets <- select $ controlledBy <> AssetWithUseType Charge
       secretAssets <- select $ controlledBy <> AssetWithUseType Secret
       let amount = if n == 1 || n == 3 then 2 else 1

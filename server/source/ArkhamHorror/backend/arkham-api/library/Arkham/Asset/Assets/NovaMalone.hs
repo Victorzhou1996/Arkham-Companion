@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.NovaMalone (novaMalone) where
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Asset.Import.Lifted
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
 import Arkham.Modifier
@@ -22,7 +22,7 @@ instance HasAbilities NovaMalone where
   getAbilities (NovaMalone a) =
     [ fightAbility a 1 (exhaust a) ControlsThis
     , playerLimit PerRound
-        $ reaction a 2 ControlsThis Free (EnemyDefeated #after You ByAny AnyEnemy)
+        $ reaction a 2 ControlsThis Free (IfEnemyDefeated #after You ByAny AnyEnemy)
     ]
 
 instance RunMessage NovaMalone where

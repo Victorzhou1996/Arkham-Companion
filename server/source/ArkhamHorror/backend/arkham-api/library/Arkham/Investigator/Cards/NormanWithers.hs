@@ -13,38 +13,52 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Treachery.Cards qualified as Treacheries
 
-newtype Metadata = Metadata {playedFromTopOfDeck :: Bool}
+data Metadata = Metadata
+  { playedFromTopOfDeck :: Bool
+  , drawingForcedWeakness :: Bool
+  }
   deriving stock (Show, Generic, Eq, Data)
   deriving anyclass (ToJSON, FromJSON)
 
-newtype NormanWithers = NormanWithers (InvestigatorAttrs `With` Metadata)
+defaultMetadata :: Metadata
+defaultMetadata = Metadata {playedFromTopOfDeck = False, drawingForcedWeakness = False}
+
+getMetadata :: InvestigatorAttrs -> Metadata
+getMetadata a = toResultDefault defaultMetadata a.meta
+
+newtype NormanWithers = NormanWithers InvestigatorAttrs
+  deriving anyclass IsInvestigator
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
   deriving stock Data
 
-instance IsInvestigator NormanWithers where
-  investigatorFromAttrs = NormanWithers . (`with` Metadata False)
-
 normanWithers :: InvestigatorCard NormanWithers
 normanWithers =
-  investigator (NormanWithers . (`with` Metadata False)) Cards.normanWithers
+  investigator NormanWithers Cards.normanWithers
     $ Stats {health = 6, sanity = 8, willpower = 4, intellect = 5, combat = 2, agility = 1}
 
 instance HasModifiersFor NormanWithers where
-  getModifiersFor (NormanWithers (a `With` metadata)) = do
+  getModifiersFor (NormanWithers a) = do
+    let metadata = getMetadata a
     canReveal <- withoutModifier a CannotRevealCards
+    let canPlayTop = canReveal && not (playedFromTopOfDeck metadata)
     modifySelfWhen a canReveal
       $ TopCardOfDeckIsRevealed
-      : [CanPlayTopOfDeck AnyCard | not (playedFromTopOfDeck metadata)]
+      : [CanPlayTopOfDeck AnyCard | canPlayTop]
     case unDeck (investigatorDeck a) of
-      x : _ -> modifiedWhen_ a canReveal x [ReduceCostOf (CardWithId x.id) 1]
+      x : _ -> do
+        modifiedWhen_ a canReveal x [ReduceCostOf (CardWithId x.id) 1]
+        modifySelfWhen a canPlayTop [AsIfInHandFor NotForPlay x.id]
       _ -> pure ()
 
 instance HasAbilities NormanWithers where
-  getAbilities (NormanWithers (a `With` _)) =
+  getAbilities (NormanWithers a) =
     [ selfAbility
         a
         1
-        ( youExist (TopCardOfDeckIs (WeaknessCard <> not_ (cardIs Treacheries.theHarbinger)))
+        ( youExist
+            ( TopCardOfDeckIs (WeaknessCard <> not_ (cardIs Treacheries.theHarbinger))
+                <> not_ (InvestigatorWithMetaKey "drawingForcedWeakness")
+            )
             <> CanManipulateDeck
             <> NotSetup
         )
@@ -52,7 +66,7 @@ instance HasAbilities NormanWithers where
     ]
 
 instance HasChaosTokenValue NormanWithers where
-  getChaosTokenValue iid ElderSign (NormanWithers (a `With` _)) | iid == toId a = do
+  getChaosTokenValue iid ElderSign (NormanWithers a) | iid == toId a = do
     let
       x = case unDeck (investigatorDeck a) of
         [] -> 0
@@ -61,18 +75,19 @@ instance HasChaosTokenValue NormanWithers where
   getChaosTokenValue _ token _ = pure $ ChaosTokenValue token mempty
 
 instance RunMessage NormanWithers where
-  runMessage msg nw@(NormanWithers (a `With` metadata)) = case msg of
+  runMessage msg i@(NormanWithers a) = case msg of
     UseThisAbility iid (isSource a -> True) 1 -> do
       push $ drawCards iid (a.ability 1) 1
-      pure nw
+      let metadata = getMetadata a
+      pure $ NormanWithers $ a & setMeta (metadata {drawingForcedWeakness = True})
     When (RevealChaosToken _ iid token) | iid == toId a -> do
       faces <- getModifiedChaosTokenFace token
-      when (ElderSign `elem` faces) $ do
+      when (ElderSign `elem` faces && not (null (unDeck (investigatorDeck a)))) $ do
         hand <- field InvestigatorHand iid
         player <- getPlayer iid
         push
           $ chooseOne player
-          $ Label "Do not swap" []
+          $ Label "$label.doNotSwap" []
           : [ targetLabel
                 (toCardId c)
                 [ drawCards iid (ChaosTokenEffectSource ElderSign) 1
@@ -80,11 +95,19 @@ instance RunMessage NormanWithers where
                 ]
             | c <- onlyPlayerCards hand
             ]
-      pure nw
-    Do BeginRound -> NormanWithers . (`with` Metadata False) <$> runMessage msg a
+      pure i
+    Do BeginRound -> do
+      attrs' <- runMessage msg a
+      pure $ NormanWithers $ attrs' & setMeta defaultMetadata
+    Do (DrawCards iid' _) | iid' == toId a -> do
+      attrs' <- runMessage msg a
+      let metadata = getMetadata attrs'
+      pure $ NormanWithers $ attrs' & setMeta (metadata {drawingForcedWeakness = False})
     PlayCard iid card _ _ _ False | iid == toId a ->
       case unDeck (investigatorDeck a) of
         c : _ | toCardId c == toCardId card -> do
-          NormanWithers . (`with` Metadata True) <$> runMessage msg a
-        _ -> NormanWithers . (`with` metadata) <$> runMessage msg a
-    _ -> NormanWithers . (`with` metadata) <$> runMessage msg a
+          attrs' <- runMessage msg a
+          let metadata = getMetadata attrs'
+          pure $ NormanWithers $ attrs' & setMeta (metadata {playedFromTopOfDeck = True})
+        _ -> NormanWithers <$> runMessage msg a
+    _ -> NormanWithers <$> runMessage msg a

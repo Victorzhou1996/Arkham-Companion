@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.Fanatic (fanatic) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Matcher
 
@@ -12,7 +12,7 @@ newtype Fanatic = Fanatic EnemyAttrs
 
 fanatic :: EnemyCard Fanatic
 fanatic =
-  enemy Fanatic Cards.fanatic (3, Static 2, 3) (1, 0)
+  enemy Fanatic Cards.fanatic
     & setSpawnAt (LocationWithMostClues RevealedLocation)
 
 instance HasAbilities Fanatic where

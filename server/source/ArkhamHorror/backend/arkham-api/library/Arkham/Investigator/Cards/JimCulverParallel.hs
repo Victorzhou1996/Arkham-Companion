@@ -5,7 +5,7 @@ import Arkham.ChaosToken
 import Arkham.Helpers.ChaosToken (getModifiedChaosTokenFace)
 import Arkham.Investigator.Cards qualified as Cards
 import Arkham.Investigator.Import.Lifted
-import Arkham.Investigator.Import.Lifted qualified as Msg (Message (RevealChaosToken))
+import Arkham.Investigator.Import.Lifted qualified as Msg (pattern RevealChaosToken)
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Modifier
@@ -43,9 +43,9 @@ instance RunMessage JimCulverParallel where
       faces <- getModifiedChaosTokenFace token
       when (ElderSign `elem` faces) do
         chooseOneM iid do
-          labeled "Resolve as {elderSign}" nothing
-          labeled "Resolve as {skull}" $ chaosTokenEffect attrs token $ ChaosTokenFaceModifier [Skull]
-          labeled "Resolve as {curse}" $ chaosTokenEffect attrs token $ ChaosTokenFaceModifier [CurseToken]
+          labeledI "resolveAsElderSign" nothing
+          labeledI "resolveAsSkull" $ chaosTokenEffect attrs token $ ChaosTokenFaceModifier [Skull]
+          labeledI "resolveAsCurse" $ chaosTokenEffect attrs token $ ChaosTokenFaceModifier [CurseToken]
       pure i
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       assets <- select $ assetControlledBy iid <> AssetNotAtUsesX <> AssetWithUseType Charge

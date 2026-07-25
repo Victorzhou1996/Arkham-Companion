@@ -34,17 +34,17 @@ instance RunMessage ButterflySwords5 where
           when ((n + 1 == 2) && not attrs.exhausted) do
             msgs <- capture $ withCost iid (exhaust attrs) $ do
               skillTestModifier sid (attrs.ability 1) iid (DamageDealt 1)
-            chooseOne iid [Label "Do not exhaust" [], Label "Exhaust to do +1 damage" msgs]
+            chooseOne iid [Label "$cards.label.butterflySwords5.doNotExhaust" [], Label "$cards.label.butterflySwords5.exhaustForDamage" msgs]
 
           pure $ ButterflySwords5 $ setMeta @Int (n + 1) attrs
     AfterSkillTestEnds (isAbilitySource attrs 1 -> True) _ _ -> do
       iid <- fromJustNote "no investigator" <$> getSkillTestInvestigator
       oncePerAbility attrs 1 do
         sid <- getRandom
-        canFight <- hasFightActions iid (attrs.ability 1) (DuringTurn You) (defaultWindows iid)
+        canFight <- hasFightActions iid (attrs.ability 1) (DuringYourAction You) (defaultWindows iid)
         fight <- capture do
           skillTestModifier sid attrs iid $ AddSkillValue #agility
           chooseFightEnemy sid iid (attrs.ability 1)
-        chooseOrRunOne iid $ Label "Do not fight again" [] : [Label "Fight again" fight | canFight]
+        chooseOrRunOne iid $ Label "$label.doNotFightAgain" [] : [Label "$label.fightAgain" fight | canFight]
       pure a
     _ -> ButterflySwords5 <$> liftRunMessage msg attrs

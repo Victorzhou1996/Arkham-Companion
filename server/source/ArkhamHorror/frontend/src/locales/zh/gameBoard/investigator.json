@@ -1,8 +1,29 @@
 {
+    "discards": "玩家弃牌堆",
     "endTurn": "结束回合",
+    "endTurnShort": "结束",
     "skipTriggers": "跳过触发能力",
+    "skipAllTriggers": "跳过所有调查员的触发能力",
     "devouredCards": "吞噬({count})",
     "underneathCards": "在卡牌下方({count})",
-    "discards": "玩家弃牌堆"
-
+    "abilityTriggerMode": {
+        "AbilityOwnerOnly": {
+            "short": "己",
+            "description": "能力{index}：仅在自己的回合或技能检定中询问"
+        },
+        "AbilityAlwaysAsk": {
+            "short": "常",
+            "description": "能力{index}：始终询问"
+        },
+        "AbilityAutoSkip": {
+            "short": "停",
+            "description": "能力{index}：始终自动跳过"
+        }
+    },
+    "responseStatus": {
+        "label": "调查员响应状态",
+        "active": "当前回合",
+        "waiting": "等待响应",
+        "idle": "无待处理响应"
+    }
 }

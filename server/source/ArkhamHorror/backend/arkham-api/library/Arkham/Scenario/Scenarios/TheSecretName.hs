@@ -16,7 +16,7 @@ import Arkham.Helpers.Query
 import Arkham.Helpers.Scenario hiding (getIsReturnTo)
 import Arkham.Helpers.Xp
 import Arkham.Location.Cards qualified as Locations
-import Arkham.Matcher hiding (EnemyDefeated, RevealLocation)
+import Arkham.Matcher hiding (RevealLocation)
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
 import Arkham.Placement
@@ -205,7 +205,7 @@ instance RunMessage TheSecretName where
               (toSource attrs)
               Nothing
         Tablet -> do
-          selectForMaybeM (enemyIs Enemies.nahab) \nahab -> do
+          selectForMaybeM (InPlayEnemy $ enemyIs Enemies.nahab) \nahab -> do
             if isEasyStandard attrs
               then do
                 atYourLocation <- nahab <=~> EnemyAt (locationWithInvestigator iid)
@@ -214,7 +214,7 @@ instance RunMessage TheSecretName where
         ElderThing | isEasyStandard attrs -> push HuntersMove
         _ -> pure ()
       pure s
-    EnemyDefeated _ cardId _ _ -> do
+    Defeated (EnemyTarget _) cardId _ _ -> do
       card <- fetchCard cardId
       let isBrownJenkin = cardMatch card $ cardIs Enemies.brownJenkin
       let isNahab = cardMatch card $ cardIs Enemies.nahab

@@ -1,24 +1,79 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
-import type { User } from '@/types';
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { storeToRefs } from 'pinia'
+import type { User } from '@/types'
 import { useDbCardStore } from '@/stores/dbCards'
+import { useSettings } from '@/stores/settings'
 import { checkImageExists } from '@/arkham/helpers'
+import { isDevBuild } from '@/arkham/displayRules'
+import { loadLocaleMessages, normalizeLocale } from '@/locales/messages'
+import {
+  applyCardHoverZoom,
+  CARD_HOVER_ZOOM_DEFAULT,
+  CARD_HOVER_ZOOM_KEY,
+  CARD_HOVER_ZOOM_OPTIONS,
+  CDN_BADGE_KEY,
+} from '@/cardImagePreferences'
 
 const props = defineProps<{
   user: User
-  updateBeta: (setting: boolean) => void
+  updateReleaseChannels: (beta: boolean, dev: boolean) => void
   deleteAccount: () => void
 }>()
 
 const store = useDbCardStore()
-const beta = ref(props.user.beta ? "On" : "Off")
+const settings = useSettings()
+const { epicMultiplayerStored, aiInvestigatorsStored } = storeToRefs(settings)
+const dev = isDevBuild()
+const { availableLocales, locale, setLocaleMessage } = useI18n({ useScope: 'global' })
+const language = ref(localStorage.getItem('language') || locale.value)
+const beta = ref(props.user.beta ? 'On' : 'Off')
+const devContent = ref(props.user.dev ? 'On' : 'Off')
 const showDeleteConfirm = ref(false)
+const cardHoverZoom = ref(
+  Number(localStorage.getItem(CARD_HOVER_ZOOM_KEY) ?? CARD_HOVER_ZOOM_DEFAULT),
+)
+const showCdnBadge = ref(localStorage.getItem(CDN_BADGE_KEY) === '1')
 
-const betaUpdate = async () => props.updateBeta(beta.value == "On")
+const releaseChannelsUpdate = async () =>
+  props.updateReleaseChannels(beta.value === 'On', devContent.value === 'On')
+
+const updateCardHoverZoom = () => {
+  localStorage.setItem(CARD_HOVER_ZOOM_KEY, String(cardHoverZoom.value))
+  applyCardHoverZoom(cardHoverZoom.value)
+}
+
+const updateCdnBadge = () => {
+  localStorage.setItem(CDN_BADGE_KEY, showCdnBadge.value ? '1' : '0')
+  window.dispatchEvent(new Event('cdn-badge-toggle'))
+}
+
+// Dev-only Epic Multiplayer flag, bound to the persisted store value via On/Off.
+const epicMultiplayer = computed({
+  get: () => (epicMultiplayerStored.value ? 'On' : 'Off'),
+  set: (value: string) => settings.setEpicMultiplayerEnabled(value === 'On'),
+})
+
+// Dev-only AI Investigators flag (WIP), bound to the persisted store value.
+const aiInvestigators = computed({
+  get: () => (aiInvestigatorsStored.value ? 'On' : 'Off'),
+  set: (value: string) => settings.setAiInvestigatorsEnabled(value === 'On'),
+})
 
 const updateLanguage = async (a: Event) => {
-  const target = a.target as HTMLInputElement;
-  localStorage.setItem('language', target.value)
+  const target = a.target as HTMLSelectElement
+  const selectedLanguage = target.value
+  const uiLocale = normalizeLocale(selectedLanguage)
+
+  if (!availableLocales.includes(uiLocale)) {
+    const messages = await loadLocaleMessages(uiLocale)
+    setLocaleMessage(messages.locale, messages.messages)
+  }
+
+  language.value = selectedLanguage
+  locale.value = selectedLanguage
+  localStorage.setItem('language', selectedLanguage)
   await store.initDbCards()
   await checkImageExists()
 }
@@ -27,12 +82,12 @@ const updateLanguage = async (a: Event) => {
 <template>
   <div class="page-container">
     <div class="page-content column">
-      <h2 class="title">{{$t('settings')}}</h2>
+      <h2 class="title">{{ $t('settings') }}</h2>
 
       <section class="box column">
-        <h3>{{$t('language')}}</h3>
-        <p>This will change the language of the cards and app, but will default to English if a card or text is not available in the selected language.</p>
-        <select v-model="$i18n.locale" @change="updateLanguage">
+        <h3>{{ $t('language') }}</h3>
+        <p>{{ $t('settingsForm.languageHelp') }}</p>
+        <select :value="language" @change="updateLanguage">
           <option value="de">Deutsch/German</option>
           <option value="en">English</option>
           <option value="es">Español/Spanish</option>
@@ -48,31 +103,134 @@ const updateLanguage = async (a: Event) => {
       </section>
 
       <section class="box column">
-        <h3>Enroll in beta</h3>
-        <p>Beta features are likely very broken and games may be unrecoverable, please only enable this if you are willing to provide feedback.</p>
+        <h3>{{ $t('settingsForm.cardHoverZoom') }}</h3>
+        <p>{{ $t('settingsForm.cardHoverZoomHelp') }}</p>
+        <div class="row settings-options">
+          <label v-for="zoom in CARD_HOVER_ZOOM_OPTIONS" :key="zoom" class="radio-label">
+            <input
+              type="radio"
+              name="cardHoverZoom"
+              :value="zoom"
+              v-model="cardHoverZoom"
+              @change="updateCardHoverZoom"
+            />
+            {{ zoom === 0 ? $t('Off') : `+${zoom}%` }}
+          </label>
+        </div>
+      </section>
+
+      <section class="box column">
+        <h3>{{ $t('settingsForm.cdnBadge') }}</h3>
+        <p>{{ $t('settingsForm.cdnBadgeHelp') }}</p>
+        <label class="radio-label">
+          <input type="checkbox" v-model="showCdnBadge" @change="updateCdnBadge" />
+          {{ $t('settingsForm.showCdnBadge') }}
+        </label>
+      </section>
+
+      <section class="box column">
+        <h3>{{ $t('settingsForm.enrollInBeta') }}</h3>
+        <p>{{ $t('settingsForm.betaWarning') }}</p>
         <div class="row">
           <label class="radio-label">
-            <input type="radio" name="beta" value="On" v-model="beta" @change="betaUpdate" />
-            On
+            <input
+              type="radio"
+              name="beta"
+              value="On"
+              v-model="beta"
+              @change="releaseChannelsUpdate"
+            />
+            {{ $t('On') }}
           </label>
           <label class="radio-label">
-            <input type="radio" name="beta" value="Off" v-model="beta" @change="betaUpdate" />
-            Off
+            <input
+              type="radio"
+              name="beta"
+              value="Off"
+              v-model="beta"
+              @change="releaseChannelsUpdate"
+            />
+            {{ $t('Off') }}
+          </label>
+        </div>
+      </section>
+
+      <section class="box column">
+        <h3>{{ $t('settingsForm.enrollInDev') }}</h3>
+        <p>{{ $t('settingsForm.devWarning') }}</p>
+        <div class="row">
+          <label class="radio-label">
+            <input
+              type="radio"
+              name="devContent"
+              value="On"
+              v-model="devContent"
+              @change="releaseChannelsUpdate"
+            />
+            {{ $t('On') }}
+          </label>
+          <label class="radio-label">
+            <input
+              type="radio"
+              name="devContent"
+              value="Off"
+              v-model="devContent"
+              @change="releaseChannelsUpdate"
+            />
+            {{ $t('Off') }}
           </label>
         </div>
       </section>
 
       <section class="box column danger-zone">
-        <h3 class="danger-title">Danger Zone</h3>
-        <p>Permanently delete your account and all associated data, including games and decks. <strong>This cannot be undone.</strong></p>
+        <h3 class="danger-title">{{ $t('settingsForm.dangerZone') }}</h3>
+        <p>
+          {{ $t('settingsForm.dangerZoneDescription') }}
+          <strong>{{ $t('settingsForm.cannotBeUndone') }}</strong>
+        </p>
+
+        <div v-if="dev" class="dev-flag">
+          <h4>{{ $t('settingsForm.epicMultiplayer') }}</h4>
+          <p class="warning">{{ $t('settingsForm.epicMultiplayerWarning') }}</p>
+          <div class="row">
+            <label class="radio-label">
+              <input type="radio" name="epicMultiplayer" value="On" v-model="epicMultiplayer" />
+              {{ $t('On') }}
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="epicMultiplayer" value="Off" v-model="epicMultiplayer" />
+              {{ $t('Off') }}
+            </label>
+          </div>
+        </div>
+
+        <div v-if="dev" class="dev-flag">
+          <h4>{{ $t('settingsForm.aiInvestigators') }}</h4>
+          <p class="warning">{{ $t('settingsForm.aiInvestigatorsWarning') }}</p>
+          <div class="row">
+            <label class="radio-label">
+              <input type="radio" name="aiInvestigators" value="On" v-model="aiInvestigators" />
+              {{ $t('On') }}
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="aiInvestigators" value="Off" v-model="aiInvestigators" />
+              {{ $t('Off') }}
+            </label>
+          </div>
+        </div>
+
         <div v-if="!showDeleteConfirm">
-          <button class="btn-danger" @click="showDeleteConfirm = true">Delete Account</button>
+          <button class="btn-danger" @click="showDeleteConfirm = true">
+            {{ $t('settingsForm.deleteAccount') }}
+          </button>
         </div>
         <div v-else class="column">
-          <p class="warning">Are you sure? All your games, decks, and account data will be permanently lost and cannot be recovered.</p>
+          <p class="warning">{{ $t('settingsForm.deleteConfirm') }}</p>
           <div class="row">
-            <button class="btn-danger" @click="props.deleteAccount()">Yes, permanently delete my account</button>
-            <button @click="showDeleteConfirm = false">Cancel</button>
+            <button class="btn-danger" @click="props.deleteAccount()">
+              {{ $t('settingsForm.confirmPermanentDelete') }}
+            </button>
+            <button @click="showDeleteConfirm = false">{{ $t('cancel') }}</button>
           </div>
         </div>
       </section>
@@ -105,9 +263,18 @@ select {
   width: fit-content;
 }
 
-input[type="radio"] {
+input[type='radio'] {
   display: unset;
   accent-color: var(--spooky-green);
+}
+
+input[type='checkbox'] {
+  accent-color: var(--spooky-green);
+}
+
+.settings-options {
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .radio-label {
@@ -144,5 +311,19 @@ input[type="radio"] {
 .warning {
   color: var(--delete);
   font-weight: bold;
+}
+
+.dev-flag {
+  margin: 8px 0 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--box-border);
+}
+
+.dev-flag h4 {
+  margin: 0 0 4px;
+  color: var(--title);
+  font-family: teutonic, sans-serif;
+  font-size: 1.2em;
+  text-transform: uppercase;
 }
 </style>

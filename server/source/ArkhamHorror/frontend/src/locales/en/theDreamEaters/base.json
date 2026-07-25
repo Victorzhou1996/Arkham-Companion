@@ -1,4 +1,18 @@
 {
+  "specialRules": [
+    {
+      "title": "Alert",
+      "body": "<p class='basic'>Each time an investigator fails a skill test while attempting to evade an enemy with the alert keyword, after applying all results for that skill test, that enemy performs an attack against the evading investigator. An enemy does not exhaust after performing an alert attack. This attack occurs whether the enemy is engaged with the evading investigator or not.</p>"
+    },
+    {
+      "title": "Swarming X",
+      "body": "<p class='basic'>An enemy with the swarming X keyword is actually a pack of enemies operating in unison. After you put an enemy with the swarming X keyword into play, place the top X cards of your deck facedown underneath the enemy as swarm cards, without looking at them. The enemy they are underneath is called the “host enemy.” Some scenario card effects may also instruct a player to add swarm cards to an enemy. This is done using the same process.</p><ul><li>If it is ever unclear which investigator should add swarm cards, the lead investigator does so.</li><li>Each swarm card underneath the host enemy acts as a separate instance of that enemy for most purposes. Each swarm card has the same values and text as its host card. (For example, if an investigator is engaged with a host enemy with 2 swarm cards underneath it, that investigator is engaged with 3 enemies in total.)</li><li>Each swarm card attacks separately when enemies attack during the enemy phase. Once the host enemy and all of its swarm cards have attacked during this step, exhaust all of them.</li><li>Each swarm card can be attacked or dealt damage separately, but the host enemy cannot be defeated while it still has swarm cards underneath it. When a swarm card is defeated, any excess damage may be dealt to another swarm card underneath the same host enemy or to the host enemy itself. (For example, Tony Morgan uses a .41 Derringer to attack a Stealthy Zoog with 2 swarm cards. The attack deals 2 damage. The first point of damage defeats 1 of the 2 swarm cards, so the excess point of damage may be dealt to another swarm card, defeating it as well.)</li><li>Anytime a swarm card leaves play, place it on the bottom of its owner’s deck. If you are unsure of the owner of the swarm card, you may look at it to determine its owner.</li><li>The host enemy and all of its swarm cards move, engage, and exhaust as a single entity. (For example, if a host enemy or any of its swarm cards are evaded, all of them exhaust and become disengaged.)</li></ul>"
+    },
+    {
+      "title": "Hidden",
+      "body": "<p class='basic'>An encounter card or weakness with the hidden keyword has a revelation ability that secretly adds that card to your hand. This should be done without revealing that card or its text to the other investigators.</p><ul><li>While a hidden treachery is in your hand, treat it as if it were in your threat area. Its constant abilities are active, and abilities on it can be triggered, but only by you.</li><li>While a hidden enemy is in your hand, it is not considered to be engaged with you or in your threat area, and it does not attack unless otherwise specified. However, its constant abilities are active, and abilities on it can be triggered, but only by you.</li><li>A hidden card counts toward your hand size, but it cannot be discarded from your hand by any means except those described on the card. When discarded, a hidden card is placed in its appropriate discard pile.</li></ul><p class='basic'>For the best experience, players are encouraged to stay “in character” and not share information about hidden cards in their hand.</p>"
+    }
+  ],
   "key": {
     "theDreamersStrayedFromThePath": "The Dreamers strayed from the path",
     "theInvestigatorsWereSavedByRandolphCarder": "The investigators were saved by Randolph Carter",
@@ -7,7 +21,7 @@
     "drMaheswaranJoinedTheInvestigation": "Dr. Maheswaran joined the investigation",
     "drMaheswaranStayedWithHerPatients": "Dr. Maheswaran stayed with her patients",
     "stepsOfTheBridge": "Steps of the Bridge",
-    "drMaheswaran'sFateIsUnknown": "Dr. Maheswaran's fate is unknown",
+    "drMaheswaransFateIsUnknown": "Dr. Maheswaran's fate is unknown",
     "randolphEscapedTheHospitalOnHisOwn": "Randolph escaped the hospital on his own",
     "randolphEscapedTheHospitalWithTheInvestigators": "Randolph escaped the hospital with the investigators",
     "drMaheswaranIsAlive": "Dr. Maheswaran is alive",
@@ -43,7 +57,7 @@
     "theBlackCatSpokeOfNyarlathotep": "The Black Cat spoke of Nyarlathotep",
     "theBlackCatSpokeOfAtlachNacha": "The Black Cat spoke of Atlach-Nacha",
     "theBlackCatKnowsTheTruth": "The Black Cat knows the truth",
-    "nyarlathotep'sInvasionHasBegun": "Nyarlathotep's invasion has begun",
+    "nyarlathotepsInvasionHasBegun": "Nyarlathotep's invasion has begun",
     "theDreamersEscapedFromNyarlathotepsGrasp": "The Dreamers escaped from Nyarlathotep's grasp",
     "theDreamersBanishedNyarlathotep": "The Dreamers banished Nyarlathotep",
     "theDreamersAwoke": "The Dreamers awoke",
@@ -72,5 +86,32 @@
   "epilogue14": "<p>_Epilogue 14_: “What are you doing down here? No, your companions have already fled back to your world. It was a nice thought, but you’re on your own now. Yes, there are ways out of the underworld, but they’re not exactly easy to find. There are gugs, and ghasts, and ghouls, and…well, you’ll see. Honestly, why would you come down here? I guess I hope you make it back out some day. As for me? I have my own home to return to. Don’t worry. I’m sure you haven’t seen the last of me.”</p><ul><li>The two groups survived, but are forever separated.</li><li>The investigators win the campaign!</li></ul>",
   "epilogue15": "<p>_Epilogue 15_: The black cat watches your escape with bated breath. “Wow. I honestly did not see that one coming. They risked their lives for you, and now you risk yours for them. How interesting. Perhaps there is hope for your kind yet.” After a few moments, it grows bored. “Okay, enough of this. I have places to be. I see that you will be all right without me. Take care of both worlds for me, would you?”</p><ul><li>The two groups were reunited in the Dreamlands.</li><li>The investigators win the campaign!</li></ul>",
   "epilogue16": "<p>_Epilogue 16_: “Oh, what a tragedy of errors this has become. You just passed each other! Oh well. You’re on your own now. Yes, there are ways out of the underworld, but they’re not exactly easy to find. There’s gugs, and ghasts, and ghouls, and…well, you’ll see. Honestly, why would you come down here? I guess I hope you make it back out some day. As for me? I have my own home to return to. Don’t worry. I’m sure you haven’t seen the last of me.”</p><ul><li>The two groups survived, but are forever separated.</li><li>The investigators win the campaign!</li></ul>",
-  "brokeTheLawOfUlthar": "<div class='green'><p>_*If (your investigator name) has broken the law of Ulthar* and you are not killed or driven insane:_</p><p>You awaken one night to the sound of hissing all around you. Hundreds of piercing cat eyes glare at you in the dark. One of the creatures leaps onto your chest, its claws digging painfully into your skin. “Did you think we would not find you?” Its eyes flash. It bares its teeth, and the rest of the cats close in.</p><p class='basic right'>How dare you! You are _killed_.</p></div>"
+  "brokeTheLawOfUlthar": "<div class='green'><p>_*If (your investigator name) has broken the law of Ulthar* and you are not killed or driven insane:_</p><p>You awaken one night to the sound of hissing all around you. Hundreds of piercing cat eyes glare at you in the dark. One of the creatures leaps onto your chest, its claws digging painfully into your skin. “Did you think we would not find you?” Its eyes flash. It bares its teeth, and the rest of the cats close in.</p><p class='basic right'>How dare you! You are _killed_.</p></div>",
+  "label": {
+    "beyondTheGatesOfSleep": "Beyond the Gates of Sleep",
+    "wakingNightmare": "Waking Nightmare",
+    "darkSideOfTheMoon": "Dark Side of the Moon",
+    "pointOfNoReturn": "Point of No Return",
+    "whereTheGodsDwell": "Where the Gods Dwell",
+    "weaverOfTheCosmos": "Weaver of the Cosmos",
+    "theSearchForKadath": "The Search for Kadath",
+    "aThousandShapesOfHorror": "A Thousand Shapes of Horror",
+    "theBlackCat2NewsOfYourPlight": "Tell your companions of your quest, your plight, and your peril. The black cat will return to you once this message is delivered. This may put an undue burden on your companions.",
+    "theBlackCat2KnowledgeOfDreamlands": "Tell your companions about your new friends and about the Dreamlands.",
+    "theBlackCat2WarnTheOthers": "Tell your companions that they are in danger, and that you are safe. The black cat will stay with them once this message is delivered. This might make your quest a little more difficult.",
+    "theBlackCat2DontTrust": "You don't trust this creature one bit. You threaten the black cat, warning it not to approach your friends under any circumstance. The black cat yawns and vanishes out the door.",
+    "blackCatWandersOff": "The black cat wanders off before you can reply, its pitch-black fur melding into the darkness of the Underworld.",
+    "youDidNotAskForItRequestAid": "Tell your companions that you are in trouble. The black cat will return to you with aid once this message is delivered. This may put an undue burden on your companions.",
+    "youDidNotAskForItKnowledgeOfUnderworld": "Tell your companions about the Underworld. The black cat will then go elsewhere.",
+    "youDidNotAskForItWarnTheOthers": "Tell your companions that you are safe. The black cat will stay with them once this message is delivered. This might make your quest a little more difficult.",
+    "blackCatBoundsOff": "The black cat bounds off into the void of space before you get the chance to ask it anything else.",
+    "theGreatOnes1SpokeOfNyarlathotep": "Tell your companions about the threats that you face. The black cat will return to you with aid once this message is delivered. This may put an undue burden on your companions.",
+    "theGreatOnes1SpokeOfAtlachNacha": "Tell your companions that you will be okay. The black cat will stay with them once this message is delivered. This might make your quest a little more difficult."
+  },
+  "question": {
+    "whichScenarioToStart": "Which scenario would you like to start with",
+    "chooseDeckForPartA": "Choose Deck For Part A",
+    "chooseDeckForPartB": "Choose Deck For Part B",
+    "proceedToWhichScenario": "Proceed to which scenario"
+  }
 }

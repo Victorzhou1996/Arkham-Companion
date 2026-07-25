@@ -170,7 +170,9 @@ instance RunMessage TheEssexCountyExpress where
       pure s
     FailedSkillTest iid _ _ (ChaosTokenTarget token) _ n -> do
       case chaosTokenFace token of
-        Cultist -> pushAll [SetActions iid (toSource attrs) 0, ChooseEndTurn iid]
+        Cultist -> 
+          whenM (matches iid TurnInvestigator) do
+            pushAll [SetActions iid (toSource attrs) 0, ChooseEndTurn iid]
         ElderThing | isEasyStandard attrs -> do
           chooseAndDiscardCard iid (ChaosTokenEffectSource ElderThing)
         ElderThing | isHardExpert attrs -> do
@@ -203,7 +205,7 @@ instance RunMessage TheEssexCountyExpress where
         push
           $ ReportXp
           $ XpBreakdown
-            [InvestigatorGainXp iid (XpDetail XpBonus (popScope $ ikey "xp.bonus") 1) | iid <- defeated]
+            [InvestigatorGainXp iid (XpDetail XpBonus (popScope $ ikey' "xp.bonus") 1) | iid <- defeated]
       case r of
         NoResolution -> doStep 1 R2
         _ -> doStep 1 msg

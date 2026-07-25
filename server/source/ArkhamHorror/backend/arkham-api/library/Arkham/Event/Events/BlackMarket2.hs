@@ -10,6 +10,7 @@ import {-# SOURCE #-} Arkham.GameEnv (getCard)
 import Arkham.Helpers (unDeck)
 import Arkham.Helpers.Modifiers (ModifierType (..), modifiedWhen_, modified_)
 import Arkham.Helpers.Query (allInvestigators, getLead)
+import Arkham.I18n
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
 import Arkham.Projection
@@ -27,7 +28,7 @@ instance RunMessage BlackMarket2 where
       doStep 5 msg
       pure . BlackMarket2 $ attrs & setMeta @[CardId] []
     DoStep n msg'@(PlayThisEvent iid eid) | eid == attrs.id && n > 0 -> do
-      investigators <- select $ affectsOthers can.manipulate.deck
+      investigators <- select $ affectsOthersKnown iid can.manipulate.deck
       if null investigators
         then doStep 0 msg'
         else do
@@ -82,7 +83,7 @@ instance RunMessage BlackMarket2Effect where
               lead <- getLead
               focusCard card do
                 chooseOrRunOneM lead do
-                  questionLabeled "A set aside card was missing its owner. Please select the correct owner"
+                  cardI18n $ scope "blackMarket" $ questionLabeled' "missingOwner"
                   targets investigators \iid -> do
                     push $ ForTarget (toTarget attrs) (ForInvestigator iid (ForTarget (toTarget cardId) (Begin phase)))
             Just owner -> do

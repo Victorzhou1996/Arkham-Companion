@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.MemoryOfATerribleDiscovery (memoryOfATerribleDiscovery
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyAttacks, EnemyDefeated)
+import Arkham.Enemy.Import.Lifted hiding (EnemyAttacks)
 import Arkham.Helpers.Story
 import Arkham.Matcher
 import Arkham.Story.Cards qualified as Stories
@@ -14,7 +14,7 @@ newtype MemoryOfATerribleDiscovery = MemoryOfATerribleDiscovery EnemyAttrs
 
 memoryOfATerribleDiscovery :: EnemyCard MemoryOfATerribleDiscovery
 memoryOfATerribleDiscovery =
-  enemyWith MemoryOfATerribleDiscovery Cards.memoryOfATerribleDiscovery (3, PerPlayer 4, 3) (1, 1)
+  enemyWith MemoryOfATerribleDiscovery Cards.memoryOfATerribleDiscovery
     $ preyL
     .~ Prey (ControlsAsset $ assetIs Assets.averyClaypoolAntarcticGuide)
 

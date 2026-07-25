@@ -5,8 +5,8 @@ import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.Helpers.Investigator (canHaveDamageHealed, canHaveHorrorHealed)
 import Arkham.Helpers.Window (cardDrawn)
+import Arkham.I18n
 import Arkham.Matcher
-import Arkham.Message (MessageType (..))
 import Arkham.Token
 
 newtype PurifyingCorruption4 = PurifyingCorruption4 AssetAttrs
@@ -37,10 +37,8 @@ instance HasAbilities PurifyingCorruption4 where
 instance RunMessage PurifyingCorruption4 where
   runMessage msg a@(PurifyingCorruption4 attrs) = runQueueT $ case msg of
     UseCardAbility _iid (isSource attrs -> True) 1 (cardDrawn -> card) _ -> do
-      pushAll
-        [ CancelEachNext (Just card.id) (toSource attrs) [RevelationMessage, DrawEnemyMessage]
-        , PlaceTokens (attrs.ability 1) (toTarget attrs) Corruption 1
-        ]
+      cancelRevelation attrs card
+      push $ PlaceTokens (attrs.ability 1) (toTarget attrs) Corruption 1
       pure a
     PlaceTokens _ (isTarget attrs -> True) Corruption n -> do
       when (attrs.token Corruption + n >= 3) $ do
@@ -50,13 +48,13 @@ instance RunMessage PurifyingCorruption4 where
       canHealDamage <- canHaveDamageHealed (attrs.ability 2) iid
       canHealHorror <- canHaveHorrorHealed (attrs.ability 2) iid
       chooseOrRunOne iid
-        $ [ Label "Heal 1 damage and 1 horror"
+        $ [ Label (withI18n $ numberVar "damage" 1 $ numberVar "horror" 1 $ ikey' "label.healDamageAndHorror")
               $ [HealDamage (toTarget iid) (attrs.ability 2) 1 | canHealDamage]
               <> [HealHorror (toTarget iid) (attrs.ability 2) 1 | canHealHorror]
           | canHealDamage || canHealHorror
           ]
         <> [ Label
-               "Remove 1 corruption from this card"
+               "$cards.label.purifyingCorruption4.removeCorruption"
                [RemoveTokens (attrs.ability 2) (toTarget attrs) Corruption 1]
            | attrs.token Corruption > 0
            ]

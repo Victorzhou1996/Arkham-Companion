@@ -58,11 +58,8 @@ library:
     - aeson
     - aeson-casing
     - aeson-diff
-    - amazonka
-    - amazonka-s3
     - annotated-exception
     - async
-    - base16-bytestring
     - bugsnag
     - bugsnag-hs
     - bugsnag-yesod
@@ -73,7 +70,6 @@ library:
     - conduit
     - constraints-extras
     - containers
-    - cryptohash-sha256
     - crypton-x509-store
     - data-default-class
     - dependent-map
@@ -138,6 +134,7 @@ library:
     - yaml
     - yesod-core
     - yesod-persistent
+    - zlib
     - yesod-test
     - yesod-websockets
 
@@ -153,6 +150,24 @@ executables:
       - foreign-store
       - warp
       - arkham-api
+    when:
+      - condition: flag(library-only)
+        buildable: false
+
+  arkham-replay:
+    main: Main.hs
+    source-dirs: app-replay
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+      - aeson
+      - arkham-api
+      - bytestring
+      - hs-opentelemetry-sdk
+      - MonadRandom
+      - text
     when:
       - condition: flag(library-only)
         buildable: false
@@ -174,6 +189,8 @@ tests:
     ghc-options: -threaded -rtsopts -O0 "-with-rtsopts=-N"
     dependencies:
       - arkham-api
+      - aeson
+      - aeson-diff
       - async
       - exceptions
       - hspec

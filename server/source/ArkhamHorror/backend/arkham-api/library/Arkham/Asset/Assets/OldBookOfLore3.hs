@@ -9,6 +9,7 @@ import Arkham.Deck qualified as Deck
 import Arkham.Helpers.Cost (getSpendableResources)
 import Arkham.Helpers.Modifiers (getAdditionalSearchTargets)
 import Arkham.Helpers.Playable (getIsPlayableWithResources)
+import Arkham.I18n
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
@@ -33,7 +34,7 @@ instance HasAbilities OldBookOfLore3 where
 instance RunMessage OldBookOfLore3 where
   runMessage msg a@(OldBookOfLore3 attrs) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
-      investigators <- select $ affectsOthers $ colocatedWith iid
+      investigators <- select $ affectsOthersKnown iid $ colocatedWith iid
       chooseOrRunOneM iid do
         targets investigators \iid' -> do
           search iid' (attrs.ability 1) iid' [fromTopOfDeck 3] #any (defer attrs IsDraw)
@@ -66,7 +67,7 @@ instance RunMessage OldBookOfLore3 where
             pure $ guard playable $> card
           when (notNull choices) do
             chooseOneM iid do
-              labeled "Do not spend any secrets to play any cards" nothing
+              cardI18n $ scope "oldBookOfLore3" $ labeled' "doNotSpendSecrets" nothing
               targets choices \card -> do
                 push $ SpendUses source (toTarget attrs) Secret 1
                 reduceCostOf attrs card 2

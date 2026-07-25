@@ -10,9 +10,14 @@
 
     "gameOver": "Game over",
     "watchReplay": "Watch Replay",
+    "exportAndArchive": "Export and archive",
+    "archivingGame": "Exporting and archiving…",
+    "gameArchived": "This game is archived. Only the ending remains; undo and replay are unavailable.",
+    "archiveConfirm": "The full save will be downloaded, then its server-side steps will be permanently deleted. This cannot be undone. Continue?",
+    "archiveFailed": "Archiving failed. No server-side steps were deleted.",
 
     "submit": "Submit",
-    "sancel": "Cancel",
+    "cancel": "Cancel",
     "close": "Close",
 
     "outOfSyncHint": "Your game is out of sync, trying to reconnect...",

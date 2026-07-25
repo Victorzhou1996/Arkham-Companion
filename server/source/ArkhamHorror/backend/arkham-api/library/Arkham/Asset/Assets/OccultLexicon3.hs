@@ -6,6 +6,7 @@ import Arkham.Asset.Import.Lifted
 import Arkham.Event.Cards qualified as Events
 import Arkham.Helpers.Investigator (searchBonded)
 import Arkham.Helpers.Window (cardPlayed)
+import Arkham.I18n
 import Arkham.Matcher
 import Arkham.Matcher qualified as Matcher
 import Arkham.Message.Lifted.Choose
@@ -21,10 +22,10 @@ occultLexicon3 = asset OccultLexicon3 Cards.occultLexicon3
 
 instance HasAbilities OccultLexicon3 where
   getAbilities (OccultLexicon3 a) =
-    [ restrictedAbility a 1 ControlsThis
+    [ controlled_ a 1 $ forced $ AssetEntersPlay #after (be a)
+    , controlled_ a 2
         $ freeReaction
         $ Matcher.PlayCard #when You (basic $ cardIs Events.bloodRite)
-    , controlled_ a 1 $ forced $ AssetEntersPlay #after (be a)
     ]
 
 instance RunMessage OccultLexicon3 where
@@ -35,11 +36,11 @@ instance RunMessage OccultLexicon3 where
         addToHand iid (only handBloodRite)
         shuffleCardsIntoDeck iid deckBloodRites
       OccultLexicon3 <$> liftRunMessage msg attrs
-    UseCardAbility iid (isSource attrs -> True) 1 (cardPlayed -> card) _ -> do
+    UseCardAbility iid (isSource attrs -> True) 2 (cardPlayed -> card) _ -> do
       chooseOneM iid do
-        labeled "Change each \"2\" to a \"3\"" do
+        cardI18n $ labeled' "occultLexicon3.changeEach" do
           cardResolutionModifier card (attrs.ability 1) card (MetaModifier $ object ["use3" .= True])
-        labeled "Shuffle it into your deck instead of discarding it" do
+        cardI18n $ labeled' "occultLexicon3.shuffleItInto" do
           cardResolutionModifier card (attrs.ability 1) card (SetAfterPlay ShuffleThisBackIntoDeck)
       pure a
     _ -> OccultLexicon3 <$> liftRunMessage msg attrs

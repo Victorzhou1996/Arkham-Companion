@@ -27,7 +27,7 @@ import Arkham.Helpers.Source (sourceMatches)
 import Arkham.Helpers.Window hiding (attackSource)
 import Arkham.Id
 import Arkham.Keyword hiding (Surge)
-import Arkham.Matcher hiding (canEnterLocation)
+import Arkham.Matcher hiding (DealtDamage, canEnterLocation)
 import Arkham.Matcher qualified as Matcher
 import Arkham.Message
 import Arkham.Message.Lifted.Queue
@@ -53,9 +53,6 @@ import Data.Typeable
 
 spawned :: EnemyAttrs -> Bool
 spawned EnemyAttrs {enemyPlacement} = enemyPlacement /= Unplaced
-
-emptyLocationMap :: Map LocationId [LocationId]
-emptyLocationMap = mempty
 
 isActionTarget :: Targetable a => a -> Target -> Bool
 isActionTarget a = isTarget a . toProxyTarget
@@ -121,7 +118,7 @@ noSpawn :: HasQueue Message m => EnemyAttrs -> Maybe InvestigatorId -> m ()
 noSpawn attrs miid = do
   let noSpawnMsg = case enemyUnableToSpawn attrs of
         DiscardIfUnableToSpawn -> toDiscard GameSource (toId attrs)
-        ShuffleBackInIfUnableToSpawn -> ShuffleBackIntoEncounterDeck (toTarget attrs)
+        ShuffleBackInIfUnableToSpawn -> ShuffleBackIntoEncounterDeck GameSource (toTarget attrs)
   pushAll $ noSpawnMsg
     : [ Surge iid (toSource attrs) | enemySurgeIfUnableToSpawn attrs, iid <- toList miid
       ]
@@ -158,6 +155,49 @@ getModifiedKeywords e = do
       let xs = [n | SwarmingValue n <- mods]
        in Swarming $ case fromNullable xs of Nothing -> k; Just ys -> Static $ maximum ys
     k -> k
+
+{- | Some attacks/evades ignore an enemy keyword's effect (e.g. .45 Automatic (2)
+ignoring Retaliate). When the source of the attack is also the source that
+applied the ignore modifier, then we have "ignored an effect of an enemy card"
+-- which cards like Diana Stanley react to via
+CancelledOrIgnoredCardOrGameEffect. The caller is responsible for confirming
+the enemy actually has the keyword (so nothing is "ignored" against an enemy
+that never had it); this only finds the matching ignore modifiers whose source
+is the attack's own source and produces the windows to fire.
+-}
+ignoredKeywordWindows :: HasGame m => Source -> [Target] -> ModifierType -> m [Message]
+ignoredKeywordWindows attackSource targets ignoreModifier = do
+  mods <- foldMapM getFullModifiers targets
+  let
+    reduceSource = \case
+      AbilitySource s _ -> reduceSource s
+      UseAbilitySource _ s _ -> reduceSource s
+      s -> s
+    sources =
+      nub
+        [ modifier.source
+        | modifier <- mods
+        , modifier.kind == ignoreModifier
+        , reduceSource attackSource == reduceSource modifier.source
+        ]
+  traverse (\source -> checkAfter $ Window.CancelledOrIgnoredCardOrGameEffect source Nothing) sources
+
+{- | The skill-test flavour of 'ignoredKeywordWindows'. Fired when an attack/evade
+is declared against a chosen enemy: if the enemy actually has @keyword@ and the
+test's own source applied @ignoreModifier@ (e.g. .45 Automatic (2) applying
+'IgnoreRetaliate' to a Retaliate enemy), the keyword's effect is being ignored
+for this whole attempt -- which cards like Diana Stanley react to. This must be
+called while the skill test is the current one, so the test-scoped ignore
+modifier is active.
+-}
+ignoredKeywordWindowsForEnemy
+  :: (HasCallStack, HasGame m, Tracing m)
+  => Source -> InvestigatorId -> EnemyId -> Keyword -> ModifierType -> m [Message]
+ignoredKeywordWindowsForEnemy source iid eid keyword ignoreModifier = do
+  keywords <- getModifiedKeywords eid
+  if keyword `elem` keywords
+    then ignoredKeywordWindows source [toTarget iid, toTarget eid] ignoreModifier
+    else pure []
 
 canEnterLocation :: (HasGame m, Tracing m) => EnemyId -> LocationId -> m Bool
 canEnterLocation eid lid = do
@@ -326,10 +366,14 @@ sourceCanDamageEnemy eid source = do
         <$> sourceMatches
           source
           (Matcher.SourceMatchesAny [Matcher.EncounterCardSource, matcher])
+    -- Only block sources matching the modifier's own matcher. We must NOT add
+    -- EncounterCardSource here (unlike the ...Except whitelist above): a basic
+    -- attack's source is UseAbilitySource <fighter> (EnemySource <enemy>) 100,
+    -- whose underlying EnemySource matches EncounterCardSource, so including it
+    -- would block every investigator's fight against the enemy (issue #4887),
+    -- not just the one the matcher targets.
     CannotBeDamagedByPlayerSources matcher ->
-      sourceMatches
-        source
-        (Matcher.SourceMatchesAny [Matcher.EncounterCardSource, matcher])
+      sourceMatches source matcher
     CannotBeDamaged -> pure True
     _ -> pure False
 
@@ -433,8 +477,24 @@ insteadOfDamage (asId -> eid) body = do
       CheckWindows ws -> case filter notAfterDamage ws of
         [] -> pure []
         ws' -> pure [CheckWindows ws']
-      EnemyDamaged eid' dmg | eid == eid' -> evalQueueT (body dmg)
+      Damaged (EnemyTarget eid') dmg | eid == eid' -> evalQueueT (body dmg)
       other -> pure [other]
+
+{- | Reduce the amount of the pending 'Damaged' message on this enemy to at most
+@n@ (leaving it unchanged if it is already lower). Pair with a forced ability
+on an @EnemyTakeDamage #when@ window to implement "reduce that damage to @n@"
+effects. See Crustacean Hybrid (In the Light) and Vengeful Specter.
+-}
+reduceDamageTakenTo
+  :: (HasQueue Message m, MonadTrans t, ToId enemy EnemyId)
+  => enemy -> Int -> t m ()
+reduceDamageTakenTo (asId -> eid) n =
+  lift
+    $ replaceMessageMatching
+      (\case Damaged (EnemyTarget eid') _ -> eid == eid'; _ -> False)
+      \case
+        Damaged target dmg -> [Damaged target dmg {damageAssignmentAmount = min n dmg.amount}]
+        other -> [other]
 
 patrol :: (ReverseQueue m, ToId enemy EnemyId) => enemy -> m ()
 patrol (asId -> eid) = whenJustM (getPatrolMatcher eid) $ push . PatrolMove eid

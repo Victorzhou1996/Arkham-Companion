@@ -15,7 +15,7 @@ newtype AllosaurusRampagingPredator = AllosaurusRampagingPredator EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 allosaurusRampagingPredator :: EnemyCard AllosaurusRampagingPredator
-allosaurusRampagingPredator = enemy AllosaurusRampagingPredator Cards.allosaurusRampagingPredator (5, Static 6, 5) (3, 0)
+allosaurusRampagingPredator = enemy AllosaurusRampagingPredator Cards.allosaurusRampagingPredator
 
 instance HasModifiersFor AllosaurusRampagingPredator where
   getModifiersFor (AllosaurusRampagingPredator a) = do
@@ -23,7 +23,7 @@ instance HasModifiersFor AllosaurusRampagingPredator where
     modifySelf a [HealthModifier n]
 
 instance HasAbilities AllosaurusRampagingPredator where
-  getAbilities (AllosaurusRampagingPredator a) = extend1 a $ mkAbility a 1 $ forced $ EnemyEnters #after YourLocation (be a)
+  getAbilities (AllosaurusRampagingPredator a) = extend1 a $ mkAbility a 1 $ forced $ EnemyEntersYourLocation #after (be a)
 
 instance RunMessage AllosaurusRampagingPredator where
   runMessage msg e@(AllosaurusRampagingPredator attrs) = runQueueT $ case msg of

@@ -1,10 +1,20 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { BugAntIcon } from '@heroicons/vue/20/solid'
 import { imgsrc } from '@/arkham/helpers'
 import { chaosTokenImage, tokenOrder } from '@/arkham/types/ChaosToken'
 import type { Difficulty } from '@/arkham/types/Difficulty'
 import type { Scenario, Campaign } from '@/arkham/data'
-import type { GameMode, MultiplayerVariant, CampaignType } from '@/arkham/types/NewGame'
+import type {
+  GameMode,
+  MultiplayerVariant,
+  CampaignType,
+  AiFocus,
+  AiSlotConfig,
+} from '@/arkham/types/NewGame'
+import { aiFocuses } from '@/arkham/types/NewGame'
+import { ACHIEVEMENT_CAMPAIGN_IDS } from '@/arkham/achievements'
+import { useSettings } from '@/stores/settings'
 
 type FullCampaignOption = {
   key: string
@@ -13,6 +23,8 @@ type FullCampaignOption = {
 
 type RecommendedToggle = {
   type: 'toggle'
+  default?: boolean
+  icon?: 'bug-ant'
   option: { tag: string }
 }
 
@@ -41,7 +53,129 @@ const selectedScenario = defineModel<string | null>('selectedScenario', { requir
 const selectedDifficulty = defineModel<Difficulty>('selectedDifficulty', { required: true })
 const includeTarotReadings = defineModel<boolean>('includeTarotReadings', { required: true })
 const campaignName = defineModel<string | null>('campaignName', { required: true })
-const fullCampaignOptionKey = defineModel<string | null>('fullCampaignOptionKey', { required: true })
+const fullCampaignOptionKey = defineModel<string | null>('fullCampaignOptionKey', {
+  required: true,
+})
+const sideStoryMode = defineModel<string>('sideStoryMode', { required: true })
+const achievementsEnabled = defineModel<boolean>('achievementsEnabled', { required: true })
+
+// "Epic Multiplayer" side-story flow. Only surfaced for side stories whose data
+// carries `epicMultiplayer: true` (src/arkham/data/side-stories.json).
+type EpicGroup = { name: string; playerCount: number }
+const epicMode = defineModel<boolean>('epicMode', { required: true })
+const epicGroupCount = defineModel<number>('epicGroupCount', { required: true })
+const epicGroups = defineModel<EpicGroup[]>('epicGroups', { required: true })
+
+// Shared time limit for the event. When the checkbox is off, NewCampaign sends 0
+// minutes (= no limit / no barrier / no countdown); on, it sends `timeLimitMinutes`.
+const imposeTimeLimit = defineModel<boolean>('imposeTimeLimit', { required: true })
+const timeLimitMinutes = defineModel<number>('timeLimitMinutes', { required: true })
+
+// --- AI-investigator configuration (dev-only, Solo/multihanded only) ----------
+// Emits an `aiPlayers` array (length playerCount) of `AiSlotConfig | null` up to
+// NewCampaign, which forwards it to newGame() only for Solo games.
+const aiPlayers = defineModel<(AiSlotConfig | null)[]>('aiPlayers', { required: true })
+
+// MVP: only Roland Banks is offered as an AI profile (single-option select).
+const aiInvestigatorOptions = [{ code: '01001', name: 'Roland Banks' }]
+const aiFocusOptions: Array<'auto' | AiFocus> = ['auto', ...aiFocuses]
+
+type AiSeat = {
+  enabled: boolean
+  investigator: string
+  focus: 'auto' | AiFocus
+  responseDelayMs: number
+}
+
+function defaultAiSeat(): AiSeat {
+  return {
+    enabled: false,
+    investigator: aiInvestigatorOptions[0].code,
+    focus: 'auto',
+    responseDelayMs: 1500,
+  }
+}
+
+const aiSeats = ref<AiSeat[]>([])
+
+const settings = useSettings()
+
+const effectiveCampaignId = computed<string | null>(() => {
+  if (props.gameMode !== 'Campaign') return null
+  if (returnTo.value && props.selectedCampaignReturnTo?.id) return props.selectedCampaignReturnTo.id
+  return props.chosenCampaignId
+})
+
+const supportsAchievements = computed(
+  () => !!effectiveCampaignId.value && ACHIEVEMENT_CAMPAIGN_IDS.includes(effectiveCampaignId.value),
+)
+
+// AI-investigator configuration is gated on the dev-only "AI Investigators"
+// settings flag (Settings → danger zone); defaults OFF, never on in production.
+const showAiConfig = computed(
+  () =>
+    settings.aiInvestigatorsEnabled && multiplayerVariant.value === 'Solo' && playerCount.value > 1,
+)
+
+// Keep one seat row per player, preserving anything already configured.
+watch(
+  playerCount,
+  (count) => {
+    const next = aiSeats.value.slice(0, count)
+    while (next.length < count) next.push(defaultAiSeat())
+    aiSeats.value = next
+  },
+  { immediate: true },
+)
+
+// Project the seat rows into the `aiPlayers` model the backend expects. When AI
+// config isn't applicable (non-Solo, or non-dev) we emit an empty array so a
+// previously-configured Solo selection can't leak into a WithFriends game.
+watch(
+  [aiSeats, showAiConfig, playerCount],
+  () => {
+    if (!showAiConfig.value) {
+      aiPlayers.value = []
+      return
+    }
+    aiPlayers.value = aiSeats.value.slice(0, playerCount.value).map((seat): AiSlotConfig | null =>
+      seat.enabled
+        ? {
+            investigator: seat.investigator,
+            focus: seat.focus === 'auto' ? undefined : seat.focus,
+            responseDelayMs: seat.responseDelayMs,
+          }
+        : null,
+    )
+  },
+  { deep: true, immediate: true },
+)
+
+// The epic play-mode option only appears for an epic-capable side story AND when
+// the dev-only Epic Multiplayer flag is enabled (store value is dev-gated). When
+// off, the side-story flow shows only the normal single-group flow.
+const scenarioSupportsEpic = computed(
+  () =>
+    props.gameMode === 'SideStory' &&
+    props.scenario?.epicMultiplayer === true &&
+    settings.epicMultiplayerEnabled,
+)
+const isEpicActive = computed(() => scenarioSupportsEpic.value && epicMode.value)
+
+// Keep the per-group rows in sync with the chosen group count, preserving any
+// names/counts the organizer already edited.
+watch(epicGroupCount, (count) => {
+  const next = epicGroups.value.slice(0, count)
+  while (next.length < count)
+    next.push({ name: `Group ${String.fromCharCode(65 + next.length)}`, playerCount: 2 })
+  epicGroups.value = next
+})
+
+const sideStoryScenarios = computed(() =>
+  props.gameMode === 'SideStory' ? (props.scenario?.scenarios ?? []) : [],
+)
+
+const deckRequirements = computed(() => props.scenario?.deckRequirements ?? [])
 
 const showAlphaWarning = computed(() => {
   if (props.gameMode === 'Campaign' && props.campaign) {
@@ -62,6 +196,18 @@ const showBetaWarning = computed(() => {
 
   if (props.gameMode === 'SideStory' && props.scenario) {
     return props.scenario.beta
+  }
+
+  return false
+})
+
+const showDevWarning = computed(() => {
+  if (props.gameMode === 'Campaign' && props.campaign) {
+    return props.campaign.dev
+  }
+
+  if (props.gameMode === 'SideStory' && props.scenario) {
+    return props.scenario.dev
   }
 
   return false
@@ -88,7 +234,7 @@ const selectionSummary = computed(() => {
     return {
       kind: 'Campaign' as const,
       id: props.chosenCampaignId,
-      title: props.campaign?.name ?? ''
+      title: props.campaign?.name ?? '',
     }
   }
 
@@ -97,25 +243,48 @@ const selectionSummary = computed(() => {
     return {
       kind: 'SideStory' as const,
       id: props.chosenSideStoryId,
-      title: props.scenario?.name ?? ''
+      title: selectedSideStoryPart.value?.name ?? props.scenario?.name ?? '',
     }
   }
 
   return null
 })
 
-const selectionBoxSrc = computed(() =>
-  selectionSummary.value ? imgsrc(`boxes/${selectionSummary.value.id}.jpg`) : null
-)
+const selectedSideStoryPart = computed(() => {
+  if (props.gameMode !== 'SideStory') return null
+  if (sideStoryMode.value === 'campaign') return null
+  return props.scenario?.scenarios?.find((s) => s.id === sideStoryMode.value) ?? null
+})
+
+const selectionBoxSrc = computed(() => {
+  if (!selectionSummary.value) return null
+  const part = selectedSideStoryPart.value
+  const id = part ? (part.box ?? part.id) : selectionSummary.value.id
+  return imgsrc(`boxes/${id}.jpg`)
+})
 
 const selectionKind = computed(() => selectionSummary.value?.kind ?? null)
 
 type TokenFace =
-  | 'PlusOne' | 'Zero'
-  | 'MinusOne' | 'MinusTwo' | 'MinusThree' | 'MinusFour' | 'MinusFive' | 'MinusSix' | 'MinusSeven' | 'MinusEight'
-  | 'Skull' | 'Cultist' | 'Tablet' | 'ElderThing'
-  | 'AutoFail' | 'ElderSign'
-  | 'CurseToken' | 'BlessToken' | 'FrostToken'
+  | 'PlusOne'
+  | 'Zero'
+  | 'MinusOne'
+  | 'MinusTwo'
+  | 'MinusThree'
+  | 'MinusFour'
+  | 'MinusFive'
+  | 'MinusSix'
+  | 'MinusSeven'
+  | 'MinusEight'
+  | 'Skull'
+  | 'Cultist'
+  | 'Tablet'
+  | 'ElderThing'
+  | 'AutoFail'
+  | 'ElderSign'
+  | 'CurseToken'
+  | 'BlessToken'
+  | 'FrostToken'
 
 function sortTokenFaces(a: TokenFace, b: TokenFace) {
   return tokenOrder.indexOf(a) - tokenOrder.indexOf(b)
@@ -145,20 +314,115 @@ const variants = computed<FullCampaignOption[]>(() => {
   return (c?.variants ?? []) as FullCampaignOption[]
 })
 
-const showFullCampaignOptions = computed(() =>
-  props.gameMode === 'Campaign' &&
-  fullCampaign.value === 'FullCampaign' &&
-  variants.value.length > 0
+const showFullCampaignOptions = computed(
+  () =>
+    props.gameMode === 'Campaign' &&
+    fullCampaign.value === 'FullCampaign' &&
+    variants.value.length > 0,
 )
 
 const selectedFullCampaignOption = computed<FullCampaignOption | null>(() => {
   if (!showFullCampaignOptions.value) return null
   const key = fullCampaignOptionKey.value ?? variants.value[0]?.key
-  return variants.value.find(o => o.key === key) ?? null
+  return variants.value.find((o) => o.key === key) ?? null
 })
 
-const recommendedOptionState =
-  defineModel<Record<string, boolean>>('recommendedOptionState', { required: true })
+const recommendedOptionState = defineModel<Record<string, boolean>>('recommendedOptionState', {
+  required: true,
+})
+
+const strictAsIfAt = defineModel<boolean>('strictAsIfAt', { required: true })
+
+const rulesExpanded = ref(false)
+
+// --- Ultimatums and Boons variant selection ------------------------------------
+// Selected enum tags flow up to NewCampaign and into the create-game POST body.
+const ultimatumsAndBoons = defineModel<string[]>('ultimatumsAndBoons', { required: true })
+
+// Each group renders as its own collapsed card; per-group expansion state.
+const uabExpanded = ref<Record<string, boolean>>({ boons: false, ultimatums: false })
+
+const uabSelectedCount = (group: { tags: string[] }) =>
+  group.tags.filter((tag) => ultimatumsAndBoons.value.includes(tag)).length
+
+// ponytail: hardcoded catalog; add new tags here + locale entries when they land.
+const uabGroups: { key: 'boons' | 'ultimatums'; beta?: boolean; tags: string[] }[] = [
+  {
+    key: 'boons',
+    tags: [
+      'BoonOfTheAncients',
+      'BoonOfAthena',
+      'BoonOfDestiny',
+      'BoonOfHades',
+      'BoonOfHermes',
+      'BoonOfThoth',
+      'BoonOfOsiris',
+      'BoonOfTheMorrigan',
+      'BoonOfPersephone',
+      'BoonOfTheExplorer',
+      'BoonOfTheChild',
+    ],
+  },
+  {
+    key: 'ultimatums',
+    beta: true,
+    tags: [
+      'UltimatumOfAgony',
+      'UltimatumOfBrokenPromises',
+      'UltimatumOfTheBrokenVeil',
+      'UltimatumOfChaos',
+      'UltimatumOfDisaster',
+      'UltimatumOfDread',
+      'UltimatumOfExile',
+      'UltimatumOfFailure',
+      'UltimatumOfFinality',
+      'UltimatumOfForbiddenKnowledge',
+      'UltimatumOfHardship',
+      'UltimatumOfTheHighlander',
+      'UltimatumOfInduction',
+      'UltimatumOfMalevolence',
+      'UltimatumOfOrthodoxy',
+      'UltimatumOfTheScream',
+      'UltimatumOfTheSpiral',
+      'UltimatumOfSurvival',
+      'UltimatumOfUltimatums',
+    ],
+  },
+]
+
+// Entries enforced at deck construction (deckRestrictions.ts) rather than at
+// runtime — the in-game Ultimatums & Boons on/off toggle does not affect them.
+const UAB_DECKBUILDING_TAGS = new Set([
+  'UltimatumOfChaos',
+  'UltimatumOfDisaster',
+  'UltimatumOfTheHighlander',
+  'UltimatumOfInduction',
+  'UltimatumOfOrthodoxy',
+  'UltimatumOfExile',
+])
+
+type RulesPreset = 'chapter1' | 'chapter2'
+
+type RulesSettings = {
+  strictAsIfAt: boolean
+}
+
+const presets: Record<RulesPreset, RulesSettings> = {
+  chapter1: { strictAsIfAt: false },
+  chapter2: { strictAsIfAt: true },
+}
+
+const activePreset = computed<RulesPreset | null>(() => {
+  for (const [key, p] of Object.entries(presets) as [RulesPreset, RulesSettings][]) {
+    if (strictAsIfAt.value === p.strictAsIfAt) return key
+  }
+  return null
+})
+
+function applyPreset(preset: RulesPreset) {
+  const p = presets[preset]
+  strictAsIfAt.value = p.strictAsIfAt
+}
 
 const recommendedToggles = computed<RecommendedToggle[]>(() => {
   const c = props.campaign as any
@@ -191,15 +455,18 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
   <div class="beta-warning" v-if="showBetaWarning">
     {{ $t('create.betaWarning') }}
   </div>
+  <div class="dev-warning" v-if="showDevWarning">
+    {{ $t('create.devWarning') }}
+  </div>
   <div class="game-options">
     <aside v-if="selectionSummary && selectionBoxSrc" class="summary">
       <div
         class="selection-box"
         :class="{
           campaign: selectionKind === 'Campaign',
-          sidestory: selectionKind === 'SideStory'
+          sidestory: selectionKind === 'SideStory',
         }"
-        style="view-transition-name: selected-game-box;"
+        style="view-transition-name: selected-game-box"
       >
         <img class="selection-img" :src="selectionBoxSrc" :alt="selectionSummary.title" />
 
@@ -213,12 +480,73 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
     </aside>
 
     <section class="config">
+      <div v-if="deckRequirements.length" class="card deck-requirements-card">
+        <div class="card-title">Deck Requirements</div>
+        <ul class="deck-requirements">
+          <li v-for="requirement in deckRequirements" :key="requirement">{{ requirement }}</li>
+        </ul>
+      </div>
+
       <div class="card">
         <div class="card-title">{{ $t('create.gameName') }}</div>
         <input class="text" type="text" v-model="campaignName" :placeholder="currentCampaignName" />
       </div>
 
-      <div class="card">
+      <div v-if="scenarioSupportsEpic" class="card">
+        <div class="card-title">{{ $t('create.playMode') }}</div>
+        <div class="segmented segmented-2">
+          <input type="radio" v-model="epicMode" :value="false" id="singleGroupMode" />
+          <label for="singleGroupMode">{{ $t('create.singleGroupMode') }}</label>
+          <input type="radio" v-model="epicMode" :value="true" id="epicMultiplayerMode" />
+          <label for="epicMultiplayerMode">{{ $t('create.epicMultiplayerMode') }}</label>
+        </div>
+
+        <transition name="slide">
+          <div v-if="isEpicActive" class="subcard">
+            <div class="card-title small">{{ $t('create.numberOfGroups') }}</div>
+            <div class="segmented segmented-3">
+              <template v-for="n in [2, 3, 4]" :key="n">
+                <input type="radio" v-model="epicGroupCount" :value="n" :id="`groupCount${n}`" />
+                <label :for="`groupCount${n}`">{{ n }}</label>
+              </template>
+            </div>
+
+            <div class="epic-groups">
+              <div v-for="(group, index) in epicGroups" :key="index" class="epic-group-row">
+                <label class="epic-field">
+                  <span class="card-title small">{{ $t('create.groupName') }}</span>
+                  <input class="text" type="text" v-model="group.name" />
+                </label>
+                <label class="epic-field epic-field-count">
+                  <span class="card-title small">{{ $t('create.groupPlayers') }}</span>
+                  <select class="text" v-model.number="group.playerCount">
+                    <option v-for="p in 4" :key="p" :value="p">{{ p }}</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="epic-time-limit">
+              <label class="epic-toggle">
+                <input type="checkbox" v-model="imposeTimeLimit" />
+                <span class="card-title small">{{ $t('create.imposeTimeLimit') }}</span>
+              </label>
+              <label v-if="imposeTimeLimit" class="epic-field epic-field-count">
+                <span class="card-title small">{{ $t('create.timeLimitMinutes') }}</span>
+                <input
+                  class="text"
+                  type="number"
+                  min="1"
+                  step="1"
+                  v-model.number="timeLimitMinutes"
+                />
+              </label>
+            </div>
+          </div>
+        </transition>
+      </div>
+
+      <div v-if="!isEpicActive" class="card">
         <div class="card-title">{{ $t('create.numberOfPlayers') }}</div>
         <div class="segmented segmented-4">
           <input type="radio" v-model="playerCount" :value="1" id="player1" />
@@ -244,7 +572,7 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
         </transition>
 
         <transition name="slide">
-        <div v-if="multiplayerVariant === 'Solo' && playerCount > 1" class="callout">
+          <div v-if="multiplayerVariant === 'Solo' && playerCount > 1" class="callout">
             <div class="callout-title">
               <font-awesome-icon icon="eye" class="callout-icon" />
               {{ $t('create.switchingPerspectives') }}
@@ -252,6 +580,79 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
             <div class="callout-body" v-html="$t('create.switchingPerspectivesDescription')"></div>
           </div>
         </transition>
+
+        <transition name="slide">
+          <div v-if="showAiConfig" class="subcard ai-config">
+            <div class="card-title small ai-config-title">
+              AI Investigators <span class="ai-dev-pill">dev</span>
+            </div>
+            <div class="ai-seats">
+              <div
+                v-for="(seat, index) in aiSeats.slice(0, playerCount)"
+                :key="index"
+                class="ai-seat"
+              >
+                <label class="ai-seat-toggle">
+                  <input type="checkbox" v-model="seat.enabled" />
+                  <span>Seat {{ index + 1 }} — AI controlled</span>
+                </label>
+
+                <transition name="slide">
+                  <div v-if="seat.enabled" class="ai-seat-fields">
+                    <label class="ai-field">
+                      <span class="card-title small">Investigator</span>
+                      <select class="text" v-model="seat.investigator">
+                        <option
+                          v-for="inv in aiInvestigatorOptions"
+                          :key="inv.code"
+                          :value="inv.code"
+                        >
+                          {{ inv.name }}
+                        </option>
+                      </select>
+                    </label>
+                    <label class="ai-field">
+                      <span class="card-title small">Focus</span>
+                      <select class="text" v-model="seat.focus">
+                        <option v-for="focus in aiFocusOptions" :key="focus" :value="focus">
+                          {{ focus }}
+                        </option>
+                      </select>
+                    </label>
+                    <label class="ai-field">
+                      <span class="card-title small">Response delay (ms)</span>
+                      <input
+                        class="text"
+                        type="number"
+                        min="0"
+                        step="100"
+                        v-model.number="seat.responseDelayMs"
+                      />
+                    </label>
+                  </div>
+                </transition>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </div>
+
+      <div v-if="sideStoryScenarios.length > 0" class="card">
+        <div class="card-title">{{ $t('create.scenarios') }}</div>
+        <div class="segmented" :class="`segmented-${sideStoryScenarios.length + 1}`">
+          <input type="radio" v-model="sideStoryMode" value="campaign" id="sideStoryBoth" />
+          <label for="sideStoryBoth">{{ $t('create.bothScenarios') }}</label>
+
+          <template v-for="s in sideStoryScenarios" :key="s.id">
+            <input
+              type="radio"
+              v-model="sideStoryMode"
+              :value="s.id"
+              :id="`sideStoryPart-${s.id}`"
+            />
+            <label :for="`sideStoryPart-${s.id}`">{{ s.name }}</label>
+          </template>
+        </div>
       </div>
 
       <div v-if="showReturnToToggle" class="card">
@@ -309,7 +710,11 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
               :value="opt.key"
               :id="`fullCampaignOption-${opt.key}`"
             />
-            <label class="variant" :for="`fullCampaignOption-${opt.key}`" v-html="$t(`create.fullCampaignOption.${opt.key}`)" />
+            <label
+              class="variant"
+              :for="`fullCampaignOption-${opt.key}`"
+              v-html="$t(`create.fullCampaignOption.${opt.key}`)"
+            />
           </template>
         </div>
       </div>
@@ -349,6 +754,94 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
         </div>
       </div>
 
+      <div v-if="supportsAchievements" class="card">
+        <div class="card-title">{{ $t('achievements.settingsToggleTitle') }}</div>
+        <div class="segmented segmented-2">
+          <input type="radio" v-model="achievementsEnabled" :value="true" id="achievementsOn" />
+          <label for="achievementsOn">{{ $t('On') }}</label>
+
+          <input type="radio" v-model="achievementsEnabled" :value="false" id="achievementsOff" />
+          <label for="achievementsOff">{{ $t('Off') }}</label>
+        </div>
+        <div class="achievements-desc">{{ $t('achievements.settingsToggleDescription') }}</div>
+      </div>
+
+      <div class="card rules-card">
+        <button type="button" class="rules-toggle" @click="rulesExpanded = !rulesExpanded">
+          <span class="card-title" style="margin-bottom: 0">{{
+            $t('create.advancedRulesConfiguration') ?? 'Advanced Rules Configuration'
+          }}</span>
+          <span class="rules-header-right">
+            <span class="preset-pill" :class="activePreset ?? 'custom'">
+              {{
+                activePreset
+                  ? ($t(`create.preset.${activePreset}.name`) ?? activePreset)
+                  : ($t('create.presetCustom') ?? 'Custom')
+              }}
+            </span>
+            <span class="rules-chevron" :class="{ expanded: rulesExpanded }">▸</span>
+          </span>
+        </button>
+        <transition name="slide">
+          <div v-if="rulesExpanded" class="rules-body subcard">
+            <div class="card-title small">{{ $t('create.rulesPresets') ?? 'Presets' }}</div>
+            <div class="preset-options">
+              <button
+                v-for="preset in ['chapter1', 'chapter2'] as RulesPreset[]"
+                :key="preset"
+                type="button"
+                class="preset-option"
+                :class="{ selected: activePreset === preset }"
+                @click="applyPreset(preset)"
+              >
+                <span class="preset-name">{{ $t(`create.preset.${preset}.name`) ?? preset }}</span>
+                <span class="preset-desc">{{
+                  $t(`create.preset.${preset}.description`) ?? ''
+                }}</span>
+              </button>
+            </div>
+
+            <div class="rule-setting subcard">
+              <div class="card-title small">
+                {{ $t('create.asIfAtBehavior') ?? '"As If" At Behavior' }}
+              </div>
+              <div class="as-if-at-options">
+                <label
+                  class="as-if-at-option"
+                  :class="{ selected: !strictAsIfAt }"
+                  @click="strictAsIfAt = false"
+                >
+                  <div class="as-if-at-header">
+                    <input type="radio" v-model="strictAsIfAt" :value="false" id="asIfAtChapter1" />
+                    <span class="as-if-at-name">{{
+                      $t('create.asIfAtChapter1') ?? 'Chapter 1 Rules'
+                    }}</span>
+                  </div>
+                  <div class="as-if-at-desc">
+                    {{ $t('create.asIfAtChapter1Description') ?? '' }}
+                  </div>
+                </label>
+                <label
+                  class="as-if-at-option"
+                  :class="{ selected: strictAsIfAt }"
+                  @click="strictAsIfAt = true"
+                >
+                  <div class="as-if-at-header">
+                    <input type="radio" v-model="strictAsIfAt" :value="true" id="asIfAtChapter2" />
+                    <span class="as-if-at-name">{{
+                      $t('create.asIfAtChapter2') ?? 'Chapter 2 Rules'
+                    }}</span>
+                  </div>
+                  <div class="as-if-at-desc">
+                    {{ $t('create.asIfAtChapter2Description') ?? '' }}
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </div>
+
       <div v-if="recommendedToggles.length > 0" class="card">
         <div class="card-title">{{ $t('create.recommendedOptions') ?? 'Recommended options' }}</div>
 
@@ -356,9 +849,17 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
           <div class="recommended-row" v-for="o in recommendedToggles" :key="optKey(o)">
             <div class="recommended-text">
               <div class="recommended-name">
+                <BugAntIcon
+                  v-if="o.icon === 'bug-ant'"
+                  class="recommended-icon"
+                  aria-hidden="true"
+                />
                 {{ $t(`create.recommendedOption.${o.option.tag}.title`) ?? o.option.tag }}
               </div>
-              <div class="recommended-desc" v-if="$te?.(`create.recommendedOption.${o.option.tag}.description`)">
+              <div
+                class="recommended-desc"
+                v-if="$te?.(`create.recommendedOption.${o.option.tag}.description`)"
+              >
                 {{ $t(`create.recommendedOption.${o.option.tag}.description`) }}
               </div>
             </div>
@@ -383,6 +884,51 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
           </div>
         </div>
       </div>
+
+      <template v-for="group in uabGroups" :key="group.key">
+        <div v-if="group.tags.length > 0" class="card rules-card">
+          <button
+            type="button"
+            class="rules-toggle"
+            @click="uabExpanded[group.key] = !uabExpanded[group.key]"
+          >
+            <span class="card-title" style="margin-bottom: 0">
+              {{ $t(`ultimatumsAndBoons.${group.key}`) }}
+              <span v-if="group.beta" class="uab-beta-pill">{{
+                $t('ultimatumsAndBoons.betaBadge')
+              }}</span>
+            </span>
+            <span class="rules-header-right">
+              <span class="preset-pill" :class="{ 'uab-active': uabSelectedCount(group) > 0 }">
+                {{
+                  uabSelectedCount(group) > 0
+                    ? $t('ultimatumsAndBoons.selectedCount', { count: uabSelectedCount(group) })
+                    : $t('ultimatumsAndBoons.noneSelected')
+                }}
+              </span>
+              <span class="rules-chevron" :class="{ expanded: uabExpanded[group.key] }">▸</span>
+            </span>
+          </button>
+          <transition name="slide">
+            <div v-if="uabExpanded[group.key]" class="rules-body subcard">
+              <div class="uab-group">
+                <label v-for="tag in group.tags" :key="tag" class="uab-row">
+                  <input type="checkbox" :value="tag" v-model="ultimatumsAndBoons" />
+                  <span class="uab-text">
+                    <span class="uab-name">
+                      {{ $t(`ultimatumsAndBoons.entries.${tag}.name`) }}
+                      <span v-if="UAB_DECKBUILDING_TAGS.has(tag)" class="uab-deckbuilding-badge">
+                        {{ $t('ultimatumsAndBoons.deckbuildingBadge') }}
+                      </span>
+                    </span>
+                    <span class="uab-desc">{{ $t(`ultimatumsAndBoons.entries.${tag}.text`) }}</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </transition>
+        </div>
+      </template>
     </section>
   </div>
 </template>
@@ -439,12 +985,7 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
   flex-direction: column;
   justify-content: flex-end;
   padding: 10px;
-  background: linear-gradient(
-    to top,
-    rgba(0 0 0 / 0.85),
-    rgba(0 0 0 / 0.05) 60%,
-    rgba(0 0 0 / 0)
-  );
+  background: linear-gradient(to top, rgba(0 0 0 / 0.85), rgba(0 0 0 / 0.05) 60%, rgba(0 0 0 / 0));
   pointer-events: none;
 }
 
@@ -498,11 +1039,24 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
   opacity: 0.85;
 }
 
+.deck-requirements-card {
+  border-color: rgba(255, 211, 112, 0.18);
+  background: rgba(95, 65, 10, 0.24);
+}
+
+.deck-requirements {
+  margin: 0;
+  padding-left: 20px;
+  color: rgba(255, 226, 154, 0.95);
+  line-height: 1.35;
+  font-size: 13px;
+}
+
 /* Text input */
 .text {
   width: 100%;
   outline: 0;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   padding: 10px 12px;
   background: rgba(0, 0, 0, 0.22);
@@ -526,9 +1080,15 @@ input[type='radio'] {
   background: rgba(0, 0, 0, 0.12);
 }
 
-.segmented-2 { grid-template-columns: repeat(2, 1fr); }
-.segmented-3 { grid-template-columns: repeat(3, 1fr); }
-.segmented-4 { grid-template-columns: repeat(4, 1fr); }
+.segmented-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.segmented-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.segmented-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
 
 .segmented label {
   display: flex;
@@ -549,12 +1109,12 @@ input[type='radio'] {
 }
 
 .segmented label:hover {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 input[type='radio']:checked + label {
   background: rgba(110, 134, 64, 0.95);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 /* Scenario picker */
@@ -585,7 +1145,9 @@ input[type='radio']:checked + label {
   width: 100%;
   display: block;
   filter: grayscale(100%);
-  transition: filter 220ms ease, transform 220ms ease;
+  transition:
+    filter 220ms ease,
+    transform 220ms ease;
 }
 
 .scenario-tile:hover img {
@@ -621,9 +1183,9 @@ input[type='radio']:checked + label {
   margin-top: 10px;
   padding: 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
 }
 
 .callout-title {
@@ -631,9 +1193,9 @@ input[type='radio']:checked + label {
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.82);
+  color: rgba(255, 255, 255, 0.82);
   margin-bottom: 6px;
 }
 
@@ -645,17 +1207,17 @@ input[type='radio']:checked + label {
 .callout-body {
   font-size: 13px;
   line-height: 1.35;
-  color: rgba(255,255,255,0.72);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 @keyframes glow {
   from {
     color: #000;
-    text-shadow: 0 0 0px #ff00ff;
+    text-shadow: 0 0 0px var(--select);
   }
   to {
-    color: #ff00ff; /* Glowing color */
-    text-shadow: 0 0 10px #ff00ff;
+    color: var(--select); /* Glowing color */
+    text-shadow: 0 0 10px var(--select);
   }
 }
 
@@ -668,26 +1230,26 @@ input[type='radio']:checked + label {
   @media (max-width: 800px) and (orientation: portrait) {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 3fr 1fr 1fr 1fr;
-    img{
+    img {
       margin: 0 auto;
     }
-    img:nth-child(6n+1) {
+    img:nth-child(6n + 1) {
       grid-column: 1;
     }
 
-    img:nth-child(6n+2) {
+    img:nth-child(6n + 2) {
       grid-column: 2;
     }
 
-    img:nth-child(6n+3) {
+    img:nth-child(6n + 3) {
       grid-column: 3;
     }
 
-    img:nth-child(6n+4) {
+    img:nth-child(6n + 4) {
       grid-column: 5;
     }
 
-    img:nth-child(6n+5) {
+    img:nth-child(6n + 5) {
       grid-column: 6;
     }
 
@@ -695,7 +1257,7 @@ input[type='radio']:checked + label {
       grid-column: 7;
     }
   }
-  
+
   img {
     width: 30px;
     height: auto;
@@ -707,22 +1269,23 @@ input[type='radio']:checked + label {
       width: 50px;
       border-radius: 50px;
     }
-    border: 1px solid rgba(255,255,255,0.4);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 30px;
-    box-shadow: 0 4px 4px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.5);
   }
 }
 
 .beta-warning,
-.alpha-warning {
+.alpha-warning,
+.dev-warning {
   margin-top: 12px;
   padding: 12px;
   border-radius: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 13px;
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
 }
 
 .beta-warning {
@@ -733,6 +1296,10 @@ input[type='radio']:checked + label {
   background: rgba(139, 0, 0, 0.25);
 }
 
+.dev-warning {
+  background: rgba(111, 66, 193, 0.25);
+}
+
 .variant {
   display: flex;
   flex-direction: column;
@@ -741,6 +1308,126 @@ input[type='radio']:checked + label {
     margin-top: 4px;
     color: rgba(255 255 255 / 0.75);
   }
+}
+
+.epic-groups {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.epic-group-row {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+}
+
+.epic-field {
+  display: grid;
+  gap: 4px;
+}
+
+.epic-field .text {
+  border-radius: 10px;
+}
+
+.epic-time-limit {
+  margin-top: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.epic-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.epic-toggle input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.epic-time-limit .epic-field-count {
+  width: 120px;
+}
+
+.ai-config-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-dev-pill {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(184, 134, 11, 0.55);
+  background: rgba(184, 134, 11, 0.25);
+  color: rgba(255, 226, 154, 0.95);
+}
+
+.ai-seats {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-seat {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.ai-seat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.ai-seat-toggle input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: rgb(110, 134, 64);
+}
+
+.ai-seat-fields {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .ai-seat-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-field {
+  display: grid;
+  gap: 4px;
+}
+
+.ai-field select.text,
+.ai-field input.text {
+  text-transform: capitalize;
+}
+
+.achievements-desc {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .recommended-list {
@@ -754,7 +1441,7 @@ input[type='radio']:checked + label {
   gap: 12px;
   align-items: center;
   padding-top: 8px;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .recommended-row:first-child {
@@ -764,18 +1451,257 @@ input[type='radio']:checked + label {
 
 .recommended-name {
   font-size: 13px;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .recommended-desc {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.3;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .recommended-toggle {
   width: 180px;
+}
+
+.rules-body {
+  display: grid;
+  gap: 12px;
+}
+
+.preset-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.preset-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.preset-option.selected {
+  background: rgba(110, 134, 64, 0.2);
+  border-color: rgba(110, 134, 64, 0.6);
+}
+
+.preset-option:hover:not(.selected) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.preset-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.preset-desc {
+  font-size: 11px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.rule-setting {
+  margin-top: 0;
+}
+
+.as-if-at-options {
+  display: grid;
+  gap: 8px;
+}
+
+.as-if-at-option {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.as-if-at-option.selected {
+  background: rgba(110, 134, 64, 0.2);
+  border-color: rgba(110, 134, 64, 0.6);
+}
+
+.as-if-at-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.as-if-at-header :deep(input[type='radio']),
+.as-if-at-header input[type='radio'] {
+  display: inline-block !important;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  accent-color: rgb(110, 134, 64);
+}
+
+.as-if-at-name {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.as-if-at-desc {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rules-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preset-pill {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.preset-pill.chapter1,
+.preset-pill.chapter2 {
+  background: rgba(110, 134, 64, 0.25);
+  border-color: rgba(110, 134, 64, 0.55);
+  color: rgba(180, 210, 120, 0.9);
+}
+
+.rules-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rules-chevron {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  transition: transform 200ms ease;
+}
+
+.rules-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.preset-pill.uab-active {
+  background: rgba(110, 134, 64, 0.25);
+  border-color: rgba(110, 134, 64, 0.55);
+  color: rgba(180, 210, 120, 0.9);
+}
+
+.uab-group {
+  display: grid;
+  gap: 8px;
+}
+
+.uab-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.uab-row:has(input:checked) {
+  background: rgba(110, 134, 64, 0.2);
+  border-color: rgba(110, 134, 64, 0.6);
+}
+
+.uab-row input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: rgb(110, 134, 64);
+}
+
+.uab-text {
+  display: grid;
+  gap: 4px;
+}
+
+.uab-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.uab-desc {
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.uab-deckbuilding-badge {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  margin-left: 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 211, 112, 0.35);
+  background: rgba(95, 65, 10, 0.35);
+  color: rgba(255, 226, 154, 0.95);
+  white-space: nowrap;
+}
+
+/* matches the campaign-box beta ribbon color (darkgoldenrod), pill-shaped */
+.uab-beta-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 8px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: darkgoldenrod;
+  color: white;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.recommended-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  margin-right: 0.4em;
+  opacity: 0.75;
 }
 
 @media (max-width: 700px) {
