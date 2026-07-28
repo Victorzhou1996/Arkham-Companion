@@ -63,21 +63,47 @@ data TheDunwichLegacyAchievement
 
 $(deriveJSON defaultOptions ''TheDunwichLegacyAchievement)
 
+-- | Return to The Path to Carcosa (campaign "52"). Constructor names must stay
+-- globally unique, so shared printed names are disambiguated here.
+data ThePathToCarcosaAchievement
+  = FairWarning
+  | FirstSteps
+  | CrashingTheParty
+  | ForPryingEyes
+  | TheCuckoosNest
+  | TakeALookAtThis
+  | ThePathOfDeath
+  | GuessingGame
+  | HasturMadeMeDoIt
+  | SayMyName
+  | GetBackHere
+  | ThePathIsFalse
+  | ThePathIsReal
+  | ThePathIsMine
+  | CarcosaLineInTheSand
+  | CarcosaExpertise
+  deriving stock (Eq, Show, Ord, Enum, Bounded, Data)
+
+$(deriveJSON defaultOptions ''ThePathToCarcosaAchievement)
+
 data Achievement
   = NightOfTheZealotAchievement NightOfTheZealotAchievement
   | TheDunwichLegacyAchievement TheDunwichLegacyAchievement
+  | ThePathToCarcosaAchievement ThePathToCarcosaAchievement
   deriving stock (Eq, Show, Ord, Data)
 
 allAchievements :: [Achievement]
 allAchievements =
   map NightOfTheZealotAchievement [minBound ..]
     <> map TheDunwichLegacyAchievement [minBound ..]
+    <> map ThePathToCarcosaAchievement [minBound ..]
 
 -- | Flat constructor name; the wire and database representation.
 achievementName :: Achievement -> Text
 achievementName = \case
   NightOfTheZealotAchievement a -> tshow a
   TheDunwichLegacyAchievement a -> tshow a
+  ThePathToCarcosaAchievement a -> tshow a
 
 parseAchievement :: Text -> Maybe Achievement
 parseAchievement t = lookup t achievementsByName
@@ -89,6 +115,7 @@ achievementCampaigns :: Achievement -> [Text]
 achievementCampaigns = \case
   NightOfTheZealotAchievement _ -> ["50"]
   TheDunwichLegacyAchievement _ -> ["51"]
+  ThePathToCarcosaAchievement _ -> ["52"]
 
 -- Flat JSON, mirroring UltimatumOrBoon: the union never leaks its shape.
 instance ToJSON Achievement where

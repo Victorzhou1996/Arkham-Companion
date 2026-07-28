@@ -7,6 +7,7 @@ import * as ArkhamGame from '@/arkham/types/Game';
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message';
 import TokenPool from '@/arkham/components/TokenPool.vue';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import Token from '@/arkham/components/Token.vue';
 import * as Arkham from '@/arkham/types/Treachery';
 
@@ -30,6 +31,11 @@ const image = computed(() => cardImage(props.treachery.cardCode))
 const id = computed(() => props.treachery.id)
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 const isExhausted = computed(() => props.treachery.exhausted)
+const ownerInvestigatorId = computed(() => props.treachery.owner)
+const ownedByCurrentPlayer = computed(() => {
+  const ownerId = ownerInvestigatorId.value
+  return ownerId !== null && props.game.investigators[ownerId]?.playerId === props.playerId
+})
 
 function canInteract(c: Message): boolean {
   if (c.tag === "TargetLabel") {
@@ -98,6 +104,15 @@ const cardAction = computed(() => choices.value.findIndex(canInteract))
       :data-image="image"
       :game="game"
       @click="$emit('choose', ability.index)"
+    />
+    <AbilityTriggerModeToggle
+      v-if="ownedByCurrentPlayer && ownerInvestigatorId"
+      :game="game"
+      :player-id="playerId"
+      :investigator-id="ownerInvestigatorId"
+      :card-code="treachery.cardCode"
+      :abilities="abilities"
+      :exhausted="isExhausted"
     />
     <div class="pool">
       <TokenPool :tokens="treachery.tokens" :overrides="tokenOverrides" />

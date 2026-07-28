@@ -3,7 +3,7 @@ import * as Arkham from '@/arkham/types/Game'
 import { LogContents, LogKey, formatKey, logContentsDecoder } from '@/arkham/types/Log'
 import { toCapitalizedWords, formatContent } from '@/arkham/helpers'
 import { cardArt } from '@/arkham/cardImages'
-import { computed, ref, onMounted, onUnmounted, watch, type Component } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch, nextTick, type Component } from 'vue'
 import { fetchCard, fetchGameAchievements } from '@/arkham/api'
 import type { Achievement } from '@/arkham/types/Achievement'
 import type { CardDef } from '@/arkham/types/CardDef'
@@ -30,6 +30,7 @@ import CampaignLogAdditionalSection from '@/arkham/components/CampaignLogAdditio
 import campaignJSON from '@/arkham/data/campaigns.json'
 import { useI18n } from 'vue-i18n'
 import { useDbCardStore } from '@/stores/dbCards'
+import { setCurrentNarration } from '@/arkham/narration'
 
 import DiscoveredRunes from '@/arkham/components/TheDrownedCity/DiscoveredRunes.vue'
 import ResidentNotes from '@/arkham/components/TheFeastOfHemlockVale/ResidentNotes.vue'
@@ -693,6 +694,7 @@ const mapData = computed(() => {
 
 // --- Back-to-top (the .content element is the scroll container) ---------------
 const contentEl = ref<HTMLElement | null>(null)
+const campaignLogEl = ref<HTMLElement | null>(null)
 const showBackToTop = ref(false)
 
 const onContentScroll = () => {
@@ -703,20 +705,49 @@ const scrollToTop = () => {
   contentEl.value?.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+const publishCampaignLogNarration = async () => {
+  await nextTick()
+  const element = campaignLogEl.value
+  if (!element) return
+  const ignored = new Set(
+    Array.from(element.querySelectorAll('nav button')).map((button) =>
+      (button.textContent ?? '').trim(),
+    ),
+  )
+  const text = element.innerText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !ignored.has(line))
+    .join('。')
+  if (!text) return
+  setCurrentNarration({
+    id: `campaign-log:${props.game.id}:${activeTab.value}:${selectedTitle.value}:${text}`,
+    category: 'campaignLog',
+    segments: [{ category: 'campaignLog', text }],
+  })
+}
+
 onMounted(() => {
   contentEl.value?.addEventListener('scroll', onContentScroll, { passive: true })
+  void publishCampaignLogNarration()
 })
 
 onUnmounted(() => {
   contentEl.value?.removeEventListener('scroll', onContentScroll)
 })
+
+watch(
+  [activeTab, selectedTitle, selectedLog],
+  () => void publishCampaignLogNarration(),
+  { deep: true, flush: 'post' },
+)
 </script>
 
 <template>
   <LogIcons />
   <div class="content column" ref="contentEl">
     <div class="log-column">
-      <div class="campaign-log column">
+      <div class="campaign-log column" ref="campaignLogEl">
         <div class="campaign-log-header">
           <slot name="header-leading" />
           <h1>{{ game.name }}</h1>

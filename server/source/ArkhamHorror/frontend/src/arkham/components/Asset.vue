@@ -401,6 +401,7 @@ function startDrag(event: DragEvent) {
             :investigator-id="asset.owner"
             :card-code="cardCode"
             :abilities="abilities"
+            :exhausted="exhausted"
           />
           <div v-if="investigators.length > 0" class="in-vehicle">
             <div v-for="investigator in investigators" :key="investigator.id">

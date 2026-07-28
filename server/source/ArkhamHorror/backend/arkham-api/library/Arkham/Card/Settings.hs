@@ -49,6 +49,11 @@ data AbilityTriggerMode
   deriving stock (Show, Ord, Eq, Generic, Data)
   deriving anyclass (ToJSON, FromJSON)
 
+-- Ability indexes are non-negative. This reserved entry stores the mode for
+-- playing a card during a response window, such as a Fast event from hand.
+playCardTriggerModeIndex :: Int
+playCardTriggerModeIndex = -1
+
 data PerCardSettings = PerCardSettings
   { cardIgnoreUnrelatedSkillTestTriggers :: Bool
   , cardIgnoreDuringSkillTests :: Bool

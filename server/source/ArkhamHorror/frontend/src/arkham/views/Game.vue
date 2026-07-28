@@ -99,6 +99,8 @@ import AchievementToast from '@/arkham/components/AchievementToast.vue'
 import AiControlPanel from '@/arkham/components/AiControlPanel.vue'
 import AiQuestionsPanel from '@/arkham/components/AiQuestionsPanel.vue'
 import ResponseStatusBar from '@/arkham/components/ResponseStatusBar.vue'
+import NarrationMenu from '@/arkham/components/NarrationMenu.vue'
+import { clearCurrentNarration, stopNarration } from '@/arkham/narration'
 import Draggable from '@/components/Draggable.vue'
 import Menu from '@/components/Menu.vue'
 import Prompt from '@/components/Prompt.vue'
@@ -335,13 +337,17 @@ const showShortcuts = ref(false)
 const isMobileViewport = () =>
   typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches
 const showSidebar = ref(
-  isMobileViewport() ? false : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true'),
+  isMobileViewport()
+    ? false
+    : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true'),
 )
 const socketError = ref(false)
 const error = ref<string | null>(null)
 const solo = ref(false)
 const soundsDisabled = ref(localStorage.getItem('arkhamSoundsDisabled') === 'true')
-const showOtherPlayersHands = ref(getGameLocalStorageItem(props.gameId, 'showOtherPlayersHands') === 'true')
+const showOtherPlayersHands = ref(
+  getGameLocalStorageItem(props.gameId, 'showOtherPlayersHands') === 'true',
+)
 watch(showOtherPlayersHands, (v) => {
   setGameLocalStorageItem(props.gameId, 'showOtherPlayersHands', v ? 'true' : 'false')
 })
@@ -411,7 +417,10 @@ const choicesSourceByPlayer = computed(() => {
   if (!currentGame) return new Map<string, Source | null>()
 
   return new Map(
-    Object.keys(currentGame.question).map((pid) => [pid, ArkhamGame.choicesSource(currentGame, pid)]),
+    Object.keys(currentGame.question).map((pid) => [
+      pid,
+      ArkhamGame.choicesSource(currentGame, pid),
+    ]),
   )
 })
 const choicesTooltipByPlayer = computed(() => {
@@ -419,7 +428,10 @@ const choicesTooltipByPlayer = computed(() => {
   if (!currentGame) return new Map<string, string | null>()
 
   return new Map(
-    Object.keys(currentGame.question).map((pid) => [pid, ArkhamGame.choicesTooltip(currentGame, pid)]),
+    Object.keys(currentGame.question).map((pid) => [
+      pid,
+      ArkhamGame.choicesTooltip(currentGame, pid),
+    ]),
   )
 })
 const gameIndexes = computed(() => buildGameIndexes(game.value))
@@ -481,11 +493,13 @@ const isActualScenarioView = computed(() => {
   if (Object.entries(g.investigators).length === 0) return false
 
   const activeQuestionTag = questionTag(question.value)
-  return activeQuestionTag !== 'ChooseUpgradeDeck'
-    && activeQuestionTag !== 'ChooseDeck'
-    && activeQuestionTag !== 'PickScenarioSettings'
-    && activeQuestionTag !== 'PickCampaignSettings'
-    && activeQuestionTag !== 'ContinueCampaign'
+  return (
+    activeQuestionTag !== 'ChooseUpgradeDeck' &&
+    activeQuestionTag !== 'ChooseDeck' &&
+    activeQuestionTag !== 'PickScenarioSettings' &&
+    activeQuestionTag !== 'PickCampaignSettings' &&
+    activeQuestionTag !== 'ContinueCampaign'
+  )
 })
 
 const realityAcidLightOverride = ref<boolean | null>(null)
@@ -494,7 +508,9 @@ const realityAcidLightMetaActive = computed(() => {
   return scenario?.id === 'c85001' && scenario.meta?.lightActive === true
 })
 
-const realityAcidLightActive = computed(() => realityAcidLightOverride.value ?? realityAcidLightMetaActive.value)
+const realityAcidLightActive = computed(
+  () => realityAcidLightOverride.value ?? realityAcidLightMetaActive.value,
+)
 
 watch(realityAcidLightMetaActive, () => {
   realityAcidLightOverride.value = null
@@ -508,7 +524,11 @@ watch(question, async () => {
 const realityAcidLightDevoured = computed(() => {
   const scenario = game.value?.scenario
   if (scenario?.id !== 'c85001') return false
-  return realityAcidLightMetaActive.value || scenario.meta?.lightDevoured === true || realityAcidLightOverride.value !== null
+  return (
+    realityAcidLightMetaActive.value ||
+    scenario.meta?.lightDevoured === true ||
+    realityAcidLightOverride.value !== null
+  )
 })
 
 const toggleRealityAcidLight = () => {
@@ -527,7 +547,8 @@ const activePlayerId = computed(() => game.value?.activePlayerId ?? null)
 function activePlayerBelongsToCurrentPlayer(g: Arkham.Game, currentPlayerId: string) {
   if (g.activePlayerId === currentPlayerId) return true
   return Object.values(g.investigators).some(
-    (investigator) => investigator.id === g.activePlayerId && investigator.playerId === currentPlayerId,
+    (investigator) =>
+      investigator.id === g.activePlayerId && investigator.playerId === currentPlayerId,
   )
 }
 
@@ -564,20 +585,23 @@ watch(activePlayerId, (newActivePlayerId, oldActivePlayerId) => {
 // A skill test opening is another moment an AI can offer help: committing a card
 // to the performer's test (offerCommit). Fetch when a test opens, regardless of
 // whose turn it is, so an AI can offer to boost a (human or AI) performer.
-watch(() => (game.value?.skillTest ?? null) !== null, (hasTest, hadTest) => {
-  if (!hasTest || hadTest) return
-  if (!aiDevEnabled.value || props.spectate) return
-  const g = game.value
-  if (!g) return
-  if (Object.keys(g.settings.aiPlayers).length === 0) return
+watch(
+  () => (game.value?.skillTest ?? null) !== null,
+  (hasTest, hadTest) => {
+    if (!hasTest || hadTest) return
+    if (!aiDevEnabled.value || props.spectate) return
+    const g = game.value
+    if (!g) return
+    if (Object.keys(g.settings.aiPlayers).length === 0) return
 
-  Api.fetchAiQuestions(g.id)
-    .then((qs) => {
-      ai.mergeQuestions(qs, g.scenarioSteps)
-      resolveAiTargetQuestions()
-    })
-    .catch((e) => console.error(e))
-})
+    Api.fetchAiQuestions(g.id)
+      .then((qs) => {
+        ai.mergeQuestions(qs, g.scenarioSteps)
+        resolveAiTargetQuestions()
+      })
+      .catch((e) => console.error(e))
+  },
+)
 
 // Auto-resolve any AI-target question that carries a precomputed answer: replay
 // its chosen option's RAW config Messages over the debug channel and drop it from
@@ -610,18 +634,24 @@ function skipTriggerEntries(g: Arkham.Game): SkipTriggerEntry[] {
   return result
 }
 
-function investigatorBelongsToPlayer(g: Arkham.Game, investigatorId: string, targetPlayerId: string) {
+function investigatorBelongsToPlayer(
+  g: Arkham.Game,
+  investigatorId: string,
+  targetPlayerId: string,
+) {
   return g.investigators[investigatorId]?.playerId === targetPlayerId
 }
 
 function isInvestigatorTurn(g: Arkham.Game) {
-  return g.phaseStep?.tag === 'InvestigationPhaseStep'
-    && [
+  return (
+    g.phaseStep?.tag === 'InvestigationPhaseStep' &&
+    [
       'NextInvestigatorsTurnBeginsStep',
       'NextInvestigatorsTurnBeginsWindow',
       'InvestigatorTakesActionStep',
       'InvestigatorsTurnEndsStep',
     ].includes(g.phaseStep.contents)
+  )
 }
 
 function canCurrentPlayerSkipAllWindows(g: Arkham.Game, currentPlayerId: string) {
@@ -852,7 +882,9 @@ function playAudioFile(fileName: string) {
 function continueSkipAll() {
   if (skipAllPending.value.size === 0) return
   if (!game.value) return
-  const next = authorizedSkipTriggerEntries(game.value).find((e) => skipAllPending.value.has(e.playerId))
+  const next = authorizedSkipTriggerEntries(game.value).find((e) =>
+    skipAllPending.value.has(e.playerId),
+  )
   if (!next) {
     skipAllPending.value = new Set()
     return
@@ -927,15 +959,15 @@ const aiStuckSeats = ref<Set<string>>(new Set())
 
 // All configured AI seats (used to mount the dev panel); the driver further
 // filters to enabled seats.
-const aiSeatIds = computed(() =>
-  game.value ? Object.keys(game.value.settings.aiPlayers) : [],
-)
+const aiSeatIds = computed(() => (game.value ? Object.keys(game.value.settings.aiPlayers) : []))
 
 function innerQuestionTag(q: Question | undefined): string | null {
   let cur: Question | undefined = q
   while (
     cur &&
-    (cur.tag === 'QuestionLabel' || cur.tag === 'PayCostQuestion' || cur.tag === 'QuestionWithSource')
+    (cur.tag === 'QuestionLabel' ||
+      cur.tag === 'PayCostQuestion' ||
+      cur.tag === 'QuestionWithSource')
   ) {
     cur = 'question' in cur ? cur.question : undefined
   }
@@ -1058,22 +1090,25 @@ function driveAi() {
     }
 
     const delay = g.settings.aiPlayers[pid]?.aiResponseDelayMs ?? 1500
-    const timer = setTimeout(() => {
-      aiScheduled.delete(pid)
-      const cur = game.value
-      // Re-validate at fire time so a question change/clear, a state change, a
-      // disabled seat, or a paused master switch cancels the stale send.
-      if (!cur || !ai.enabled || props.spectate) return
-      if (cur.gameState.tag !== 'IsActive') return
-      if (cur.scenarioSteps !== version) return
-      if (!(pid in cur.question)) return
-      if (!enabledAiSeats(cur).includes(pid)) return
-      // A skill test that opened after this send was armed turns the seat's
-      // question into an assist window; don't fire AiAnswer into it (it loops).
-      if (isAiAssistWindow(cur, pid)) return
-      aiSentVersion.set(pid, version)
-      send(JSON.stringify({ tag: 'AiAnswer', playerId: pid }))
-    }, Math.max(0, delay))
+    const timer = setTimeout(
+      () => {
+        aiScheduled.delete(pid)
+        const cur = game.value
+        // Re-validate at fire time so a question change/clear, a state change, a
+        // disabled seat, or a paused master switch cancels the stale send.
+        if (!cur || !ai.enabled || props.spectate) return
+        if (cur.gameState.tag !== 'IsActive') return
+        if (cur.scenarioSteps !== version) return
+        if (!(pid in cur.question)) return
+        if (!enabledAiSeats(cur).includes(pid)) return
+        // A skill test that opened after this send was armed turns the seat's
+        // question into an assist window; don't fire AiAnswer into it (it loops).
+        if (isAiAssistWindow(cur, pid)) return
+        aiSentVersion.set(pid, version)
+        send(JSON.stringify({ tag: 'AiAnswer', playerId: pid }))
+      },
+      Math.max(0, delay),
+    )
     aiScheduled.set(pid, { version, timer })
   }
 }
@@ -1086,7 +1121,10 @@ watch(game, () => {
   if (game.value) ai.clearStale(game.value.scenarioSteps)
   driveAi()
 })
-watch(() => ai.enabled, () => driveAi())
+watch(
+  () => ai.enabled,
+  () => driveAi(),
+)
 // Toggling the dev "AI Investigators" flag mid-session stands the driver down /
 // brings it back up immediately (the AiControlPanel mount is reactive on its own).
 watch(aiDevEnabled, (enabled) => {
@@ -1775,7 +1813,10 @@ provide('chooseAmounts', chooseAmounts)
 provide('scenarioSpecificAnswer', scenarioSpecificAnswer)
 provide('switchInvestigator', switchInvestigator)
 provide('solo', solo)
-provide('spectate', computed(() => props.spectate))
+provide(
+  'spectate',
+  computed(() => props.spectate),
+)
 provide('processing', processing)
 provide('uiLock', uiLock)
 provide('skipAllTriggers', skipAllTriggers)
@@ -1784,13 +1825,21 @@ provide('skipAllInProgress', skipAllInProgress)
 provide('showOtherPlayersHands', showOtherPlayersHands)
 
 function updateFocusLight() {
-  const highlighted = [...document.querySelectorAll<HTMLElement>(
-    '.source-highlight, .ability-target, .card-frame-inner.highlighted, .cards-under-indicator--highlighted',
-  )].find((el) => {
+  const highlighted = [
+    ...document.querySelectorAll<HTMLElement>(
+      '.source-highlight, .ability-target, .card-frame-inner.highlighted, .cards-under-indicator--highlighted',
+    ),
+  ].find((el) => {
     if (el.closest('.scenario-cards')) return false
     const rect = el.getBoundingClientRect()
-    return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.right >= 0
-      && rect.top <= window.innerHeight && rect.left <= window.innerWidth
+    return (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      rect.bottom >= 0 &&
+      rect.right >= 0 &&
+      rect.top <= window.innerHeight &&
+      rect.left <= window.innerWidth
+    )
   })
 
   if (!highlighted) {
@@ -1841,7 +1890,11 @@ onMounted(() => {
   ;(window as any).debugChoose = choose
   document.addEventListener('mousemove', onMove, { passive: true })
   focusLightObserver = new MutationObserver(scheduleFocusLightUpdate)
-  focusLightObserver.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true })
+  focusLightObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class'],
+    subtree: true,
+  })
   scheduleFocusLightUpdate()
   document.addEventListener('keydown', handleKeyPress)
   window.addEventListener('arkham-setting-change', handleSettingChange)
@@ -1852,6 +1905,8 @@ onMounted(() => {
 
 onBeforeRouteLeave(() => close())
 onUnmounted(() => {
+  stopNarration()
+  clearCurrentNarration()
   document.removeEventListener('keydown', handleKeyPress)
   document.removeEventListener('mousemove', onMove)
   focusLightObserver?.disconnect()
@@ -1878,16 +1933,17 @@ onUnmounted(() => {
       </section>
     </div>
   </div>
-  <div id="game" v-else-if="ready && game && playerId" :style="{ '--epic-bar-height': epicBarHeight + 'px' }">
+  <div
+    id="game"
+    v-else-if="ready && game && playerId"
+    :style="{ '--epic-bar-height': epicBarHeight + 'px' }"
+  >
     <AiControlPanel
       v-if="aiDevEnabled && game && aiSeatIds.length > 0"
       :game="game"
       :stuck-seats="aiStuckSeats"
     />
-    <AiQuestionsPanel
-      v-if="aiDevEnabled && game && aiSeatIds.length > 0"
-      :game="game"
-    />
+    <AiQuestionsPanel v-if="aiDevEnabled && game && aiSeatIds.length > 0" :game="game" />
     <dialog v-if="error" class="error-dialog">
       <h2>{{ $t('error') }}</h2>
       <p class="error-message">{{ error }}</p>
@@ -2208,6 +2264,7 @@ onUnmounted(() => {
         <button v-if="isActualScenarioView" @click="toggleSidebar">
           <ArrowsRightLeftIcon aria-hidden="true" /> {{ $t('gameBar.toggleSidebar') }}
         </button>
+        <NarrationMenu />
       </div>
     </div>
     <div v-if="hasEventBar" ref="epicBarRef" class="epic-bar-slot">
@@ -2244,12 +2301,7 @@ onUnmounted(() => {
           :closeSettings="() => (showSettings = false)"
         />
       </Draggable>
-      <CampaignLog
-        v-if="showLog && game !== null"
-        :game="game"
-        :cards="cards"
-        :playerId="playerId"
-      >
+      <CampaignLog v-if="showLog && game !== null" :game="game" :cards="cards" :playerId="playerId">
         <template #header-leading>
           <button class="back-button" @click="showLog = false">
             <font-awesome-icon icon="arrow-left" class="back-icon" />
@@ -2259,13 +2311,27 @@ onUnmounted(() => {
       </CampaignLog>
       <div v-else class="game-main">
         <div v-if="showTheSilenceModal" class="the-silence-modal-backdrop">
-          <div class="the-silence-modal" role="dialog" aria-modal="true" aria-labelledby="the-silence-modal-title">
-            <img class="the-silence-modal__agenda no-overlay" :src="imgsrc('cards/10652.avif')" alt="The Silence" />
+          <div
+            class="the-silence-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="the-silence-modal-title"
+          >
+            <img
+              class="the-silence-modal__agenda no-overlay"
+              :src="imgsrc('cards/10652.avif')"
+              alt="The Silence"
+            />
             <div class="the-silence-modal__body">
               <h2 id="the-silence-modal-title">The Silence</h2>
-              <p>If you look at the Cosmic Emissary enemy for more than 15 seconds at a time, you are <strong>driven insane</strong>.</p>
+              <p>
+                If you look at the Cosmic Emissary enemy for more than 15 seconds at a time, you are
+                <strong>driven insane</strong>.
+              </p>
               <div class="the-silence-modal__actions">
-                <button type="button" class="the-silence-modal__confirm" @click="continueUI">{{ $t('ok') }}</button>
+                <button type="button" class="the-silence-modal__confirm" @click="continueUI">
+                  {{ $t('ok') }}
+                </button>
               </div>
             </div>
           </div>
@@ -2378,10 +2444,7 @@ onUnmounted(() => {
         <div
           class="sidebar"
           :class="{ 'sidebar--empty-log': gameLog.length === 0 }"
-          v-if="
-            showSidebar &&
-            isActualScenarioView
-          "
+          v-if="showSidebar && isActualScenarioView"
         >
           <GameLog :game="game" :gameLog="gameLog" @undo="undo" />
         </div>
@@ -2417,7 +2480,7 @@ onUnmounted(() => {
       v-if="confirmingUndoScenario"
       prompt="$game.areYouSureUndoScenario"
       :yes="undoScenario"
-      :no="() => confirmingUndoScenario = false"
+      :no="() => (confirmingUndoScenario = false)"
     />
   </div>
 </template>
@@ -2438,7 +2501,10 @@ onUnmounted(() => {
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 
   .back-icon {
     font-size: 0.85em;
@@ -2982,7 +3048,9 @@ header {
   border: 1px solid rgba(79, 224, 214, 0.65);
   border-radius: 14px;
   background: linear-gradient(135deg, rgba(5, 29, 35, 0.98), rgba(12, 75, 82, 0.98));
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7), 0 0 28px rgba(79, 224, 214, 0.38);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.7),
+    0 0 28px rgba(79, 224, 214, 0.38);
   color: #d8fffb;
 }
 

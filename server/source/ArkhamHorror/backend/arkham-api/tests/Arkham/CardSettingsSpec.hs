@@ -27,6 +27,7 @@ spec = describe "Card settings" do
               Map.fromList
                 [ (1, AbilityOwnerOnly)
                 , (2, AbilityAutoSkip)
+                , (playCardTriggerModeIndex, AbilityOwnerOnly)
                 ]
           }
     eitherDecode' (encode settings) `shouldBe` Right settings
@@ -40,11 +41,17 @@ spec = describe "Card settings" do
               .= object
                 [ "1" .= AbilityAlwaysAsk
                 , "3" .= AbilityAutoSkip
+                , "-1" .= AbilityOwnerOnly
                 ]
           ]
     fromJSON @SetCardSetting payload
       `shouldBe` Success
         ( SetCardSetting
             CardAbilityModes
-            (Map.fromList [(1, AbilityAlwaysAsk), (3, AbilityAutoSkip)])
+            ( Map.fromList
+                [ (playCardTriggerModeIndex, AbilityOwnerOnly)
+                , (1, AbilityAlwaysAsk)
+                , (3, AbilityAutoSkip)
+                ]
+            )
         )

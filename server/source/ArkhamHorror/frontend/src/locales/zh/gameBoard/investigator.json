@@ -9,15 +9,18 @@
     "abilityTriggerMode": {
         "AbilityOwnerOnly": {
             "short": "己",
-            "description": "能力{index}：仅在自己的回合或技能检定中询问"
+            "description": "能力{index}：仅在所有者回合询问",
+            "playDescription": "快速打牌：仅在所有者回合询问"
         },
         "AbilityAlwaysAsk": {
             "short": "常",
-            "description": "能力{index}：始终询问"
+            "description": "能力{index}：始终询问",
+            "playDescription": "快速打牌：始终询问"
         },
         "AbilityAutoSkip": {
             "short": "停",
-            "description": "能力{index}：始终自动跳过"
+            "description": "能力{index}：始终自动跳过",
+            "playDescription": "快速打牌：始终自动跳过"
         }
     },
     "responseStatus": {

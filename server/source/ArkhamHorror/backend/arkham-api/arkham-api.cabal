@@ -2052,6 +2052,7 @@ library
       Arkham.Campaign.Campaigns.TheForgottenAge
       Arkham.Campaign.Campaigns.TheInnsmouthConspiracy
       Arkham.Campaign.Campaigns.ThePathToCarcosa
+      Arkham.Campaign.Campaigns.ThePathToCarcosa.Achievements
       Arkham.Campaign.Campaigns.TheScarletKeys
       Arkham.Campaign.Import.Lifted
       Arkham.Campaign.Option
@@ -6828,6 +6829,7 @@ test-suite spec
       Api.Handler.Arkham.DecksSpec
       Arkham.Achievements.ReturnToNightOfTheZealotSpec
       Arkham.Achievements.ReturnToTheDunwichLegacySpec
+      Arkham.Achievements.ReturnToThePathToCarcosaSpec
       Arkham.Act.Cards.AFamiliarPatternSpec
       Arkham.Act.Cards.BlackwatersBaneEpicMultiplayerSpec
       Arkham.Act.Cards.ExposeTheAnomalyEpicMultiplayerSpec
@@ -7020,6 +7022,7 @@ test-suite spec
       Arkham.Investigator.Cards.TonyMorganSpec
       Arkham.Investigator.Cards.WendyAdamsSpec
       Arkham.Investigator.Cards.ZoeySamarasSpec
+      Arkham.Investigator.RunnerSpec
       Arkham.Location.Cards.DreamGatePointlessRealitySpec
       Arkham.Location.Cards.DreamGateWondrousJourneySpec
       Arkham.Location.Cards.EnchantedWoodsVillageOfZoogsSpec

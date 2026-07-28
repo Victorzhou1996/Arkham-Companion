@@ -7,6 +7,7 @@ import Arkham.Ability as X hiding (PaidCost)
 import Arkham.ChaosToken as X
 import Arkham.ClassSymbol as X
 import Arkham.Classes as X
+import Arkham.Cost.Status qualified as Cost
 import Arkham.ForMovement
 import Arkham.Helpers.Investigator as X
 import Arkham.Helpers.Message as X hiding (
@@ -62,7 +63,6 @@ import Arkham.Helpers.Action (
 import Arkham.Helpers.Card (
   cardIsFast',
   getModifiedCardCost,
-  passesLimits,
  )
 import Arkham.Helpers.Cost (getCanAffordCost)
 import Arkham.Helpers.Criteria (passesCriteria)
@@ -75,7 +75,7 @@ import Arkham.Helpers.Location (
  )
 import Arkham.Helpers.Log (hasCampaignOption)
 import Arkham.Helpers.Modifiers
-import Arkham.Helpers.Playable (getPlayableCards)
+import Arkham.Helpers.Playable (getIsPlayable, getPlayableCards)
 import Arkham.Helpers.SkillTest
 import Arkham.Helpers.Slot (
   canPutIntoSlot,
@@ -165,11 +165,20 @@ instance RunMessage Investigator where
       modifiers' <- getModifiers (toTarget i)
       let msg' = if Blank `elem` modifiers' then Blanked msg else msg
       case investigatorForm (toAttrs a) of
-        TransfiguredForm inner -> withInvestigatorCardCode inner \(SomeInvestigator @a) ->
-          Investigator
-            . investigatorFromAttrs @original
-            . toAttrs
-            <$> runMessage @a msg' (investigatorFromAttrs @a (toAttrs a))
+        TransfiguredForm inner -> withInvestigatorCardCode inner \(SomeInvestigator @a) -> do
+          let a0 = toAttrs a
+          a' <- toAttrs <$> runMessage @a msg' (investigatorFromAttrs @a (asFormAttrs a0))
+          -- the form reads and writes its own meta, ours is left alone for our
+          -- signature cards. Changing form means a different form, which starts
+          -- uninitialized.
+          pure
+            . Investigator
+            $ investigatorFromAttrs @original
+              a'
+                { investigatorMeta = investigatorMeta a0
+                , investigatorFormMeta =
+                    if investigatorForm a' == investigatorForm a0 then investigatorMeta a' else Null
+                }
         _ -> Investigator <$> runMessage msg' a
 
 instance RunMessage InvestigatorAttrs where
@@ -232,11 +241,11 @@ getAllAbilitiesSkippable attrs windows = allM (getWindowSkippable attrs windows)
 
 getWindowSkippable :: (Tracing m, HasGame m) => InvestigatorAttrs -> [Window] -> Window -> m Bool
 getWindowSkippable
-  _attrs
+  attrs
   ws
   ( windowTiming &&& windowType ->
       (Timing.When, Window.PlayCard iid (Window.CardPlay card@(PlayerCard pc) asAction))
-    ) = do
+    ) | iid == toId attrs = do
     allModifiers <- getModifiers card
     mCost <- getModifiedCardCost iid card
     isFast <- cardIsFast' (\_ -> pure allModifiers) card
@@ -278,28 +287,34 @@ getWindowSkippable
         $ getCanAffordCost iid pc [#play] ws (ResourceCost $ max 0 $ cost - additionalResources)
       when (not isFast && asAction) do
         liftGuardM $ getCanAffordCost iid pc [#play] ws (ActionCost 1)
-      liftGuardM $ withAlteredGame withoutCanModifiers $ passesLimits iid card
+      liftGuardM $ withAlteredGame withoutCanModifiers $ getIsPlayable iid iid Cost.PaidCost ws card
 getWindowSkippable
   attrs
-  _ws
+  ws
   ( windowTiming &&& windowType ->
       (Timing.When, Window.PlayEvent iid eid)
     ) | iid == toId attrs = do
     card <- field EventCard eid
-    withAlteredGame withoutCanModifiers $ passesLimits iid card
-getWindowSkippable _ _ w@(windowTiming &&& windowType -> (Timing.When, Window.ActivateAbility iid _ ab)) = do
-  let
-    excludeOne [] = []
-    excludeOne (uab : xs) | ab == usedAbility uab = do
-      if usedTimes uab <= 1
-        then xs
-        else uab {usedTimes = usedTimes uab - 1} : xs
-    excludeOne (uab : xs) = uab : excludeOne xs
-  andM
-    [ getCanAffordUseWith excludeOne CanNotIgnoreAbilityLimit iid ab [w]
-    , withAlteredGame withoutCanModifiers
-        $ passesCriteria iid Nothing ab.source ab.requestor [w] (abilityCriteria ab)
-    ]
+    -- A PlayEvent "when" trigger is only skippable if the event would still be
+    -- legal without any CanModify helpers from those triggers. This catches
+    -- fight/evade events that are only playable because a reaction such as
+    -- Miguel's Knapsack will make the investigator AsIfAt another location; in
+    -- that case skipping the trigger would leave the event with no legal target.
+    withAlteredGame withoutCanModifiers $ getIsPlayable iid iid Cost.PaidCost ws card
+getWindowSkippable attrs _ w@(windowTiming &&& windowType -> (Timing.When, Window.ActivateAbility iid _ ab))
+  | iid == toId attrs = do
+    let
+      excludeOne [] = []
+      excludeOne (uab : xs) | ab == usedAbility uab = do
+        if usedTimes uab <= 1
+          then xs
+          else uab {usedTimes = usedTimes uab - 1} : xs
+      excludeOne (uab : xs) = uab : excludeOne xs
+    andM
+      [ getCanAffordUseWith excludeOne CanNotIgnoreAbilityLimit iid ab [w]
+      , withAlteredGame withoutCanModifiers
+          $ passesCriteria iid Nothing ab.source ab.requestor [w] (abilityCriteria ab)
+      ]
 getWindowSkippable attrs ws (windowType -> Window.WouldPayCardCost iid _ _ card@(PlayerCard pc)) | iid == toId attrs = do
   allModifiers <- getModifiers card
   mCost <- getModifiedCardCost iid card
@@ -316,11 +331,27 @@ getWindowSkippable attrs ws (windowType -> Window.WouldPayCardCost iid _ _ card@
     ]
 getWindowSkippable _ _ _ = pure True
 
+cardTriggerMode :: InvestigatorAttrs -> CardCode -> Int -> AbilityTriggerMode
+cardTriggerMode attrs cardCode modeIndex =
+  fromMaybe AbilityAlwaysAsk do
+    settings <- Map.lookup cardCode attrs.settings.perCardSettings
+    Map.lookup modeIndex settings.cardAbilityModes
+
 abilityTriggerMode :: InvestigatorAttrs -> Ability -> AbilityTriggerMode
 abilityTriggerMode attrs Ability {abilityCardCode, abilityIndex} =
-  fromMaybe AbilityAlwaysAsk do
-    settings <- Map.lookup abilityCardCode attrs.settings.perCardSettings
-    Map.lookup abilityIndex settings.cardAbilityModes
+  cardTriggerMode attrs abilityCardCode abilityIndex
+
+triggerModeAllows
+  :: (HasGame m, Tracing m)
+  => InvestigatorId
+  -> AbilityTriggerMode
+  -> m Bool
+triggerModeAllows iid = \case
+  AbilityAlwaysAsk -> pure True
+  AbilityAutoSkip -> pure False
+  AbilityOwnerOnly -> do
+    activeInvestigator <- selectOne ActiveInvestigator
+    pure $ activeInvestigator == Just iid
 
 abilityTriggerModeAllows
   :: (HasGame m, Tracing m)
@@ -330,13 +361,17 @@ abilityTriggerModeAllows
   -> m Bool
 abilityTriggerModeAllows iid attrs ability
   | not (isFastAbility ability || isReactionAbility ability) = pure True
-  | otherwise = case abilityTriggerMode attrs ability of
-      AbilityAlwaysAsk -> pure True
-      AbilityAutoSkip -> pure False
-      AbilityOwnerOnly -> do
-        activeInvestigator <- selectOne ActiveInvestigator
-        skillTestInvestigator <- getSkillTestInvestigator
-        pure $ activeInvestigator == Just iid || skillTestInvestigator == Just iid
+  | otherwise = triggerModeAllows iid $ abilityTriggerMode attrs ability
+
+playableCardTriggerModeAllows
+  :: (HasGame m, Tracing m)
+  => InvestigatorId
+  -> InvestigatorAttrs
+  -> Card
+  -> m Bool
+playableCardTriggerModeAllows iid attrs card =
+  triggerModeAllows iid
+    $ cardTriggerMode attrs (toCardCode card) playCardTriggerModeIndex
 
 runWindow
   :: (HasGame m, Tracing m, HasQueue Message m)
@@ -346,41 +381,51 @@ runWindow attrs windows actions playableCards = do
   unless (null playableCards && null actions) $ do
     anyForced <- anyM (isForcedAbility iid) actions
     player <- getPlayer iid
+    let globalSkip = attrs.settings.globalSettings.ignoreUnrelatedSkillTestTriggers
+    let
+      applySettingsFilter ab =
+        if not globalSkip
+          then pure True
+          else
+            getSkillTest >>= \case
+              Nothing -> pure True
+              Just st -> case ab.wantsSkillTest of
+                Nothing -> pure $ not $ globalSkip && isFastAbility ab
+                Just matcher -> skillTestMatches iid GameSource st matcher
+      applyOptionalAbilityFilters ab = do
+        forced <- isForcedAbility iid ab
+        if forced
+          then pure True
+          else
+            (&&)
+              <$> applySettingsFilter ab
+              <*> abilityTriggerModeAllows iid attrs ab
     if anyForced
       then do
         let
           (isSilent, normal) = partition isSilentForcedAbility actions
           toForcedAbilities = map (flip (UseAbility iid) windows)
           toUseAbilities = map ((\f -> f windows [] []) . AbilityLabel iid)
+        normal' <- filterM applyOptionalAbilityFilters normal
         -- Silent forced abilities should trigger automatically
         pushAll
           $ toForcedAbilities isSilent
-          <> [asWindowChoose windows $ chooseOne player (toUseAbilities normal) | notNull normal]
-          <> [Do (CheckWindows windows) | null normal] -- if we have no normal windows the forced silent will not retrigger
+          <> [asWindowChoose windows $ chooseOne player (toUseAbilities normal') | notNull normal']
+          <> [Do (CheckWindows windows) | null normal'] -- if we have no normal windows the forced silent will not retrigger
       else do
-        let globalSkip = attrs.settings.globalSettings.ignoreUnrelatedSkillTestTriggers
-        let
-          applySettingsFilter ab =
-            if not globalSkip
-              then pure True
-              else
-                getSkillTest >>= \case
-                  Nothing -> pure True
-                  Just st -> case ab.wantsSkillTest of
-                    Nothing -> pure $ not $ globalSkip && isFastAbility ab
-                    Just matcher -> skillTestMatches iid GameSource st matcher
         relevantActions <- filterM applySettingsFilter actions
         actions' <- filterM (abilityTriggerModeAllows iid attrs) relevantActions
+        playableCards' <- filterM (playableCardTriggerModeAllows iid attrs) playableCards
         actionsWithMatchingWindows <-
           for actions' $ \ability@Ability {..} ->
             (ability,) <$> filterM (\w -> windowMatches iid abilitySource w abilityWindow) windows
         skippable <- getAllAbilitiesSkippable attrs windows
-        unless (null playableCards && null actionsWithMatchingWindows) do
+        unless (null playableCards' && null actionsWithMatchingWindows) do
           push
             $ asWindowChoose windows
             $ chooseOne player
             $ [ targetLabel c [InitiatePlayCardWithWindows iid c Nothing NoPayment windows True]
-              | c <- playableCards
+              | c <- playableCards'
               ]
             <> map
               ( \(ability, windows') ->
@@ -899,7 +944,11 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     -- Targets that are merely attackable "as if an enemy" (Mist-Pylons, Key Loci) are not
     -- real enemies. Only offer them when the fight is unrestricted; a fight narrowed by
     -- the card's matcher (e.g. Toe to Toe's @EnemyCanAttack You@) must not include them.
-    let includeAsIfEnemy = coveredByAnyInPlayEnemy enemyMatcher
+    -- The Runic Axe (Inscription of the Hunt) fight uses a CanFightEnemyWithOverride
+    -- matcher, which coveredByAnyInPlayEnemy treats as "restricted". That override widens
+    -- the fight rather than narrowing it, so it must still offer as-if-enemy targets
+    -- (Mist-Pylons, Key Loci). canMoveToConnected is exactly this Hunt-source case.
+    let includeAsIfEnemy = coveredByAnyInPlayEnemy enemyMatcher || canMoveToConnected
     locationIds <-
       if includeAsIfEnemy
         then
@@ -2215,7 +2264,14 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   PutCardOnBottomOfDeck _ (Deck.InvestigatorDeck iid) card | iid == toId a -> handlePutCardOnBottomOfDeck a iid card
   PutCardOnBottomOfDeck _ _ card -> handlePutCardOnBottomOfDeckV2 a card
   DebugAddToHand iid cardId | iid == investigatorId -> do
-    card <- getCard cardId
+    card <- setOwner iid =<< getCard cardId
+    bondedCards <- concatForM (cdBondedWith $ toCardDef card) \(n, cCode) -> do
+      case lookupCardDef cCode of
+        Nothing -> error "missing bonded card"
+        Just def -> do
+          cs <- replicateM n (genCard def)
+          traverse (Arkham.Card.setTaboo a.taboo <=< setOwner iid) cs
+    pushAll $ map (PlaceInBonded iid) bondedCards
     liftRunMessage (AddToHand iid [card]) a
   DrawToHandFrom iid deck cards | iid == investigatorId -> handleDrawToHandFrom a iid deck cards
   DrawToHand iid cards | iid == investigatorId -> handleDrawToHand a iid cards

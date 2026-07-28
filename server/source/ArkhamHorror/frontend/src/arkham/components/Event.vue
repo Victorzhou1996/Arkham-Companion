@@ -32,15 +32,10 @@ const hasPool = computed(() => {
 })
 
 const cardCode = computed(() => props.event.cardCode)
-const ownerInvestigatorId = computed(() => {
-  if (props.event.placement.tag !== 'InPlayArea' && props.event.placement.tag !== 'StillInHand') {
-    return null
-  }
-  return props.event.placement.contents
-})
+const ownerInvestigatorId = computed(() => props.event.controller || props.event.owner)
 const ownedByCurrentPlayer = computed(() => {
   const ownerId = ownerInvestigatorId.value
-  return ownerId !== null && props.game.investigators[ownerId]?.playerId === props.playerId
+  return props.game.investigators[ownerId]?.playerId === props.playerId
 })
 const image = computed(() => {
   const mutated = props.event.mutated ? `_${props.event.mutated}` : ''
@@ -134,9 +129,10 @@ const choose = (index: number) => emits('choose', index)
       v-if="ownedByCurrentPlayer"
       :game="game"
       :player-id="playerId"
-      :investigator-id="ownerInvestigatorId!"
+      :investigator-id="ownerInvestigatorId"
       :card-code="cardCode"
       :abilities="abilities"
+      :exhausted="exhausted"
     />
 
     <button v-if="cardsUnderneath.length > 0" class="view-discard-button" @click="showCardsUnderneath">{{cardsUnderneathLabel}}</button>

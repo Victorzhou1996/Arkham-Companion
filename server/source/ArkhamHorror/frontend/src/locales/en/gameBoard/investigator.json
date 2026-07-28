@@ -10,15 +10,18 @@
     "abilityTriggerMode": {
         "AbilityOwnerOnly": {
             "short": "O",
-            "description": "Ability {index}: ask only during your turn or your skill test"
+            "description": "Ability {index}: ask only during the owner's turn",
+            "playDescription": "Fast play: ask only during the owner's turn"
         },
         "AbilityAlwaysAsk": {
             "short": "A",
-            "description": "Ability {index}: always ask"
+            "description": "Ability {index}: always ask",
+            "playDescription": "Fast play: always ask"
         },
         "AbilityAutoSkip": {
             "short": "N",
-            "description": "Ability {index}: never ask"
+            "description": "Ability {index}: never ask",
+            "playDescription": "Fast play: never ask"
         }
     },
     "responseStatus": {

@@ -22,6 +22,9 @@ import ChaosBagChoice from '@/arkham/components/ChaosBagChoice.vue';
 import FormattedEntry from '@/arkham/components/FormattedEntry.vue';
 import QuestionChoices from '@/arkham/components/QuestionChoices.vue';
 import CardImage from '@/arkham/components/CardImage.vue';
+import type { FlavorText } from '@/arkham/types/FlavorText'
+import { setCurrentNarration } from '@/arkham/narration'
+import { flavorTextNarration } from '@/arkham/narrationText'
 
 export interface Props {
   game: Game
@@ -35,7 +38,7 @@ const checkpoint_fleur = `url(${imgsrc('checkpoint_fleur.png')})`
 const resolution_fleur = `url(${imgsrc('resolution_fleur.png')})`
 const props = withDefaults(defineProps<Props>(), { isSkillTest: false })
 const emit = defineEmits(['choose'])
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const choose = (idx: number) => emit('choose', idx)
 const investigator = computed(() => Object.values(props.game.investigators).find(i => i.playerId === props.playerId))
 function zoneToLabel(s: string) {
@@ -79,6 +82,15 @@ const questionChoices = computed(() => {
 const choosePaymentAmounts = inject<(amounts: Record<string, number>) => Promise<void>>('choosePaymentAmounts')
 const chooseAmounts = inject<(amounts: Record<string, number>) => Promise<void>>('chooseAmounts')
 const question = computed(() => props.game.question[props.playerId])
+watch(
+  [question, locale],
+  ([currentQuestion]) => {
+    if (currentQuestion?.tag === QuestionType.READ) {
+      setCurrentNarration(flavorTextNarration(currentQuestion.flavorText as FlavorText, t))
+    }
+  },
+  { immediate: true },
+)
 const focusedChaosTokens = computed(() => props.game.focusedChaosTokens)
 
 type SearchedCardGroup = {

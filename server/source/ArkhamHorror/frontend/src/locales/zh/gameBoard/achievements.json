@@ -9,7 +9,8 @@
   "noneEarnedYet": "尚未解锁成就。",
   "campaigns": {
     "50": "重返狂热之夜",
-    "51": "重返敦威治遗产"
+    "51": "重返敦威治遗产",
+    "52": "重返卡尔克萨之路"
   },
   "entries": {
     "TheZealotsRevenge": {
@@ -127,6 +128,70 @@
     "DunwichExpertise": {
       "name": "敦威治专家",
       "text": "以专家难度赢得敦威治遗产战役。"
+    },
+    "FairWarning": {
+      "name": "公平警告",
+      "text": "在一次谢幕中击败王室使者三次。"
+    },
+    "FirstSteps": {
+      "name": "初次接触",
+      "text": "在最后的王者中，采访康斯坦斯·迪梅因、乔丹·佩里、石丸晴子、塞巴斯蒂安·莫罗和阿什莉·克拉克。"
+    },
+    "CrashingTheParty": {
+      "name": "不速之客",
+      "text": "在最后的王者中击败疯狂版本的黛安娜·迪瓦恩。"
+    },
+    "ForPryingEyes": {
+      "name": "供窥探之眼所见",
+      "text": "在往事回声中将隐藏图书馆加入胜利牌区。"
+    },
+    "TheCuckoosNest": {
+      "name": "疯人院",
+      "text": "在邪秽誓约中，让一名调查员控制丹尼尔·切斯特菲尔德并撤退。"
+    },
+    "TakeALookAtThis": {
+      "name": "看看这个！",
+      "text": "在邪秽誓约中与疯狂宿主谈判。"
+    },
+    "ThePathOfDeath": {
+      "name": "死亡之路",
+      "text": "在苍白面具中使用黑玛瑙扣环找到捷径。"
+    },
+    "GuessingGame": {
+      "name": "猜谜游戏",
+      "text": "在黑星升起中，先将一副密谋牌库推进到最终密谋，再推进另一副密谋牌库的第一张密谋。"
+    },
+    "HasturMadeMeDoIt": {
+      "name": "哈斯塔逼我做的",
+      "text": "在一张附身诡计位于你手牌中时，于黯淡的卡尔克萨击败哈斯塔。"
+    },
+    "SayMyName": {
+      "name": "说出我的名字",
+      "text": "听从丹尼尔的警告后，在同一剧本或其设置期间大声说出“哈斯塔”至少七次。"
+    },
+    "GetBackHere": {
+      "name": "给我回来",
+      "text": "赢得卡尔克萨之路战役，且从未在苍白面具人仍在场时结束剧本。"
+    },
+    "ThePathIsFalse": {
+      "name": "这条道路是虚假的",
+      "text": "以 8 点怀疑赢得卡尔克萨之路战役。"
+    },
+    "ThePathIsReal": {
+      "name": "这条道路是真实的",
+      "text": "以 8 点信服赢得卡尔克萨之路战役。"
+    },
+    "ThePathIsMine": {
+      "name": "这条道路属于我",
+      "text": "在怀疑与信服合计少于 2 点时赢得卡尔克萨之路战役。"
+    },
+    "CarcosaLineInTheSand": {
+      "name": "底线",
+      "text": "启用至少三条终极挑战并赢得卡尔克萨之路战役。"
+    },
+    "CarcosaExpertise": {
+      "name": "卡尔克萨专家",
+      "text": "以专家难度赢得卡尔克萨之路战役。"
     }
   },
   "clearAll": "清除全部",

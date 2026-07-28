@@ -117,6 +117,10 @@ RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
   stack build --no-terminal --system-ghc --ghc-options '-rtsopts -with-rtsopts=-V0 -j4 +RTS -V0 -A128m -n2m -RTS' && \
   stack --no-terminal --local-bin-path /opt/arkham/bin install
 
+FROM scratch AS api-artifact
+
+COPY --from=api /opt/arkham/bin/arkham-api /arkham-api
+
 FROM ubuntu:22.04 AS app
 
 # App

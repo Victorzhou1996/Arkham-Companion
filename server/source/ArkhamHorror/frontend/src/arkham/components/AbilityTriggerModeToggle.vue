@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDebug } from '@/arkham/debug'
+import { handTriggerModeIndexes } from '@/arkham/abilityTriggerModeEligibility'
 import type { AbilityType } from '@/arkham/types/Ability'
 import type { Game } from '@/arkham/types/Game'
 import type { AbilityTriggerMode } from '@/arkham/types/Investigator'
@@ -13,6 +14,9 @@ const props = defineProps<{
   investigatorId: string
   cardCode: string
   abilities: AbilityMessage[]
+  includePlayMode?: boolean
+  currentAbilitiesOnly?: boolean
+  exhausted?: boolean
 }>()
 
 const { t } = useI18n()
@@ -53,7 +57,13 @@ const abilityIndexes = computed(() => {
     )
     .map((entry) => entry.ability.index)
 
-  return [...new Set([...Object.keys(savedModes.value).map(Number), ...current])]
+  const saved = Object.keys(savedModes.value).map(Number)
+  if (props.currentAbilitiesOnly) {
+    return handTriggerModeIndexes(saved, current, props.includePlayMode ?? false)
+  }
+
+  const playMode = props.includePlayMode ? [-1] : []
+  return [...new Set([...saved, ...playMode, ...current])]
     .filter(Number.isInteger)
     .sort((left, right) => left - right)
 })
@@ -74,7 +84,10 @@ const modeLabel = (index: number) =>
   t(`investigator.abilityTriggerMode.${currentMode(index)}.short`)
 
 const modeTooltip = (index: number) =>
-  t(`investigator.abilityTriggerMode.${currentMode(index)}.description`, { index })
+  t(
+    `investigator.abilityTriggerMode.${currentMode(index)}.${index === -1 ? 'playDescription' : 'description'}`,
+    { index },
+  )
 
 async function cycleMode(index: number) {
   if (!investigator.value || saving.value) return
@@ -103,7 +116,11 @@ async function cycleMode(index: number) {
 </script>
 
 <template>
-  <div v-if="abilityIndexes.length > 0" class="ability-trigger-modes">
+  <div
+    v-if="abilityIndexes.length > 0"
+    class="ability-trigger-modes"
+    :class="{ exhausted: props.exhausted }"
+  >
     <button
       v-for="index in abilityIndexes"
       :key="index"
@@ -121,11 +138,16 @@ async function cycleMode(index: number) {
 <style scoped>
 .ability-trigger-modes {
   position: absolute;
-  left: 3px;
-  bottom: 3px;
+  top: 3px;
+  right: 3px;
   z-index: 12;
   display: flex;
   gap: 2px;
+}
+
+.ability-trigger-modes.exhausted {
+  top: calc((var(--card-height) - var(--card-width)) / 2 + 3px);
+  right: calc((var(--card-width) - var(--card-height)) / 2 + 3px);
 }
 
 .ability-trigger-mode {

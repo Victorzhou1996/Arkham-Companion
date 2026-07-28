@@ -371,6 +371,21 @@ inAttackSkillTest = (== Just #fight) <$> getSkillTestAction
 inEvasionSkillTest :: HasGame m => m Bool
 inEvasionSkillTest = (== Just #evade) <$> getSkillTestAction
 
+-- | The result stored on the skill test does not yet include
+-- SkillTestResultValueModifier effects. Cards that inspect the margin while
+-- resolving need the same adjusted value later used by Pass/Fail messages.
+getSkillTestResultWithResultModifiers :: HasGame m => m (Maybe SkillTestResult)
+getSkillTestResultWithResultModifiers = runMaybeT do
+  st <- MaybeT getSkillTest
+  modifiers' <- lift $ getModifiers (SkillTestTarget st.id)
+  let
+    apply r (SkillTestResultValueModifier n) = case r of
+      SucceededBy b m -> SucceededBy b (max 0 (m + n))
+      FailedBy b m -> FailedBy b (max 0 (m + n))
+      Unrun -> Unrun
+    apply r _ = r
+  pure $ foldl' apply (skillTestResult st) modifiers'
+
 getIsPerilous :: (HasGame m, Tracing m) => SkillTest -> m Bool
 getIsPerilous skillTest = case skillTestSource skillTest of
   TreacherySource tid -> do

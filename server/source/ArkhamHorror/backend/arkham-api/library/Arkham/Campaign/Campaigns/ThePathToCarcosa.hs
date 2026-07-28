@@ -1,5 +1,6 @@
 module Arkham.Campaign.Campaigns.ThePathToCarcosa (thePathToCarcosa, ThePathToCarcosa (..)) where
 
+import Arkham.Campaign.Campaigns.ThePathToCarcosa.Achievements (runCarcosaAchievements)
 import Arkham.Campaign.Import.Lifted
 import Arkham.CampaignLogKey
 import Arkham.Campaigns.ThePathToCarcosa.CampaignSteps
@@ -51,7 +52,8 @@ findNewBearerIfNeeded attrs iid = runMaybeT_ do
       addCampaignCardToDeckChoice others Msg.ShuffleIn theManInThePallidMask
 
 instance RunMessage ThePathToCarcosa where
-  runMessage msg c@(ThePathToCarcosa attrs) = runQueueT $ campaignI18n $ case msg of
+  runMessage msg c@(ThePathToCarcosa attrs) =
+    runQueueT $ campaignI18n $ lift (runCarcosaAchievements msg) *> case msg of
     CampaignStep PrologueStep -> scope "prologue" do
       flavor do
         setTitle "yellowSign.title"

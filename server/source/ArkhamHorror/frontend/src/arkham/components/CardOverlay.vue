@@ -19,6 +19,12 @@ import { type ArkhamKey, keyToId } from '@/arkham/types/Key'
 import PoolItem from '@/arkham/components/PoolItem.vue'
 import { useDbCardStore, ArkhamDBCard } from '@/stores/dbCards'
 import { useI18n } from 'vue-i18n'
+import {
+  type NarrationCategory,
+  type NarrationSegment,
+  setCurrentNarration,
+} from '@/arkham/narration'
+import { cardNarrationFromCsv } from '@/arkham/narrationCsv'
 
 /* =============================================================================
  * Constants, basic helpers, and caches
@@ -620,11 +626,78 @@ const isSpirit = computed<boolean>(() => {
   return el.dataset.isSpirit === 'true'
 })
 
-const cardCode = computed<string | null>(() => {
+const imageCardCode = computed<string | null>(() => {
   if (!card.value) return null
-  const m = card.value.match(/cards\/(\d+)(_.*)?\.avif$/)
-  return m ? m[1] : null
+  const match = card.value.match(/\/cards\/([^/?]+)\.avif(?:[?#].*)?$/)
+  return match ? match[1].replace(/_.*$/, '') : null
 })
+
+const declaredCardCode = computed<string | null>(() =>
+  normalizedCardCode(
+    hoveredElement.value?.dataset.cardCode ?? hoveredElement.value?.dataset.imageId,
+  ),
+)
+
+const cardCode = computed<string | null>(() => declaredCardCode.value ?? imageCardCode.value)
+const narrationImageCode = computed<string | null>(
+  () => imageCardCode.value ?? declaredCardCode.value,
+)
+
+const narrationCategory = (dbCard?: ArkhamDBCard | null): NarrationCategory => {
+  if (dbCard?.type_code === 'act' || dbCard?.type_code === 'agenda') return 'actAgenda'
+  if (dbCard?.type_code === 'location' || dbCard?.type_code === 'enemy') return 'locationEnemy'
+  if (dbCard?.encounter_code || dbCard?.type_code === 'treachery') return 'encounter'
+  const classes = hoveredElement.value?.classList
+  if (classes?.contains('card--agenda') || classes?.contains('card--sideways')) return 'actAgenda'
+  if (classes?.contains('card--locations') || classes?.contains('enemy')) return 'locationEnemy'
+  if (classes?.contains('treachery')) return 'encounter'
+  return 'playerCard'
+}
+
+watch(
+  [cardCode, narrationImageCode, hoveredElement, () => store.lang],
+  async ([code, imageCode, element]) => {
+    if (!imageCode || !element) return
+
+    const category = narrationCategory()
+    const csvNarration = await cardNarrationFromCsv(code, imageCode, category)
+    if (narrationImageCode.value !== imageCode || hoveredElement.value !== element) return
+    if (csvNarration) {
+      setCurrentNarration(csvNarration)
+      return
+    }
+
+    await store.initDbCards()
+    if (narrationImageCode.value !== imageCode || hoveredElement.value !== element) return
+    const dbCard = code
+      ? store.getDbCard(code) ?? store.getDbCard(imageCode)
+      : store.getDbCard(imageCode)
+    if (!dbCard) return
+    const back = imageCode === `${dbCard.code}b`
+    const segments: NarrationSegment[] = [
+      { category: 'cardName', text: back ? dbCard.back_name || dbCard.name : dbCard.name },
+      { category: 'cardSubname', text: back ? '' : (dbCard.subname ?? '') },
+      {
+        category: 'cardTraits',
+        text: back ? dbCard.back_traits || dbCard.traits || '' : dbCard.traits || '',
+      },
+      {
+        category: 'cardText',
+        text: back ? dbCard.back_text || '' : dbCard.text || '',
+      },
+      {
+        category: 'cardFlavor',
+        text: back ? dbCard.back_flavor || '' : dbCard.flavor || '',
+      },
+    ]
+
+    setCurrentNarration({
+      id: `card:${dbCard.code}:${back ? 'back' : 'front'}:${store.lang}:${JSON.stringify(segments)}`,
+      category,
+      segments,
+    })
+  },
+)
 
 const mutated = computed<string>(() => {
   if (!card.value) return ''
@@ -1099,15 +1172,15 @@ watchEffect(() => {
       ''
   const src = card.value
   if (!src) return
-  const m = src.match(/(\d+b?)(_.*)?\.avif$/)
-  if (!m) return
-  const code = m[1]
-  const tabooSuffix = m[2]
+  const code = cardCode.value
+  const imageCode = imageCardCode.value
+  if (!code || !imageCode) return
+  const tabooSuffix = src.match(/(_[^/?]+)\.avif(?:[?#].*)?$/)?.[1]
   if (isLocalized(src)) return
 
-  const dbCard = store.getDbCard(code)
+  const dbCard = store.getDbCard(code) ?? store.getDbCard(imageCode)
   if (!dbCard) return
-  const needBack = dbCard.code !== code
+  const needBack = imageCode === `${dbCard.code}b`
 
   const name = getCardName(dbCard, needBack)
   const type = getCardTypeName(dbCard)
