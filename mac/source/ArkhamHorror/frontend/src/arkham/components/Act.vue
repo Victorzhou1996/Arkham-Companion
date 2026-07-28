@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import { ComputedRef, computed, ref } from 'vue'
+import { useCardStore } from '@/stores/cards'
 import { type Game } from '@/arkham/types/Game'
-import { type Card, cardImage } from '@/arkham/types/Card'
+import { type Card, cardImage, asCardCode, cardFacedown } from '@/arkham/types/Card'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
-import PoolItem from '@/arkham/components/PoolItem.vue';
-import KeyToken from '@/arkham/components/Key.vue';
-import Treachery from '@/arkham/components/Treachery.vue';
-import ScarletKey from '@/arkham/components/ScarletKey.vue';
+import { useDebug } from '@/arkham/debug'
+import PoolItem from '@/arkham/components/PoolItem.vue'
+import KeyToken from '@/arkham/components/Key.vue'
+import Treachery from '@/arkham/components/Treachery.vue'
+import ScarletKey from '@/arkham/components/ScarletKey.vue'
+import StackIndicator from '@/arkham/components/StackIndicator.vue'
 import * as ArkhamGame from '@/arkham/types/Game'
 import { AbilityLabel, AbilityMessage, type Message } from '@/arkham/types/Message'
 import { MessageType } from '@/arkham/types/Message'
@@ -19,6 +22,8 @@ const props = defineProps<{
   game: Game
   cardsUnder: Card[]
   cardsNextTo: Card[]
+  remainingStack: Card[]
+  completedStack: Card[]
   playerId: string
 }>()
 
@@ -29,6 +34,8 @@ const emits = defineEmits<{
 
 const showAbilities = ref(false)
 const frame = ref(null)
+const debug = useDebug()
+const cardStore = useCardStore()
 
 const id = computed(() => props.act.id)
 
@@ -36,7 +43,7 @@ const keys = computed(() => props.act.keys)
 
 const cardCode = computed(() => {
   const side = props.act.sequence.side.toLowerCase().replace('a', '')
-  const sidePart = id.value.endsWith(side) ? "" : side
+  const sidePart = id.value.endsWith(side) ? '' : side
 
   let newId = side == 'b' && id.value === 'c10607a' ? '10607' : id.value.replace(/^c/, '')
 
@@ -72,7 +79,9 @@ const image = computed(() => {
 
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 const viewingUnder = ref(false)
-const viewUnderLabel = computed(() => viewingUnder.value ? "Close" : `${props.cardsUnder.length} Cards Underneath`)
+const viewUnderLabel = computed(() =>
+  viewingUnder.value ? 'Close' : `${props.cardsUnder.length} Cards Underneath`,
+)
 
 function imageForCard(card: Card) {
   return imgsrc(cardImage(card))
@@ -82,7 +91,7 @@ function isCardAction(c: Message): boolean {
   return c.tag === MessageType.TARGET_LABEL && c.target.contents === id.value
 }
 
-const interactAction = computed(() => choices.value.findIndex(isCardAction));
+const interactAction = computed(() => choices.value.findIndex(isCardAction))
 
 const canInteract = computed(() => abilities.value.length > 0 || interactAction.value !== -1)
 
@@ -94,7 +103,7 @@ function isAbility(v: Message): v is AbilityLabel {
   const { source } = v.ability
 
   if (source.sourceTag === 'ProxySource') {
-    if ("contents" in source.source) {
+    if ('contents' in source.source) {
       return source.source.contents === id.value
     }
   } else if (source.tag === 'ActSource') {
@@ -105,21 +114,140 @@ function isAbility(v: Message): v is AbilityLabel {
 }
 
 const abilities = computed(() => {
-  return choices.value
-    .reduce<AbilityMessage[]>((acc, v, i) =>
-      isAbility(v) ? [...acc, { contents: v, displayAsAction: false, index: i}] : acc
-    , [])
+  return choices.value.reduce<AbilityMessage[]>(
+    (acc, v, i) =>
+      isAbility(v) ? [...acc, { contents: v, displayAsAction: false, index: i }] : acc,
+    [],
+  )
 })
 
 const hasObjective = computed(() =>
-  abilities.value.some(({ contents }) =>
-    "ability" in contents && contents.ability.type.tag === 'Objective'
-  )
+  abilities.value.some(
+    ({ contents }) => 'ability' in contents && contents.ability.type.tag === 'Objective',
+  ),
 )
 
-const cardsUnder = computed(() => props.cardsUnder)
+function revealFacedownCard(card: Card): Card {
+  switch (card.tag) {
+    case 'PlayerCard':
+    case 'EncounterCard':
+      return { ...card, contents: { ...card.contents, facedown: false } }
+    case 'VengeanceCard': {
+      const contents = card.contents
+      return {
+        ...card,
+        contents: { ...contents, contents: { ...contents.contents, facedown: false } },
+      }
+    }
+  }
+}
 
-const showCardsUnderAct = () => emits('show', cardsUnder, 'Cards Under Act', false)
+const cardsUnder = computed(() => props.cardsUnder)
+const visibleCardsUnder = computed(() => {
+  if (debug.active) return props.cardsUnder.map(revealFacedownCard)
+  return props.cardsUnder.filter((card) => !cardFacedown(card))
+})
+const canViewUnder = computed(() => visibleCardsUnder.value.length > 0)
+
+const showCardsUnderAct = () => emits('show', visibleCardsUnder, 'Cards Under Act', false)
+
+const futureStack = computed(() =>
+  props.remainingStack.filter((c) => asCardCode(c) !== props.act.id),
+)
+
+const cardStage = (card: Card): number | null => {
+  const code = asCardCode(card)
+  return (
+    cardStore.cards.find(
+      (cardDef) => cardDef.cardCode === code || cardDef.cardCode === code.replace(/^c/, ''),
+    )?.stage ?? null
+  )
+}
+
+type StackIndicatorGroup = {
+  label: string
+  state: 'completed' | 'current' | 'remaining'
+  images: {
+    src: string
+    current?: boolean
+    passed?: boolean
+  }[]
+}
+
+type ActStackGroup = StackIndicatorGroup & {
+  stage: number | null
+  firstIndex: number
+}
+
+const groupedActStack = computed<StackIndicatorGroup[]>(() => {
+  const groups: ActStackGroup[] = []
+
+  const addToGroup = (
+    stage: number | null,
+    fallbackKey: string,
+    image: StackIndicatorGroup['images'][number],
+    preferredState: StackIndicatorGroup['state'],
+    firstIndex: number,
+  ) => {
+    const group = groups.find((g) => (stage !== null ? g.stage === stage : g.label === fallbackKey))
+
+    if (group) {
+      group.images.push(image)
+      if (preferredState === 'current') group.state = 'current'
+      return
+    }
+
+    groups.push({
+      label: stage === null ? fallbackKey : `Act ${stage}`,
+      stage,
+      firstIndex,
+      state: preferredState,
+      images: [image],
+    })
+  }
+
+  props.completedStack.forEach((card, i) => {
+    const stage = cardStage(card)
+    addToGroup(
+      stage,
+      `Act ${i + 1}`,
+      { src: imgsrc(cardImage(card)), passed: true },
+      'completed',
+      i,
+    )
+  })
+
+  addToGroup(
+    props.act.sequence.number,
+    `Act ${props.act.sequence.number}`,
+    { src: image.value, current: true },
+    'current',
+    props.completedStack.length,
+  )
+
+  futureStack.value.forEach((card, i) => {
+    const stage = cardStage(card)
+    addToGroup(
+      stage,
+      `Act ${props.completedStack.length + i + 2}`,
+      { src: imgsrc(cardImage(card)) },
+      stage === props.act.sequence.number ? 'current' : 'remaining',
+      props.completedStack.length + i + 1,
+    )
+  })
+
+  return groups.sort((a, b) => {
+    if (a.stage !== null && b.stage !== null) return a.stage - b.stage
+    return a.firstIndex - b.firstIndex
+  })
+})
+
+const totalActs = computed(() => groupedActStack.value.length)
+const currentActPosition = computed(
+  () =>
+    groupedActStack.value.findIndex((group) => group.state === 'current') + 1 ||
+    props.act.sequence.number,
+)
 
 async function clicked() {
   if (interactAction.value !== -1) {
@@ -139,31 +267,78 @@ async function chooseAbility(index: number) {
 }
 
 const isVertical = computed(() => {
-  return ["03321b", "04117b", "04118b", "04122b", "04125b", "04126b", "04128b", "04130b", "04133b", "04134b", "04137b", "04209b", "05055b", "05288ab", "05286ab", "05286b", "05288b", "09615b", "10607b", "53029b", "53030b", "53032b", "53034b", "53046b", "82006b"].includes(cardCode.value)
+  return [
+    '03321b',
+    '04117b',
+    '04118b',
+    '04122b',
+    '04125b',
+    '04126b',
+    '04128b',
+    '04130b',
+    '04133b',
+    '04134b',
+    '04137b',
+    '04209b',
+    '05055b',
+    '05288ab',
+    '05286ab',
+    '05286b',
+    '05288b',
+    '09615b',
+    '10607b',
+    '11504b',
+    '11505b',
+    '53029b',
+    '53030b',
+    '53032b',
+    '53034b',
+    '53046b',
+    '82006b',
+  ].includes(cardCode.value)
 })
 
 const breaches = computed(() => {
-  const {breaches} = props.act
+  const { breaches } = props.act
   return breaches ?? 0
 })
+
+const clues = computed(() => props.act.tokens.Clue ?? 0)
+const resources = computed(() => props.act.tokens.Resource ?? 0)
 
 const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
   filter((s) => s.placement.tag === "NextToAct").
   map((s) => s.id))
-
 </script>
 
 <template>
   <div class="act-container">
-    <div class="card-container" :class="{ 'act--objective': hasObjective }">
-      <img
-        :class="{ 'act--can-progress': interactAction !== -1, 'act--can-interact': canInteract, 'card--sideways': !isVertical}"
-        class="card"
-        @click="clicked"
-        :src="image"
-        ref="frame"
+    <div class="act-row">
+      <div
+        class="card-container"
+        :class="{ 'act--objective': hasObjective, 'objective-ring': hasObjective }"
+      >
+        <img
+          :class="{
+            'act--can-progress': interactAction !== -1,
+            'act--can-interact': canInteract,
+            'card--sideways': !isVertical,
+          }"
+          class="card"
+          @click="clicked"
+          :src="image"
+          ref="frame"
+        />
+      </div>
+      <StackIndicator
+        label="Act"
+        :current="currentActPosition"
+        :total="totalActs"
+        :completedCards="completedStack"
+        :currentImage="image"
+        :remainingCards="futureStack"
+        :groups="groupedActStack"
       />
-
     </div>
     <AbilitiesMenu
       :frame="frame"
@@ -172,13 +347,19 @@ const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
       :game="game"
       position="bottom"
       @choose="chooseAbility"
-      />
-    <button v-if="cardsUnder.length > 0" class="view-cards-under-button" @click="showCardsUnderAct">{{viewUnderLabel}}</button>
+    />
+    <button
+      v-if="cardsUnder.length > 0 && canViewUnder"
+      class="view-cards-under-button"
+      @click="showCardsUnderAct"
+    >
+      {{ viewUnderLabel }}
+    </button>
+    <button v-else-if="cardsUnder.length > 0" class="view-cards-under-button" disabled>
+      {{ viewUnderLabel }}
+    </button>
     <div class="card-container" v-for="(card, idx) in cardsNextTo" :key="idx">
-      <img
-        class="card card--sideways"
-        :src="imageForCard(card)"
-      />
+      <img class="card card--sideways" :src="imageForCard(card)" />
     </div>
     <Treachery
       v-for="treacheryId in act.treacheries"
@@ -198,12 +379,20 @@ const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
 
     <div class="pool">
       <PoolItem
-        v-if="act.clues && act.clues > 0"
+        v-if="clues > 0"
         type="clue"
-        :amount="act.clues"
+        :amount="clues"
       />
+      <PoolItem v-if="resources > 0" type="resource" :amount="resources" />
       <PoolItem v-if="breaches > 0" type="resource" :amount="breaches" />
-      <KeyToken v-for="k in keys" :key="keyToId(k)" :keyToken="k" :game="game" :playerId="playerId" @choose="$emit('choose', $event)" />
+      <KeyToken
+        v-for="k in keys"
+        :key="keyToId(k)"
+        :keyToken="k"
+        :game="game"
+        :playerId="playerId"
+        @choose="$emit('choose', $event)"
+      />
     </div>
   </div>
 </template>
@@ -215,13 +404,7 @@ const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
   border-radius: inherit;
 }
 
-@keyframes rotation {
-  0% { --gradient-angle: 0deg; }
-  100% { --gradient-angle: 360deg; }
-}
-
 .card-container {
-  --gradient-angle: 0deg;
   box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.45);
   position: relative;
   border-radius: 6px;
@@ -229,42 +412,25 @@ const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
   width: fit-content;
 }
 
-@property --gradient-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
 .act--objective {
-  --clr-1: #198891;
-  --clr-2: #2d8f85;
-  --clr-3: #73fb22;
-
-  &::before, &::after {
-    content: "";
-    position: absolute;
-    inset: -0.1rem;
-    z-index: -1;
-    background: conic-gradient(
-      from var(--gradient-angle),
-      var(--clr-1),
-      var(--clr-2),
-      var(--clr-3),
-      var(--clr-2),
-      var(--clr-1));
-    border-radius: inherit;
-    animation: rotation 1s linear infinite;
-  }
-
-  &::after {
-    filter: blur(3.5rem);
-  }
+  --objective-ring-radius: 6px;
 }
 
 .act-container {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.act-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.act-row :deep(.v-popper) {
+  align-self: center;
 }
 
 .act-container :deep(.card--sideways) {
@@ -274,12 +440,12 @@ const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
 }
 
 .act--can-progress {
-  border: 2px solid #ff00ff;
+  border: 2px solid var(--select);
   border-radius: 8px;
   cursor: pointer;
 }
 
-.button{
+.button {
   margin-top: 2px;
   border: 0;
   color: #fff;
@@ -287,10 +453,10 @@ const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
 }
 
 .ability-button {
-  background-color: #555;
+  background-color: var(--button);
   &:before {
-    font-family: "arkham";
-    content: "\0049";
+    font-family: 'arkham';
+    content: '\0049';
     margin-right: 5px;
   }
 }
@@ -304,11 +470,11 @@ const nextToScarletKeys = computed(() => Object.values(props.game.scarletKeys).
   }
 }
 
-
 .card-container:not(.act--objective) {
   .act--can-interact {
     border: 2px solid var(--select);
     cursor: pointer;
   }
 }
+
 </style>

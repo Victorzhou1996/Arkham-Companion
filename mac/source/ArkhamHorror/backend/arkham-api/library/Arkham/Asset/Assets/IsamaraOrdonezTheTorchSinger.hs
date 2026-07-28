@@ -11,6 +11,7 @@ import Arkham.Helpers.Modifiers
 import Arkham.I18n
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
+import Arkham.Scenarios.FortuneAndFolly.Helpers (scenarioI18n)
 
 newtype IsamaraOrdonezTheTorchSinger = IsamaraOrdonezTheTorchSinger AssetAttrs
   deriving anyclass IsAsset
@@ -30,7 +31,7 @@ instance HasAbilities IsamaraOrdonezTheTorchSinger where
 
 instance RunMessage IsamaraOrdonezTheTorchSinger where
   runMessage msg a@(IsamaraOrdonezTheTorchSinger attrs) = runQueueT $ case msg of
-    ReadyExhausted -> do
+    ReadyExhausted | attrs.exhausted -> do
       mods <- getModifiers attrs
       unless (CannotReady `elem` mods) do
         case attrs.controller of
@@ -39,7 +40,7 @@ instance RunMessage IsamaraOrdonezTheTorchSinger where
             unless (ControlledAssetsCannotReady `elem` modifiers) do
               chooseOneM iid $ withI18n do
                 questionLabeledCard attrs
-                labeled "Ready" $ push $ Ready $ toTarget attrs
+                scenarioI18n $ labeled' "isamaraOrdonezTheTorchSinger.ready" $ push $ Ready $ toTarget attrs
                 skip_
           _ -> push (Ready $ toTarget attrs)
       pure a

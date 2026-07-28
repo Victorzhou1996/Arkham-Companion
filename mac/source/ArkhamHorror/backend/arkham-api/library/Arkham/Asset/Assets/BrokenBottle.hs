@@ -22,12 +22,13 @@ instance RunMessage BrokenBottle where
   runMessage msg a@(BrokenBottle attrs) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       sid <- getRandom
+      modifySkill sid (attrs.ability 1) iid #combat 1
       chooseFightEnemy sid iid (attrs.ability 1)
       pure a
     PassedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
       withSkillTest \sid -> do
-        chooseOneM iid do
-          labeled "Discard to deal +1 damage" do
+        chooseOneM iid $ cardI18n $ scope "brokenBottle" do
+          labeled' "discardForDamage" do
             toDiscardBy iid (attrs.ability 1) attrs
             skillTestModifier sid (attrs.ability 1) iid $ DamageDealt 1
           withI18n skip_

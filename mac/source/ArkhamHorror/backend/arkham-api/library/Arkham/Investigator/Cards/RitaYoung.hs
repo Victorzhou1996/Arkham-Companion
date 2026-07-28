@@ -26,14 +26,15 @@ ritaYoung =
 instance HasAbilities RitaYoung where
   getAbilities (RitaYoung a) =
     [ playerLimit PerRound
-        $ (restrictedAbility a 1)
-          ( Self
-              <> oneOf
-                [ exists AccessibleLocation
-                , exists (EvadingEnemy <> EnemyCanBeDamagedBySource (a.ability 1)) <> CanDealDamage
-                ]
+        $ selfAbility
+          a
+          1
+          ( oneOf
+              [ exists AccessibleLocation
+              , exists (EvadingEnemy <> EnemyCanBeDamagedBySource (a.ability 1)) <> CanDealDamage
+              ]
           )
-          (freeReaction $ Matcher.EnemyEvaded #after You AnyEnemy)
+          (triggered_ $ Matcher.EnemyEvaded #after You AnyEnemy)
     ]
 
 instance HasChaosTokenValue RitaYoung where
@@ -55,10 +56,10 @@ instance RunMessage RitaYoung where
       connectingLocations <- getAccessibleLocations iid attrs
       chooseOrRunOneM iid do
         when canDamage do
-          labeled "Damage enemy" do
-            push $ EnemyDamage enemyId $ nonAttack (Just iid) (attrs.ability 1) 1
+          labeledI "damageEnemy" do
+            push $ DealDamage (EnemyTarget enemyId) $ nonAttack (Just iid) (attrs.ability 1) 1
         when (notNull connectingLocations) do
-          labeled "Move to a connecting location" do
+          labeledI "moveToConnecting" do
             chooseOneM iid $ targets connectingLocations $ moveTo attrs iid
       pure i
     _ -> RitaYoung <$> liftRunMessage msg attrs

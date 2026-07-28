@@ -10,6 +10,8 @@ const mobileOpen = ref(false);
 const router = useRouter()
 const store = useUserStore()
 const currentUser = computed<User | null>(() => store.currentUser)
+const appBase = import.meta.env.BASE_URL.replace(/\/$/, '')
+const buildHref = `${appBase}/build/`
 
 async function logout() {
   await store.logout()
@@ -26,7 +28,9 @@ async function logout() {
     <nav class="main-links">
       <router-link to="/" class="home-link">{{$t('nav.home')}}</router-link>
       <router-link v-if="currentUser" to="/decks" class="nav-link">{{$t('nav.myDecks')}}</router-link>
-      <router-link v-if="currentUser" to="/cards" class="nav-link">{{$t('nav.cards')}}</router-link>
+      <a v-if="currentUser" :href="buildHref" class="nav-link">Build</a>
+      <router-link v-if="currentUser" to="/achievements" class="nav-link">{{$t('nav.achievements')}}</router-link>
+      <router-link v-if="currentUser" to="/bugs" class="nav-link">{{$t('nav.bugs')}}</router-link>
       <router-link v-if="currentUser" to="/about" class="nav-link">{{$t('nav.about')}}</router-link>
       <router-link v-if="currentUser" to="/about?support" class="nav-link">{{$t('nav.support')}}</router-link>
       <router-link v-if="currentUser && currentUser.admin" to="/admin" class="nav-link">{{$t('nav.admin')}}</router-link>
@@ -41,19 +45,21 @@ async function logout() {
           </button>
           <div v-if="expanded" class="user-dropdown">
             <router-link @click="expanded = false" to="/settings">{{$t('settings')}}</router-link>
-            <a href="#" @click="logout">Logout</a>
+            <a href="#" @click="logout">{{ $t('logOut') }}</a>
           </div>
         </template>
         <template v-else>
-          <router-link to="/sign-in">Login</router-link>
-          <router-link to="/sign-up">Register</router-link>
+          <router-link to="/sign-in">{{ $t('logIn') }}</router-link>
+          <router-link to="/sign-up">{{ $t('register') }}</router-link>
         </template>
       </div>
     </OnClickOutside>
 
     <div v-if="mobileOpen" class="mobile-menu" @click="mobileOpen = false">
       <router-link to="/decks">{{$t('nav.myDecks')}}</router-link>
-      <router-link to="/cards">{{$t('nav.cards')}}</router-link>
+      <a :href="buildHref">Build</a>
+      <router-link to="/achievements">{{$t('nav.achievements')}}</router-link>
+      <router-link to="/bugs">{{$t('nav.bugs')}}</router-link>
       <router-link to="/about">{{$t('nav.about')}}</router-link>
       <router-link to="/about?support">{{$t('nav.support')}}</router-link>
       <router-link v-if="currentUser && currentUser.admin" to="/admin">{{$t('nav.admin')}}</router-link>
@@ -72,7 +78,7 @@ async function logout() {
   height: var(--nav-height);
   flex-shrink: 0;
   position: relative;
-  z-index: 100;
+  z-index: var(--z-index-100);
 }
 
 /* ── Main nav links ─────────────────────────────────────── */

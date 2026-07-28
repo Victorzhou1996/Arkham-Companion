@@ -6,7 +6,7 @@ where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Matcher
 import Arkham.Modifier
 
@@ -19,8 +19,6 @@ theTerrorOfDevilReefRelentlessMonstrosity =
   enemyWith
     TheTerrorOfDevilReefRelentlessMonstrosity
     Cards.theTerrorOfDevilReefRelentlessMonstrosity
-    (3, Static 6, 3)
-    (2, 2)
     (spawnAtL ?~ SpawnAt RearmostLocation)
 
 instance HasAbilities TheTerrorOfDevilReefRelentlessMonstrosity where

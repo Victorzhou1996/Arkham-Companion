@@ -26,7 +26,7 @@ buryThemDeep =
     $ (event "03016" "Bury Them Deep" 0 Neutral)
       { cdSkills = [#willpower, #combat, #wild]
       , cdCardTraits = singleton Task
-      , cdFastWindow = Just $ EnemyDefeated #after Anyone ByAny $ NonEliteEnemy <> EnemyAt YourLocation
+      , cdFastWindow = Just $ EnemyDefeated #after Anyone ByAny $ NonEliteEnemy <> EnemyWasAt YourLocation
       , cdVictoryPoints = Just 1
       }
 
@@ -102,7 +102,7 @@ astralTravel =
   (event "03034" "Astral Travel" 3 Mystic)
     { cdSkills = [#willpower, #agility]
     , cdCardTraits = singleton Spell
-    , cdActions = [#move]
+    , cdActions = #move
     , cdCriteria = Just $ exists $ RevealedLocation <> Unblocked <> NotYourLocation
     , cdAlternateCardCodes = ["60413"]
     }
@@ -176,7 +176,7 @@ stormOfSpirits =
   (event "03153" "Storm of Spirits" 3 Mystic)
     { cdSkills = [#willpower, #combat]
     , cdCardTraits = singleton Spell
-    , cdActions = [#fight]
+    , cdActions = #fight
     }
 
 fightOrFlight :: CardDef
@@ -198,12 +198,12 @@ aTestOfWill1 =
                 #when
                 (InvestigatorAt YourLocation)
                 (CanCancelRevelationEffect You $ basic $ NonPeril <> NonWeaknessTreachery)
-                EncounterDeck
+                AnyDeck
             , DrawCard
                 #when
                 You
                 (CanCancelRevelationEffect You $ basic NonWeaknessTreachery)
-                EncounterDeck
+                AnyDeck
             ]
     , cdLevel = Just 1
     }
@@ -256,7 +256,7 @@ cheapShot =
   (event "03194" "Cheap Shot" 2 Rogue)
     { cdSkills = [#combat, #agility]
     , cdCardTraits = setFromList [Trick]
-    , cdActions = [#fight]
+    , cdActions = #fight
     , cdAlternateCardCodes = ["60312"]
     }
 
@@ -329,11 +329,10 @@ aChanceEncounter2 =
     , cdCardTraits = singleton Fortune
     , cdCost =
         Just
-          ( AnyMatchingCardCost
-              $ PlayableCard
-                (UnpaidCost NoAction)
-                (InDiscardOf (affectsOthers can.have.cards.leaveDiscard) <> #ally)
-          )
+          $ AnyMatchingCardCost
+          $ InDiscardOf (affectsOthers can.have.cards.leaveDiscard)
+          <> #ally
+          <> CardWithoutUniqueCopyInPlay
     , cdLevel = Just 2
     }
 

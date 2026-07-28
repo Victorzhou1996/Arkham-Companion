@@ -22,7 +22,6 @@ import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
-import Arkham.Modifier (setActiveDuringSetup)
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Target
@@ -76,10 +75,24 @@ initialSupplyPoints = getPlayerCountValue (ByPlayerCount 10 7 5 4)
 initialResupplyPoints :: (HasGame m, Tracing m) => m Int
 initialResupplyPoints = getPlayerCountValue (ByPlayerCount 8 5 4 3)
 
-getPoisonedInvestigators :: CampaignAttrs -> [InvestigatorId]
-getPoisonedInvestigators attrs =
-  mapToList attrs.decks & mapMaybe \(iid, Deck cards) -> do
-    guard (any (`cardMatch` CardWithTitle "Poisoned") cards) $> iid
+getPoisonedInvestigators :: (HasGame m, Tracing m) => CampaignAttrs -> m [InvestigatorId]
+getPoisonedInvestigators attrs = do
+  -- Only investigators still in the game can be poisoned. An investigator who
+  -- was killed/driven insane and replaced still has their Poisoned card recorded
+  -- in storyCards (and possibly decks), but they no longer have a player entity,
+  -- so resolving story flavor text for them via getPlayer would crash.
+  present <- allInvestigators
+  pure $ filter (`elem` present) $ nub $ deckPoisoned <> storyPoisoned
+ where
+  -- Poisoned is a permanent weakness stored in storyCards (via
+  -- addCampaignCardToDeck); campaignDecks only holds the ArkhamDB decklist and
+  -- never contains it, so we have to check both.
+  deckPoisoned =
+    mapToList attrs.decks & mapMaybe \(iid, Deck cards) ->
+      guard (any (`cardMatch` CardWithTitle "Poisoned") cards) $> iid
+  storyPoisoned =
+    mapToList attrs.storyCards & mapMaybe \(iid, cards) ->
+      guard (any (`cardMatch` CardWithTitle "Poisoned") cards) $> iid
 
 instance RunMessage TheForgottenAge where
   runMessage msg c@(TheForgottenAge attrs) = runQueueT $ campaignI18n do
@@ -111,7 +124,7 @@ instance RunMessage TheForgottenAge where
         withBlanket <- getInvestigatorsWithSupply Blanket
         withoutBlanket <- getInvestigatorsWithoutSupply Blanket
         withMedicine <- getInvestigatorsWithSupply Medicine
-        let withPoisoned = getPoisonedInvestigators attrs
+        withPoisoned <- getPoisonedInvestigators attrs
         provisions <- concatForM investigators \iid -> do
           map (iid,) <$> fieldMap InvestigatorSupplies (filter (== Provisions)) iid
         investigatorsWithBinocularsPairs <- for investigators \iid -> do
@@ -176,7 +189,7 @@ instance RunMessage TheForgottenAge where
                 when (notNull rest) $ push $ ForInvestigators rest msg'
         pure c
       CampaignStep (InterludeStepPart 1 _ 2) -> scope "interlude1" do
-        let withPoisoned = getPoisonedInvestigators attrs
+        withPoisoned <- getPoisonedInvestigators attrs
         unless (null withPoisoned) do
           storyOnlyBuild withPoisoned do
             setTitle "title"
@@ -281,7 +294,10 @@ instance RunMessage TheForgottenAge where
             }
       DoStep 2 msg'@(ForInvestigator iid (CampaignStep ResupplyPoint)) -> scope "resupplyPoint" do
         let extraXp = Map.findWithDefault 0 iid (bonusXp metadata)
-        isPoisoned <- getIsPoisoned iid
+        -- During the interlude there is no scenario in play, so the Poisoned
+        -- weakness lives in the investigator's campaign cards rather than their
+        -- threat area; use the campaign-attrs check instead of getIsPoisoned.
+        isPoisoned <- elem iid <$> getPoisonedInvestigators attrs
         xp <- field InvestigatorXp iid
         let hasXp = xp + extraXp >= 3
         let toSpend = max 0 (3 - extraXp)
@@ -385,7 +401,7 @@ instance RunMessage TheForgottenAge where
           else flavor $ setTitle "title" >> p.green "provisions"
 
         -- The Poison Spreads
-        let withPoisoned = getPoisonedInvestigators attrs
+        withPoisoned <- getPoisonedInvestigators attrs
         withMedicine <- getInvestigatorsWithSupply Medicine
 
         if notNull withMedicine && notNull withPoisoned
@@ -443,7 +459,7 @@ instance RunMessage TheForgottenAge where
                 when (notNull rest) $ push $ ForInvestigators rest msg'
         pure c
       CampaignStep (InterludeStepPart 3 _ 2) -> scope "interlude3" do
-        let withPoisoned = getPoisonedInvestigators attrs
+        withPoisoned <- getPoisonedInvestigators attrs
         storyOnlyBuild withPoisoned do
           setTitle "title"
           p.green "thePoisonSpreads"
@@ -568,7 +584,7 @@ instance RunMessage TheForgottenAge where
         pure c
       CampaignStep (InterludeStepPart 4 mkey 5) -> scope "interlude4" do
         withMedicine <- getInvestigatorsWithSupply Medicine
-        let withPoisoned = getPoisonedInvestigators attrs
+        withPoisoned <- getPoisonedInvestigators attrs
         when (notNull withMedicine && notNull withPoisoned) do
           push $ ForInvestigators withPoisoned msg
         interludeStepPart 4 mkey 51
@@ -585,7 +601,7 @@ instance RunMessage TheForgottenAge where
                 when (notNull rest) $ push $ ForInvestigators rest msg'
         pure c
       CampaignStep (InterludeStepPart 4 _ 51) -> scope "interlude4" do
-        let withPoisoned = getPoisonedInvestigators attrs
+        withPoisoned <- getPoisonedInvestigators attrs
         unless (null withPoisoned) do
           storyOnlyBuild withPoisoned do
             setTitle "title"

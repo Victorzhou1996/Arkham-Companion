@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.FrenziedExplorer (frenziedExplorer) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Matcher
 import Arkham.Token
@@ -16,8 +16,6 @@ frenziedExplorer =
   enemyWith
     FrenziedExplorer
     Cards.frenziedExplorer
-    (2, Static 2, 2)
-    (1, 1)
     (tokensL %~ setTokens #doom 1)
 
 instance HasAbilities FrenziedExplorer where

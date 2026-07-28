@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.SkitteringNonsense (skitteringNonsense) where
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Shuffle (getCanShuffleIn)
 import Arkham.Matcher
 
@@ -12,7 +12,7 @@ newtype SkitteringNonsense = SkitteringNonsense EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 skitteringNonsense :: EnemyCard SkitteringNonsense
-skitteringNonsense = enemy SkitteringNonsense Cards.skitteringNonsense (2, Static 2, 4) (1, 1)
+skitteringNonsense = enemy SkitteringNonsense Cards.skitteringNonsense
 
 instance HasAbilities SkitteringNonsense where
   getAbilities (SkitteringNonsense a) =

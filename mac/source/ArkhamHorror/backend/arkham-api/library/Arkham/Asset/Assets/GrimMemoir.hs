@@ -16,7 +16,7 @@ grimMemoir :: AssetCard GrimMemoir
 grimMemoir = asset GrimMemoir Cards.grimMemoir
 
 instance HasAbilities GrimMemoir where
-  getAbilities (GrimMemoir a) = [restrictedAbility a 1 ControlsThis $ investigateAction $ assetUseCost a Secret 1]
+  getAbilities (GrimMemoir a) = [investigateAbility a 1 (assetUseCost a Secret 1) ControlsThis]
 
 instance RunMessage GrimMemoir where
   runMessage msg a@(GrimMemoir attrs) = runQueueT $ case msg of
@@ -27,6 +27,6 @@ instance RunMessage GrimMemoir where
       pure a
     PassedThisSkillTestBy iid (isAbilitySource attrs 1 -> True) n | n >= 2 -> do
       mmsg <- Msg.drawCardsIfCan iid (attrs.ability 1) 1
-      for_ mmsg \draw -> chooseOne iid $ [Label "Draw 1 card" [draw], Label "Do not draw card" []]
+      for_ mmsg \draw -> chooseOne iid $ [Label "$label.cards.grimMemoir.draw1Card" [draw], Label "$label.cards.grimMemoir.doNotDrawCard" []]
       pure a
     _ -> GrimMemoir <$> liftRunMessage msg attrs

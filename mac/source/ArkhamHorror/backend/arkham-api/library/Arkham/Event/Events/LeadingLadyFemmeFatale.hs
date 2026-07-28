@@ -7,6 +7,7 @@ import Arkham.Event.Import.Lifted
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.Action
 import Arkham.Helpers.Playable
+import Arkham.I18n
 import Arkham.Matcher
 import Arkham.Modifier
 import Arkham.Window (defaultWindows)
@@ -28,10 +29,10 @@ instance RunMessage LeadingLadyFemmeFatale where
         when (Rogue `elem` card.classes) $ do_ msg
       pure e
     Do (PlayThisEvent iid (is attrs -> True)) -> do
-      canEvade <- hasEvadeActions iid (DuringTurn You) (defaultWindows iid)
+      canEvade <- hasEvadeActions iid attrs (DuringYourAction You) (defaultWindows iid)
       chooseOneM iid do
-        labeled "Draw 1 card" $ drawCards iid attrs 1
-        when canEvade $ labeled "Take fight action" $ performActionAction iid attrs #evade
-        labeled "Do nothing" nothing
+        withI18n $ countVar 1 $ labeledI "drawCards" $ drawCards iid attrs 1
+        when canEvade $ labeledI "takeEvadeAction" $ performActionAction iid attrs #evade
+        labeledI "doNothing" nothing
       pure e
     _ -> LeadingLadyFemmeFatale <$> liftRunMessage msg attrs

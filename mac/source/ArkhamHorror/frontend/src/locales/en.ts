@@ -1,4 +1,5 @@
 import base from '@/locales/en/base.json'
+import event from '@/locales/en/event.json'
 import log from '@/locales/en/log.json'
 import cards from '@/locales/en/cards.json'
 import label from '@/locales/en/label.json'
@@ -14,12 +15,15 @@ import theInnsmouthConspiracy from '@/locales/en/theInnsmouthConspiracy'
 import edgeOfTheEarth from '@/locales/en/edgeOfTheEarth'
 import theScarletKeys from '@/locales/en/theScarletKeys'
 import theFeastOfHemlockVale from '@/locales/en/theFeastOfHemlockVale'
+import brethrenOfAsh from '@/locales/en/brethrenOfAsh'
+import theDrownedCity from '@/locales/en/theDrownedCity'
 import standalone from '@/locales/en/standalone'
 import gameBoard from '@/locales/en/gameBoard/gameBoard'
 import xp from '@/locales/en/xp.json'
 
 export default
   { ...base
+  , ...event
   , ...campaignLog
   , ...gameBoard
   , cards
@@ -38,5 +42,7 @@ export default
   , edgeOfTheEarth
   , theScarletKeys
   , theFeastOfHemlockVale
+  , brethrenOfAsh
+  , theDrownedCity
   , standalone
   }

@@ -3,59 +3,93 @@ import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRoute, useRouter } from 'vue-router'
 import * as Arkham from '@/arkham/types/Deck'
-import { fetchDecks, newGame } from '@/arkham/api'
+import { fetchDecks, newGame, createEvent } from '@/arkham/api'
+import { useEventStore } from '@/arkham/stores/event'
 import type { Difficulty } from '@/arkham/types/Difficulty'
 import type { Scenario, Campaign } from '@/arkham/data'
 import { storeToRefs } from 'pinia'
-import type { GameMode, MultiplayerVariant, CampaignType } from '@/arkham/types/NewGame'
+import type {
+  GameMode,
+  MultiplayerVariant,
+  CampaignType,
+  AiSlotConfig,
+} from '@/arkham/types/NewGame'
 
+import { ACHIEVEMENT_CAMPAIGN_IDS } from '@/arkham/achievements'
 import campaignJSON from '@/arkham/data/campaigns'
 import scenarioJSON from '@/arkham/data/scenarios'
 import sideStoriesJSON from '@/arkham/data/side-stories'
+import { filterDisplayable, isDevBuild } from '@/arkham/displayRules'
 
 import ChooseMode from '@/arkham/components/NewCampaign/ChooseMode.vue'
 import GameOptions from '@/arkham/components/NewCampaign/GameOptions.vue'
 
-type Gateable = { alpha?: boolean; beta?: boolean; dev?: boolean }
 type Step = 'ChooseMode' | 'GameOptions'
 
 const store = useUserStore()
 const { currentUser } = storeToRefs(store)
+const eventStore = useEventStore()
 
 const route = useRoute()
 const router = useRouter()
 
-const dev = import.meta.env.PROD ? false : true
+const devBuild = isDevBuild()
 const alpha = ref(false)
 const isBetaUser = computed(() => !!currentUser.value?.beta)
-
-const gate = <T extends Gateable>(items: T[]) =>
-  items.filter((x) => {
-    if (x.dev) return dev && alpha.value
-    if (x.beta) return isBetaUser.value
-    if (x.alpha) return alpha.value
-    return true
-  })
+const isDevUser = computed(() => !!currentUser.value?.dev)
+const devEnabled = computed(() => isDevUser.value || devBuild)
+const alphaEnabled = computed(() => isDevUser.value || (devBuild && alpha.value))
+const displayRuleOptions = computed(() => ({
+  alpha: alphaEnabled.value,
+  beta: isBetaUser.value,
+  dev: devEnabled.value,
+}))
+const gate = <T extends { alpha?: boolean; beta?: boolean; dev?: boolean }>(items: T[]) =>
+  filterDisplayable(items, displayRuleOptions.value)
 
 const step = ref<Step>('ChooseMode')
 const gameMode = ref<GameMode>('Campaign')
 const includeTarotReadings = ref(false)
+const strictAsIfAt = ref(false)
 const decks = ref<Arkham.Deck[]>([])
 const ready = ref(false)
+const creating = ref(false)
+const creationError = ref<string | null>(null)
 
 const playerCount = ref(1)
 const selectedDifficulty = ref<Difficulty>('Easy')
 const deckIds = ref<(string | null)[]>([null, null, null, null])
 
 const fullCampaign = ref<CampaignType>('FullCampaign')
+const sideStoryMode = ref<string>('campaign')
 const selectedCampaign = ref<string | null>(null)
 const selectedScenario = ref<string | null>(null)
 const campaignName = ref<string | null>(null)
 const multiplayerVariant = ref<MultiplayerVariant>('WithFriends')
 const returnTo = ref(false)
 
+// Per-seat AI configuration (dev-only, Solo games only); see GameOptions.vue.
+const aiPlayers = ref<(AiSlotConfig | null)[]>([])
+
 const fullCampaignOptionKey = ref<string | null>(null)
 const recommendedOptionState = ref<Record<string, boolean>>({})
+const achievementsEnabled = ref(true)
+
+// Ultimatums and Boons variant tags selected in GameOptions (e.g. "BoonOfHades").
+const ultimatumsAndBoons = ref<string[]>([])
+
+// "Epic Multiplayer" side-story mode state (only meaningful for epic-capable
+// side stories; see GameOptions.vue / side-stories.json).
+type EpicGroup = { name: string; playerCount: number }
+const epicMode = ref(false)
+const epicGroupCount = ref(2)
+const epicGroups = ref<EpicGroup[]>([
+  { name: 'Group A', playerCount: 2 },
+  { name: 'Group B', playerCount: 2 },
+])
+// Shared time limit (epic only). On by default; sends 0 minutes when off.
+const imposeTimeLimit = ref(true)
+const timeLimitMinutes = ref(180)
 
 const scenarios = computed<Scenario[]>(() => gate(scenarioJSON))
 const sideStories = computed<Scenario[]>(() => gate(sideStoriesJSON))
@@ -64,25 +98,32 @@ const campaigns = computed<Campaign[]>(() => gate(campaignJSON))
 const scenario = computed(() =>
   gameMode.value === 'SideStory'
     ? sideStories.value.find((s) => s.id === selectedScenario.value)
-    : scenarios.value.find((s) => s.id === selectedScenario.value)
+    : scenarios.value.find((s) => s.id === selectedScenario.value),
 )
 
 const campaign = computed(() =>
   gameMode.value === 'Campaign'
     ? campaigns.value.find((c) => c.id === selectedCampaign.value)
-    : null
+    : null,
 )
+
+const scenarioSupportsEpic = computed(
+  () => gameMode.value === 'SideStory' && scenario.value?.epicMultiplayer === true,
+)
+const isEpicMode = computed(() => scenarioSupportsEpic.value && epicMode.value)
 
 const selectedCampaignReturnTo = computed(() => {
   const c = campaigns.value.find((x) => x.id === selectedCampaign.value)
-  if (c?.returnTo?.alpha && !alpha.value) return null
+  if (c?.returnTo?.alpha && !alphaEnabled.value) return null
   return c?.returnTo ?? null
 })
 
 const campaignScenarios = computed(() =>
   selectedCampaign.value
-    ? scenarios.value.filter((s) => s.campaign == selectedCampaign.value && s.show !== false)
-    : []
+    ? scenarios.value.filter(
+        (s) => s.campaign == selectedCampaign.value && s.show !== false && s.standalone !== false,
+      )
+    : [],
 )
 
 const canStandalone = computed(() => {
@@ -113,6 +154,10 @@ const defaultCampaignName = computed(() => {
   }
 
   if (gameMode.value === 'SideStory' && scenario.value) {
+    if (scenario.value.scenarios && sideStoryMode.value !== 'campaign') {
+      const part = scenario.value.scenarios.find((s) => s.id === sideStoryMode.value)
+      if (part) return part.name
+    }
     return `${scenario.value.name}`
   }
 
@@ -139,7 +184,7 @@ const canGoNextFromStep1 = computed(() => {
 })
 
 const nextDisabled = computed(() =>
-  step.value === 'ChooseMode' ? !canGoNextFromStep1.value : disabled.value
+  step.value === 'ChooseMode' ? !canGoNextFromStep1.value : disabled.value,
 )
 
 function withViewTransition(fn: () => void) {
@@ -167,7 +212,15 @@ async function goNext() {
     setStep('GameOptions')
     return
   }
-  await start()
+  creationError.value = null
+  creating.value = true
+  try {
+    await start()
+  } catch (error: any) {
+    creationError.value = error?.response?.data?.message ?? 'Failed to create the game.'
+  } finally {
+    creating.value = false
+  }
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -194,6 +247,7 @@ watch(difficulties, (ds) => {
 watch(gameMode, (mode) => {
   returnTo.value = false
   campaignName.value = null
+  sideStoryMode.value = 'campaign'
 
   if (mode === 'SideStory') {
     selectedCampaign.value = null
@@ -205,24 +259,44 @@ watch(gameMode, (mode) => {
   step.value = 'ChooseMode'
 })
 
+watch(selectedScenario, () => {
+  if (gameMode.value === 'SideStory') sideStoryMode.value = 'campaign'
+  // Re-arm to the default single-group mode whenever the chosen side story changes.
+  epicMode.value = false
+})
+
+watch(gameMode, () => {
+  epicMode.value = false
+})
+
 watch(selectedCampaign, (id) => {
   selectedScenario.value = null
   returnTo.value = false
   recommendedOptionState.value = {}
+  ultimatumsAndBoons.value = []
+  strictAsIfAt.value = id != null && id >= '11'
 
   if (id === '09') fullCampaign.value = 'FullCampaign'
 })
 
-watch(campaign, (c) => {
-  const recs = ((c as any)?.recommendedOptions ?? []) as Array<{ type: 'toggle'; option: { tag: string } }>
-  const next: Record<string, boolean> = {}
+watch(
+  campaign,
+  (c) => {
+    const recs = ((c as any)?.recommendedOptions ?? []) as Array<{
+      type: 'toggle'
+      default?: boolean
+      option: { tag: string }
+    }>
+    const next: Record<string, boolean> = {}
 
-  for (const r of recs) {
-    if (r.type === 'toggle' && r.option?.tag) next[r.option.tag] = true
-  }
+    for (const r of recs) {
+      if (r.type === 'toggle' && r.option?.tag) next[r.option.tag] = r.default ?? true
+    }
 
-  recommendedOptionState.value = { ...next, ...recommendedOptionState.value }
-}, { immediate: true })
+    recommendedOptionState.value = { ...next, ...recommendedOptionState.value }
+  },
+  { immediate: true },
+)
 
 watch([selectedCampaign, fullCampaign], () => {
   if (fullCampaign.value !== 'FullCampaign') {
@@ -240,41 +314,91 @@ fetchDecks().then((result) => {
   ready.value = true
 })
 
+// The toggle is only rendered for supported campaigns; a stale "off" from a
+// supported selection must not leak into an unsupported one.
+const achievementsForCreate = (campaignId: string | null) =>
+  campaignId && ACHIEVEMENT_CAMPAIGN_IDS.includes(campaignId) ? achievementsEnabled.value : true
+
 async function start() {
   const enabledRecommendedOptions = Object.entries(recommendedOptionState.value)
     .filter(([, enabled]) => enabled)
     .map(([tag]) => ({ tag }))
 
-  const variant = fullCampaignOptionKey.value ? [{ 'tag': 'CampaignVariant', 'contents': fullCampaignOptionKey.value }] : [];
+  const variant = fullCampaignOptionKey.value
+    ? [{ tag: 'CampaignVariant', contents: fullCampaignOptionKey.value }]
+    : []
 
-  const options = [
-    ...enabledRecommendedOptions,
-    ...variant
-  ]
+  const options = [...enabledRecommendedOptions, ...variant]
+
+  // AI seats are only meaningful (and only sent) for Solo/multihanded games.
+  const aiPlayersForCreate = multiplayerVariant.value === 'Solo' ? aiPlayers.value : undefined
+
+  // Epic Multiplayer side story: spin up an event aggregate (N group games +
+  // shared state) instead of a single game, and land on the organizer dashboard.
+  if (isEpicMode.value && scenario.value && currentCampaignName.value) {
+    // Off -> 0 (no limit). On with a bad/empty value -> fall back to the 180 default
+    // so an "imposed" limit can never silently become "no limit".
+    const minutes = imposeTimeLimit.value
+      ? Number.isFinite(timeLimitMinutes.value) && timeLimitMinutes.value > 0
+        ? Math.floor(timeLimitMinutes.value)
+        : 180
+      : 0
+    const details = await createEvent({
+      name: currentCampaignName.value,
+      scenarioId: scenario.value.id,
+      difficulty: selectedDifficulty.value,
+      includeTarotReadings: includeTarotReadings.value,
+      timeLimitMinutes: minutes,
+      groups: epicGroups.value.map((g, i) => ({
+        name: g.name.trim() === '' ? `Group ${String.fromCharCode(65 + i)}` : g.name.trim(),
+        playerCount: g.playerCount,
+      })),
+    })
+    eventStore.setEvent(details)
+    router.push(`/events/${details.id}`)
+    return
+  }
 
   if (fullCampaign.value === 'Standalone' || gameMode.value === 'SideStory') {
     if (scenario.value && currentCampaignName.value) {
-      const scenarioId =
-        returnTo.value && (scenario.value as any).returnTo ? (scenario.value as any).returnTo : scenario.value.id
+      let scenarioId: string | null =
+        returnTo.value && (scenario.value as any).returnTo
+          ? (scenario.value as any).returnTo
+          : scenario.value.id
+      let campaignId: string | null = null
 
-      newGame(
+      if (gameMode.value === 'SideStory' && scenario.value.scenarios) {
+        if (sideStoryMode.value === 'campaign' && scenario.value.campaign) {
+          campaignId = scenario.value.campaign
+          scenarioId = null
+        } else {
+          scenarioId = sideStoryMode.value
+        }
+      }
+
+      const game = await newGame(
         deckIds.value,
         playerCount.value,
-        null,
+        campaignId,
         scenarioId,
         selectedDifficulty.value,
         currentCampaignName.value,
         multiplayerVariant.value,
         includeTarotReadings.value,
-        options
-      ).then((game) => router.push(`/games/${game.id}`))
+        options,
+        strictAsIfAt.value,
+        aiPlayersForCreate,
+        achievementsForCreate(campaignId),
+        ultimatumsAndBoons.value,
+      )
+      router.push(`/games/${game.id}`)
     }
   } else {
     const c = campaign.value
     if (c && currentCampaignName.value) {
       const campaignId = returnTo.value && c.returnTo?.id ? c.returnTo.id : c.id
 
-      newGame(
+      const game = await newGame(
         deckIds.value,
         playerCount.value,
         campaignId,
@@ -283,8 +407,13 @@ async function start() {
         currentCampaignName.value,
         multiplayerVariant.value,
         includeTarotReadings.value,
-        options
-      ).then((game) => router.push(`/games/${game.id}`))
+        options,
+        strictAsIfAt.value,
+        aiPlayersForCreate,
+        achievementsForCreate(campaignId),
+        ultimatumsAndBoons.value,
+      )
+      router.push(`/games/${game.id}`)
     }
   }
 }
@@ -299,57 +428,74 @@ async function start() {
 
     <form v-if="ready" id="new-campaign" @submit.prevent="goNext">
       <ChooseMode
-          v-if="step === 'ChooseMode'"
-          v-model:gameMode="gameMode"
-          v-model:selectedCampaign="selectedCampaign"
-          v-model:selectedScenario="selectedScenario"
-          :campaigns="campaigns"
-          :sideStories="sideStories"
-          :campaign="campaign"
-          :scenario="scenario"
-          @go="goNext"
-        />
+        v-if="step === 'ChooseMode'"
+        v-model:gameMode="gameMode"
+        v-model:selectedCampaign="selectedCampaign"
+        v-model:selectedScenario="selectedScenario"
+        :campaigns="campaigns"
+        :sideStories="sideStories"
+        :campaign="campaign"
+        :scenario="scenario"
+        @go="goNext"
+      />
 
-        <GameOptions
-          v-else
-          v-model:playerCount="playerCount"
-          v-model:multiplayerVariant="multiplayerVariant"
-          v-model:returnTo="returnTo"
-          v-model:fullCampaign="fullCampaign"
-          v-model:selectedScenario="selectedScenario"
-          v-model:selectedDifficulty="selectedDifficulty"
-          v-model:includeTarotReadings="includeTarotReadings"
-          v-model:campaignName="campaignName"
-          v-model:fullCampaignOptionKey="fullCampaignOptionKey"
-          v-model:recommendedOptionState="recommendedOptionState"
-          :gameMode="gameMode"
-          :campaign="campaign"
-          :scenario="scenario"
-          :canStandalone="canStandalone"
-          :selectedCampaign="selectedCampaign"
-          :selectedCampaignReturnTo="selectedCampaignReturnTo"
-          :campaignScenarios="campaignScenarios"
-          :difficulties="difficulties"
-          :currentCampaignName="currentCampaignName"
-          :chosenCampaignId="selectedCampaign"
-          :chosenSideStoryId="gameMode === 'SideStory' ? selectedScenario : null"
-        />
+      <GameOptions
+        v-else
+        v-model:playerCount="playerCount"
+        v-model:sideStoryMode="sideStoryMode"
+        v-model:multiplayerVariant="multiplayerVariant"
+        v-model:returnTo="returnTo"
+        v-model:fullCampaign="fullCampaign"
+        v-model:selectedScenario="selectedScenario"
+        v-model:selectedDifficulty="selectedDifficulty"
+        v-model:includeTarotReadings="includeTarotReadings"
+        v-model:strictAsIfAt="strictAsIfAt"
+        v-model:campaignName="campaignName"
+        v-model:fullCampaignOptionKey="fullCampaignOptionKey"
+        v-model:recommendedOptionState="recommendedOptionState"
+        v-model:achievementsEnabled="achievementsEnabled"
+        v-model:ultimatumsAndBoons="ultimatumsAndBoons"
+        v-model:epicMode="epicMode"
+        v-model:epicGroupCount="epicGroupCount"
+        v-model:epicGroups="epicGroups"
+        v-model:imposeTimeLimit="imposeTimeLimit"
+        v-model:timeLimitMinutes="timeLimitMinutes"
+        v-model:aiPlayers="aiPlayers"
+        :gameMode="gameMode"
+        :campaign="campaign"
+        :scenario="scenario"
+        :canStandalone="canStandalone"
+        :selectedCampaign="selectedCampaign"
+        :selectedCampaignReturnTo="selectedCampaignReturnTo"
+        :campaignScenarios="campaignScenarios"
+        :difficulties="difficulties"
+        :currentCampaignName="currentCampaignName"
+        :chosenCampaignId="selectedCampaign"
+        :chosenSideStoryId="gameMode === 'SideStory' ? selectedScenario : null"
+      />
 
-        <div class="wizard-actions buttons">
-          <button
-            v-if="step === 'GameOptions'"
-            type="button"
-            class="action secondary"
-            @click="goBack"
-          >
-            {{ $t('Back') ?? 'Back' }}
-          </button>
+      <p v-if="creationError" class="creation-error">{{ creationError }}</p>
 
-          <button v-if="step === 'GameOptions'" class="primary-action" type="submit" :disabled="nextDisabled">
-            {{ $t('create.create') }}
-          </button>
-        </div>
-      </form>
+      <div class="wizard-actions buttons">
+        <button
+          v-if="step === 'GameOptions'"
+          type="button"
+          class="action secondary"
+          @click="goBack"
+        >
+          {{ $t('Back') }}
+        </button>
+
+        <button
+          v-if="step === 'GameOptions'"
+          class="primary-action"
+          type="submit"
+          :disabled="nextDisabled || creating"
+        >
+          {{ $t('create.create') }}
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
@@ -359,6 +505,11 @@ async function start() {
   max-width: 98vw;
   min-width: 60vw;
   margin: 0 auto;
+}
+
+.creation-error {
+  color: var(--danger);
+  margin: 12px 0;
 }
 
 #new-campaign {
@@ -373,7 +524,7 @@ async function start() {
 #new-campaign button {
   outline: 0;
   padding: 15px;
-  background: #6e8640;
+  background: var(--button-1);
   text-transform: uppercase;
   color: white;
   border: 0;
@@ -411,7 +562,7 @@ async function start() {
 }
 
 h2 {
-  color: #cecece;
+  color: var(--title);
   margin-left: 10px;
   text-transform: uppercase;
   font-family: Teutonic;
@@ -447,7 +598,7 @@ input[type='radio'] + label:hover {
 }
 
 input[type='radio']:checked + label {
-  background: #6e8640;
+  background: var(--button-1);
 }
 
 input[type='image'] {
@@ -554,20 +705,23 @@ input[type='image'] {
 .wizard-actions .action {
   height: 52px;
   border-radius: 5px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.22);
-  color: rgba(255,255,255,0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.9);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(0,0,0,0.25);
-  transition: transform 120ms ease, background 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+  transition:
+    transform 120ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .wizard-actions .action:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: rgba(255,255,255,0.08);
-  box-shadow: 0 5px 28px rgba(0,0,0,0.35);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 5px 28px rgba(0, 0, 0, 0.35);
 }
 
 .wizard-actions .action:active:not(:disabled) {
@@ -576,7 +730,7 @@ input[type='image'] {
 
 .wizard-actions .action.primary {
   background: rgba(110, 134, 64, 0.95);
-  border-color: rgba(255,255,255,0.10);
+  border-color: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
@@ -585,7 +739,7 @@ input[type='image'] {
 }
 
 .wizard-actions .action.secondary {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .wizard-actions .action:disabled {
@@ -604,19 +758,22 @@ input[type='image'] {
 .primary-action {
   width: 100%;
   border-radius: 5px;
-  border: 1px solid rgba(255,255,255,0.10);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(110, 134, 64, 0.95);
   color: white;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  box-shadow: 0 5px 28px rgba(0,0,0,0.35);
-  transition: transform 120ms ease, background 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 5px 28px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 120ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .primary-action:hover:not(:disabled) {
   transform: translateY(-1px);
   background: rgba(110, 134, 64, 1);
-  box-shadow: 0 18px 34px rgba(0,0,0,0.45);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.45);
 }
 
 .primary-action:disabled {

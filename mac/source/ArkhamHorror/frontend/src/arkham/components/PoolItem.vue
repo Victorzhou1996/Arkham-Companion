@@ -14,11 +14,25 @@ const emit = defineEmits<{ choose: [] }>()
 const image = computed(() => {
   return imgsrc(`${props.type}.png`)
 })
+
+function retryImage(event: Event) {
+  const element = event.currentTarget as HTMLImageElement
+  if (element.dataset.retried === 'true') return
+
+  element.dataset.retried = 'true'
+  const retryUrl = new URL(element.src, window.location.origin)
+  retryUrl.searchParams.set('retry', '1')
+  element.src = retryUrl.href
+}
+
+function imageLoaded(event: Event) {
+  delete (event.currentTarget as HTMLImageElement).dataset.retried
+}
 </script>
 
 <template>
   <div class="poolItem" :class="`poolItem-${type}`" @click="emit('choose')" v-tooltip="tooltip">
-    <img :src="image" />
+    <img :src="image" @load="imageLoaded" @error="retryImage" />
     <span v-if="amount !== null && amount !== undefined">{{amount}}</span>
   </div>
 </template>
@@ -92,18 +106,35 @@ const image = computed(() => {
 
 .resource--can-take, .resource--can-spend {
   pointer-events: auto;
-  padding: 0px;
   cursor: pointer;
-  background-color: var(--select);
-  img { filter: unset; }
+  /* Outline the resource coin's silhouette (available action = magenta) rather
+     than filling the hexagon; matches the health/sanity treatment. */
+  clip-path: none;
+  background-color: transparent;
+  img {
+    filter:
+      drop-shadow(1px 0 0 var(--select))
+      drop-shadow(-1px 0 0 var(--select))
+      drop-shadow(0 1px 0 var(--select))
+      drop-shadow(0 -1px 0 var(--select));
+  }
 }
 
 .health--can-interact, .sanity--can-interact {
   pointer-events: auto;
+  cursor: pointer;
   > span {
     padding: 0px;
     cursor: pointer;
-    border: 2px solid var(--select);
+  }
+  /* Outline the token's PNG silhouette (available action = magenta) instead of
+     drawing a circular ring around the count. */
+  img {
+    filter:
+      drop-shadow(1px 0 0 var(--select))
+      drop-shadow(-1px 0 0 var(--select))
+      drop-shadow(0 1px 0 var(--select))
+      drop-shadow(0 -1px 0 var(--select));
   }
 }
 </style>

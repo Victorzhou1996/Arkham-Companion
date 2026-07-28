@@ -7,6 +7,7 @@ export type Treachery = {
   id: string;
   cardId: string;
   cardCode: string;
+  owner: string | null;
   tokens: Tokens;
   drawnBy: string
   peril: boolean
@@ -19,6 +20,7 @@ export const treacheryDecoder = JsonDecoder.object<Treachery>({
   id: JsonDecoder.string(),
   cardId: JsonDecoder.string(),
   cardCode: JsonDecoder.string(),
+  owner: JsonDecoder.nullable(JsonDecoder.string()),
   drawnBy: JsonDecoder.string(),
   tokens: tokensDecoder,
   placement: placementDecoder,

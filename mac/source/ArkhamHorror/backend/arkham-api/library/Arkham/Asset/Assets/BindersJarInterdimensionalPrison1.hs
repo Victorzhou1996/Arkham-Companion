@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.BindersJarInterdimensionalPrison1 (bindersJarInterdim
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Import.Lifted hiding (EnemyAttacks, EnemyDefeated)
+import Arkham.Asset.Import.Lifted hiding (EnemyAttacks)
 import Arkham.Attack.Types
 import Arkham.Card
 import Arkham.Enemy.Types (Field (EnemyCard))
@@ -28,7 +28,7 @@ instance HasAbilities BindersJarInterdimensionalPrison1 where
   getAbilities (BindersJarInterdimensionalPrison1 (With a _)) =
     [ controlled a 1 criteria1
         $ freeReaction
-        $ EnemyDefeated #after Anyone ByAny
+        $ IfEnemyDefeated #after Anyone ByAny
         $ NonEliteEnemy
         <> EnemyAt YourLocation
     , restricted a 2 ControlsThis

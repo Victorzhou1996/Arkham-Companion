@@ -25,6 +25,7 @@ import Arkham.Helpers.Agenda (getCurrentAgenda)
 import Arkham.Helpers.Campaign
 import Arkham.Helpers.FlavorText
 import Arkham.Helpers.Location (getCanMoveTo, withLocationOf)
+import Arkham.Helpers.Modifiers (getModifiers)
 import Arkham.Helpers.Query (allInvestigators, getLead)
 import Arkham.Helpers.SkillTest (isFightWith, withSkillTest)
 import Arkham.Helpers.Xp
@@ -165,7 +166,7 @@ instance RunMessage CongressOfTheKeys where
       eceDoesNotTrustTheCell <- getHasRecord EceDoesNotTrustTheCell
       youHaventSeenTheLastOfAmaranth <- getHasRecord YouHaventSeenTheLastOfAmaranth
       theLoversAreReunited <- getHasRecord TheLoversAreReunited
-      amaranthHasLeftTheCoterie <- getHasRecord TheRedCoterieWasDestroyedFromWithin
+      amaranthHasLeftTheCoterie <- getHasRecord AmaranthHasLeftTheCoterie
       youHaventSeenTheLastOfThorne <- getHasRecord YouHaventSeenTheLastOfThorne
       theCellMadeADealWithThorne <- getHasRecord TheCellMadeADealWithThorne
       thorneDisappeared <- getHasRecord ThorneDisappeared
@@ -199,6 +200,7 @@ instance RunMessage CongressOfTheKeys where
           | theDogsAreAtWar = 0
           | otherwise = 1
         yea1
+          | theCellAidedTheKnight = 0
           | theCellFailedToFendOffTheBeast = 1
           | youHaventSeenTheLastOfTheClaretKnight = 2
           | theDogsAreAtWar = 0
@@ -434,8 +436,16 @@ instance RunMessage CongressOfTheKeys where
               if finalYea >= finalNay
                 then labeled' "deemedALiability" $ doStep 2 PreScenarioSetup
                 else do
-                  let canOverthrow = laChicaRojaVotedNay && eceTrustsTheCell && desiIsGood
-                  let canJoin = canOverthrow && tuwileMasaiIsOnYourSide && theCellMadeADealWithThorne && theCellAidedTheKnight
+                  let claretKnightVotedNay =
+                        theCellAidedTheKnight
+                          || not
+                            ( theCellFailedToFendOffTheBeast
+                                || youHaventSeenTheLastOfTheClaretKnight
+                                || theDogsAreAtWar
+                            )
+                  let eceVotedNay = not eceDoesNotTrustTheCell
+                  let canOverthrow = laChicaRojaVotedNay && eceVotedNay && desiIsGood
+                  let canJoin = claretKnightVotedNay && tuwileMasaiIsOnYourSide && theCellMadeADealWithThorne
                   labeledValidate' canOverthrow "overthrow" $ doStep 3 PreScenarioSetup
                   labeledValidate' canJoin "join" $ doStep 4 PreScenarioSetup
                   labeled' "deemedAnAsset" $ doStep 5 PreScenarioSetup
@@ -764,7 +774,7 @@ instance RunMessage CongressOfTheKeys where
       pure s
     ResolveChaosToken drawnToken ElderThing _iid -> do
       withSkillTest \sid -> do
-        skillTestModifier sid drawnToken.face sid CancelSkills
+        skillTestModifier sid drawnToken.face sid CancelEachCommittedCard
         push CancelSkillEffects
         cards <- concat <$> selectField InvestigatorCommittedCards Anyone
         for_ cards \c -> for_ c.owner (`hollow` c)
@@ -907,32 +917,59 @@ instance RunMessage CongressOfTheKeys where
       CongressOfTheKeys
         <$> handleCityOfRemnants attrs v (.right) (\locations ml -> locations {right = ml})
     ScenarioSpecific "exposed[CityOfRemnantsL]" v -> do
-      let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v
+      let (iid, c) :: (InvestigatorId, ConcealedCard) = toResult v
       let meta = toResult @LocationsInShadowsMetadata attrs.meta
       let locationsInShadows = meta.locationsInShadows
-      for_ locationsInShadows.left \loc -> do
-        scenarioSpecific "exposed[CityOfRemnants]" (iid, LeftPosition, loc)
-        do_ msg
-        forTarget_ loc msg
-      pure s
+      case locationsInShadows.left of
+        Just loc -> do
+          scenarioSpecific "exposed[CityOfRemnants]" (iid, LeftPosition, loc)
+          do_ msg
+          forTarget_ loc msg
+          pure s
+        Nothing -> do
+          mods <- getModifiers c
+          if ScenarioModifier "doNotRemove" `elem` mods
+            then pure s
+            else do
+              removeFromGame c
+              let concealedCards = Map.map (filter (/= c.id)) meta.concealedCards
+              pure $ CongressOfTheKeys $ attrs & metaL .~ toJSON (meta {concealedCards})
     ScenarioSpecific "exposed[CityOfRemnantsM]" v -> do
-      let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v
+      let (iid, c) :: (InvestigatorId, ConcealedCard) = toResult v
       let meta = toResult @LocationsInShadowsMetadata attrs.meta
       let locationsInShadows = meta.locationsInShadows
-      for_ locationsInShadows.middle \loc -> do
-        scenarioSpecific "exposed[CityOfRemnants]" (iid, MiddlePosition, loc)
-        do_ msg
-        forTarget_ loc msg
-      pure s
+      case locationsInShadows.middle of
+        Just loc -> do
+          scenarioSpecific "exposed[CityOfRemnants]" (iid, MiddlePosition, loc)
+          do_ msg
+          forTarget_ loc msg
+          pure s
+        Nothing -> do
+          mods <- getModifiers c
+          if ScenarioModifier "doNotRemove" `elem` mods
+            then pure s
+            else do
+              removeFromGame c
+              let concealedCards = Map.map (filter (/= c.id)) meta.concealedCards
+              pure $ CongressOfTheKeys $ attrs & metaL .~ toJSON (meta {concealedCards})
     ScenarioSpecific "exposed[CityOfRemnantsR]" v -> do
-      let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v
+      let (iid, c) :: (InvestigatorId, ConcealedCard) = toResult v
       let meta = toResult @LocationsInShadowsMetadata attrs.meta
       let locationsInShadows = meta.locationsInShadows
-      for_ locationsInShadows.right \loc -> do
-        scenarioSpecific "exposed[CityOfRemnants]" (iid, RightPosition, loc)
-        do_ msg
-        forTarget_ loc msg
-      pure s
+      case locationsInShadows.right of
+        Just loc -> do
+          scenarioSpecific "exposed[CityOfRemnants]" (iid, RightPosition, loc)
+          do_ msg
+          forTarget_ loc msg
+          pure s
+        Nothing -> do
+          mods <- getModifiers c
+          if ScenarioModifier "doNotRemove" `elem` mods
+            then pure s
+            else do
+              removeFromGame c
+              let concealedCards = Map.map (filter (/= c.id)) meta.concealedCards
+              pure $ CongressOfTheKeys $ attrs & metaL .~ toJSON (meta {concealedCards})
     ForTarget (LocationTarget loc) (ScenarioSpecific x v)
       | x `elem` ["exposed[CityOfRemnantsL]", "exposed[CityOfRemnantsM]", "exposed[CityOfRemnantsR]"] -> do
           let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v

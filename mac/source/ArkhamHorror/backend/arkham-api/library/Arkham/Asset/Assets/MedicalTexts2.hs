@@ -4,6 +4,7 @@ import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.Asset.Types (getController)
+import Arkham.Exhaust (mkExhaustion)
 import Arkham.Helpers.Investigator
 import Arkham.Helpers.Message qualified as Msg
 import Arkham.Helpers.Modifiers
@@ -25,7 +26,7 @@ instance RunMessage MedicalTexts2 where
   runMessage msg a@(MedicalTexts2 attrs) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       let controllerId = getController attrs
-      investigators <- select $ affectsOthers $ colocatedWith controllerId
+      investigators <- select $ affectsOthersKnown controllerId $ colocatedWith controllerId
       sid <- getRandom
       chooseOne iid
         $ targetLabels investigators
@@ -43,8 +44,8 @@ instance RunMessage MedicalTexts2 where
       getSkillTestTarget >>= \case
         Just (InvestigatorTarget iid) -> do
           chooseOrRunOne iid
-            $ [Label "Exhaust Medical Texts" [Exhaust (toTarget attrs)] | attrs.ready]
-            <> [Label "Deal 1 damage to that investigator" [Msg.assignDamage iid (toAbilitySource attrs 1) 1]]
+            $ [Label "$cards.label.medicalTexts2.exhaust" [Exhaust (mkExhaustion attrs attrs)] | attrs.ready]
+            <> [Label "$cards.label.medicalTexts2.dealDamage" [Msg.assignDamage iid (toAbilitySource attrs 1) 1]]
         _ -> error "invalid target"
       pure a
     _ -> MedicalTexts2 <$> liftRunMessage msg attrs

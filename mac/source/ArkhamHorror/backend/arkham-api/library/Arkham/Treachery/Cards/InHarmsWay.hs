@@ -18,7 +18,7 @@ instance HasAbilities InHarmsWay where
       a
       1
       InYourThreatArea
-      (forced $ EnemyDealtDamage #after AnyDamageEffect AnyEnemy (SourceOwnedBy You))
+      (forced $ EnemyDealtDamage #after AnyDamageEffect AnyEnemy (SourceUsedBy You))
       : [mkAbility a 2 $ forcedOnElimination iid | iid <- toList a.inThreatAreaOf]
 
 instance RunMessage InHarmsWay where
@@ -34,7 +34,7 @@ instance RunMessage InHarmsWay where
     DoStep 1 (UseThisAbility iid (isSource attrs -> True) 1) -> do
       when (attrs.token #damage >= 3) $ toDiscardBy iid (attrs.ability 1) attrs
       pure t
-    UseThisAbility iid (isSource attrs -> True) 2 -> do
-      sufferPhysicalTrauma iid 1
+    UseThisAbility _iid (isSource attrs -> True) 2 -> do
+      for_ attrs.owner (`sufferPhysicalTrauma` 1)
       pure t
     _ -> InHarmsWay <$> liftRunMessage msg attrs

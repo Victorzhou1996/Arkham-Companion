@@ -2,7 +2,7 @@ module Arkham.Agenda.Cards.DecrepitDecay (DecrepitDecay (..), decrepitDecay) whe
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaigns.TheInnsmouthConspiracy.Helpers
 import Arkham.Campaigns.TheInnsmouthConspiracy.Memory
@@ -23,7 +23,7 @@ decrepitDecay = agenda (1, A) DecrepitDecay Cards.decrepitDecay (Static 6)
 
 instance HasAbilities DecrepitDecay where
   getAbilities (DecrepitDecay a) =
-    [forcedAbility a 1 $ EnemyDefeated #when You (BySource $ SourceOwnedBy You) notKidnapper]
+    [forcedAbility a 1 $ EnemyDefeated #when You (BySource $ SourceUsedBy You) notKidnapper]
 
 instance RunMessage DecrepitDecay where
   runMessage msg a@(DecrepitDecay attrs) = runQueueT $ case msg of

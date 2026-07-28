@@ -3,6 +3,7 @@ module Arkham.Event.Events.ManipulateDestiny2 (manipulateDestiny2) where
 import Arkham.Campaigns.TheScarletKeys.Concealed.Helpers
 import Arkham.Event.Cards qualified as Cards
 import Arkham.Event.Import.Lifted
+import Arkham.I18n
 import Arkham.Matcher
 
 newtype ManipulateDestiny2 = ManipulateDestiny2 EventAttrs
@@ -28,19 +29,19 @@ instance RunMessage ManipulateDestiny2 where
             select
               $ HealableAsset (toSource attrs) #damage
               $ at_ (locationWithInvestigator iid)
-              <> AssetControlledBy (affectsOthers Anyone)
+              <> AssetControlledBy (affectsOthersKnown iid Anyone)
 
           let canDamage = any ((`elem` [#curse, #autofail]) . (.face)) tokens && (notNull enemies || notNull concealed)
           let canHeal =
                 any ((`elem` [#bless, #eldersign]) . (.face)) tokens
                   && (notNull damageInvestigators || notNull damageAssets)
 
-          chooseOrRunOneAtATimeM iid do
+          chooseOrRunOneAtATimeM iid $ cardI18n $ scope "manipulateDestiny2" do
             when canDamage do
-              labeled "Deal 2 damage to an enemy at your location" do
+              labeled' "dealDamageToEnemy" do
                 chooseDamageEnemy iid attrs (locationWithInvestigator iid) AnyEnemy 2
             when canHeal do
-              labeled "Heal 2 damage from an investigator or Ally asset at your location" do
+              labeled' "healDamageFromInvestigatorOrAlly" do
                 chooseOneM iid do
                   for_ damageInvestigators \i -> damageLabeled i $ healDamage i attrs 2
                   for_ damageAssets \a -> assetDamageLabeled a $ healDamage a attrs 2

@@ -7,6 +7,10 @@ import Arkham.Helpers.Message as X
 import Arkham.Source as X
 import Arkham.Target as X
 
+import Arkham.Ability
+import Arkham.Ai.Decks (bundledDeckFor)
+import Arkham.Ai.Helpers (getAiPlayerState)
+import Arkham.Ai.State (aiInvestigatorCode)
 import Arkham.CampaignLog
 import Arkham.CampaignLogKey
 import Arkham.CampaignStep
@@ -18,10 +22,12 @@ import Arkham.Classes.GameLogger
 import Arkham.Classes.Query
 import Arkham.Classes.RunMessage
 import {-# SOURCE #-} Arkham.GameEnv
+import Arkham.GameT
 import Arkham.Helpers
 import Arkham.Helpers.Deck
 import Arkham.Helpers.Investigator
 import Arkham.Helpers.Query
+import Arkham.I18n (countVar, ikey', withI18n)
 import Arkham.Id
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
@@ -31,6 +37,7 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.SideStory
 import Arkham.Tarot
+import Arkham.UltimatumsAndBoons
 import Arkham.Xp
 import Data.Aeson.Key qualified as Aeson
 import Data.Map.Strict qualified as Map
@@ -49,22 +56,45 @@ defaultCampaignRunner msg a = case msg of
         )
   SetGlobal CampaignTarget k v -> do
     pure $ updateAttrs a (storeL . at (Aeson.toText k) ?~ v)
+  SetCampaignMeta v -> do
+    pure $ updateAttrs a (metaL .~ v)
+  AddCampaignModifiersForAll modTypes -> do
+    pure $ updateAttrs a (modifiersForAllL %~ \xs -> nub (xs <> modTypes))
+  RemoveCampaignModifiersForAll modTypes -> do
+    pure $ updateAttrs a (modifiersForAllL %~ filter (`notElem` modTypes))
   StartCampaign -> do
     -- [ALERT] StartCampaign
     players <- allPlayers
     lead <- getActivePlayer
-    pushAll
-      $ chooseDecks players
-      : [Ask lead PickCampaignSettings | (campaignStep (toAttrs a)).unwrap /= PrologueStep]
-        <> [CampaignStep $ campaignStep $ toAttrs a]
+    -- AI seats (registered via RegisterAiPlayer before StartCampaign) skip the
+    -- deck prompt: their bundled decklist is loaded in-place instead. A seat is
+    -- treated as AI here only if it both has registered AI state and resolves to
+    -- a bundled deck; anything else falls through to the normal prompt.
+    aiSeats <- forMaybeM players \pid -> do
+      mState <- getAiPlayerState pid
+      pure $ (pid,) <$> (bundledDeckFor . aiInvestigatorCode =<< mState)
+    batchId <- getId
+    -- The settings prompt and the first campaign step are the barrier's
+    -- continuation: they are held in game state until every seat has finished its
+    -- deck setup, rather than queued behind the deck ask where a seat's InitDeck
+    -- tail could run past them (#5173).
+    push
+      $ chooseDecksWithAi batchId players aiSeats
+      $ [Ask lead PickCampaignSettings | (campaignStep (toAttrs a)).unwrap /= PrologueStep]
+      <> [CampaignStep $ campaignStep $ toAttrs a]
     pure a
   HandleKilledOrInsaneInvestigators -> do
     -- This case is mainly to handle when there is not an upgrade window
     -- between two scenarios
     killed <- select KilledInvestigator
     insane <- select InsaneInvestigator
+    -- Ultimatum of Survival: a killed or insane investigator's player is
+    -- eliminated from the campaign and cannot continue with a new
+    -- investigator, so they get no replacement-deck prompt.
+    survival <- hasUltimatum UltimatumOfSurvival
     case nub (killed <> insane) of
       [] -> pure ()
+      _ | survival -> pure ()
       xs -> push . chooseUpgradeDecks =<< traverse getPlayer xs
     pure a
   CampaignStep (ScenarioStepWithOptions sid opts) -> do
@@ -89,7 +119,16 @@ defaultCampaignRunner msg a = case msg of
     -- [ALERT] Update TheDreamEaters if this alters a
     pure a
   CampaignStep (UpgradeDeckStep _) -> do
-    investigators <- select InvestigatorCanAddCardsToDeck
+    investigators <- do
+      candidates <- select InvestigatorCanAddCardsToDeck
+      -- Ultimatum of Survival: eliminated players don't return with a new
+      -- investigator, so killed/insane seats get no upgrade/replacement prompt.
+      survival <- hasUltimatum UltimatumOfSurvival
+      if survival
+        then do
+          eliminated <- nub <$> liftA2 (<>) (select KilledInvestigator) (select InsaneInvestigator)
+          pure $ filter (`notElem` eliminated) candidates
+        else pure candidates
     players <- traverse getPlayer investigators
     pushAll
       [ ResetGame
@@ -101,14 +140,14 @@ defaultCampaignRunner msg a = case msg of
     pure a
   CampaignStep (ChooseDecksStep _) -> do
     players <- allPlayers
-    pushAll $ chooseDecks players : [FinishedUpgradingDecks]
+    batchId <- getId
+    push $ chooseDecks batchId players [FinishedUpgradingDecks]
     pure a
   CampaignStep (ContinueCampaignStep _step') -> do
     lead <- getLeadPlayer
     push $ Ask lead ContinueCampaign
     pure a
   CampaignStep (StandaloneScenarioStep sid _) -> do
-    let xp = getSideStoryCost sid
     pushAll
       [ ResetInvestigators
       , ResetGame
@@ -116,10 +155,9 @@ defaultCampaignRunner msg a = case msg of
       , ForInvestigators [] ResetGame
       , StartScenario sid Nothing
       ]
-    select Anyone >>= traverse_ \iid -> push $ SpendXP iid xp
+    spendSideStoryXp sid
     pure a
   CampaignStep (StandaloneScenarioStepWithOptions sid _ opts) -> do
-    let xp = getSideStoryCost sid
     pushAll
       [ ResetInvestigators
       , ResetGame
@@ -127,9 +165,10 @@ defaultCampaignRunner msg a = case msg of
       , ForInvestigators [] ResetGame
       , StartScenario sid (Just opts)
       ]
-    select Anyone >>= traverse_ \iid -> push $ SpendXP iid xp
+    spendSideStoryXp sid
     pure a
   SetChaosTokensForScenario -> a <$ push (SetChaosTokens $ campaignChaosBag $ toAttrs a)
+  SetCampaignChaosBag tokens' -> pure $ updateAttrs a (chaosBagL .~ tokens')
   AddCampaignCardToDeck iid _ card -> do
     card' <- setOwner iid card
     pure $ updateAttrs a (storyCardsL %~ insertWith (<>) iid [card'])
@@ -144,7 +183,8 @@ defaultCampaignRunner msg a = case msg of
       else pure a
   RemoveChaosToken token -> pure $ updateAttrs a (chaosBagL %~ deleteFirstMatch (== token))
   RemoveAllChaosTokens token -> pure $ updateAttrs a (chaosBagL %~ filter (/= token))
-  InitDeck iid _ deck -> do
+  RemoveOption option -> pure $ updateAttrs a (logL . optionsL %~ deleteSet option)
+  InitDeck InitDeckAttrs {initDeckInvestigator = iid, initDeckDecklist = mDecklist, initDeckDeck = deck} -> do
     playerCount <- getPlayerCount
     investigatorClass <- field InvestigatorClass iid
     let cardCodes = map toCardCode $ unDeck deck
@@ -156,23 +196,59 @@ defaultCampaignRunner msg a = case msg of
             Nothing -> do
               pid <- getPlayer iid
               let cards = nub $ map toCardCode $ filterCards (card_ $ #asset <> #spell) (unDeck deck)
-              pure $ Just $ Ask pid $ QuestionLabel "Choose card for Eldritch Brand (5)" Nothing $ ChooseOne $ flip map cards \c ->
+              pure $ Just $ Ask pid $ QuestionLabel "$cards.label.eldritchBrand5.chooseCard" Nothing $ ChooseOne $ flip map cards \c ->
                 CardLabel c False [UpdateCardSetting iid "11080" (SetCardSetting CardAttachments [c])]
             Just _ -> pure Nothing
         else pure Nothing
 
-    (deck', randomWeaknesses) <- addRandomBasicWeaknessIfNeeded investigatorClass playerCount deck
+    (deck', baseRandomWeaknesses) <- addRandomBasicWeaknessIfNeeded investigatorClass playerCount mDecklist deck
+    -- Ultimatum of Disaster: deckbuilding requirements gain 1 additional
+    -- random basic weakness.
+    disaster <- hasUltimatum UltimatumOfDisaster
+    extraWeakness <-
+      if disaster
+        then (: []) <$> (genCard =<< getRandomBasicWeakness investigatorClass playerCount mDecklist)
+        else pure []
+    let randomWeaknesses = baseRandomWeaknesses <> extraWeakness
+    morrigan <- hasBoon BoonOfTheMorrigan
+    morriganSwaps <-
+      if morrigan
+        then
+          concat <$> for randomWeaknesses \_ ->
+            morriganWeaknessMessages
+              iid
+              (genCard =<< getRandomBasicWeakness investigatorClass playerCount mDecklist)
+        else pure []
+    let weaknessMessages =
+          if morrigan then [] else map (AddCampaignCardToDeck iid ShuffleIn) randomWeaknesses
+    ancients <- hasBoon BoonOfTheAncients
     purchaseTrauma <- initDeckTrauma deck' iid CampaignTarget
     initXp <- initDeckXp deck' iid CampaignTarget
+    pid <- getPlayer iid
+
+    -- Every InitDeck runs while decks are still being chosen. Its interactive parts
+    -- (Boon of the Morrígan, trauma, Eldritch Brand, XP) must not park inside that
+    -- window: the message queue is global, so a question parked here leaves the rest
+    -- of this seat's setup sitting in it, and the next seat to answer anything drains
+    -- that tail -- running this seat's setup, and then the campaign, out from under
+    -- its own unanswered question (#5173). Deferred past the barrier instead, they
+    -- resolve one seat at a time once the table is done choosing.
+    --
+    -- DoStep 1 (Spiritual Healing) reads the trauma purchased above, and the XP
+    -- messages follow it, so the whole tail defers together and keeps its order.
     pushAll
-      $ map (AddCampaignCardToDeck iid ShuffleIn) randomWeaknesses
-      <> purchaseTrauma
-      <> toList mEldritchBrand
-      <> [DoStep 1 msg]
-      <> initXp
+      $ weaknessMessages
+      <> [ DeferPastSimultaneousAsk pid
+             $ morriganSwaps
+             <> purchaseTrauma
+             <> toList mEldritchBrand
+             <> [DoStep 1 msg]
+             <> initXp
+             <> (if ancients then ancientsStartingXpMessages iid else [])
+         ]
 
     pure $ updateAttrs a $ decksL %~ insertMap iid deck'
-  DoStep 1 (InitDeck iid _ deck) -> do
+  DoStep 1 (InitDeck InitDeckAttrs {initDeckInvestigator = iid, initDeckDeck = deck}) -> do
     let cardCodes = map toCardCode $ unDeck deck
     mSpiritualHealing <-
       if "11098" `elem` cardCodes
@@ -186,8 +262,8 @@ defaultCampaignRunner msg a = case msg of
                   Just
                     $ chooseOne
                       pid
-                      [ Label "Heal 1 Physical Trauma" [HealTrauma iid 1 0]
-                      , Label "Heal 1 Mental Trauma" [HealTrauma iid 0 1]
+                      [ Label (withI18n $ countVar 1 $ ikey' "label.healPhysicalTrauma") [HealTrauma iid 1 0]
+                      , Label (withI18n $ countVar 1 $ ikey' "label.healMentalTrauma") [HealTrauma iid 0 1]
                       ]
               | physicalTrauma > 0 -> Just $ HealTrauma iid 1 0
               | mentalTrauma > 0 -> Just $ HealTrauma iid 0 1
@@ -218,7 +294,7 @@ defaultCampaignRunner msg a = case msg of
             Nothing -> do
               pid <- getPlayer iid
               let cards = nub $ map toCardCode $ filterCards (card_ #spell) (unDeck deck)
-              pure $ Just $ Ask pid $ QuestionLabel "Choose card for Eldritch Brand (5)" Nothing $ ChooseOne $ flip map cards \c ->
+              pure $ Just $ Ask pid $ QuestionLabel "$cards.label.eldritchBrand5.chooseCard" Nothing $ ChooseOne $ flip map cards \c ->
                 CardLabel c False [UpdateCardSetting iid "11080" (SetCardSetting CardAttachments [c])]
             Just _ -> pure Nothing
         else pure Nothing
@@ -257,8 +333,8 @@ defaultCampaignRunner msg a = case msg of
                   Just
                     $ chooseOne
                       pid
-                      [ Label "Heal 1 Physical Trauma" [HealTrauma iid 1 0]
-                      , Label "Heal 1 Mental Trauma" [HealTrauma iid 0 1]
+                      [ Label (withI18n $ countVar 1 $ ikey' "label.healPhysicalTrauma") [HealTrauma iid 1 0]
+                      , Label (withI18n $ countVar 1 $ ikey' "label.healMentalTrauma") [HealTrauma iid 0 1]
                       ]
               | physicalTrauma > 0 -> Just $ HealTrauma iid 1 0
               | mentalTrauma > 0 -> Just $ HealTrauma iid 0 1
@@ -355,7 +431,8 @@ defaultCampaignRunner msg a = case msg of
             )
         )
         key
-  RecordCount key int ->
+  RecordCount key int -> do
+    send $ "Record \"" <> format key <> "\" (" <> tshow int <> ")"
     pure $ updateAttrs a $ logL . recordedCountsL %~ insertMap key int
   IncrementRecordCount key int ->
     pure $ updateAttrs a $ logL . recordedCountsL %~ alterMap (Just . maybe int (+ int)) key
@@ -364,7 +441,8 @@ defaultCampaignRunner msg a = case msg of
   ScenarioResolution r -> case (toAttrs a).step.scenario of
     Just sid -> pure $ updateAttrs a $ resolutionsL %~ insertMap sid r
     _ -> error $ "must be called in a scenario, but called in " <> show (campaignStep (toAttrs a))
-  DrivenInsane iid ->
+  DrivenInsane iid -> do
+    push $ After msg
     pure
       $ updateAttrs a
       $ logL
@@ -373,7 +451,8 @@ defaultCampaignRunner msg a = case msg of
         (<>)
         DrivenInsaneInvestigators
         (singleton $ recorded $ unInvestigatorId iid)
-  InvestigatorKilled _ iid ->
+  InvestigatorKilled _ iid -> do
+    push $ After msg
     pure
       $ updateAttrs a
       $ logL
@@ -400,6 +479,14 @@ defaultCampaignRunner msg a = case msg of
         case step.unwrap.normalize of
           EpilogueStep -> push $ CampaignStep step
           _ -> pushAll [HandleKilledOrInsaneInvestigators, CampaignStep step]
+    -- Ultimatum of The Scream: strip banned allies from every player's deck.
+    -- Stored campaign decks plus seated investigators (a deck may not be
+    -- stored yet mid-transition). Pushed after the step messages so the
+    -- removals process before them.
+    investigators <- getInvestigators
+    pushAll
+      =<< screamedAllyCleanupMessages
+        (nub $ Map.keys (campaignDecks $ toAttrs a) <> investigators)
     pure
       $ updateAttrs a
       $ \attrs ->
@@ -414,17 +501,47 @@ defaultCampaignRunner msg a = case msg of
       (ReportXp $ XpBreakdown [InvestigatorLoseXp iid $ XpDetail XpFromCardEffect "Spent Xp" n])
       a
   ReportXp report -> do
-    let
+    activeIids <- select $ IncludeEliminated Anyone
     pure $ updateAttrs a \attrs ->
-      case campaignXpBreakdown attrs of
-        (step, report') : rest
-          | step == normalizedCampaignStep (campaignStep attrs) ->
-              attrs & xpBreakdownL .~ (step, report' <> report) : rest
-        _ -> attrs & xpBreakdownL %~ ((normalizedCampaignStep (campaignStep attrs), report) :)
-  IgnoreGainXP step -> pure $ updateAttrs a \attrs -> attrs & xpBreakdownL %~ filter ((/= step) . fst)
+      let currentStep = normalizedCampaignStep (campaignStep attrs)
+       in case campaignXpBreakdown attrs of
+            XpBreakdownStep step iids xp : rest
+              | step == currentStep ->
+                  attrs & xpBreakdownL .~ XpBreakdownStep step iids (xp <> report) : rest
+            _ -> attrs & xpBreakdownL %~ (XpBreakdownStep currentStep activeIids report :)
+  IgnoreGainXP step -> pure $ updateAttrs a \attrs -> attrs & xpBreakdownL %~ filter ((/= step) . (.xbsStep))
   UseAbility _ ab _ | ab.source == CampaignSource -> do
     push $ Do msg
     pure a
+  Do (UseAbility iid ability windows) | ability.limitType == Just PerCampaign -> do
+    let
+      sameAbility u =
+        abilityCardCode (usedAbility u)
+          == abilityCardCode ability
+          && abilityIndex (usedAbility u)
+          == abilityIndex ability
+    case find sameAbility (campaignUsedAbilities (toAttrs a)) of
+      Nothing -> do
+        let
+          used =
+            UsedAbility
+              { usedAbility = ability
+              , usedAbilityInitiator = iid
+              , usedAbilityWindows = windows
+              , usedTimes = 1
+              , usedDepth = 0
+              , usedAbilityTraits = mempty
+              , usedThisWindow = False
+              , usedAbilityTarget = Nothing
+              }
+        pure $ updateAttrs a (usedAbilitiesL %~ (used :))
+      Just _ -> do
+        let
+          updateUsed u
+            | sameAbility u =
+                u {usedTimes = usedTimes u + 1, usedAbilityWindows = usedAbilityWindows u <> windows}
+            | otherwise = u
+        pure $ updateAttrs a (usedAbilitiesL %~ map updateUsed)
   RotateTarot (toTarotArcana -> arcana) -> do
     let
       rotate = \case
@@ -450,3 +567,23 @@ defaultCampaignRunner msg a = case msg of
     push $ DoStep (n - 1) RunDestiny
     pure a
   _ -> pure a
+
+{- | Side-stories cost each investigator xp to play. Challenge scenarios only
+charge their required investigator the full cost; everyone else pays 1.
+-}
+spendSideStoryXp :: ScenarioId -> GameT ()
+spendSideStoryXp sid = do
+  let baseCost = getSideStoryCost sid
+  investigators <- select Anyone
+  case challengeScenarioInvestigator sid of
+    Nothing -> for_ investigators \iid -> push $ SpendXP iid baseCost
+    Just title -> do
+      signatures <- select $ InvestigatorWithTitle title
+      when (null signatures)
+        $ error
+        $ "Cannot play challenge scenario "
+        <> show sid
+        <> " without "
+        <> unpack title
+      for_ investigators \iid ->
+        push $ SpendXP iid $ if iid `elem` signatures then baseCost else 1

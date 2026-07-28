@@ -21,8 +21,6 @@ lurkerInTheDark =
   enemyWith
     LurkerInTheDark
     Cards.lurkerInTheDark
-    (3, Static 2, 1)
-    (1, 0)
     (spawnAtL ?~ SpawnAt (ConnectedLocation NotForMovement))
 
 instance HasAbilities LurkerInTheDark where
@@ -50,11 +48,11 @@ instance HasModifiersFor LurkerInTheDark where
 
 instance RunMessage LurkerInTheDark where
   runMessage msg e@(LurkerInTheDark attrs) = runQueueT $ case msg of
-    Msg.EnemyDamage eid damageAssignment | attrs.id == eid -> do
+    Msg.DealDamage (EnemyTarget eid) damageAssignment | attrs.id == eid -> do
       let amount = damageAssignmentAmount damageAssignment - 1
       if (amount > 0)
         then
           LurkerInTheDark
-            <$> liftRunMessage (Msg.EnemyDamage eid $ damageAssignment {damageAssignmentAmount = amount}) attrs
+            <$> liftRunMessage (Msg.DealDamage (EnemyTarget eid) $ damageAssignment {damageAssignmentAmount = amount}) attrs
         else pure e
     _ -> LurkerInTheDark <$> liftRunMessage msg attrs

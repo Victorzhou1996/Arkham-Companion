@@ -6,6 +6,7 @@
 module Arkham.Text where
 
 import Arkham.Card.CardCode
+import Arkham.ChaosToken.Types (ChaosTokenFace)
 import Arkham.I18n
 import Arkham.Json
 import Arkham.Prelude
@@ -32,6 +33,8 @@ data FlavorTextModifier
   | InterludeEntry
   | NestedEntry
   | NoUnderline
+  | CodexEntry
+  | HauntedEntry
   deriving stock (Show, Eq, Ord, Data)
 
 data ListItemEntry = ListItemEntry
@@ -57,6 +60,8 @@ data FlavorTextEntry
   | ListEntry {list :: [ListItemEntry]}
   | CardEntry {cardCode :: CardCode, imageModifiers :: [ImageModifier]}
   | TarotEntry {tarot :: TarotCardArcana}
+  | ChaosTokenEntry {chaosTokenFace :: ChaosTokenFace}
+  | ChaosTokenMorphEntry {morphFrom :: ChaosTokenFace, morphTo :: ChaosTokenFace}
   | EntrySplit
   deriving stock (Show, Eq, Ord, Data)
 
@@ -75,11 +80,6 @@ data FlavorText = FlavorText
   , flavorBody :: [FlavorTextEntry]
   }
   deriving stock (Show, Eq, Ord, Data)
-
-mapFlavorText :: (FlavorTextEntry -> FlavorTextEntry) -> FlavorText -> FlavorText
-mapFlavorText f (FlavorText title entries) =
-  FlavorText title (map f entries)
-
 addFlavorEntry :: FlavorText -> FlavorTextEntry -> FlavorText
 addFlavorEntry (FlavorText title entries) entry' =
   FlavorText title (entries <> [entry'])
@@ -129,18 +129,18 @@ mconcat
         parseJSON (String s) = pure $ BasicEntry s
 
         parseJSON v@(Object obj) = do
+          let addDefaultLevel c =
+                case Data.Aeson.KeyMap.lookup "level" c of
+                  Nothing -> Data.Aeson.KeyMap.insert "level" (Number 1) c
+                  Just _ -> c
           case Data.Aeson.KeyMap.lookup "tag" obj of
             Just (String "HeaderEntry") ->
               case Data.Aeson.KeyMap.lookup "contents" obj of
                 Just (Object c) ->
-                  let c' =
-                        case Data.Aeson.KeyMap.lookup "level" c of
-                          Nothing -> Data.Aeson.KeyMap.insert "level" (Number 1) c
-                          Just _  -> c
-                      obj' = Data.Aeson.KeyMap.insert "contents" (Object c') obj
+                  let obj' = Data.Aeson.KeyMap.insert "contents" (Object $ addDefaultLevel c) obj
                   in $(mkParseJSON defaultOptions ''FlavorTextEntry) (Object obj')
                 _ ->
-                  $(mkParseJSON defaultOptions ''FlavorTextEntry) v
+                  $(mkParseJSON defaultOptions ''FlavorTextEntry) (Object $ addDefaultLevel obj)
 
             _ ->
               $(mkParseJSON defaultOptions ''FlavorTextEntry) v

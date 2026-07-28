@@ -2,7 +2,7 @@ module Arkham.Agenda.Cards.GrowingSuspicion (GrowingSuspicion (..), growingSuspi
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.Helpers.Window
 import Arkham.Matcher
 import Arkham.Scenarios.TheVanishingOfElinaHarper.Helpers
@@ -16,7 +16,7 @@ growingSuspicion = agenda (2, A) GrowingSuspicion Cards.growingSuspicion (Static
 
 instance HasAbilities GrowingSuspicion where
   getAbilities (GrowingSuspicion a) =
-    [forcedAbility a 1 $ EnemyDefeated #when You (BySource $ SourceOwnedBy You) notKidnapper]
+    [forcedAbility a 1 $ EnemyDefeated #when You (BySource $ SourceUsedBy You) notKidnapper]
 
 instance RunMessage GrowingSuspicion where
   runMessage msg a@(GrowingSuspicion attrs) = runQueueT $ case msg of

@@ -4,12 +4,12 @@ import { Game } from '@/arkham/types/Game';
 import { Card } from '@/arkham/types/Card';
 import * as ArkhamGame from '@/arkham/types/Game';
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message';
-import { imgsrc } from '@/arkham/helpers';
-import PoolItem from '@/arkham/components/PoolItem.vue';
+import { cardImage } from '@/arkham/cardImages';
+import TokenPool from '@/arkham/components/TokenPool.vue';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import Token from '@/arkham/components/Token.vue';
 import * as Arkham from '@/arkham/types/Event';
-import {isUse} from '@/arkham/types/Token';
 
 export interface Props {
   game: Game
@@ -25,18 +25,21 @@ const emits = defineEmits<{
   showCards: [e: Event, cards: ComputedRef<Card[]>, title: string, isDiscards: boolean]
 }>()
 
-const uses = computed(() => Object.entries(props.event.tokens).filter(([k, v]) => isUse(k) && v > 0))
-
 const id = computed(() => props.event.id)
 const hasPool = computed(() => {
-  const { doom, sealedChaosTokens } = props.event
-  return doom > 0 || sealedChaosTokens.length > 0 || uses.value.length > 0
+  const { sealedChaosTokens, tokens } = props.event
+  return sealedChaosTokens.length > 0 || Object.values(tokens).some((amount) => (amount ?? 0) > 0)
 })
 
 const cardCode = computed(() => props.event.cardCode)
+const ownerInvestigatorId = computed(() => props.event.controller || props.event.owner)
+const ownedByCurrentPlayer = computed(() => {
+  const ownerId = ownerInvestigatorId.value
+  return props.game.investigators[ownerId]?.playerId === props.playerId
+})
 const image = computed(() => {
   const mutated = props.event.mutated ? `_${props.event.mutated}` : ''
-  return imgsrc(`cards/${cardCode.value.replace('c', '')}${mutated}.avif`)
+  return cardImage(cardCode.value, mutated)
 })
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 
@@ -104,15 +107,7 @@ const choose = (index: number) => emits('choose', index)
       :data-customizations="JSON.stringify(event.customizations)"
     />
     <div v-if="hasPool" class="pool">
-      <PoolItem v-if="event.doom > 0" type="doom" :amount="event.doom" />
-      <template v-for="[use, amount] in uses" :key="use">
-        <PoolItem
-          v-if="amount > 0"
-          type="resource"
-          :tooltip="use"
-          :amount="amount"
-        />
-      </template>
+      <TokenPool :tokens="event.tokens" />
       <Token
         v-for="(sealedToken, index) in event.sealedChaosTokens"
         :key="index"
@@ -130,6 +125,15 @@ const choose = (index: number) => emits('choose', index)
       :game="game"
       @click="$emit('choose', ability.index)"
       />
+    <AbilityTriggerModeToggle
+      v-if="ownedByCurrentPlayer"
+      :game="game"
+      :player-id="playerId"
+      :investigator-id="ownerInvestigatorId"
+      :card-code="cardCode"
+      :abilities="abilities"
+      :exhausted="exhausted"
+    />
 
     <button v-if="cardsUnderneath.length > 0" class="view-discard-button" @click="showCardsUnderneath">{{cardsUnderneathLabel}}</button>
   </div>
@@ -158,7 +162,7 @@ const choose = (index: number) => emits('choose', index)
   border: 0;
   color: #fff;
   border-radius: 4px;
-  border: 1px solid #ff00ff;
+  border: 1px solid var(--select);
 }
 
 :deep(.token) {
@@ -176,10 +180,10 @@ const choose = (index: number) => emits('choose', index)
     width: unset;
   }
   :deep(img) {
-    width: 20px;
+    width: var(--card-token-width);
     height: auto;
   }
-  z-index: 1;
+  z-index: var(--z-index-1);
   pointer-events: none;
 }
 

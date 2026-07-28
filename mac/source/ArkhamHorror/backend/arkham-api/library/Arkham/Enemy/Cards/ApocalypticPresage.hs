@@ -1,9 +1,11 @@
 module Arkham.Enemy.Cards.ApocalypticPresage (apocalypticPresage) where
 
 import Arkham.Ability
+import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaigns.TheScarletKeys.Helpers (hollow)
+import Arkham.Card
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Modifiers (ModifierType (..), getModifiers)
 import Arkham.Helpers.Query
 import Arkham.Matcher
@@ -14,7 +16,7 @@ newtype ApocalypticPresage = ApocalypticPresage EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 apocalypticPresage :: EnemyCard ApocalypticPresage
-apocalypticPresage = enemy ApocalypticPresage Cards.apocalypticPresage (4, Static 5, 2) (1, 2)
+apocalypticPresage = enemy ApocalypticPresage Cards.apocalypticPresage
 
 instance HasAbilities ApocalypticPresage where
   getAbilities (ApocalypticPresage a) =
@@ -39,7 +41,7 @@ instance RunMessage ApocalypticPresage where
       hollowed <- for investigators \iid -> do
         mods <- getModifiers iid
         hollows <- traverse fetchCard [cardId | Hollow cardId <- mods]
-        pure (iid, hollows)
+        pure (iid, filterCards (not_ $ cardIs Assets.theRedGlovedManHeWasAlwaysThere) hollows)
       lead <- getLead
       focusCards (concatMap snd hollowed) do
         chooseUpToNM_ lead 3 do

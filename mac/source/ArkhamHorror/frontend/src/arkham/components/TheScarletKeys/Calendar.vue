@@ -15,11 +15,11 @@ function symbolForDay(day: number): string | null {
 
 <template>
   <div class="time">
-    <h2>Time Passed</h2>
+    <h2>{{ $t('calendar.timePassed') }}</h2>
     <div class='calendar'>
       <!-- we need 35 cells each with an empty div a div with a number and another empty div -->
       <div class='day' v-for="n in 35" :key="n">
-        <div class='checkbox' :class="{ checked: n <= time[1] }">{{n <= time[1] ? 'x' : null}}</div><div class='numeral'>{{n}}</div><div class='symbol'>{{symbolForDay(n)}}{{ n == theta ? 'Θ' : '' }}{{ n == delta ? 'δ' : '' }}{{ n == psi ? 'ψ' : '' }}</div>
+        <div class='checkbox' :class="{ checked: n <= time }">{{n <= time ? 'x' : null}}</div><div class='numeral'>{{n}}</div><div class='symbol'>{{symbolForDay(n)}}{{ n == theta ? 'Θ' : '' }}{{ n == delta ? 'δ' : '' }}{{ n == psi ? 'ψ' : '' }}</div>
       </div>
     </div>
   </div>
@@ -36,18 +36,18 @@ function symbolForDay(day: number): string | null {
   text-align: center;
   --time-bg: #FCF5E2;
   background-color: var(--time-bg);
-  color: #333;
+  color: var(--neutral-dark);
   margin: 20px auto;
   font-family: "Arno", serif;
-  border: 4px solid #333;
+  border: 4px solid var(--neutral-dark);
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: -1;
+    z-index: var(--z-index-neg-1);
     inset: -10px;
-    border: 2px solid #333;
+    border: 2px solid var(--neutral-dark);
     background-color: transparent;
   }
   &::after {
@@ -55,8 +55,8 @@ function symbolForDay(day: number): string | null {
     position: absolute;
     border-radius: 6px;
     inset: -20px;
-    z-index: -2;
-    border: 4px solid #333;
+    z-index: var(--z-index-neg-2);
+    border: 4px solid var(--neutral-dark);
     background-color: var(--time-bg);
     box-shadow: 10px 10px 1px rgba(0,0,0,0.5);
   }
@@ -65,16 +65,16 @@ function symbolForDay(day: number): string | null {
     font-family: "Albertus";
     font-size: 2em;
     padding-block: 10px;
-    border: 4px solid #333;
+    border: 4px solid var(--neutral-dark);
     border-bottom: 0;
   }
   .calendar {
     display: grid;
-    border: 4px solid #333;
+    border: 4px solid var(--neutral-dark);
     border-top-width: 2px;
     grid-template-columns: repeat(7, 1fr);
     width: fit-content;
-    background-color: #333;
+    background-color: var(--neutral-dark);
     gap: 2px;
 
 
@@ -91,8 +91,8 @@ function symbolForDay(day: number): string | null {
       display: grid;
       .checkbox {
         grid-area: box;
-        border-bottom: 1px solid #333;
-        border-right: 1px solid #333;   
+        border-bottom: 1px solid var(--neutral-dark);
+        border-right: 1px solid var(--neutral-dark);
         width: 1em;
         height: 1em;
         justify-content: center;
@@ -101,7 +101,7 @@ function symbolForDay(day: number): string | null {
         line-height: 1em;
         font-weight: bold;
         &.checked {
-          background-color: #333;
+          background-color: var(--neutral-dark);
           color: var(--time-bg);
         }
       }

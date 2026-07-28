@@ -111,6 +111,10 @@ instance RunMessage DeadHeat where
         unscoped $ li "shuffleRemainder"
         unscoped $ li "readyToBegin"
 
+      additionalRules "civilians"
+      additionalRules "choosingARandomLocation"
+      additionalRules "replacingLocations"
+
       gather Set.DeadHeat
       gather Set.ScarletSorcery
       gather Set.SpreadingCorruption
@@ -201,33 +205,33 @@ instance RunMessage DeadHeat where
         Resolution 1 -> do
           setBearer Keys.theLastBlossom $ keyWithEnemy Enemies.amaranthScarletScorn
           record TheLoversAreReunited
-          markTime 1
           resolutionWithXp "resolution1" $ allGainXp' attrs
+          markTime 1
           endOfScenario
         Resolution 2 -> do
           setBearer Keys.theLastBlossom $ keyWithEnemy Enemies.amaranthScarletScorn
           record YouHaventSeenTheLastOfAmaranth
-          markTime 1
           resolutionWithXp "resolution2" $ allGainXp' attrs
+          markTime 1
           endOfScenario
         Resolution 3 -> do
           chooseBearer Keys.theLastBlossom
           record AmaranthHasLeftTheCoterie
-          markTime 2
           resolutionWithXp "resolution3" $ allGainXp' attrs
+          markTime 2
           endOfScenario
         Resolution 4 -> do
           chooseBearer Keys.theLastBlossom
           record YouHaventSeenTheLastOfAmaranth
-          markTime 1
           resolutionWithXp "resolution4" $ allGainXp' attrs
+          markTime 1
           endOfScenario
         Resolution 5 -> do
           record YouHaventSeenTheLastOfAmaranth
           eachInvestigator (`sufferMentalTrauma` 1)
           setBearer Keys.theLastBlossom $ keyWithEnemy Enemies.amaranthScarletScorn
-          markTime 1
           resolutionWithXp "resolution5" $ allGainXpWithBonus' attrs (toBonus "bonus" 3)
+          markTime 1
           endOfScenario
         _ -> error "Unknown resolution for Dead Heat"
       pure s
@@ -259,10 +263,6 @@ instance RunMessage DeadHeat where
           chooseTargetM iid enemies \enemy -> do
             readyThis enemy
             initiateEnemyAttack enemy Cultist iid
-        Tablet | isEasyStandard attrs -> do
-          chooseOneM iid do
-            unscoped $ countVar 1 $ labeled' "takeDamage" $ assignDamage iid Tablet 1
-            labeled' "tablet.doNotTakeDamage" $ withLocationOf iid slayCivilian
         ElderThing | isEasyStandard attrs -> chooseAndDiscardCard iid ElderThing
         ElderThing | isHardExpert attrs -> randomDiscard iid ElderThing
         _ -> pure ()
@@ -272,6 +272,11 @@ instance RunMessage DeadHeat where
       chooseTargetM iid enemies \enemy -> do
         readyThis enemy
         initiateEnemyAttack enemy Cultist iid
+      pure s
+    ResolveChaosToken _ Tablet iid | isEasyStandard attrs -> do
+      chooseOneM iid do
+        unscoped $ countVar 1 $ labeled' "takeDamage" $ assignDamage iid Tablet 1
+        labeled' "tablet.doNotTakeDamage" $ withLocationOf iid slayCivilian
       pure s
     ResolveChaosToken _ Tablet iid | isHardExpert attrs -> do
       assignDamage iid Tablet 1

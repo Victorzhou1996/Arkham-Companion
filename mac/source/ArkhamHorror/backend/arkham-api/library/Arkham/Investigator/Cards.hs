@@ -77,7 +77,8 @@ allInvestigatorCards =
       , alessandraZorzi
       , kohakuNarukami
       , hankSamson
-      , hankSamsonB
+      , hankSamsonResoluteAssistant
+      , hankSamsonResoluteWarden
       , marionTavares
       , luciusGalloway
       , agathaCrane_Seeker
@@ -92,7 +93,10 @@ allInvestigatorCards =
       , dexterDrake2
       , isabelleBarnes
       , nathanielCho
+      , tommyMuldoon2
       , harveyWalters
+      , carolynFern2
+      , marieLambeau2
       , winifredHabbamock
       , andrePatel
       , jacquelineFine
@@ -111,7 +115,7 @@ allInvestigatorCards =
       , fatherMateoParallel
       , jennyBarnesParallel
       , lolaHayesParallel
-      , tommyMuldoon2
+      , miguelDeLaCruz
       ]
 
 allEncounterInvestigatorCards :: Map CardCode CardDef
@@ -119,7 +123,7 @@ allEncounterInvestigatorCards =
   mapFromList
     $ concatMap
       toCardCodePairs
-      [bodyOfAYithian, gavriellaMizrah, jeromeDavids, valentinoRivas, pennyWhite]
+      [bodyOfAYithian, gavriellaMizrah, jeromeDavids, valentinoRivas, pennyWhite, shatteredSelf]
 
 withAlternate :: CardCode -> CardDef -> CardDef
 withAlternate ccode = withAlternates [ccode]
@@ -257,6 +261,18 @@ bodyOfAYithian =
       [Monster, Yithian]
   )
     { cdUnique = False
+    }
+
+shatteredSelf :: CardDef
+shatteredSelf =
+  ( investigator
+      "10661"
+      ("Shattered Self" <:> "Who Are You?")
+      Neutral
+      [Shattered]
+  )
+    { cdUnique = False
+    , cdOtherSide = Just "10661b"
     }
 
 carolynFern :: CardDef
@@ -552,13 +568,21 @@ hankSamson =
     Survivor
     [Assistant, Warden]
 
-hankSamsonB :: CardDef
-hankSamsonB =
+hankSamsonResoluteAssistant :: CardDef
+hankSamsonResoluteAssistant =
   investigator
     "10016a"
     ("Hank Samson" <:> "The Farmhand")
     Survivor
     [Assistant, Resolute]
+
+hankSamsonResoluteWarden :: CardDef
+hankSamsonResoluteWarden =
+  investigator
+    "10016b"
+    ("Hank Samson" <:> "The Farmhand")
+    Survivor
+    [Warden, Resolute]
 
 marionTavares :: CardDef
 marionTavares =
@@ -755,7 +779,7 @@ zoeySamarasParallel =
 
 montereyJackParallel :: CardDef
 montereyJackParallel =
-  investigator "90062" ("Monterey Jack" <:> "The Archeologist") Rogue [Wayfarer]
+  investigator "90062" ("Monterey Jack" <:> "The Archaeologist") Rogue [Wayfarer]
 
 rexMurphyParallel :: CardDef
 rexMurphyParallel =
@@ -776,3 +800,15 @@ lolaHayesParallel =
 tommyMuldoon2 :: CardDef
 tommyMuldoon2 =
   investigator "60151" ("Tommy Muldoon" <:> "The Officer") Guardian [Police]
+
+carolynFern2 :: CardDef
+carolynFern2 =
+  investigator "60251" ("Carolyn Fern" <:> "The Psychologist") Seeker [Medic, Scholar]
+
+marieLambeau2 :: CardDef
+marieLambeau2 =
+  investigator "60451" ("Marie Lambeau" <:> "The Entertainer") Mystic [Performer, Witch]
+
+miguelDeLaCruz :: CardDef
+miguelDeLaCruz =
+  investigator "60551" ("Miguel de la Cruz" <:> "The Rancher") Survivor [Hunter, Warden]

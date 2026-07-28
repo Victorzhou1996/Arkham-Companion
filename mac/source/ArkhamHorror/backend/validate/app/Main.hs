@@ -81,7 +81,7 @@ data CardJson = CardJson
   , clues :: Maybe Int
   , shroud :: Maybe Int
   , xp :: Maybe Int
-  , quantity :: Int
+  , quantity :: Maybe Int
   , type_code :: String
   , pack_code :: String
   }
@@ -240,6 +240,7 @@ getTraits CardJson {..} = case traits of
       . normalizeTrait
       . cleanText
       $ T.replace "á" "a"
+      $ T.replace "é" "e"
       $ T.replace "-" ""
       $ T.replace "'" ""
       $ T.replace " " "" x
@@ -248,11 +249,15 @@ getTraits CardJson {..} = case traits of
     error $ show code <> ": " <> err <> " " <> show x <> " from " <> show traits
   normalizeTrait "Human" = "Humanoid"
   normalizeTrait "Possessed" = "Lunatic"
+  normalizeTrait "Inconspicuous" = "Inconspicious" -- enum uses the misspelling
   normalizeTrait x = x
   cleanText = T.dropWhileEnd (\c -> c == '.' || c == ' ')
   isValid = \case
     "Return" -> False -- adb adds the trait Return for some reason
     "???" -> False -- from 52061 (Recesses of Your Own Mind), but no reason to actually parse it
+    "Unlit" -> False -- from 10610b (Vale Lantern), not modeled as a trait
+    "Act 1" -> False -- from 70033-70038 (Midwinter Gala guests), act indicators not modeled as traits
+    "Act 2" -> False -- from 70033-70038 (Midwinter Gala guests), act indicators not modeled as traits
     _ -> True
 
 toGameVal :: Bool -> Int -> GameValue
@@ -324,6 +329,9 @@ normalizeEnemyStats
 normalizeEnemyStats "05085" (fight, _, evade) = (fight, Just (GameValueCalculation $ Static 3), evade) -- ADB incorrectly has this as 2 health
 normalizeEnemyStats "08609" (fight, _, evade) = (fight, Just (GameValueCalculation $ Static 1), evade) -- We leave the health as 1 since it is the min
 normalizeEnemyStats "08679" _ = (Just (GameValueCalculation (PerPlayer 1)), Just (GameValueCalculation $ Static 3), Just (GameValueCalculation (PerPlayer 1))) -- ADB says fight and evade are 1
+normalizeEnemyStats "86035" (fight, _, evade) = (fight, Just (GameValueCalculation $ PerPlayer 8), evade) -- global health pool of 8 per investigator
+normalizeEnemyStats "86041" (fight, _, evade) = (fight, Just (GameValueCalculation $ PerPlayer 8), evade) -- global health pool of 8 per investigator
+normalizeEnemyStats "86047" (fight, _, evade) = (fight, Just (GameValueCalculation $ PerPlayer 7), evade) -- global health pool of 7 per investigator
 normalizeEnemyStats _ stats = stats
 
 normalizeEnemyDamage :: CardCode -> (Int, Int) -> (Int, Int)
@@ -336,7 +344,7 @@ normalizeEnemyDamage _ damage = damage
 ignoreCardCode :: CardCode -> Bool
 ignoreCardCode x = T.isPrefixOf "x" (unCardCode x) || x `elem` ignoredCardCodes
  where
-  ignoredCardCodes = []
+  ignoredCardCodes = ["86038a", "86044a", "86049a"]
 
 runValidations :: Map CardCode CardJson -> IO ()
 runValidations cards = do
@@ -378,11 +386,20 @@ getValidationResults cards = runValidateT $ do
 
         -- Masked Carnevale-Goer is split up differently so we say the quantity is 1
         -- ideally we'd add them all up
-        let quantity' = if code == "82017b" then 1 else quantity
+        -- For War of the Outer Gods, ArkhamDB merges the copies from the core
+        -- encounter set into the faction sets, but we model them separately
+        let
+          quantity' = case code of
+            "82017b" -> Just 1
+            "86038" -> Just 2
+            "86044" -> Just 2
+            "86049" -> Just 4
+            _ -> quantity
 
         invariantWhen
           ( isJust (cdEncounterSet card)
-              && Just quantity'
+              && isJust quantity'
+              && quantity'
                 /= cdEncounterSetQuantity card
               && cdCardType card
                 `notElem` [ActType, AgendaType]
@@ -390,7 +407,7 @@ getValidationResults cards = runValidateT $ do
           $ QuantityMismatch
             code
             (Name name subname)
-            quantity
+            (fromMaybe 0 quantity)
             (cdEncounterSetQuantity card)
 
         let isUnique = if code == "06329" then True else is_unique -- Shining Trapezohedron is unique

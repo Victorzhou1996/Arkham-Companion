@@ -14,7 +14,7 @@ newtype HuntingGhast = HuntingGhast EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 huntingGhast :: EnemyCard HuntingGhast
-huntingGhast = enemyWith HuntingGhast Cards.huntingGhast (2, Static 2, 3) (1, 1) (preyL .~ Prey MostDamage)
+huntingGhast = enemyWith HuntingGhast Cards.huntingGhast (preyL .~ Prey MostDamage)
 
 instance HasAbilities HuntingGhast where
   getAbilities (HuntingGhast attrs) =
@@ -28,6 +28,6 @@ instance RunMessage HuntingGhast where
     UseThisAbility _iid (isSource attrs -> True) 1 -> do
       gugs <- select $ EnemyWithTrait Gug <> ExhaustedEnemy
       for_ gugs $ push . Ready . toTarget
-      push $ Msg.EnemyDamage attrs.id $ nonAttack Nothing (attrs.ability 1) 1
+      push $ Msg.DealDamage (EnemyTarget attrs.id) $ nonAttack Nothing (attrs.ability 1) 1
       pure e
     _ -> HuntingGhast <$> liftRunMessage msg attrs

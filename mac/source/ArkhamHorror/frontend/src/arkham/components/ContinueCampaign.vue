@@ -12,6 +12,11 @@ import { useI18n } from 'vue-i18n'
 import InvestigatorRow from '@/arkham/components/InvestigatorRow.vue'
 import LogIcons from '@/arkham/components/LogIcons.vue'
 import sideStories from '@/arkham/data/side-stories.json'
+import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
+import { filterDisplayable, isDevBuild } from '@/arkham/displayRules'
+import { hasParallelContent } from '@/arkham/deckRestrictions'
 
 const props = defineProps<{
   game: Game
@@ -21,27 +26,61 @@ const props = defineProps<{
   chooseSideStory: boolean
   canChooseSideStory: boolean
   step: CampaignStep
-}>();
+}>()
 
 const { t, te } = useI18n()
+const route = useRoute()
+const store = useUserStore()
+const { currentUser } = storeToRefs(store)
 const send = inject<(msg: string) => void>('send', () => {})
 const addSideStory = ref(false)
 const hasSent = ref(false)
+const alpha = ref(false)
+const devBuild = isDevBuild()
+const isBetaUser = computed(() => !!currentUser.value?.beta)
+const isDevUser = computed(() => !!currentUser.value?.dev)
+const devEnabled = computed(() => isDevUser.value || devBuild)
+const alphaEnabled = computed(() => isDevUser.value || (devBuild && alpha.value))
+const displayRuleOptions = computed(() => ({
+  alpha: alphaEnabled.value,
+  beta: isBetaUser.value,
+  dev: devEnabled.value,
+}))
 const sendOnce = (payload: unknown) => {
   if (hasSent.value) return
   hasSent.value = true
   send(JSON.stringify(payload))
 }
 const normalizedContents = (step: CampaignStep): string => {
-  if (step.tag === 'ScenarioStepWithOptions') {
-    return step.contents[0]
+  switch (step.tag) {
+    case 'ScenarioStep':
+    case 'InterludeStepPart':
+    case 'CheckpointStep':
+      return String(step.contents)
+    case 'ScenarioStepWithOptions':
+    case 'StandaloneScenarioStep':
+    case 'StandaloneScenarioStepWithOptions':
+    case 'InterludeStep':
+    case 'CampaignSpecificStep':
+      return JSON.stringify(step.contents)
+    case 'ContinueCampaignStep':
+      return normalizedContents(step.contents.nextStep)
+    default:
+      return step.tag
   }
-  return step.contents
 }
 // reset the lock on a "fresh update" of the step (new step name/kind)
-onMounted(() => { hasSent.value = false })
-const stepKey = computed(() => `${props.step.tag}:${JSON.stringify(normalizedContents(props.step))}`)
-watch(stepKey, () => { hasSent.value = false })
+onMounted(() => {
+  hasSent.value = false
+  alpha.value = route.query.alpha !== undefined || localStorage.getItem('alpha') === 'true'
+  if (route.query.alpha !== undefined) localStorage.setItem('alpha', 'true')
+})
+const stepKey = computed(
+  () => `${props.step.tag}:${JSON.stringify(normalizedContents(props.step))}`,
+)
+watch(stepKey, () => {
+  hasSent.value = false
+})
 const bonusXp = computed(() => props.campaign?.meta?.bonusXp ?? null)
 const scenario = computed(() => {
   if (props.step.tag === 'ScenarioStep') {
@@ -69,9 +108,9 @@ const numToRomanNumeral = (num: number): string => {
     7: 'VII',
     8: 'VIII',
     9: 'IX',
-    10: 'X'
-  };
-  return romanNumerals[num] || num.toString();
+    10: 'X',
+  }
+  return romanNumerals[num] || num.toString()
 }
 const kind = computed(() => {
   if (props.scenario) {
@@ -119,7 +158,7 @@ const kind = computed(() => {
         return t(key)
       }
     }
-    return t('headings.interlude', { number: numToRomanNumeral(parseInt(props.step.contents[0])) })
+    return t('headings.interlude', { number: numToRomanNumeral(props.step.contents[0]) })
   }
 
   if (props.step.tag === 'CampaignSpecificStep') {
@@ -137,45 +176,96 @@ const investigators = computed(() => {
   return Object.values(props.game.investigators)
 })
 
+const usesTime = computed<boolean>(() => {
+  if (!props.campaign) return false
+  return props.campaign.log.recordedCounts.some(
+    ([c, _v]: [any, number]) => c.tag === 'TheScarletKeysKey' && c.contents === 'Time',
+  )
+})
+
 const minXp = computed<number>(() => {
-  if(!props.campaign) return 0
-  const time = props.campaign.log.recordedCounts.find(([c, v]) => c.tag === 'TheScarletKeysKey' && c.contents === 'Time')
-  if (time) return (35 - time[1])
-  return investigators.value.reduce((acc: number | null, investigator: Investigator) => {
+  if (!props.campaign) return 0
+  const time = props.campaign.log.recordedCounts.find(
+    ([c, v]) => c.tag === 'TheScarletKeysKey' && c.contents === 'Time',
+  )
+  if (time) return 35 - time[1]
+  return investigators.value.reduce((acc: number, investigator: Investigator) => {
     const currentXp = investigator.xp
-    if (acc === null) {
-      return currentXp
-    }
     return Math.min(acc, currentXp)
-  }, null)  
+  }, Infinity)
 })
 
 const canUpgrade = computed(() => {
   if (!props.campaign) return false
   if (!props.canUpgradeDecks) return false
-  if (props.step.tag === "CampaignSpecificStep" && props.canUpgradeDecks) return true
-  if (!["ScenarioStep", "ScenarioStepWithOptions", "StandaloneScenarioStep"].includes(props.step.tag)) return false
-  return props.campaign.completedSteps.some((step: CampaignStep) => ['ScenarioStep', 'ScenarioStepWithOptions', 'StandaloneScenarioStep'].includes(step.tag))
+  if (props.step.tag === 'CampaignSpecificStep' && props.canUpgradeDecks) return true
+  if (
+    !['ScenarioStep', 'ScenarioStepWithOptions', 'StandaloneScenarioStep'].includes(props.step.tag)
+  )
+    return false
+  return (props.campaign.completedSteps ?? []).some((step: CampaignStep) =>
+    ['ScenarioStep', 'ScenarioStepWithOptions', 'StandaloneScenarioStep'].includes(step.tag),
+  )
 })
 
-const isScenario = computed(() =>  {
+const isScenario = computed(() => {
   // We do not yet handle the standalone step
   // return ["ScenarioStep", "StandaloneScenarioStep", "ScenarioStepWithOptions"].includes(props.step.tag)
   if (!(Object.values(props.game.investigators).length > 1)) return false
-  return ["ScenarioStep", "StandaloneScenarioStep", "ScenarioStepWithOptions", "StandaloneScenarioStepWithOptions"].includes(props.step.tag)
+  return [
+    'ScenarioStep',
+    'StandaloneScenarioStep',
+    'ScenarioStepWithOptions',
+    'StandaloneScenarioStepWithOptions',
+  ].includes(props.step.tag)
 })
 
 const standalones = computed(() => {
   if (!props.campaign) return []
   if (!props.canChooseSideStory) return []
-  const completed = props.campaign.completedSteps.reduce((acc: string[], step: CampaignStep) => {
-    if (step.tag === 'StandaloneScenarioStep') {
-      acc.push(step.contents[0].replace(/^c/, ''))
-    }
-    return acc
-  }, [] as string[])
+  const completed = (props.campaign.completedSteps ?? []).reduce(
+    (acc: string[], step: CampaignStep) => {
+      if (step.tag === 'StandaloneScenarioStep') {
+        acc.push(step.contents[0].replace(/^c/, ''))
+      }
+      return acc
+    },
+    [] as string[],
+  )
 
-  return sideStories.filter((s: { xp: number, id: string }) => s.xp && s.xp <= minXp.value && !completed.includes(s.id))
+  return filterDisplayable(sideStories, displayRuleOptions.value).flatMap(
+    (s: {
+      xp: number
+      id: string
+      name: string
+      requiredInvestigator?: string
+      deckRequirements?: string[]
+      scenarios?: { id: string; name: string; notAfter?: string[] }[]
+    }) => {
+      if (!s.xp) return []
+      if (s.id === '90094' && !investigators.value.some((i) => hasParallelContent(i.cardCode)))
+        return []
+      if (s.requiredInvestigator) {
+        // challenge scenarios require their investigator; they pay the full
+        // cost while each other investigator only pays 1 xp
+        const signature = investigators.value.find((i) => i.name.title === s.requiredInvestigator)
+        if (!signature) return []
+        if (usesTime.value) {
+          if (s.xp > minXp.value) return []
+        } else if (
+          signature.xp < s.xp ||
+          investigators.value.some((i) => i.id !== signature.id && i.xp < 1)
+        ) {
+          return []
+        }
+      } else if (s.xp > minXp.value) return []
+      const parts = s.scenarios ?? [{ id: s.id, name: s.name }]
+      return parts
+        .filter((p) => !completed.includes(p.id))
+        .filter((p) => !(p.notAfter ?? []).some((id) => completed.includes(id)))
+        .map((p) => ({ ...s, id: p.id, name: p.name }))
+    },
+  )
 })
 
 async function loadSideStory(sideStoryId: string) {
@@ -189,21 +279,20 @@ async function loadSideStory(sideStoryId: string) {
         canChooseSideStory: false,
         nextStep: {
           tag: 'StandaloneScenarioStep',
-          contents:
-            [
-              sideStoryId,
-              {
-                tag: 'ContinueCampaignStep',
-                contents: {
-                  nextStep: props.step,
-                  canUpgradeDecks: props.canUpgradeDecks,
-                  canChooseSideStory: false
-                }
-              }
-            ]
-        }
-      }
-    }
+          contents: [
+            sideStoryId,
+            {
+              tag: 'ContinueCampaignStep',
+              contents: {
+                nextStep: props.step,
+                canUpgradeDecks: props.canUpgradeDecks,
+                canChooseSideStory: false,
+              },
+            },
+          ],
+        },
+      },
+    },
   })
 }
 
@@ -216,20 +305,24 @@ async function upgradeDecks() {
         tag: 'ContinueCampaignStep',
         contents: {
           canUpgradeDecks: true,
-          nextStep: props.step
-        }
-      }
-    }
+          nextStep: props.step,
+        },
+      },
+    },
   })
 }
 
 async function startStep() {
-  if (['ScenarioStep', 'StandaloneScenarioStep', 'ScenarioStepWithOptions'].includes(props.step.tag)) {
+  if (
+    ['ScenarioStep', 'StandaloneScenarioStep', 'ScenarioStepWithOptions'].includes(props.step.tag)
+  ) {
     if (isScenario.value && leadInvestigatorId.value !== null) {
       // inform the server of the lead investigator
       sendOnce({
         tag: 'CampaignStepAnswer',
-        contents: extendWithOptions(props.step, { scenarioOptionsLeadInvestigator: leadInvestigatorId.value })
+        contents: extendWithOptions(props.step as Parameters<typeof extendWithOptions>[0], {
+          scenarioOptionsLeadInvestigator: leadInvestigatorId.value,
+        }),
       })
       return
     }
@@ -246,45 +339,88 @@ const expeditionLeader = computed(() => {
   return props.campaign.meta?.expeditionLeader
 })
 
+const setIcon = computed(() => {
+  if (!scenario.value) return null
+  if (scenario.value.startsWith(':')) {
+    const match = scenario.value.match(/^:(.+):(.+)$/)
+    if (!match) return null
+    const [, homebrew, scenarioId] = match
+    return imgsrc(`homebrew/${homebrew}/sets/${scenarioId}.png`)
+  }
+  return imgsrc(`sets/${scenario.value}.png`)
+})
 </script>
 
 <template>
   <LogIcons />
   <div class="continue-campaign scroll-container">
-    <div v-if="chooseSideStory || (addSideStory && standalones.length > 0)" class="side-story-selection">
-      <h2>Select a side scenario to add</h2>
+    <div
+      v-if="chooseSideStory || (addSideStory && standalones.length > 0)"
+      class="side-story-selection"
+    >
+      <h2>{{ $t('sideStory.selectSideScenario') }}</h2>
       <div v-for="sideStory in standalones" :key="sideStory.id" class="side-story-option">
         <div class="scenario-icon">
           <img :src="imgsrc(`sets/${sideStory.id}.png`)" />
         </div>
         <div class="scenario-info">
           <h2>{{ sideStory.name }}</h2>
-          <h3>({{ sideStory.xp }} XP)</h3>
+          <h3 v-if="sideStory.requiredInvestigator">
+            {{
+              $t('sideStory.xpAsymmetric', {
+                signatureXp: sideStory.xp,
+                name: sideStory.requiredInvestigator,
+                otherXp: 1,
+              })
+            }}
+          </h3>
+          <template v-else>
+            <h3>({{ sideStory.xp }} XP)</h3>
+            <h3 v-for="requirement in sideStory.deckRequirements" :key="requirement">
+              {{ requirement }}
+            </h3>
+          </template>
         </div>
 
         <button class="add" @click="loadSideStory(sideStory.id)" :disabled="hasSent">+</button>
       </div>
-      <button v-if="!chooseSideStory" @click="addSideStory = false">{{t('cancel')}}</button>
+      <button v-if="!chooseSideStory" @click="addSideStory = false">{{ t('cancel') }}</button>
     </div>
     <div v-else class="next-scenario">
       <div class="next-scenario-info">
-        <div class='scenario-info'>
-          <h3>{{kind}}</h3>
-          <h2>{{name}}</h2>
+        <div class="scenario-info">
+          <h3>{{ kind }}</h3>
+          <h2>{{ name }}</h2>
         </div>
         <div class="actions">
-          <button @click="startStep" :disable="hasSent">{{t('continue')}}</button>
-          <button v-if="canUpgrade" @click="upgradeDecks" :disable="hasSent">{{t('upgradeDecks')}}</button>
-          <button v-if="canChooseSideStory && standalones.length > 0" @click="addSideStory = true" :disable="hasSent">+ {{t('addSideScenario')}}</button>
+          <button @click="startStep" :disable="hasSent">{{ t('continue') }}</button>
+          <button v-if="canUpgrade" @click="upgradeDecks" :disable="hasSent">
+            {{ t('upgradeDecks') }}
+          </button>
+          <button
+            v-if="canChooseSideStory && standalones.length > 0"
+            @click="addSideStory = true"
+            :disable="hasSent"
+          >
+            + {{ t('addSideScenario') }}
+          </button>
         </div>
       </div>
-      <div v-if="scenario" class="next-step-icon"><img :src="imgsrc(`sets/${scenario}.png`)" /></div>
+      <div v-if="setIcon" class="next-step-icon"><img :src="setIcon" /></div>
     </div>
 
     <template v-if="!addSideStory && !chooseSideStory">
       <div v-if="investigators.length > 0" id="investigators">
-        <section v-if="isScenario" id="investigators-header"><i class="secret"></i> {{t('lead')}}</section>
-        <InvestigatorRow v-for="investigator in investigators" :key="investigator.id" :investigator="investigator" :game="game" :bonus-xp="bonusXp && bonusXp[investigator.id]">
+        <section v-if="isScenario" id="investigators-header">
+          <i class="secret"></i> {{ t('lead') }}
+        </section>
+        <InvestigatorRow
+          v-for="investigator in investigators"
+          :key="investigator.id"
+          :investigator="investigator"
+          :game="game"
+          :bonus-xp="bonusXp && bonusXp[investigator.id]"
+        >
           <template v-if="isScenario" #back="{ investigator }">
             <label class="secret-radio">
               <input
@@ -326,14 +462,12 @@ const expeditionLeader = computed(() => {
   img {
     max-height: 150px;
   }
-
 }
-
 
 .scenario-info {
   h2 {
     color: white;
-    font-family: "Teutonic", sans-serif;
+    font-family: 'Teutonic', sans-serif;
     font-size: 1.8em;
   }
 }
@@ -394,7 +528,7 @@ const expeditionLeader = computed(() => {
 .side-story-selection {
   > h2 {
     color: white;
-    font-family: "Teutonic", sans-serif;
+    font-family: 'Teutonic', sans-serif;
     font-size: 1.5em;
     margin-bottom: 10px;
   }
@@ -487,7 +621,7 @@ button {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: #333;
+    background: var(--neutral-dark);
     transform: scale(0);
     opacity: 0;
     transition:
@@ -505,8 +639,8 @@ button {
     justify-content: center;
 
     &:before {
-      font-family: "Arkham";
-      content: "\0048";
+      font-family: 'Arkham';
+      content: '\0048';
     }
 
     font-size: 1.5em;
@@ -539,7 +673,6 @@ button {
   border-radius: 8px;
 }
 
-
 #investigators-header {
   color: var(--title);
   text-align: end;
@@ -547,8 +680,8 @@ button {
   padding-bottom: 4px;
   i.secret {
     &:before {
-      font-family: "Arkham";
-      content: "\0048";
+      font-family: 'Arkham';
+      content: '\0048';
     }
 
     font-size: 1.5em;

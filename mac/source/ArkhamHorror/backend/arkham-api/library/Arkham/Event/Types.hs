@@ -81,7 +81,6 @@ data EventAttrs = EventAttrs
   , eventId :: EventId
   , eventOwner :: InvestigatorId
   , eventController :: InvestigatorId
-  , eventDoom :: Int
   , eventExhausted :: Bool
   , eventBeingPaidFor :: Bool
   , eventPayment :: Payment
@@ -217,7 +216,6 @@ event f cardDef =
             , eventId = eid
             , eventOwner = iid
             , eventController = iid
-            , eventDoom = 0
             , eventExhausted = False
             , -- currently only relevant to time warp
               eventBeingPaidFor = False
@@ -330,10 +328,6 @@ instance IsCard Event where
     ec -> ec
   toCardOwner = toCardOwner . toAttrs
   toCustomizations = toCustomizations . toAttrs
-
-getEventId :: Event -> EventId
-getEventId = eventId . toAttrs
-
 ownerOfEvent :: Event -> InvestigatorId
 ownerOfEvent = eventOwner . toAttrs
 
@@ -341,13 +335,6 @@ instance HasField "owner" Event InvestigatorId where
   getField = attr eventOwner
 
 data SomeEventCard = forall a. IsEvent a => SomeEventCard (EventCard a)
-
-liftSomeEventCard :: (forall a. EventCard a -> b) -> SomeEventCard -> b
-liftSomeEventCard f (SomeEventCard a) = f a
-
-someEventCardCode :: SomeEventCard -> CardCode
-someEventCardCode = liftSomeEventCard toCardCode
-
 someEventCardCodes :: SomeEventCard -> [(CardCode, SomeEventCard)]
 someEventCardCodes (SomeEventCard CardBuilder {..}) =
   [ ( code
@@ -410,7 +397,7 @@ instance FromJSON EventAttrs where
     eventId <- o .: "id"
     eventOwner <- o .: "owner"
     eventController <- o .: "controller"
-    eventDoom <- o .: "doom"
+    eventDoom <- o .:? "doom" .!= 0
     eventExhausted <- o .: "exhausted"
     eventBeingPaidFor <- o .: "beingPaidFor"
     eventPayment <- o .: "payment"
@@ -423,7 +410,7 @@ instance FromJSON EventAttrs where
     eventWindows <- o .: "windows"
     eventTarget <- o .: "target"
     eventMeta <- o .: "meta"
-    eventTokens <- o .: "tokens"
+    eventTokens <- addTokens Doom eventDoom <$> o .: "tokens"
     eventCustomizations <- o .: "customizations"
     eventPrintedUses <- o .: "printedUses"
     eventTaboo <- o .: "taboo"

@@ -5,7 +5,7 @@ import Arkham.Campaigns.TheScarletKeys.Helpers
 import Arkham.Campaigns.TheScarletKeys.Key.Cards qualified as Keys
 import Arkham.Campaigns.TheScarletKeys.Key.Matcher
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Helpers.Modifiers (ModifierType (..), modifySelf)
 import Arkham.Helpers.Query (getInvestigators, getLead)
@@ -19,7 +19,7 @@ newtype ThorneTheOneWithTheRedCravat = ThorneTheOneWithTheRedCravat EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 thorneTheOneWithTheRedCravat :: EnemyCard ThorneTheOneWithTheRedCravat
-thorneTheOneWithTheRedCravat = enemy ThorneTheOneWithTheRedCravat Cards.thorneTheOneWithTheRedCravat (4, Static 6, 4) (2, 1)
+thorneTheOneWithTheRedCravat = enemy ThorneTheOneWithTheRedCravat Cards.thorneTheOneWithTheRedCravat
 
 instance HasModifiersFor ThorneTheOneWithTheRedCravat where
   getModifiersFor (ThorneTheOneWithTheRedCravat a) = do

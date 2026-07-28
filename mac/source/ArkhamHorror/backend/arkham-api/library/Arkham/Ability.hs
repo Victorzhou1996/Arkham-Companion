@@ -17,12 +17,14 @@ import Arkham.Duration as X
 
 import Arkham.Ability.Types qualified
 import Arkham.Action
+import Arkham.Actions
 import Arkham.Card.CardCode
 import Arkham.Constants
 import Arkham.I18n
 import Arkham.Matcher
 import Arkham.Matcher qualified as Matcher
 import Arkham.Modifier
+import Arkham.SkillType
 import Arkham.Source
 import Arkham.Text (toI18n)
 import Control.Lens (over, set, toListOf, transform)
@@ -132,6 +134,9 @@ limited = limitedAbility
 playerLimit :: AbilityLimitType -> Ability -> Ability
 playerLimit lType = limitedAbility (PlayerLimit lType 1)
 
+perTest :: Ability -> Ability
+perTest = playerLimit PerTest
+
 perTestOrAbility :: Ability -> Ability
 perTestOrAbility = playerLimit PerTestOrAbility
 
@@ -150,6 +155,9 @@ withTooltip t a = a & abilityTooltipL ?~ t
 
 withI18nTooltip :: HasI18n => Text -> Ability -> Ability
 withI18nTooltip t a = a & abilityTooltipL ?~ scope "tooltips" (toI18n t)
+
+tooltip :: HasI18n => Text -> Ability -> Ability
+tooltip = withI18nTooltip
 
 selfAbility :: (HasCardCode a, Sourceable a) => a -> Int -> Criterion -> AbilityType -> Ability
 selfAbility a n c = restrictedAbility a n (Self <> c)
@@ -217,13 +225,20 @@ fightAbility entity idx cost criteria =
 
 evadeAbility :: (Sourceable a, HasCardCode a) => a -> Int -> Cost -> Criterion -> Ability
 evadeAbility entity idx cost criteria =
-  (mkAbility entity idx (ActionAbility [#evade] #agility cost))
+  (mkAbility entity idx (ActionAbility #evade #agility cost))
     { abilityCriteria = criteria
     }
 
 investigateAbility :: (Sourceable a, HasCardCode a) => a -> Int -> Cost -> Criterion -> Ability
 investigateAbility entity idx cost criteria =
   (mkAbility entity idx (investigateAction cost))
+    { abilityCriteria = criteria <> exists (YourLocation <> InvestigatableLocation)
+    }
+
+investigateAbilityWith
+  :: (Sourceable a, HasCardCode a) => a -> Int -> SkillType -> Cost -> Criterion -> Ability
+investigateAbilityWith entity idx stype cost criteria =
+  (mkAbility entity idx (investigateActionWith stype cost))
     { abilityCriteria = criteria <> exists (YourLocation <> InvestigatableLocation)
     }
 
@@ -236,7 +251,7 @@ reactionAbility
   -> Criterion
   -> Ability
 reactionAbility entity idx cost window criteria =
-  (mkAbility entity idx (ReactionAbility window cost []))
+  (mkAbility entity idx (ReactionAbility window cost mempty))
     { abilityCriteria = criteria
     }
 
@@ -254,23 +269,23 @@ restrict :: Criterion -> Ability -> Ability
 restrict = flip withCriteria
 
 haunted :: (HasCardCode a, Sourceable a) => Text -> a -> Int -> Ability
-haunted tooltip a n = withTooltip tooltip $ mkAbility a n Haunted
+haunted t a n = withTooltip t $ mkAbility a n Haunted
 
 hauntedI :: (HasI18n, HasCardCode a, Sourceable a) => Scope -> a -> Int -> Ability
-hauntedI tooltip a n = withI18nTooltip tooltip $ mkAbility a n Haunted
+hauntedI t a n = withI18nTooltip t $ mkAbility a n Haunted
 
 cosmos :: (HasCardCode a, Sourceable a) => a -> Int -> Ability
 cosmos a n = mkAbility a n Cosmos
 
 reaction
   :: (HasCardCode a, Sourceable a) => a -> Int -> Criterion -> Cost -> WindowMatcher -> Ability
-reaction a n c cost wm = restrictedAbility a n c (ReactionAbility wm cost [])
+reaction a n c cost wm = restrictedAbility a n c (ReactionAbility wm cost mempty)
 
 uncancellable :: Ability -> Ability
 uncancellable ab = ab {abilityCanBeCancelled = False}
 
 abilityEffect :: (HasCardCode a, Sourceable a) => a -> [Action] -> Cost -> Ability
-abilityEffect a actions cost = mkAbility a (-1) (AbilityEffect actions cost)
+abilityEffect a actions cost = mkAbility a (-1) (AbilityEffect (andActions actions) cost)
 
 basicAbility :: Ability -> Ability
 basicAbility ab = ab {abilityBasic = True}
@@ -302,6 +317,9 @@ mkAbility entity idx type' =
     , abilityTarget = Nothing
     , abilitySkipForAll = False
     , abilityIgnoreAllCosts = False
+    , abilityHighlightFromWindow = False
+    , abilityFightCriteriaOverride = Nothing
+    , abilityEvadeCriteriaOverride = Nothing
     }
 
 applyAbilityModifiers :: Ability -> [ModifierType] -> Ability
@@ -315,6 +333,12 @@ applyAbilityModifiers a@Ability {abilityType, abilityCriteria} modifiers =
 overrideAbilityCriteria :: CriteriaOverride -> Ability -> Ability
 overrideAbilityCriteria (CriteriaOverride override) ab =
   ab {abilityCriteria = override}
+
+withFightCriteriaOverride :: CriteriaOverride -> Ability -> Ability
+withFightCriteriaOverride override ab = ab {abilityFightCriteriaOverride = Just override}
+
+withEvadeCriteriaOverride :: CriteriaOverride -> Ability -> Ability
+withEvadeCriteriaOverride override ab = ab {abilityEvadeCriteriaOverride = Just override}
 
 isSilentForcedAbility :: Ability -> Bool
 isSilentForcedAbility Ability {abilityType} =
@@ -340,15 +364,17 @@ isTriggeredAbility =
 -- Hidden to this module
 abilityTypeActions :: Bool -> AbilityType -> [Action]
 abilityTypeActions isBasic = \case
-  FastAbility' _ actions -> actions
-  ReactionAbility {actions} -> actions
+  FastAbility' _ actions -> actionsToList actions
+  ReactionAbility {actions} -> actionsToList actions
   CustomizationReaction {} -> []
   ConstantReaction {} -> []
-  ActionAbility { actions } -> if #play `elem` actions then actions else [#activate | not isBasic] <> actions
+  ActionAbility {actions} ->
+    let as = actionsToList actions
+     in if #play `elem` as then as else [#activate | not isBasic] <> as
   ForcedAbility _ -> []
   SilentForcedAbility _ -> []
   ForcedAbilityWithCost _ _ -> []
-  AbilityEffect actions _ -> actions
+  AbilityEffect actions _ -> actionsToList actions
   Haunted -> []
   ServitorAbility action -> [action]
   Cosmos -> []
@@ -363,7 +389,7 @@ abilityTypeCost = \case
   ReactionAbility _ cost _ -> cost
   CustomizationReaction _ _ cost -> cost
   ConstantReaction _ _ cost -> cost
-  ActionAbility { cost } -> cost
+  ActionAbility {cost} -> cost
   SilentForcedAbility _ -> Free
   ForcedAbility _ -> Free
   ForcedAbilityWithCost _ cost -> cost
@@ -385,7 +411,7 @@ modifyCost f = \case
     CustomizationReaction label window $ f cost
   ConstantReaction label window cost ->
     ConstantReaction label window $ f cost
-  a@ActionAbility { cost } -> a { cost = f cost }
+  a@ActionAbility {cost} -> a {cost = f cost}
   ForcedAbility window -> ForcedAbility window
   SilentForcedAbility window -> SilentForcedAbility window
   ForcedAbilityWithCost window cost ->
@@ -425,7 +451,11 @@ applyAbilityCriteriaModifiers c modifiers = foldr applyCriterionModifier c modif
   applyCriterionModifier :: ModifierType -> Criterion -> Criterion
   applyCriterionModifier IgnoreOnSameLocation c' = overCriteria (k isLocationCheck NoRestriction) c'
   applyCriterionModifier IgnoreEngagementRequirement c' = overCriteria handleEngagementCheck c'
+  applyCriterionModifier IgnoreAllCosts c' = overCriteria unwrapIfCostsAreIgnored c'
   applyCriterionModifier _ c' = c'
+  unwrapIfCostsAreIgnored = \case
+    IfCostsAreIgnored inner -> inner
+    x -> x
 
 applyCostModifiers :: Cost -> [ModifierType] -> Cost
 applyCostModifiers = foldl' applyCostModifier
@@ -443,7 +473,7 @@ applyCostModifier cost _ = cost
 defaultAbilityWindow :: AbilityType -> WindowMatcher
 defaultAbilityWindow = \case
   FastAbility' {} -> FastPlayerWindow
-  ActionAbility {} -> Matcher.DuringTurn You
+  ActionAbility {} -> Matcher.DuringYourAction You
   ForcedAbility window -> window
   SilentForcedAbility window -> window
   ForcedAbilityWithCost window _ -> window
@@ -452,7 +482,7 @@ defaultAbilityWindow = \case
   ConstantReaction _ window _ -> window
   AbilityEffect {} -> AnyWindow
   Haunted -> AnyWindow
-  ServitorAbility _ -> Matcher.DuringTurn You
+  ServitorAbility _ -> Matcher.DuringYourAction You
   Cosmos -> AnyWindow
   Objective aType -> defaultAbilityWindow aType
   DelayedAbility aType -> defaultAbilityWindow aType
@@ -496,15 +526,6 @@ isSilentForcedAbilityType = \case
   Cosmos {} -> False
   ForcedWhen _ aType -> isSilentForcedAbilityType aType
   ConstantAbility {} -> False
-
-isPerWindowLimit :: AbilityLimit -> Bool
-isPerWindowLimit = \case
-  GroupLimit l _ -> l == PerWindow
-  PlayerLimit l _ -> l == PerWindow
-  PerInvestigatorLimit l _ -> l == PerWindow
-  MaxPer _ l _ -> l == PerWindow
-  NoLimit -> False
-
 defaultAbilityLimit :: AbilityType -> AbilityLimit
 defaultAbilityLimit = \case
   ForcedAbility window' -> case window' of
@@ -537,7 +558,7 @@ modifyAbilityCost :: (Cost -> Cost) -> Ability -> Ability
 modifyAbilityCost f ab = ab {Arkham.Ability.Types.abilityType = modifyCost f (abilityType ab)}
 
 ignoreAllCosts :: Ability -> Ability
-ignoreAllCosts ab = modifyAbilityCost (const Free) ab
+ignoreAllCosts ab = applyAbilityModifiers ab [IgnoreAllCosts]
 
 decrease_ :: Ability -> Int -> Ability
 decrease_ = decreaseAbilityActionCost

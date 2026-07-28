@@ -1,21 +1,22 @@
 export interface User {
-  username: string;
-  email: string;
-  beta: boolean;
-  admi: boolean;
+  username: string
+  email: string
+  beta: boolean
+  dev: boolean
+  admin: boolean
 }
 
 export interface Authentication {
-  token: string;
+  token: string
 }
 
 export interface Credentials {
-  email: string;
-  password: string;
+  email: string
+  password: string
 }
 
 export interface Registration {
-  username: string;
-  email: string;
-  password: string;
+  username: string
+  email: string
+  password: string
 }

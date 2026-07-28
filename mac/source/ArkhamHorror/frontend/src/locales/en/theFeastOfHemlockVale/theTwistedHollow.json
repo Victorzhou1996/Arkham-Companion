@@ -1,4 +1,33 @@
 {
+  "specialRules": [
+    {
+      "title": "Darkness Level",
+      "body": "<p class='basic'>Throughout this scenario, the number of resources under “Darkness Level” on the scenario reference card indicate the current stage of night. As time ticks down, resources are added to the current darkness level, and play continues until the investigators reach a certain darkness level, or are defeated. The darker the forest, the deadlier its snares. The current darkness level has no game effect on its own; however, some encounter card effects may change or become stronger depending on the current darkness level.</p>"
+    },
+    {
+      "title": "Location Adjacency in The Twisted Hollow",
+      "body": "<p class='basic'>During this scenario, locations will be arranged in a set pattern, with new locations from the Woods deck emerging adjacent to existing locations, unrevealed side faceup. During this scenario, adjacent locations are connected to one another.</p><ul><li>If a location ever has no shared edges with another location, slide it vertically or horizontally until it is adjacent to the nearest location.</li></ul>"
+    },
+    {
+      "title": "Pursuit",
+      "body": "<p class='basic'>Some cards in this scenario reference an area called the “pursuit area.” The pursuit area is an out-of-play area next to the act and agenda deck which enemies can enter and leave via card effects. Generally speaking, enemies in play will move to the pursuit area as the night progresses. Although the pursuit area is out of play, whenever an enemy moves to or from the pursuit area, it keeps all tokens and attachments.</p><p class='basic'>Enemies in the pursuit area are considered to be “in pursuit.” Enemies that are in pursuit are considered to be out of play, and cannot be affected by player cards or investigator actions. However, enemies that are in pursuit can re-enter play by a variety of card abilities.</p><p class='basic'>(While enemies are in pursuit, ignore all forced effects on those enemies. Doom on enemies in pursuit is out of play and does not count toward the doom threshold.)</p>"
+    }
+  ],
+  "tokens": {
+    "easyStandard": {
+      "skull": "-X. X is the current darkness level.",
+      "cultist": "-1. Heal 1 damage from your investigator.",
+      "tablet": "-3. If you fail, find the enemy in pursuit with the highest evade. Spawn it at your location.",
+      "elderThing": "-4. If you fail, take 1 horror."
+
+    },
+    "hardExpert": {
+      "skull": "-X. X is twice the current darkness level.",
+      "cultist": "-3. If you succeed, heal 1 damage from your investigator.",
+      "tablet": "-4. Find the enemy in pursuit with the highest evade. Spawn it at your location.",
+      "elderThing": "-5. Take 1 horror."
+    }
+  },
   "intro": {
     "label": {
       "tellTheTruth": "Tell the truth.",
@@ -10,7 +39,7 @@
     "intro3": "<p>_Intro 3_: Mother Rachel nods along to your paper-thin story. “I see. Understand that the Vale is here to help. I wish you the best on your survey.” After more polite conversation, the matron leaves you and Dr. Marquez to scour the shed. Finally, you find a chipped mason jar with just a fifth of oil. “We can make it if we portion every bit,” the professor says. You follow the dim lantern light into the maw of gnarled trees toward a quiet stream, then further up and further into the dark.</p><p>Eventually, you reach a collapsed bridge and overgrown cobblestones in the ruins of an old village. The trees overhead rustle. “Something’s there,” Dr. Marquez raises her lantern. A pair of beady eyes reflect the light, but quickly vanish in the murk.</p><p>“Watch yourself and keep close. There’s no telling what’s out here.”</p><ul><li>In your Campaign Log, record the investigators lost the path.</li><li>Add 1 {'{'}elderThing{'}'} token to the chaos bag for the remainder of the campaign.</li></ul><p class='basic right'>Proceed to _Setup_.</p>"
   },
   "tooltips": {
-    "glimmeringMeadow": {
+    "glimmeringWoods": {
       "resign": "\"I'm sure Bertie's fine!\""
     }
   },
@@ -22,15 +51,15 @@
       "showedTheWay": "*If Mother Rachel showed the way*: Find the Vale Lantern story asset _with_ the _Boon_ trait and put it into play under the control of an investigator, _Lit_ side faceup. Remove the other Vale Lantern from the game. If there is only 1 investigator, the Vale Lantern does not take up a hand slot during this scenario.",
       "lostThePath": "*If the investigators lost the path*: Find the Vale Lantern story asset _without_ the _Boon_ trait and put it into play under the control of an investigator, _Lit_ side faceup. Remove the other Vale Lantern from the game. If there is only 1 investigator, the Vale Lantern does not take up a hand slot during this scenario."
     },
-    "removeLocations": "Set the Twisted Hollow and Glimmering Meadow locations aside, out of play (both are the revealed side of a Western Woods location). Then, based on the number of investigators in the game, randomly remove the following from the gathered Western Woods locations:",
+    "removeLocations": "Set the Twisted Hollow and Glimmering Woods locations aside, out of play (both are the revealed side of a Western Woods location). Then, based on the number of investigators in the game, randomly remove the following from the gathered Western Woods locations:",
     "oneOrTwoInvestigators": "If there are 1 or 2 investigators, remove 2 locations from the game.",
     "threeOrFourInvestigators": "If there are 3 or 4 investigators, remove 1 location from the game.",
-    "glimmeringMeadow": {
+    "glimmeringWoods": {
       "checkCampaignLog": "Check your Campaign Log.",
-      "showedTheWay": "*If Mother Rachel showed the way*: Put the Glimmering Meadow location into play. Each investigator begins play at Glimmering Meadow.",
+      "showedTheWay": "*If Mother Rachel showed the way*: Put the Glimmering Woods location into play. Each investigator begins play at Glimmering Woods.",
       "lostThePath": "*If the investigators lost the path*: Put a random Western Woods location that has not been set aside into play, ignoring any forced effects. Each investigator begins play at that location."
     },
-    "woodsDeck": "If it is not already in play, shuffle the set-aside Glimmering Meadow location along with each remaining Western Woods location to form the “Woods deck.” Draw the top 4 cards of the Woods deck and put them into play above, below, and to the right and left of the starting location.",
+    "woodsDeck": "If it is not already in play, shuffle the set-aside Glimmering Woods location along with each remaining Western Woods location to form the “Woods deck.” Draw the top 4 cards of the Woods deck and put them into play above, below, and to the right and left of the starting location.",
     "residents": "Check your Campaign Log and gather each story asset from the *Residents* encounter set. This set is indicated by the following icon:<section class='encounter-sets'><img src='{setImgPath}/residents.png' /></section>",
     "theoPeters": "If Theo Peters is at Relationship Level 2 or higher, set him aside, out of play.",
     "judithPark": "If Judith Park is at Relationship Level 2 or higher, set her aside, out of play.",
@@ -41,6 +70,29 @@
     "darknessLevel": "Place 1 resource on the scenario reference card, under “Darkness Level.” For the remainder of the scenario, the number of resources under “Darkness Level” indicates the passage of time."
   },
   "codex": {
+    "judithPark": {
+      "title": "{'{'}codex{'}'} Codex 7: Judith Park",
+      "body": "<h3>@:theFeastOfHemlockVale.theTwistedHollow.codex.judithPark.title </h3><p>“Eat this, you son of a bitch!” A familiar voice comes from out of the darkness. Several shots impact the bear’s soft, molting body. The bear looks to its right just as another shot cracks its skull. Screeching in pain, it charges into the undergrowth toward the sound. More shots ring out. After what seems like an eternity, Judith Park emerges from the forest clutching a bleeding arm. You rush to dress the wound, but she waves you off. “I’m fine. Just glad you’re alright.” Judith smiles cockily. “Mother Rachel said you might need some help. She also paid me a twenty to come out.”</p><p class='basic right'>Deal 2 damage to Judith Park.</p><p class='basic right'>In Judith Park’s Notes, record *Judith saved your ass*.</p><p class='basic right'>Proceed to _{'{'}codex{'}'} Codex Σ: The Bear 3_</p>"
+    },
+    "theoPeters": {
+      "title": "{'{'}codex{'}'} Codex 8: Theo Peters",
+      "body": "<h3>@:theFeastOfHemlockVale.theTwistedHollow.codex.theoPeters.title </h3><p>A barrage of firecrackers fly out of the darkness. “Watch out!” shouts a familiar voice. The bear reels back on its hind legs as more firecrackers follow. Theo emerges from the darkness, grabs your hand, and tears away from the scene. The bear roars somewhere in the dark. “Mother Rachel said you were looking for Billy in the Western Woods,” Theo says breathlessly. “And well, I couldn’t let you go it alone. So I borrowed some of Simeon’s fireworks.” You are too relieved to tell him it’s “Bertie” and not “Billy.”</p><p class='basic right'>Deal 2 horror to Theo Peters.</p><p class='basic right'>In Theo Peters’ Notes, record *Theo distracted the Bear*.</p><p class='basic right'>Proceed to _{'{'}codex{'}'} Codex Σ: The Bear 3_</p>"
+    },
+    "drRosaMarquez": {
+      "label": {
+        "doNotRevealLocation": "Do not reveal a location."
+      },
+      "title": "{'{'}codex{'}'} Codex Θ: Dr. Rosa Marquez",
+      "body": "<h3>@:theFeastOfHemlockVale.theTwistedHollow.codex.drRosaMarquez.title </h3><p>Dr. Marquez leans on her cane as she studies a balsam fir with spiraling branches. Glinting lights in the trees offer faint illumination; looking up, you see shining blue nodes. “I’ve never seen something so beautiful,” the professor says, unable to contain her wonder. A moment later, she looks at you sharply. “Don’t you dare tell Bertie I said that, or I’ll tell Armitage you died on the survey.”</p><p class='basic'>Choose any location in play. You may reveal that location, ignoring its Forced effect.</p>"
+    },
+    "bertieMusgrave": {
+      "label": {
+        "gainClues": "Each investigator gains 1 clue (from the token pool).",
+        "readyValeLantern": "Ready the Vale Lantern asset."
+      },
+      "title": "{'{'}codex{'}'} Codex Ω: Bertie Musgrave",
+      "body": "<h3>@:theFeastOfHemlockVale.theTwistedHollow.codex.bertieMusgrave.title </h3><p>“What a predicament,” Bertie mutters under his breath. The young man fumbles with his pocketbook and starts sketching. When you tell him this isn’t the time or place for a nature study, he nods. “Oh no, I apologise. It’s a map. Not a good one, mind you—” his hand shakes as he draws one last line. “I was here before. This is the way,” he points through the trees.</p><p class='basic'>Either (choose one): Each investigator gains 1 clue (from the token pool), or ready the Vale Lantern asset.</p>"
+    },
     "sigma": {
       "label": {
         "physical": "Suffer 1 physical trauma and take 1 direct damage.",
@@ -48,9 +100,52 @@
       },
       "title": "{'{'}codex{'}'} Codex Σ: The Bear",
       "body": "<p>_Choose the bravest investigator to read the following_</p>",
-      "theBear1": "<p>_The Bear 1_: You find a scrap of torn tweed caught on a branch that is unmistakably Bertie’s. A wretched, wheezing cough sounds behind you, accompanied by the scent of rot. You turn around. A hulking bear glows like ghost fire in the darkness. A colony of shimmering fungus on the creature’s back lights up the murk with an eerie incandescence. The creature roars, then charges.</p><p class='basic'>Check the set-aside cards.<p><ul><li>If either Judith Park or Theo Peters are set aside, choose one of them to put into play under your control and immediately resolve their codex entry.</li><li>Otherwise, proceed to _The Bear 2_.</li></ul>",
-      "theBear2": "<p>_The Bear 2_: Before you can react, the bear swipes at you with razor sharp claws. Its rancid, wheezing breath floods your senses as it presses a gargantuan paw to your chest. Your vision begins to dim as the thing’s weight threatens to snap your ribcage.</p><p class='basic'>You must either (*choose one*), then continue reading:</p><ul><li>Suffer 1 physical trauma and take 1 direct damage.</li><li>Suffer 1 mental trauma and take 1 direct horror.</li></ul><p>Suddenly, a shot rings out, cracking the bear’s exposed skull. It whines in pain as two more shots impact its soft, molting body. The thing lets out a pitiful grunt, then melts into the shadows. You hear Mother Rachel’s voice from somewhere close: “Run!”</p><p class='basic right'>In Mother Rachel’s Notes, record *Mother Rachel intervened*.</p><p class='basic right'>Proceed to _The Bear 3_.</p>",
-      "theBear3": "<p>_The Bear 3_: You flee the scene into a copse of dying trees and hold the lantern up, expecting to see the bear’s ghoulish blue eyes reflected back in the dark. The forest is deathly quiet as you struggle to get your bearings.</p><ul><li>Move each unengaged enemy to the pursuit area.</li><li>Spawn the Ursine Hybrid enemy at your location, exhausted, and deal 1 damage to it.</li><li>If it is not under the control of an investigator, choose an investigator to take control of Vale Lantern.</li><li>Set aside each empty _Dark_ location to remake the Woods deck. To do this, perform the following:<ul><li>Shuffle the set-aside Twisted Hollow location with 3 random Western Woods locations together to form the bottom 4 locations of the Woods deck, Western Woods side faceup.</li><li>Then, place all of the other Western Woods locations on top in a random order. All of the cards in the Woods deck should be showing only the Western Woods side, so that the investigators do not know which is which.</li></ul></li><li>Put locations from the top of the Woods deck into play above, below, and to the left and right of the investigators’ location.</li></ul>"
+      "theBear1": "<h3>@:theFeastOfHemlockVale.theTwistedHollow.codex.sigma.title </h3><p>_The Bear 1_: You find a scrap of torn tweed caught on a branch that is unmistakably Bertie’s. A wretched, wheezing cough sounds behind you, accompanied by the scent of rot. You turn around. A hulking bear glows like ghost fire in the darkness. A colony of shimmering fungus on the creature’s back lights up the murk with an eerie incandescence. The creature roars, then charges.</p><p class='basic'>Check the set-aside cards.<p><ul><li>If either Judith Park or Theo Peters are set aside, choose one of them to put into play under your control and immediately resolve their codex entry.</li><li>Otherwise, proceed to _The Bear 2_.</li></ul>",
+      "theBear2": "<h3>@:theFeastOfHemlockVale.theTwistedHollow.codex.sigma.title </h3><p>_The Bear 2_: Before you can react, the bear swipes at you with razor sharp claws. Its rancid, wheezing breath floods your senses as it presses a gargantuan paw to your chest. Your vision begins to dim as the thing’s weight threatens to snap your ribcage.</p><p class='basic'>You must either (*choose one*), then continue reading:</p><ul><li>Suffer 1 physical trauma and take 1 direct damage.</li><li>Suffer 1 mental trauma and take 1 direct horror.</li></ul><p>Suddenly, a shot rings out, cracking the bear’s exposed skull. It whines in pain as two more shots impact its soft, molting body. The thing lets out a pitiful grunt, then melts into the shadows. You hear Mother Rachel’s voice from somewhere close: “Run!”</p><p class='basic right'>In Mother Rachel’s Notes, record *Mother Rachel intervened*.</p><p class='basic right'>Proceed to _The Bear 3_.</p>",
+      "theBear3": "<h3>@:theFeastOfHemlockVale.theTwistedHollow.codex.sigma.title </h3><p>_The Bear 3_: You flee the scene into a copse of dying trees and hold the lantern up, expecting to see the bear’s ghoulish blue eyes reflected back in the dark. The forest is deathly quiet as you struggle to get your bearings.</p><ul><li>Move each unengaged enemy to the pursuit area.</li><li>Spawn the Ursine Hybrid enemy at your location, exhausted, and deal 1 damage to it.</li><li>If it is not under the control of an investigator, choose an investigator to take control of Vale Lantern.</li><li>Set aside each empty _Dark_ location to remake the Woods deck. To do this, perform the following:<ul><li>Shuffle the set-aside Twisted Hollow location with 3 random Western Woods locations together to form the bottom 4 locations of the Woods deck, Western Woods side faceup.</li><li>Then, place all of the other Western Woods locations on top in a random order. All of the cards in the Woods deck should be showing only the Western Woods side, so that the investigators do not know which is which.</li></ul></li><li>Put locations from the top of the Woods deck into play above, below, and to the left and right of the investigators’ location.</li></ul>"
+    }
+  },
+  "label": {
+    "deepiningDark": {
+      "pursuitEnemy": "Draw an enemy in pursuit with the highest evade value"
+    },
+    "deepShadows": {
+      "lantern": "The investigator who controls the Vale Lantern flips it to its _Unlit_ side and places it at a connecting location."
+    },
+    "lurkingFear": {
+      "pursuit": "Find the enemy in pursuit with the highest fight and spawn it engaged with you."
+    },
+    "stolenLight": {
+      "lantern": "Flip the Vale Lantern to its _Unlit_ side. Place the Vale Lantern at the empty location farthest from all investigators."
+    }
+  },
+  "resolutions": {
+    "xp": {
+      "bonus": {
+        "insight": "Gained insight into Hemlock Isle’s unique ecosystem.",
+        "bertie": "Resigned with Bertie Musgrave under their control."
+      }
+    },
+    "noResolution": {
+      "title": "No Resolution",
+      "body": "<p>_If no resolution was reached (each investigator resigned or was defeated)_: Long, spindly branches stretch like grasping hands from the thick canopy overhead. You feel light-headed as strange whispers resound from deep in the surrounding dark. Summoning all your strength, you stagger to the edge of a black lake. The waxing moon is perfectly reflected on the surface of the water, distorted by oily, iridescent whisps of a strange color. Across the lake, a figure stands outlined in the mist. You call out to it, and it moves slowly toward you, over the water. As it approaches, all you can see of its face is a wide, rictus grin.</p><p>“So help me, please wake up!” Dr. Marquez shakes you awake from the nightmare. Her worry quickly turns to annoyance when you open your eyes. “I’m glad you woke up. I wasn’t prepared for the paperwork if we lost you, too.” You are in a flowering field at the edge of the woods. When you ask about Bertie, she brushes a stray hair behind her ear and looks up at the waking dawn. “He’s gone. I lost him.”</p><ul><li>In your Campaign Log, record *Bertie was lost in the woods*.</li><li>Skip to _Resolution 3_.</li></ul>"
+    },
+    "resolution1": {
+      "title": "Resolution 1",
+      "body": "<p>_Resolution 1_: Long, spindly branches stretch like grasping hands as you emerge from the forest into a meadow glowing with shimmering blue wildflowers. The sight of the brilliant carpet of blue and white nearly takes your breath away after the oppressive darkness. Perhaps it is just your tired mind, but the heather and flowers seem to pulse. “Look,” Bertie points with a trembling hand. A dozen luminous stalks rise like floating lamps over the meadow, glimmering in the moonlight. “I feel almost as though we are walking amidst the cosmos. That each of us is a little god.” He plucks a glowing bud from its stalk. “And each of these, an even smaller star.”</p><p>Dr. Marquez slaps the flower out of his hand. “That poetic drivel is what got you lost in the woods. We risked life and limb for you! You’ll be lucky if I leave this incident out of the survey report.” Bertie hangs his head in shame as the professor lists a litany of woes and misdemeanors. But still, you can’t help but note the concern in Dr. Marquez’s voice as she excoriates her assistant. As you return to the Vale, the sky stirs with the coming dawn.</p><ul><li>In your Campaign Log, record *Bertie was rescued*.</li><li>Skip to _Resolution 3_.</li></ul>"
+    },
+    "resolution2": {
+      "title": "Resolution 2",
+      "body": "<p>_Resolution 2_: The canopy of trees presses in, filled with myriad eyes and the noisome beating of insect wings. You emerge into a small moonlit clearing to hear a familiar hacking cough: the bear emerges, snarling, from the darkness behind you. Bertie looks at you with wide, clear eyes. “This is my fault. I’m so sorry I caused you so much trouble. Say a word for me back in the Vale, will you?” Before you can intervene, Bertie snatches the lantern out of your hands and shouts into the darkness: “Come on, you ugly git!”</p><p>The bear roars in response. Glowing blue spores scatter in the darkness around it, wreathing the creature in pale blue light. Bertie lets out a brave yell in response and barrels toward it. Realizing the young man’s sacrifice, you take advantage of the distraction to slip away and get to safety.</p><ul><li>In your Campaign Log, record *Bertie was lost in the woods*.</li><li>Proceed to _Resolution 3_.</li></ul>"
+    },
+    "resolution3": {
+      "title": "Resolution 3",
+      "body": "<p>_Resolution 3_: “Miskatonic Survey, June 1926. Members Marquez, Musgrave, et alii. An unplanned foray into the Western Woods, at night. Local flora and fauna have evolved highly specialized behavior patterns after dark, likely dictated by extreme circadian rhythms and aggressive predation. A highly toxic environment. Identified a hitherto unknown symbiosis with a new strain of parasitic fungus. Further observation necessary.”</p><ul><li>Each investigator earns 1 bonus experience as they gain insight into Hemlock Isle’s unique ecosystem.<ul><li>Each investigator earns 1 additional experience if an investigator resigned with Bertie Musgrave under their control.</li></ul></li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. _Each investigator may now spend the experience recorded under “Unspent Experience” in your Campaign Log._</li><li>Update your Campaign Log.<ul><li>If Ursine Hybrid is in the victory display, record *the bear was wounded*.</li><li>In the “Areas Surveyed” section of your Campaign Log, check off *Western Woods*.</li></ul></li><li>Proceed to _Prelude: Dawn of the Second Day_.</li></ul>"
+    }
+  },
+  "poisonedMarsh": {
+    "label": {
+      "assets": "Deal 1 damage to each of your assets"
     }
   }
 }

@@ -1,16 +1,24 @@
 <script lang="ts" setup>
 import { capitalize } from '@/arkham/helpers'
+import { useI18n } from 'vue-i18n'
+import { computed } from 'vue'
 
-withDefaults(defineProps<{
+const { t } = useI18n()
+
+const props = withDefaults(defineProps<{
   compact?: boolean
   searchPlaceholder?: string
-}>(), { compact: false, searchPlaceholder: 'Search decks…' })
+  showValidFilter?: boolean
+}>(), { compact: false, searchPlaceholder: '', showValidFilter: false })
+
+const effectivePlaceholder = computed(() => props.searchPlaceholder || t('deckToolbar.searchDecks'))
 
 const allClasses = ["guardian", "seeker", "rogue", "mystic", "survivor", "neutral"]
 
 const search = defineModel<string>('search', { default: '' })
 const filterClasses = defineModel<string[]>('filterClasses', { default: () => [] })
 const sortBy = defineModel<'name' | 'class'>('sortBy', { default: 'name' })
+const validOnly = defineModel<boolean>('validOnly', { default: false })
 
 function toggleClass(c: string) {
   const idx = filterClasses.value.indexOf(c)
@@ -36,15 +44,24 @@ function toggleClass(c: string) {
       </button>
     </div>
     <div class="toolbar-right">
+      <button
+        v-if="showValidFilter"
+        type="button"
+        class="valid-filter"
+        :class="{ active: validOnly }"
+        @click.prevent="validOnly = !validOnly"
+      >
+        {{ t('deckToolbar.validDecks') }}
+      </button>
       <input
         v-model="search"
         class="search-input"
-        :placeholder="searchPlaceholder"
+        :placeholder="effectivePlaceholder"
         type="search"
       />
       <select v-model="sortBy" class="sort-select">
-        <option value="name">Sort: Name</option>
-        <option value="class">Sort: Class</option>
+        <option value="name">{{ t('deckToolbar.sortName') }}</option>
+        <option value="class">{{ t('deckToolbar.sortClass') }}</option>
       </select>
     </div>
   </div>
@@ -89,7 +106,7 @@ function toggleClass(c: string) {
   transition: background 0.12s, color 0.12s, border-color 0.12s;
   user-select: none;
 
-  &:hover { color: #aaa; border-color: #444; }
+  &:hover { color: #aaa; border-color: var(--button-highlight); }
 
   &.active.guardian { background: var(--guardian-extra-dark); border-color: var(--guardian-dark); color: #fff; }
   &.active.seeker   { background: var(--seeker-extra-dark);   border-color: var(--seeker-dark);   color: #fff; }
@@ -139,6 +156,37 @@ function toggleClass(c: string) {
   }
 }
 
+.valid-filter {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #888;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover { color: #aaa; border-color: var(--button-highlight); }
+  &.active {
+    color: #fff;
+    background: rgba(110, 134, 64, 0.85);
+    border-color: rgba(154, 196, 78, 0.45);
+  }
+}
+
+.compact .valid-filter {
+  background: rgba(0,0,0,0.3);
+  border-color: rgba(255,255,255,0.08);
+
+  &.active {
+    background: rgba(110, 134, 64, 0.85);
+    border-color: rgba(154, 196, 78, 0.45);
+  }
+}
+
 .search-input {
   padding: 6px 10px;
   font-size: 0.82rem;
@@ -150,8 +198,8 @@ function toggleClass(c: string) {
   width: 180px;
   transition: border-color 0.12s;
 
-  &::placeholder { color: #444; }
-  &:focus { border-color: #444; }
+  &::placeholder { color: var(--button-highlight); }
+  &:focus { border-color: var(--button-highlight); }
 
   @media (max-width: 768px) {
     flex: 1;
@@ -165,7 +213,7 @@ function toggleClass(c: string) {
   color: #ccc;
   width: 140px;
 
-  &::placeholder { color: #555; }
+  &::placeholder { color: var(--button); }
   &:focus { border-color: rgba(255,255,255,0.2); }
 }
 

@@ -7,6 +7,7 @@ import Arkham.Asset.Import.Lifted
 import Arkham.Asset.Uses
 import Arkham.Helpers.Message.Discard.Lifted
 import Arkham.Investigate
+import Arkham.Matcher
 import Arkham.Modifier
 
 newtype Divination1 = Divination1 AssetAttrs
@@ -17,7 +18,7 @@ divination1 :: AssetCard Divination1
 divination1 = asset Divination1 Cards.divination1
 
 instance HasAbilities Divination1 where
-  getAbilities (Divination1 x) = [controlled_ x 1 $ investigateActionWithAlternate_ #willpower]
+  getAbilities (Divination1 x) = [controlled x 1 (exists $ YourLocation <> InvestigatableLocation) $ investigateActionWithAlternate_ #willpower]
 
 instance RunMessage Divination1 where
   runMessage msg a@(Divination1 attrs) = runQueueT $ case msg of
@@ -27,8 +28,8 @@ instance RunMessage Divination1 where
       skillTestModifier sid (attrs.ability 1) iid (AnySkillValue 1)
       chooseOne
         iid
-        [ Label "Use {willpower} instead of {intellect}" [toMessage $ withSkillType #willpower investigate']
-        , Label "Use {intellect}" [toMessage investigate']
+        [ Label "$label.cards.divination1.useWillpowerInsteadOfIntellect" [toMessage $ withSkillType #willpower investigate']
+        , Label "$label.cards.divination1.useIntellect" [toMessage investigate']
         ]
       pure a
     Successful (Action.Investigate, _) iid _ (isTarget attrs -> True) n -> do

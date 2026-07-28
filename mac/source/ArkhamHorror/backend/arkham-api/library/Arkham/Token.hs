@@ -30,13 +30,18 @@ data Token
   | Horror
   | Inspiration
   | Key
+  | Kindling
   | Lead
   | Leyline
   | Lock
   | LostSoul
+  | Memory
+  | Newspaper
   | Offering
+  | Overgrowth
   | Pillar
   | Portent
+  | Redemption
   | Renown
   | Resource
   | Rumor
@@ -44,8 +49,10 @@ data Token
   | Scrap
   | Seal
   | Secret
+  | Seed
   | Shard
   | Shell
+  | Shipment
   | Study
   | Supply
   | Suspicion
@@ -53,8 +60,10 @@ data Token
   | Target
   | Ticket
   | Time
+  | TimeCapsule
   | Truth
   | Try
+  | Ward
   | Warning
   | Whistle
   | Wish
@@ -143,10 +152,6 @@ addTokens token amount tokens =
 
 removeAllTokens :: Token -> Tokens -> Tokens
 removeAllTokens token tokens = deleteMap token tokens
-
-incrementTokens :: Token -> Tokens -> Tokens
-incrementTokens token = addTokens token 1
-
 decrementTokens :: Token -> Tokens -> Tokens
 decrementTokens token = decrementTokensBy token 1
 

@@ -9,13 +9,16 @@ import Arkham.Campaigns.TheDreamEaters.Key
 import Arkham.Campaigns.TheDreamEaters.Meta
 import Arkham.Card
 import Arkham.ClassSymbol
+import Arkham.Deck qualified as Deck
 import Arkham.Enemy.Cards qualified as Enemies
 import Arkham.Helpers.Modifiers hiding (setupModifier)
 import Arkham.Helpers.Query
 import Arkham.Helpers.Scenario
 import Arkham.Helpers.SkillTest
+import Arkham.I18n
 import Arkham.Id
 import Arkham.Investigator.Types (Field (..))
+import Arkham.Label (mkLabel)
 import Arkham.Location.Cards qualified as Locations
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
@@ -45,8 +48,6 @@ import Arkham.Trait (
     Woods
   ),
  )
-import Data.Aeson (Result (..), Value (Null))
-
 newtype BeyondTheGatesOfSleep = BeyondTheGatesOfSleep ScenarioAttrs
   deriving anyclass (IsScenario, HasModifiersFor)
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
@@ -196,11 +197,7 @@ instance RunMessage BeyondTheGatesOfSleep where
       pure s
     ForInvestigator i Setup -> do
       let
-        usedDreams = case attrs.meta of
-          Null -> []
-          _ -> case fromJSON attrs.meta of
-            Error e -> error $ "failed to parse dreams: " <> e
-            Success result -> result
+        usedDreams = toResultDefault @[Dream] [] attrs.meta
       investigatorClass <- field InvestigatorClass i
       traits <- field InvestigatorTraits i
 
@@ -244,20 +241,20 @@ instance RunMessage BeyondTheGatesOfSleep where
     SearchFound iid (LabeledTarget "Drifter" ScenarioTarget) _ cards | notNull cards -> do
       playerCount <- getPlayerCount
       classSymbol <- field InvestigatorClass iid
-      newWeakness <- genCard =<< getRandomBasicWeakness classSymbol playerCount
+      newWeakness <- genCard =<< getRandomBasicWeakness classSymbol playerCount Nothing
       focusCards cards do
         chooseOneM iid do
-          questionLabeled "Replace basic weakness with random and take 1 trauma of your choice?"
-          labeled "Do not replace" unfocusCards
+          questionLabeled "$theDreamEaters.beyondTheGatesOfSleep.label.replaceWeaknessQuestion"
+          labeled "$theDreamEaters.beyondTheGatesOfSleep.label.doNotReplace" unfocusCards
           targets cards \card -> do
             unfocusCards
             push $ RemoveCardFromSearch iid (toCardId card)
             obtainCard card
             removeCardFromDeckForCampaign iid card
             shuffleCardsIntoDeck iid [newWeakness]
-            chooseOneM iid do
-              labeled "Take 1 Physical trauma" $ sufferPhysicalTrauma iid 1
-              labeled "Take 1 Mental trauma" $ sufferMentalTrauma iid 1
+            chooseOneM iid $ withI18n $ countVar 1 do
+              labeled' "sufferPhysicalTrauma" $ sufferPhysicalTrauma iid 1
+              labeled' "sufferMentalTrauma" $ sufferMentalTrauma iid 1
       pure s
     SearchFound _ (LabeledTarget "Veteran" ScenarioTarget) _ _ -> do
       doStep 2 msg
@@ -266,10 +263,8 @@ instance RunMessage BeyondTheGatesOfSleep where
       focusCards cards do
         chooseOneM iid do
           questionLabeled
-            $ "Choose up to "
-            <> tshow n
-            <> " Tactic and/or Supply cards and begin this scenario with them as additional cards in your opening hand."
-          labeled "Do not take any" unfocusCards
+            (withI18n $ countVar n $ ikey' "theDreamEaters.beyondTheGatesOfSleep.label.chooseUpToTacticSupply")
+          labeled "$theDreamEaters.beyondTheGatesOfSleep.label.doNotTakeAny" unfocusCards
           targets cards \card -> do
             unfocusCards
             push $ RemoveCardFromSearch iid (toCardId card)
@@ -309,4 +304,25 @@ instance RunMessage BeyondTheGatesOfSleep where
       allGainXp attrs
       endOfScenario
       pure s
+    Do (DrawCards _ drawing) | drawing.deck == Deck.EncounterDeck -> do
+      -- Self-heal phantom Enchanted Woods locations left behind by the
+      -- previously-fixed The Final Descent infinite advance loop. Idempotent —
+      -- becomes a no-op once duplicates are gone.
+      duplicates <- foldMapM phantomEnchantedWoodsForLabel [1 .. 6 :: Int]
+      case duplicates of
+        [] -> BeyondTheGatesOfSleep <$> liftRunMessage msg attrs
+        _ -> do
+          pushAll $ map RemoveLocation duplicates <> [msg]
+          pure s
+     where
+      phantomEnchantedWoodsForLabel n = do
+        let lbl = mkLabel $ "enchantedWoods" <> tshow n
+        select (LocationWithLabel lbl) >>= \case
+          x : rest@(_ : _) -> do
+            revealed <- select $ RevealedLocation <> LocationWithLabel lbl
+            let keep = case revealed of
+                  r : _ -> r
+                  [] -> x
+            pure $ filter (/= keep) (x : rest)
+          _ -> pure []
     _ -> BeyondTheGatesOfSleep <$> liftRunMessage msg attrs

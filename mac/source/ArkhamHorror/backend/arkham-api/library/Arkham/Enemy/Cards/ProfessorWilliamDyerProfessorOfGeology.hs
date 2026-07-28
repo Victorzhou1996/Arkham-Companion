@@ -6,7 +6,7 @@ where
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Matcher
 
@@ -19,8 +19,6 @@ professorWilliamDyerProfessorOfGeology =
   enemy
     ProfessorWilliamDyerProfessorOfGeology
     Cards.professorWilliamDyerProfessorOfGeology
-    (4, Static 2, 2)
-    (0, 2)
 
 instance HasAbilities ProfessorWilliamDyerProfessorOfGeology where
   getAbilities (ProfessorWilliamDyerProfessorOfGeology a) =

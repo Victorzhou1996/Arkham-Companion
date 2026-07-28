@@ -1,0 +1,162 @@
+{
+  "act1": {
+    "tokens": {
+      "easyStandard": {
+        "cultist": "-1. Place 1 resource on this card, as a scrap.",
+        "elderThing": "-3. If you fail, take 1 damage.",
+        "skull": "-X. X is your location's column number.",
+        "tablet": "-2. If you fail, remove 1 scrap from this card."
+      },
+      "hardExpert": {
+        "cultist": "-3. If you succeed, place 1 resource on this card, as a scrap.",
+        "elderThing": "-5. Take 1 damage.",
+        "skull": "-X. X is twice your location's column number.",
+        "tablet": "-4. Remove 1 scrap from this card."
+      }
+    }
+  },
+  "act2": {
+    "tokens": {
+      "easyStandard": {
+        "cultist": "-2. Place 1 resource on this card, as a switch.",
+        "elderThing": "-4. If you fail, remove 1 switch from this card.",
+        "skull": "-X. X is your location's column number.",
+        "tablet": "-3. If you fail, move the 矿车 once."
+      },
+      "hardExpert": {
+        "cultist": "-3. If you succeed, place 1 resource on this card, as a switch.",
+        "elderThing": "-5. Remove 1 switch from this card.",
+        "skull": "-X. X is twice your location's column number.",
+        "tablet": "-4. Move the 矿车 once."
+      }
+    }
+  },
+  "codex": {
+    "drRosaMarquez": {
+      "body": "<h3>@:theFeastOfHemlockVale.writtenInRock.codex.drRosaMarquez.title </h3><p>_如果目前是 Act 1:_</p><p>“不知道西缅去哪里了，莉亚昨晚非常担心。”马尔克斯博士有些分神，手中拿着蓝白色的水晶样本。“这些水晶似乎不是自然形成的，我不是地质学家，不过这些结构看起来……被扭曲了，完全不符合基础的几何结构。”</p><p class='basic right'>将1资源放到冒险参考卡牌上，作为残片。任意一位调查员可以在不同场景再次触发此圣典。</p><hr><p>**如果目前是场景2**：</p><p>“我年纪太大了，受不了这种刺激！”马尔克斯博士大喊着，紧紧抓着自己的帽子。矿车飞速行驶，一道道腐坏的横梁从你们头顶飞掠而过。你们在黑暗中飞梭，教授用她的手杖击中了一个转辙器。矿坑深处，有某种生物在蠢蠢欲动。</p><p class='basic right'>交换2个相邻地点。</p>",
+      "title": "{'{'}codex{'}'} Codex Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
+    },
+    "leahAtwood": {
+      "body": "<h3>@:theFeastOfHemlockVale.writtenInRock.codex.leahAtwood.title </h3><p>**如果没有任何调查员控制莉亚．阿特伍德：**</p><p>你们发现莉亚正盯着一池浓稠、发光的液体看。看见你们走来，她伸手擦掉眼角的泪水，并拒绝你们带她离开。“我只想待在这里。”她说。你们向她解释洞口已经坍方，还有危险正在逐渐迫近。“那些都不重要了。”她麻木的回答。在你们的说服下，她的态度最后还是软化了。就在你们领着她走向矿车时，你们转身看见发光的池边有个浑圆的人型倒影，那个身影迅速的消失在岩石后。</p><p class='basic right'>选择一位调查员控制莉亚．阿特伍德。任意一位调查员可以再次触发此圣典。</p><hr><p>_否则：_</p><p>莉亚打破沉默，抓住故障的控制杆：“不是左边！是右边！”矿车在轨道上剧烈摇晃，然后自行恢复平衡。你们与这位谷地的厨师对望一眼，都松了一口气，矿车摇摆着继续前进。</p><p class='basic right'>将2资源放到冒险参考卡牌上，作为转辙器。</p>",
+      "title": "{'{'}codex{'}'} Codex 2: 莉亚．阿特伍德"
+    },
+    "riverHawthorne": {
+      "body": "<h3>@:theFeastOfHemlockVale.writtenInRock.codex.riverHawthorne.title </h3><p>“在这见到你们真稀奇啊。”芮福起身迎接你们，手里拿着一个装满发光蘑菇与血红色苔癣的手编篮子。“我的味蕾可是很挑剔的，我跟你说，法国名厨欧仁妮．布拉济耶说我是她餐桌上最识货的贵客呢。”芮福华丽的显摆手中的篮子，指向昏暗的隧道说：“这些都是美味的珍馐，为了爱，我们有时候必须做出一点牺牲。”你们表示愿意帮忙采摘，毕竟马尔克斯博士一定会想要一些这种奇怪植物的样本。</p><p class='basic right'>控制芮福．霍桑。如果冒险结束时，调查员们控制了芮福。霍桑，并控制了至少2{'{'}perPlayer{'}'}个线索，请记住“你们帮助了芮福”。</p>",
+      "title": "{'{'}codex{'}'} Codex 5: 芮福．霍桑"
+    },
+    "simeonAtwood": {
+      "body": "<h3>@:theFeastOfHemlockVale.writtenInRock.codex.simeonAtwood.title </h3><p>**如果没有任何调查员控制西缅．阿特伍德：**</p><p>就在矿车剧烈摇晃着通过破烂的桥梁时，你们注意到前方有个身影悬吊在悬崖边缘。完全出于本能，你们上半身翻过矿车边缘，在呼啸而过时抓住了那个人影的手，将他拉进车里。你们认出他是谷地的捣蛋鬼：西缅．阿特伍德。他脸色惨白的拍了拍自己身上的尘土，然后说：“我在找我的宝藏，都是我的宝 — ”他喘着气，放弃继续说下去。“谢谢你们救了我，如果没有你们，不知道我会怎样。”</p><p class='basic right'>选择一位调查员控制西缅．阿特伍德。任意一位调查员可以再次触发此圣典。</p><hr><p>_否则：_</p><p>“不，不是这样用的。”西缅拉动矿车的控制杆。“你们这样是怎么活下来的？居然还找得到我。”他拉下隧道旁的一根转辙器，得意洋洋的对你们笑：“这样用才对。”</p><p class='basic right'>将2资源放到冒险参考卡牌上，作为转辙器。</p>",
+      "title": "{'{'}codex{'}'} Codex 3: 西缅．阿特伍德"
+    }
+  },
+  "intro": {
+    "body": "<p>你们知道前往北角矿坑的路要穿越珍珠山脉中央的一道狭窄的山沟，但除此之外没有其他线索。你们只好在谷地中四处询问更多关于矿坑的消息，但搜集到的讯息似乎相互矛盾。据传这座矿坑已经关闭，但最近又传出有人在其中失踪；有些消息说里面的地衣跟苔癣具有营养价值，但也有人说它们含有剧毒？最奇怪的是关于那座矿坑关闭的原因，没有人知道，或只是不愿提起。</p><p>你们朝着矿坑方向前进，最后来到一个巨口般的山洞前。你们沿着老旧的铁道进入洞口，周围四散着废弃的装备，亮黄色的菌菇生长其上，将其完全覆盖。这些菌菇看起来不适合食用，同时散发出腐臭的气息。终于狭窄的隧道引领你们来到一座宽广的洞穴，四处长满了发光的蘑菇以及高耸的水晶结构体。地面发出微微的震动，随之一阵哭声从矿洞深处回荡而来，你们安抚住自己的不安，向更深处前进。至少，对于那些在生锈工具上不自然生长的蕈菇，马尔克斯博士一定会想要一些样本。</p><p class='basic right'>进入 _Setup_.</p>",
+    "title": "Scenario: 铭刻于石"
+  },
+  "label": {
+    "mineCart": {
+      "cancelMove": "取消移动",
+      "faceEast": "朝向东",
+      "faceNorth": "朝向北",
+      "faceSouth": "朝向南",
+      "faceWest": "朝向西",
+      "facing": "选择矿车的朝向",
+      "moveAgain": "额外移动1次"
+    },
+    "wildRide": {
+      "damage": "对每位调查员及其控制的每张_盟友_支援与_住民_卡牌造成1点直接伤害和1点直接恐惧",
+      "moveAgain": "使其额外移动2次"
+    }
+  },
+  "proceedToTheCaveIn2": "如果目前是 (_白日{'{'}day{'}'}_), 进入 _坍方 2_.",
+  "resolutions": {
+    "noResolution": {
+      "body": "<p>_如果没有达成结局（每位调查员均被击败）_: 失去意识前，你们最后见到的景象是矿车冲进一座闪闪发光的峡谷中。醒来后，你们发现自己身处一个满是发光蕈类、充满水晶体的洞窟，头还在隐隐作痛。你们看见乱石中有向上的路，但要走回铁轨隧道可能要花费好几个小时。你们叹了口气，开始涉水横越地底的溪流。</p>",
+      "skipToResolution3": "如果目前是_第一日_或_第二日_：, 跳至 _结局3_.",
+      "skipToResolution4": "如果目前是_第三日_：, 跳至 _结局4_.",
+      "skipToResolution6": "如果目前是 _第一夜_ or _第二夜_, 划掉西缅．阿特伍德的姓名 and 跳至 _结局6_.",
+      "title": "未达成任何结局"
+    },
+    "resolution1": {
+      "body": "<p>西缅翻出车外，看起来还有点晕眩，带着有点恼人的兴奋叫喊着：“真刺激！你们铁定可以进入矿工恶作剧秘密兄弟会的名人榜！那个化学家乔治．华盛顿．卡佛，还有我妈都在榜上呢！”他踉跄的沿着铁轨向前走，走向明亮的天空，你们扶着他，带他走出洞穴外清新的空气中。</p><ul><li>更新剧本日志。<ul><li>在西缅．阿特伍德的笔记中，记录下*西缅活下来了*。</li><li>提升西缅．阿特伍德2格友好度。每位调查员取得2\n点奖励经验值。</li></ul></li><li>跳至 _结局6_.</li></ul>",
+      "title": "结局 1"
+    },
+    "resolution2": {
+      "body": "<p>_结局2_: 你们翻身跳出车外时，莉亚仍紧抓着车缘，她紧咬着双唇，试着忍住眼泪不让你们看见。你们带着她走向洞穴出口，身后仍有轻微的啜泣声在岩壁间回荡。当你们终于走出洞穴，迎向清新的空气后，你们鼓起勇气，询问莉亚看见了什么。</p><p>“他走了，西缅走了。”她回答到。</p><ul><li>更新剧本日志。<ul><li>在莉亚．阿特伍德的笔记中，记录下*莉亚在矿坑中见到某种东西*。</li><li>提升莉亚．阿特伍德的友好度。每位调查员取得2\n点奖励经验值。</li></ul></li><li>跳至 _结局6_.</li></ul>",
+      "title": "结局 2"
+    },
+    "resolution3": {
+      "body": "<p>你们发誓自己在下车时，听到了西缅．阿特伍德的声音从空荡的隧道中传来。你们无法对它充耳不闻，只好沿着隧道返回，希望能找到那个年轻人。最后你们来到一座长满水晶的闪耀峡谷边，峡谷中有个人形的黑影正俯身在一具小动物的尸体前。你们大喊着，但那个人影却迅速地躲入黑暗中。你们喊着西缅的名字直到声音沙哑，但却无济于事。最终你们转身走向洞穴的出口，嘴里带着难以忍受的苦涩。</p><ul><li>更新剧本日志。<ul><li>在西缅．阿特伍德的笔记中，记录下*西缅失踪*。</li><li>划掉西缅．阿特伍德的名字。</li></ul></li><li>跳至 _结局6_.</li></ul>",
+      "title": "结局 3"
+    },
+    "resolution4": {
+      "body": "<p>你们发誓自己在下车时，听到了莉亚．阿特伍德的声音从空荡的隧道中传来。你们无法对它充耳不闻，只好沿着隧道返回，希望能找到这位谷地的厨师。最后你们来到一座长满水晶的闪耀峡谷边，峡谷中有个人形的黑影正俯身在莉亚的尸体前。你们大喊着，但那个人影却迅速地躲入黑暗中。你们看了莉亚毫无生机的遗体最后一眼，然后转身走向洞穴的出口，嘴里带着难以忍受的苦涩。</p><ul><li>更新剧本日志。<ul><li>在莉亚．阿特伍德的笔记中，记录下*莉亚与西缅团聚了*。</li><li>划掉莉亚．阿特伍德的名字。</li></ul></li><li>跳至 _结局6_.</li></ul>",
+      "title": "结局 4"
+    },
+    "resolution5": {
+      "body": "<p>你们翻身下车时听见一声熟悉的敲击声，随之而来的是一阵腐臭味。更多咆啸与吼叫声从曲折的洞窟中传来，促使你们加速朝出口跑去。最后你们终于重新呼吸到了清新的夜间空气，你们停下脚步，转身凝望着漆黑的洞窟，天知道这座岛地下还有多少恐怖的存在藏身于岩石中。</p><ul><li>在剧本日志中，记录下 *调查员从岩石中的恐怖存活下来*.</li><li>进入 _结局6_.</li></ul>",
+      "title": "结局5"
+    },
+    "resolution6": {
+      "body": "<p>“1926年6月，米斯卡塔尼克大学实地调查。成员：马尔克斯、马斯格雷夫，及其他人员。我们很幸运地从北角矿坑之旅中存活下来，那里极度不稳定，地质震动频繁发生。发现内容包括不对称的水晶结构体、巨型啮齿类生物，以及侵略性极强的昆虫物种。”</p><ul><li>如果冒险结束时棱彩晶体剧情支持受一位调查员控制，选择一位调查员将其加入自己的牌库。这张卡牌不计入该调查员的牌库卡牌张数。</li><li>更新剧本日志。<ul><li>如果‘你帮助了芮福’，提升芮福．霍桑的友好度。 每位调查员获得1点奖励经验值.</li><li>如果有调查员控制芮福．霍桑，且上述记录不成立: 降低芮福．霍桑的友好度。</li></ul></li><li>每位调查员取得经验值，数量等于胜利区所有卡牌的胜利X数值之和。**每位调查员现在可以花费剧本日志中，“未花费的经验值”下所记录的经验值。**</li><li>在剧本日志中“已调查区域”的区域，将*北角矿坑*打勾。</li><li>检查剧本日志：<ul><li>如果目前是第一日：, 进入 _序章：首夜_ （第31页）.</li><li>如果目前是 第一夜, 进入 _序章：次日黎明_ （第39页）.</li><li>如果目前是第二日：, 进入 _序章：次夜_ （第43页）.</li><li>如果目前是 第二夜, 进入 _序章：终日黎明_ （第51页）.</li><li>如果目前是第三日：, 进入 _序章：终夜_ （第55页）.</li></ul></li></ul>",
+      "title": "结局 6"
+    },
+    "xp": {
+      "bonus": {
+        "leah": "奖励经验值",
+        "simeon": "奖励经验值"
+      }
+    }
+  },
+  "setup": {
+    "caves": "收齐 6 _Cave_ locations and randomly remove 2 of them from the game. Place the rest as shown in the Location Placement diagram on page 11 (see _Location Adjacency_ on page 3).",
+    "currentDayMarker": "检查剧本日志，确认目前的日期与时刻。将时刻卡牌以对应的(_白日{'{'}day{'}'}_)或(_黑夜{'{'}night{'}'}_)面放置入场。",
+    "currentDaySet": "此外，检查剧本日志，确认目前的日期，并收齐对应的*首日*、*次日*或*终日*遭遇组。这些遭遇组以以下符号表示：<section class='encounter-sets'><img src='{setImgPath}/the-first-day.png' /><img src='{setImgPath}/the-second-day.png' /><img src='{setImgPath}/the-final-day.png' /></section>",
+    "gatherSets": "Gather all cards from the following 遭遇组中的所有地点: *铭刻于石*, *石中骇物*, *Refractions*, *Chilling Cold*, and *Ghouls*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/written-in-rock.png' /><img src='{setImgPath}/horrors-in-the-rock.png' /><img src='{setImgPath}/refractions.png' /><img src='{setImgPath}/chilling-cold.png' /><img src='{setImgPath}/ghouls.png' /></section>",
+    "leahAtwood": "如果目前是_第三日_：, set 莉亚．阿特伍德 aside, out of play.",
+    "otherLocations": "收齐*铭刻于石*遭遇组中的所有地点，将控制站地点放置入场。将剩余的15张_轨道沿线_地点放在一旁，置于场外。",
+    "remainingResidents": "将*住民*遭遇组中的其他卡牌从游戏中移除。",
+    "residents": "如果目前是 (_白日{'{'}day{'}'}_), gather each 剧情支持 from the *Residents* 遭遇组中收齐所有剧情支持。 This set indicated by the following icon:<section class='encounter-sets'><img src='{setImgPath}/residents.png' /></section>",
+    "riverHawthorne": "如果目前是_第一日_：, place 芮福．霍桑 at the location in column 3.",
+    "scenarioReference": "将场景1冒险参考卡牌放置入场。",
+    "scrap": "在每个地点各放置1资源，作为残片。*(提示：在场景1期间收集的残片，在场景2中会对调查员有帮助。)*",
+    "setOutOfPlay": "将2张晶化寄生虫敌人以及*铭刻于石*遭遇组中所有其他卡牌放在一旁，置于场外。",
+    "simeonAtwood": "如果目前是_第一日_或_第二日_：, set 西缅．阿特伍德 aside, out of play.",
+    "startAt": "每位调查员从最左边的地点开始游戏。",
+    "subterraneanBeast": "如果目前是 (_白日{'{'}day{'}'}_), remove the Subterranean Beast enemy from the game."
+  },
+  "skipToTheCaveIn3": "否则， 跳至 _坍方 3_.",
+  "slidingAndSwappingLocations": {
+    "body": "<h3>滑动与交换地点</h3><p class='basic'>调查员可以透过滑动与交换地点来对齐轨道，构建通往铁道出口的新路线。</p><p>要滑动地点，先选择一张与空格相邻的地点，然后将该地点(以及该地点上所有的卡牌)移动到该空格。</p><p>要交换2个地点，同时将这2个地点(以及各自地点上所有的卡牌)，放到彼此原先占据的格子。</p><ul><li>**有剧情支持的地点无法被滑动或交换。**</li></ul>",
+    "title": "滑动与交换地点"
+  },
+  "specialRules": [
+    {
+      "body": "<p class='basic'>每张_轨道沿线_地点上都至少印有1个轨道图示。这些轨道图示代表矿车可移动的路线。</p><ul><li>当地点上的轨道图示面向相邻地点的轨道图示时，这些轨道图示视为**对齐**。</li><li>之间有对齐轨道图示的相邻地点视为互相连接，并形成一条铁道。没有对齐轨道图示的相邻地点不视为互相连接。</li></ul>",
+      "title": "场景2中的铁道与相邻规则"
+    },
+    {
+      "body": "<p class='basic'>调查员可以透过滑动与交换地点来对齐轨道，构建通往铁道出口的新路线。</p><p>要滑动地点，先选择一张与空格相邻的地点，然后将该地点(以及该地点上所有的卡牌)移动到该空格。</p><p>要交换2个地点，同时将这2个地点(以及各自地点上所有的卡牌)，放到彼此原先占据的格子。</p><ul><li>**有剧情支持的地点无法被滑动或交换。**</li></ul>",
+      "title": "滑动与交换地点"
+    },
+    {
+      "body": "<p class='basic'>每位调查员的迷你卡牌都覆盖放在矿车上。</p><ul><li>在矿车内的调查员，同时视为在矿车所在的地点上。调查员无法脱离矿车进行移动。当矿车移动时，每位调查员也跟着移动。</li><li>矿车剧情支持的右侧有一个轨道图示，表示其朝向的方向。矿车上的轨道图示，必须永远朝向其所在地点上的其中一个轨道图示。</li><li>当移动矿车时，只能沿着连接地点上的铁道路线移动。</li><li>当矿车进入一个地点时，调查员可以选择将其朝左或朝右旋转90度，让矿车朝向该地点上的其中一个轨道图示。</li><li>矿车只能往其轨道图示朝向的方向移动。如果它移动进入的地点没有形成一条完整路线*(也就是没有对齐)*，矿车将会脱轨。</li></ul>",
+      "title": "The 矿车"
+    }
+  ],
+  "theCaveIn": "Scenario Interlude: 坍方",
+  "theCaveIn1": "<p>_坍方 1_: 巨石滚落，你们转身看向崩塌的隧道，没办法回头了。没有其他线索可循，你们只能继续沿着铁道，深入黑暗之中。过了一会儿后，你们看见轨道上有一辆旧矿车，旁边有座明亮的棚子。</p>",
+  "theCaveIn2": "<p>_坍方 2_: 这座顶棚原本似乎是控制室，但后来被改成了休憩的地方。墙上甚至天花板上满是手绘的地图跟表格，看起来是出自于年轻人之手。如果有人最近待过这里，那他们八成跟你们一起被困在这了。</p>",
+  "theCaveIn3": "<p>_坍方 3_: 尖利的颤音回荡在洞穴中，随之而来的是令人战栗的敲击声。在隧道的另一端，一支多脚、长着漆黑巨口的生物正朝你们前进。牠发出一声凄厉的尖啸并冲向你们，你们感觉自己的心脏几乎停止了。</p><p class='basic right'>进入 _坍方 4_.</p>",
+  "theCaveIn4": "<p>入口已经坍方，现在只有穿越整座矿坑才有可能离开这里，你们用尽全身上下的力量推动矿车，然后跳进车内，希望锈蚀的轨道能支撑你们的重量。</p><ul><li>收齐所有15张放在一旁的_轨道沿线_地点。<ul><li>将铁道出口与7张所示的铁道坑洞，依照参考摆放位置图例进行放置。</li><li>混洗剩余的_轨道沿线_地点，并在参考摆放位置图例中，每个有“？”的位置各放置1张。</li></ul></li><li>将1资源放到冒险参考卡牌上，作为转辙器。</li><li>将放在一旁的矿车支持放到控制站上，并选择一个朝向的方向*(见下方**滑动与交换地点**以及**矿车**)。*<ul><li>将每位调查员的迷你卡牌放在矿车上。</li><li>如果西缅．阿特伍德或莉亚．阿特伍德被放在一旁，将他们放到栏位2最上方的地点。</li><li>将放在一旁的棱彩晶体支持，放到栏位4最下方的地点。</li></ul></li><li>如果目前是 (_黑夜{'{'}night{'}'}_), place the set-aside Subterranean Beast enemy at the 控制站, exhausted.</li><li>将遭遇弃牌堆与放在一旁的*铭刻于石*遭遇组剩余的卡牌洗入遭遇牌库。</li><li>继续进行游戏。</li></ul>",
+  "theMineCart": {
+    "body": "<h3>The 矿车</h3><p class='basic'>每位调查员的迷你卡牌都覆盖放在矿车上。</p><ul><li>在矿车内的调查员，同时视为在矿车所在的地点上。调查员无法脱离矿车进行移动。当矿车移动时，每位调查员也跟着移动。</li><li>矿车剧情支持的右侧有一个轨道图示，表示其朝向的方向。矿车上的轨道图示，必须永远朝向其所在地点上的其中一个轨道图示。</li><li>当移动矿车时，只能沿着连接地点上的铁道路线移动。</li><li>当矿车进入一个地点时，调查员可以选择将其朝左或朝右旋转90度，让矿车朝向该地点上的其中一个轨道图示。</li><li>矿车只能往其轨道图示朝向的方向移动。如果它移动进入的地点没有形成一条完整路线*(也就是没有对齐)*，矿车将会脱轨。</li></ul>",
+    "title": "The 矿车"
+  },
+  "tooltips": {
+    "theUndergroundMaze": {
+      "prismaticShard": "{'{'}action{'}'} If the 棱彩晶体 剧情支持 is at your location: Take control of it.",
+      "slide": "{'{'}action{'}'} Spend 1 {'{'}perPlayer{'}'} resources: Slide a revealed location into an empty adjacent space. (Group limit once per round.)"
+    }
+  }
+}

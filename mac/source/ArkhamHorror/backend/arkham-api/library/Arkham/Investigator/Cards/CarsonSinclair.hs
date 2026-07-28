@@ -45,7 +45,7 @@ instance RunMessage CarsonSinclair where
       pure i
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       let invalid = InvestigatorWithId <$> (iid : lookupMetaKeyWithDefault "used" [] attrs)
-      investigators <- select $ affectsOthers $ colocatedWith iid <> notOneOf invalid
+      investigators <- select $ affectsOthersKnown iid $ colocatedWith iid <> notOneOf invalid
       chooseTargetM iid investigators $ handleTarget iid (attrs.ability 1)
       pure i
     HandleTargetChoice _ (isAbilitySource attrs 1 -> True) (InvestigatorTarget iid') -> do
@@ -57,8 +57,8 @@ instance RunMessage CarsonSinclair where
     ResolveChaosToken t ElderSign iid | not (attrs `is` iid) -> do
       whenM (iid <=~> colocatedWith attrs.id) do
         chooseOneM attrs.id do
-          labeled "Resolve your Elder Sign ability" $ push $ ResolveChaosToken t ElderSign attrs.id
-          labeled "Do not resolve your Elder Sign ability" nothing
+          labeledI "useElderSign" $ push $ ResolveChaosToken t ElderSign attrs.id
+          labeledI "doNotResolveElderSign" nothing
       pure i
     EndRound -> CarsonSinclair <$> liftRunMessage msg (attrs & deleteMetaKey "used")
     Blanked EndRound -> CarsonSinclair <$> liftRunMessage msg (attrs & deleteMetaKey "used")

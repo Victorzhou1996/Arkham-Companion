@@ -2,6 +2,7 @@ module Arkham.Treachery.Cards.MiasmaticTorment (miasmaticTorment) where
 
 import Arkham.Ability
 import Arkham.Helpers.Modifiers (ModifierType (..), modified_)
+import Arkham.I18n
 import Arkham.Keyword (Keyword (Partner))
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
@@ -41,7 +42,7 @@ instance RunMessage MiasmaticTorment where
       if null partners
         then gainSurge attrs
         else chooseOneM iid $ targets partners \partner -> do
-          exhaustThis partner
+          exhaustWith attrs partner
           attachTreachery attrs partner
       pure t
     UseThisAbility iid (isSource attrs -> True) 1 -> do
@@ -51,9 +52,9 @@ instance RunMessage MiasmaticTorment where
           withSanity <- aid <=~> AssetWithSanity
           chooseOrRunOneM iid do
             when withHealth do
-              labeled "Deal 1 damage" $ dealAssetDamage aid (attrs.ability 1) 1
+              cardI18n (scope "miasmaticTorment" $ labeled' "damage") $ dealAssetDamage aid (attrs.ability 1) 1
             when withSanity do
-              labeled "Deal 1 horror" $ dealAssetHorror aid (attrs.ability 1) 1
+              cardI18n (scope "miasmaticTorment" $ labeled' "horror") $ dealAssetHorror aid (attrs.ability 1) 1
         _ -> pure ()
       pure t
     UseThisAbility iid (isSource attrs -> True) 2 -> do

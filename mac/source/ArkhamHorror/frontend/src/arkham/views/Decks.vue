@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import * as Arkham from '@/arkham/types/Deck'
 import Prompt from '@/components/Prompt.vue'
 import { fetchDecks, deleteDeck, syncDeck } from '@/arkham/api'
@@ -8,6 +8,10 @@ import Deck from '@/arkham/components/DeckRow.vue';
 import DeckToolbar from '@/arkham/components/DeckToolbar.vue';
 import PrimaryButton from '@/components/PrimaryButton.vue';
 import { useToast } from "vue-toastification";
+import { useI18n } from 'vue-i18n'
+import type { InvestigatorClass } from '@/arkham/helpers'
+
+const { t } = useI18n()
 
 const allDecks = ref<Arkham.Deck[]>([])
 const deleteId = ref<string | null>(null)
@@ -15,15 +19,18 @@ const toast = useToast()
 const showNewDeck = ref(false)
 const searchText = ref('')
 const sortBy = ref<'name' | 'class'>('name')
-const filterClasses = ref<string[]>([])
+const filterClasses = ref<InvestigatorClass[]>([])
+const recentDeckId = ref<string | null>(null)
+let deckLoad: Promise<void> | null = null
 
 const CLASS_ORDER: Record<string, number> = {
   guardian: 0, seeker: 1, rogue: 2, mystic: 3, survivor: 4, neutral: 5
 }
-const allClasses = ["guardian", "seeker", "rogue", "mystic", "survivor", "neutral"]
+const allClasses: InvestigatorClass[] = ["guardian", "seeker", "rogue", "mystic", "survivor", "neutral"]
 
 async function addDeck(d: Arkham.Deck) {
   allDecks.value.push(d)
+  recentDeckId.value = d.id
   showNewDeck.value = false
 }
 
@@ -37,8 +44,47 @@ async function deleteDeckEvent() {
   }
 }
 
-fetchDecks().then(async (response) => {
-  allDecks.value = response
+function loadDecks(): Promise<void> {
+  if (deckLoad) return deckLoad
+
+  deckLoad = fetchDecks()
+    .then((response) => {
+      const previousIds = new Set(allDecks.value.map((deck) => deck.id))
+      const addedDecks = response.filter((deck) => !previousIds.has(deck.id))
+      allDecks.value = response
+
+      if (addedDecks.length > 0) {
+        recentDeckId.value = addedDecks[addedDecks.length - 1].id
+      } else if (!recentDeckId.value && response.length > 0) {
+        recentDeckId.value = response[response.length - 1].id
+      }
+    })
+    .finally(() => {
+      deckLoad = null
+    })
+
+  return deckLoad
+}
+
+function refreshDecks() {
+  void loadDecks()
+}
+
+function refreshVisibleDecks() {
+  if (document.visibilityState === 'visible') refreshDecks()
+}
+
+onMounted(() => {
+  refreshDecks()
+  window.addEventListener('focus', refreshDecks)
+  window.addEventListener('pageshow', refreshDecks)
+  document.addEventListener('visibilitychange', refreshVisibleDecks)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('focus', refreshDecks)
+  window.removeEventListener('pageshow', refreshDecks)
+  document.removeEventListener('visibilitychange', refreshVisibleDecks)
 })
 
 const decks = computed(() => {
@@ -51,9 +97,15 @@ const decks = computed(() => {
   })
 
   if (sortBy.value === 'name') {
-    result = [...result].sort((a, b) => a.name.localeCompare(b.name))
+    result = [...result].sort((a, b) => {
+      if (a.id === recentDeckId.value) return -1
+      if (b.id === recentDeckId.value) return 1
+      return a.name.localeCompare(b.name)
+    })
   } else if (sortBy.value === 'class') {
     result = [...result].sort((a, b) => {
+      if (a.id === recentDeckId.value) return -1
+      if (b.id === recentDeckId.value) return 1
       const classObj = (d: Arkham.Deck) => Arkham.deckClass(d)
       const ca = allClasses.find(k => classObj(a)[k]) ?? 'neutral'
       const cb = allClasses.find(k => classObj(b)[k]) ?? 'neutral'
@@ -66,7 +118,7 @@ const decks = computed(() => {
 
 async function sync(deck: Arkham.Deck) {
   syncDeck(deck.id).then(() => {
-    toast.success("Deck synced successfully", { timeout: 3000 })
+    toast.success(t('deckSyncedSuccessfully'), { timeout: 3000 })
   })
 }
 </script>
@@ -75,8 +127,8 @@ async function sync(deck: Arkham.Deck) {
   <div class="page-container">
     <div id="decks">
       <header class="decks-header">
-        <h2>Decks</h2>
-        <PrimaryButton :label="showNewDeck ? 'Cancel' : 'New Deck'" :danger="showNewDeck" @click="showNewDeck = !showNewDeck" />
+        <h2>{{ $t('decks') }}</h2>
+        <PrimaryButton :label="showNewDeck ? t('cancel') : t('deckList.newDeck')" :danger="showNewDeck" @click="showNewDeck = !showNewDeck" />
       </header>
 
       <div v-if="showNewDeck" class="new-deck-panel">
@@ -91,7 +143,7 @@ async function sync(deck: Arkham.Deck) {
       />
 
       <div v-if="decks.length === 0" class="empty-state">
-        <p>No decks match your filters.</p>
+        <p>{{ $t('noDecksMatchFilters') }}</p>
       </div>
       <div v-else class="deck-grid">
         <Deck
@@ -105,7 +157,7 @@ async function sync(deck: Arkham.Deck) {
 
       <Prompt
         v-if="deleteId"
-        prompt="Are you sure you want to delete this deck?"
+        :prompt="t('areYouSureDeleteDeck')"
         :yes="deleteDeckEvent"
         :no="() => deleteId = null"
       />
@@ -163,7 +215,7 @@ async function sync(deck: Arkham.Deck) {
 .empty-state {
   padding: 40px;
   text-align: center;
-  color: #555;
+  color: var(--button);
   font-size: 0.9rem;
 }
 

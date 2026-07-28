@@ -19,7 +19,7 @@ drAmyKenslerProfessorOfBiology = allyWith DrAmyKenslerProfessorOfBiology Cards.d
 
 instance HasAbilities DrAmyKenslerProfessorOfBiology where
   getAbilities (DrAmyKenslerProfessorOfBiology a) =
-    [restricted a 1 ControlsThis $ investigateAction (assetUseCost a Secret 1 <> exhaust a)]
+    [investigateAbility a 1 (assetUseCost a Secret 1 <> exhaust a) ControlsThis]
 
 instance RunMessage DrAmyKenslerProfessorOfBiology where
   runMessage msg a@(DrAmyKenslerProfessorOfBiology attrs) = runQueueT $ case msg of
@@ -47,8 +47,8 @@ instance RunMessage DrAmyKenslerProfessorOfBiology where
       focusCards cards do
         chooseOneM iid do
           when canAffectOtherPlayers do
-            labeled "Discard Card" do
+            labeledI "discardCard" do
               for_ cards (discardCard iid (attrs.ability 1))
-          labeled "Leave card" nothing
+          labeledI "leaveCard" nothing
       pure a
     _ -> DrAmyKenslerProfessorOfBiology <$> liftRunMessage msg attrs

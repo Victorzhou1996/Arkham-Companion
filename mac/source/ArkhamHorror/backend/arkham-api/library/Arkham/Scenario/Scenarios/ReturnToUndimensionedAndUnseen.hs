@@ -4,16 +4,12 @@ import Arkham.Act.Cards qualified as Acts
 import Arkham.Agenda.Cards qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaigns.TheDunwichLegacy.Key
-import Arkham.Card
 import Arkham.EncounterSet qualified as Set
 import Arkham.Enemy.Cards qualified as Enemies
 import Arkham.Helpers.FlavorText
 import Arkham.Helpers.Log
-import Arkham.Investigator.Types (Field (..))
 import Arkham.Location.Cards qualified as Locations
 import Arkham.Matcher
-import Arkham.Message.Lifted.Choose
-import Arkham.Projection
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenario.Scenarios.UndimensionedAndUnseen
 import Arkham.Scenarios.UndimensionedAndUnseen.Helpers
@@ -109,11 +105,6 @@ instance RunMessage ReturnToUndimensionedAndUnseen where
             else setAside $ take 2 broods
 
       eachInvestigator \iid -> do
-        mcard <- findCardMatch Assets.powderOfIbnGhazi <$> field InvestigatorDeck iid
-        for_ mcard $ \card -> do
-          chooseOneM iid do
-            labeled "Play Powder of Ibn-Ghazi" $ putCardIntoPlay iid card
-            labeled "Do no play Powder of Ibn-Ghazi" nothing
         unlessStandalone do
           searchCollectionForRandom iid attrs
             $ BasicWeaknessCard

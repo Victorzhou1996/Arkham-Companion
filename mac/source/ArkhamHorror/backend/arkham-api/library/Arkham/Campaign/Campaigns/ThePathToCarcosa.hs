@@ -1,5 +1,6 @@
 module Arkham.Campaign.Campaigns.ThePathToCarcosa (thePathToCarcosa, ThePathToCarcosa (..)) where
 
+import Arkham.Campaign.Campaigns.ThePathToCarcosa.Achievements (runCarcosaAchievements)
 import Arkham.Campaign.Import.Lifted
 import Arkham.CampaignLogKey
 import Arkham.Campaigns.ThePathToCarcosa.CampaignSteps
@@ -10,10 +11,11 @@ import Arkham.Enemy.Cards qualified as Enemies
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.FlavorText
 import Arkham.Helpers.Xp
-import Arkham.Matcher hiding (EnemyDefeated)
+import Arkham.Matcher
 import Arkham.Message qualified as Msg
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
+import Arkham.Target
 
 newtype ThePathToCarcosa = ThePathToCarcosa CampaignAttrs
   deriving newtype (Show, ToJSON, FromJSON, Entity, Eq, HasModifiersFor)
@@ -38,7 +40,7 @@ thePathToCarcosa :: Difficulty -> ThePathToCarcosa
 thePathToCarcosa = campaign ThePathToCarcosa (CampaignId "03") "The Path to Carcosa"
 
 findNewBearerIfNeeded :: ReverseQueue m => CampaignAttrs -> InvestigatorId -> m ()
-findNewBearerIfNeeded attrs iid = void $ runMaybeT do
+findNewBearerIfNeeded attrs iid = runMaybeT_ do
   theManInThePallidMask <- MaybeT $ fetchCardMaybe Enemies.theManInThePallidMask
   owner <-
     hoistMaybe $ findKey (any ((== Enemies.theManInThePallidMask) . toCardDef)) attrs.storyCards
@@ -50,7 +52,8 @@ findNewBearerIfNeeded attrs iid = void $ runMaybeT do
       addCampaignCardToDeckChoice others Msg.ShuffleIn theManInThePallidMask
 
 instance RunMessage ThePathToCarcosa where
-  runMessage msg c@(ThePathToCarcosa attrs) = runQueueT $ campaignI18n $ case msg of
+  runMessage msg c@(ThePathToCarcosa attrs) =
+    runQueueT $ campaignI18n $ lift (runCarcosaAchievements msg) *> case msg of
     CampaignStep PrologueStep -> scope "prologue" do
       flavor do
         setTitle "yellowSign.title"
@@ -143,7 +146,7 @@ instance RunMessage ThePathToCarcosa where
         p "body"
       gameOver
       pure c
-    EnemyDefeated _ cardId _ _ -> do
+    Defeated (EnemyTarget _) cardId _ _ -> do
       card <- getCard cardId
       when (card `cardMatch` cardIs Enemies.theManInThePallidMask) do
         n <- getRecordCount ChasingTheStranger

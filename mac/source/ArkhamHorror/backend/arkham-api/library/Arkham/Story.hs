@@ -159,13 +159,18 @@ allStories =
     , SomeStoryCard sympathyPain
     , SomeStoryCard familialPain
     , -- The Feast of Hemlock Vale
-      --- The First Day
+      --- Hemlock House
+      SomeStoryCard thePredatoryHouse
+    , --- The Longest Night
+      SomeStoryCard barriersDecoysAndTraps
+    , --- The First Day
       SomeStoryCard dayOne
     , SomeStoryCard nightOne
     , SomeStoryCard dayTwo
     , SomeStoryCard nightTwo
     , SomeStoryCard dayThree
     , SomeStoryCard nightThree
+    , SomeStoryCard theAbyss
     , -- Return to The Path to Carcosa
       --- Return to The Last King
       SomeStoryCard returnToSickeningReality_23
@@ -203,4 +208,41 @@ allStories =
     , SomeStoryCard localsOfKingsportRival
     , -- The Blob that ate Everything ELSE!
       SomeStoryCard realityAcid
+    , -- Mi-Go Incursion
+      SomeStoryCard rescueTheChemist
+    , SomeStoryCard recoverTheSample
+    , SomeStoryCard driveOffTheMiGo
+    , SomeStoryCard defuseTheExplosives
+    , -- Guardians of the Abyss
+      SomeStoryCard toTheDreamlands
+    , SomeStoryCard fateOfTheDreamers
+    , SomeStoryCard prisonersOfConquest
+    , SomeStoryCard ruinsOfSarkomand
+    , SomeStoryCard effigyOfNodens
+    , SomeStoryCard usurpTheNight
+    , -- Machinations Through Time
+      SomeStoryCard aNobleLegacyPast
+    , SomeStoryCard aNobleLegacyPresent
+    , SomeStoryCard aNobleLegacyFuture
+    , SomeStoryCard aBitterRivalry
+    , SomeStoryCard redeemAFormerColleague
+    , SomeStoryCard uneasyAlliance
+    , SomeStoryCard anomaliesInSpacetime
+    , SomeStoryCard mobTroubles
+    , SomeStoryCard unspeakableAbomination
+    , -- The Drowned City
+      SomeStoryCard westernWinds
+    , SomeStoryCard ruthlessCharge
+    , SomeStoryCard hurricaneForce
+    , SomeStoryCard direGale
+    , SomeStoryCard dreadsight
+    , SomeStoryCard demolition
+    , SomeStoryCard fifthEye
+    , SomeStoryCard seismicStomp
+    , SomeStoryCard eldritchCall
+    , SomeStoryCard psychicRebuke
+    , SomeStoryCard risingTides
+    , SomeStoryCard hopeFades
+    , -- Bad Blood
+      SomeStoryCard triumphAndSubjugation
     ]

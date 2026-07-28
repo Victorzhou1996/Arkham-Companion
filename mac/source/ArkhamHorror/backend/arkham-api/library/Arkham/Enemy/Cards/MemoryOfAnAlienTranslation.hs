@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.MemoryOfAnAlienTranslation (memoryOfAnAlienTranslation
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Story
 import Arkham.Matcher
 import Arkham.Story.Cards qualified as Stories
@@ -14,7 +14,7 @@ newtype MemoryOfAnAlienTranslation = MemoryOfAnAlienTranslation EnemyAttrs
 
 memoryOfAnAlienTranslation :: EnemyCard MemoryOfAnAlienTranslation
 memoryOfAnAlienTranslation =
-  enemyWith MemoryOfAnAlienTranslation Cards.memoryOfAnAlienTranslation (3, PerPlayer 4, 5) (1, 1)
+  enemyWith MemoryOfAnAlienTranslation Cards.memoryOfAnAlienTranslation
     $ preyL
     .~ Prey (ControlsAsset $ assetIs Assets.roaldEllsworthIntrepidExplorer)
 

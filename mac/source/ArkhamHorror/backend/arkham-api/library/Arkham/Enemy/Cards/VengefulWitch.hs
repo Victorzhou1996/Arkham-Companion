@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.VengefulWitch (vengefulWitch) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Enemy.Types (Field (EnemyHealthDamage, EnemySanityDamage))
 import Arkham.Matcher
 import Arkham.Projection
@@ -13,7 +13,7 @@ newtype VengefulWitch = VengefulWitch EnemyAttrs
 
 vengefulWitch :: EnemyCard VengefulWitch
 vengefulWitch =
-  enemy VengefulWitch Cards.vengefulWitch (3, Static 3, 3) (1, 1)
+  enemy VengefulWitch Cards.vengefulWitch
     & setSpawnAt (mapOneOf LocationWithTitle ["The Gallows", "Heretics' Graves"])
 
 instance HasAbilities VengefulWitch where

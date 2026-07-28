@@ -47,6 +47,8 @@ const deckClass = computed(() => {
 const tabooList = computed(() => {
   return props.deck.list.taboo_id ? displayTabooId(props.deck.list.taboo_id) : null
 })
+
+const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
 </script>
 
 <template>
@@ -55,16 +57,19 @@ const tabooList = computed(() => {
     <div class="deck-details">
       <div class="deck-main">
         <span class="deck-name">{{ deck.name }}</span>
+        <span v-if="campaignStatus" class="campaign-badge" :class="campaignStatus">
+          {{ campaignStatus === 'active' ? '正在剧本进行中的卡组' : '完成剧本的卡组' }}
+        </span>
         <span v-if="tabooList" class="taboo-badge"><font-awesome-icon icon="book" /> Taboo: {{ tabooList }}</span>
       </div>
       <div class="deck-actions" @click.stop>
-        <a v-if="deck.url" class="action-btn" :href="deckUrlToPage(deck.url)" target="_blank" rel="noreferrer noopener" title="View on ArkhamDB">
+        <a v-if="deck.url" class="action-btn" :href="deckUrlToPage(deck.url)" target="_blank" rel="noreferrer noopener" :title="$t('deck.viewOnArkhamDb')">
           <font-awesome-icon icon="external-link" />
         </a>
-        <a v-if="deck.url && sync" class="action-btn" href="#" title="Sync deck" @click.prevent="sync">
+        <a v-if="deck.url && sync" class="action-btn" href="#" :title="$t('deck.syncDeck')" @click.prevent="sync">
           <font-awesome-icon icon="refresh" />
         </a>
-        <a v-if="markDelete" class="action-btn action-btn--delete" href="#" title="Delete deck" @click.prevent="markDelete">
+        <a v-if="markDelete" class="action-btn action-btn--delete" href="#" :title="$t('deck.deleteDeck')" @click.prevent="markDelete">
           <font-awesome-icon icon="trash" />
         </a>
       </div>
@@ -140,6 +145,29 @@ const tabooList = computed(() => {
   border: 1px solid rgba(200, 169, 110, 0.25);
   border-radius: 4px;
   letter-spacing: 0.02em;
+}
+
+.campaign-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 8px;
+  line-height: 1.5;
+  font-size: 0.74em;
+  font-weight: 700;
+  border-radius: 4px;
+
+  &.active {
+    color: #ffd78a;
+    background: rgba(180, 120, 30, 0.16);
+    border: 1px solid rgba(255, 194, 80, 0.32);
+  }
+
+  &.completed {
+    color: #a7d7ff;
+    background: rgba(70, 130, 180, 0.16);
+    border: 1px solid rgba(120, 190, 255, 0.32);
+  }
 }
 
 .deck-actions {

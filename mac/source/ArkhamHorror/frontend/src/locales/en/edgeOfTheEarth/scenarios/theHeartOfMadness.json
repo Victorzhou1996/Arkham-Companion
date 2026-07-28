@@ -1,5 +1,19 @@
 {
   "heading": "Scenario IV",
+  "specialRules": [
+    {
+      "title": "Ancient Facility Locations",
+      "body": "<p class='basic'>Ancient Facility locations exist in multiple encounter sets. (For example, in this scenario, both The Heart of Madness encounter set and The Great Seal encounter set contain Ancient Facility locations.) Because these locations can come from different encounter sets, they have no encounter set icon on their unrevealed side. To see which encounter set an Ancient Facility location belongs to, check its revealed side.</p>"
+    },
+    {
+      "title": "Seals",
+      "body": "<p class='basic'>This scenario introduces five seal tokens that represent important technological artifacts that are needed to contain the madness within The Gate of Y’quaa. Each seal token has its own symbol, as follows: {'{'}sealA{'}'} {'{'}sealB{'}'} {'{'}sealC{'}'} {'{'}sealD{'}'} {'{'}sealE{'}'}</p><p class='basic'>Each of these seal tokens has a dormant side and an activated side. The activated side is indicated by the glowing highlight around its symbol.</p><p class='basic'>Investigators will be instructed when to put seals into play, and whether they are dormant or activated. Seals have no inherent game effect. Investigators must discover how to take control of, activate, and utilize these seals to put an end to this madness.</p><p class='basic'>When an investigator takes control of a seal, they place it on their investigator card. If an investigator who controls one or more seals is eliminated (except by resignation), remove those seals from the game. Those seals are lost forever.</p><p class='basic'>As an {'{'}action{'}'} ability, an investigator may give control of a seal to another investigator at the same location or take control of a seal controlled by another investigator at the same location.</p>"
+    },
+    {
+      "title": "Location Adjacency in The Heart of Madness",
+      "body": "<p class='basic'>During this scenario, locations are arranged in a pattern of spokes and rings. There are three rings with five locations on each ring, and five spokes with three locations on each spoke.</p><ul><li>During this scenario, each location is connected to the locations next to it on its spoke as well as the locations next to it on its ring.</li></ul>"
+    }
+  ],
   "tokens": {
     "easyStandard": {
       "skull": "–1 (–3 instead if there is an _Ancient One_ enemy at your location).",
@@ -118,6 +132,13 @@
     }
   },
   "part2": {
+    "label": {
+      "chooseSealCount": "The investigators may choose how many seals they have:",
+      "easierExperienceSeals": "For an easier experience, three random seals are “Placed” and the other two are “Recovered.”",
+      "averageExperienceSeals": "For an average experience, two random seals are “Placed,” one is “Recovered,” and the other two are not used.",
+      "harderExperienceSeals": "For a harder experience, one random seal is “Placed,” and the other four are not used.",
+      "nightmarishExperienceSeals": "For a nightmarish experience, no seals are used."
+    },
     "intro1": {
       "check": "Check the Campaign Log:",
       "intro2": "If Dr. Kensler is still alive and *Dr. Kensler understands the true nature of the miasma*, proceed to _Intro 2._",
@@ -159,6 +180,23 @@
         "title": "Resolution 3",
         "body": "<div class='resolution'><p>_Resolution 3:_ You take flight from beneath the archway as the mountain begins to groan and rumble. You managed to collapse enough pylons to threaten the structural integrity of the facility deep beneath the city, but it is not enough. You are going to die here, and worse, you have only aided in the entity’s escape.</p><p>Then you hear it: the roaring engine of an aeroplane overhead. The last of Takada’s three planes soars over the city, and familiar shouts echo throughout the ancient, ruinous streets. “There they are! By that tunnel! Quickly!” Two sledges slide into view, pulled by the remainder of the dogs Eliyah left at the barrier camp, and manned by several members of the crew of the Theodosia. You cannot hold back your relief at the sight. They motion frantically for you to join them, their gazes fixed on the encroaching miasmic horror. “What in the hell is that thing?” one of them shouts. But there is no time for explanations. The moment you are on board one of the sledges, you instruct him to flee.</p><p>Your escape from the city is a frenzied blur. You have vague recollections of weaving through ancient snow-covered streets, dodging the creeping mist around buildings of smooth, slate gray, of narrowly avoiding a deluge of kaleidoscopic ooze as you make your way through the mountains.</p><p>Once the creature is out of sight, one of the crewmates explains that they fixed up the last of the aeroplanes and decided to use it to look it for you, even knowing the risks. “When we spotted you entering that huge cavern without most of your gear, we thought you might need a rescue. Didn’t expect that to be quite this literal,” he says.</p><p>You are relieved to see that the pilot has landed the last aeroplane just on the other side of the mountain range. With haste, you and your rescuers board the plane as soon as you reach it, along with the remaining dogs. In the distance, you can see the entity looming, climbing up the jagged peaks, reaching into the sky.</p><p>You leave the sledge and all of your supplies behind. The engine roars to life, and together you leave the mountains of madness behind. You dare not turn and glimpse that which has haunted Danforth these many months, but still you hear it to this day: echoing shrieks and fathomless cries, winds too shrill and piercing to be natural, and whispers that beckon you to return.</p><p>It has been years since that fateful day. You have not told the greater scientific community anything of your journey. And yet, still, there is no sign of the escaped entity. Is its reach limited to that cryptic, frozen continent? Is it simply biding its time?</p><p>Or is it already here, in the very air you breathe? Inside your mind? Showing you a false reality? A mirage?</p><ul><li>In your Campaign Log, record *the team escaped the facility.*</li><li>In your Campaign Log, record *the survivors of the expedition were…* and list the names of each member of the Expedition Team who is not crossed off, along with each surviving investigator’s name.</li><li>Each investigator earns experience equal to the Victory X value of each card in the victory display. Each investigator earns 5 bonus experience, as they have survived ancient horrors and lived to tell the tale.<ul><li>_Experience_: {xp}</li></ul></li><li>Each investigator suffers 2 physical trauma and 2 mental trauma as they never truly recover from their ordeal.</li><li>The investigators win the campaign…?</li></ul></div>"
       }
+    }
+  },
+  "titanicRamp": {
+    "label": {
+      "spendClueToAutoSucceed": "Any investigator at your location or a connecting location may spend 1 clue to have you automatically succeed at this test.",
+      "spendClue": "Any investigator at your location or a connecting location may spend 1 clue to have you automatically succeed at this test."
+    }
+  },
+  "seal": {
+    "label": {
+      "spendClueGroupTakeControl": "Spend 1 {'{'}perPlayer{'}'} clues as a group to take control of the seal",
+      "spendClueGroupActivate": "Spend 1 {'{'}perPlayer{'}'} clues as a group to activate the seal"
+    }
+  },
+  "callOfMadness": {
+    "label": {
+      "shuffleTekelili": "Shuffle the top 3 cards of the Tekeli-li deck into their deck"
     }
   }
 }

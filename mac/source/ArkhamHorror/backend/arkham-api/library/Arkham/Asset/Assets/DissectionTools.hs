@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.DissectionTools (dissectionTools) where
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Asset.Import.Lifted
 import Arkham.Helpers.Modifiers
 import Arkham.Matcher
 import Arkham.Token
@@ -25,8 +25,8 @@ instance HasAbilities DissectionTools where
   getAbilities (DissectionTools a) =
     [ restricted a 1 ControlsThis
         $ freeReaction
-        $ EnemyDefeated #after Anyone ByAny
-        $ EnemyAt YourLocation
+        $ IfEnemyDefeated #after Anyone ByAny
+        $ EnemyWasAt YourLocation
     ]
 
 instance RunMessage DissectionTools where

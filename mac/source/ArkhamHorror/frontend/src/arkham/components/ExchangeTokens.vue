@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { Token } from '@/arkham/types/Token'
 import { Source } from '@/arkham/types/Source'
 import type { Game } from '@/arkham/types/Game';
-import { imgsrc } from '@/arkham/helpers';
+import { portraitImage } from '@/arkham/cardImages';
 import PoolItem from '@/arkham/components/PoolItem.vue';
 import { useI18n } from 'vue-i18n';
 import { exchangeTokens } from '@/arkham/api';
@@ -26,16 +26,10 @@ const amount2 = computed(() => props.investigator2Amount + amount.value)
 
 const portraitLabelImage = (investigatorId: string) => {
   const player = props.game.investigators[investigatorId]
-
-  if (player.form.tag == "YithianForm") {
-    return imgsrc(`portraits/${investigatorId.replace('c', '')}.jpg`)
-  }
-
-  if (player.form.tag == "HomunculusForm") {
-    return imgsrc(`portraits/${investigatorId.replace('c', '')}.jpg`)
-  }
-
-  return imgsrc(`portraits/${player.cardCode.replace('c', '')}.jpg`)
+  const code = (player.form.tag === "YithianForm" || player.form.tag === "HomunculusForm" || player.form.tag === "ShatteredForm")
+    ? investigatorId
+    : player.cardCode
+  return portraitImage(code)
 }
 
 async function submit() {
@@ -120,7 +114,7 @@ async function adjustAmount(delta: number) {
   padding-bottom: 20px;
   img {
     border: 2px solid transparent;
-    background: linear-gradient(#999 0%, #444 100%) border-box;
+    background: linear-gradient(#999 0%, var(--button-highlight) 100%) border-box;
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -132,7 +126,7 @@ async function adjustAmount(delta: number) {
 
   .amount {
     box-shadow: 0 0 5px rgba(0, 0, 0, 1);
-    z-index: -1;
+    z-index: var(--z-index-neg-1);
     position: absolute;
     bottom: 0px;
     color: #4a5844;
@@ -156,8 +150,8 @@ async function adjustAmount(delta: number) {
   button {
     position: absolute;
     font-size: 1.1em;
-    background: #333;
-    color: #555;
+    background: var(--neutral-dark);
+    color: var(--button);
     border: none;
     padding: 2px 10px;
     cursor: pointer;
@@ -184,7 +178,7 @@ async function adjustAmount(delta: number) {
     padding: 0.8em;
     font-size: 1em;
     font-weight: bold;
-    background-color: #222;
+    background-color: var(--neutral-extra-dark);
     color: #CCC;
     border: none;
     border-radius: 0.6em;
@@ -202,7 +196,7 @@ async function adjustAmount(delta: number) {
 
 .item {
   padding: 10px;
-  background-color: #333;
+  background-color: var(--neutral-dark);
   border-radius: 100vw;
   width: fit-content;
   height: auto;

@@ -9,6 +9,7 @@ import Arkham.Campaigns.TheForgottenAge.Supply
 import Arkham.Card
 import Arkham.ChaosBagStepState
 import Arkham.ChaosToken.Types
+import Arkham.Cost (Cost)
 import Arkham.I18n
 import Arkham.Id
 import Arkham.Key
@@ -72,6 +73,7 @@ data UI msg
   = Label {label :: Text, messages :: [msg]}
   | InvalidLabel {label :: Text}
   | TooltipLabel {label :: Text, tooltip :: Tooltip, messages :: [msg]}
+  | CostLabel {cost :: Cost, messages :: [msg]}
   | CardLabel {cardCode :: CardCode, flippable :: Bool, messages :: [msg]}
   | ChaosTokenLabel {face :: ChaosTokenFace, messages :: [msg]}
   | KeyLabel {key :: ArkhamKey, messages :: [msg]}
@@ -80,6 +82,7 @@ data UI msg
   | SkillLabel {skillType :: SkillType, messages :: [msg]}
   | SkillLabelWithLabel {label :: Text, skillType :: SkillType, messages :: [msg]}
   | EvadeLabel {enemyId :: EnemyId, messages :: [msg]}
+  | EvadeLabelWithSkill {enemyId :: EnemyId, skillType :: SkillType, messages :: [msg]}
   | FightLabel {enemyId :: EnemyId, messages :: [msg]}
   | FightLabelWithSkill {enemyId :: EnemyId, skillType :: SkillType, messages :: [msg]}
   | EngageLabel {enemyId :: EnemyId, messages :: [msg]}
@@ -111,6 +114,7 @@ uiAnd ui msg = case ui of
   Label l msgs -> Label l (msgs <> [msg])
   InvalidLabel l -> InvalidLabel l
   TooltipLabel l t msgs -> TooltipLabel l t (msgs <> [msg])
+  CostLabel c msgs -> CostLabel c (msgs <> [msg])
   CardLabel c f msgs -> CardLabel c f (msgs <> [msg])
   ChaosTokenLabel face msgs -> ChaosTokenLabel face (msgs <> [msg])
   KeyLabel k msgs -> KeyLabel k (msgs <> [msg])
@@ -119,6 +123,7 @@ uiAnd ui msg = case ui of
   SkillLabel sType msgs -> SkillLabel sType (msgs <> [msg])
   SkillLabelWithLabel l sType msgs -> SkillLabelWithLabel l sType (msgs <> [msg])
   EvadeLabel enemyId msgs -> EvadeLabel enemyId (msgs <> [msg])
+  EvadeLabelWithSkill enemyId sType msgs -> EvadeLabelWithSkill enemyId sType (msgs <> [msg])
   FightLabel enemyId msgs -> FightLabel enemyId (msgs <> [msg])
   FightLabelWithSkill enemyId sType msgs -> FightLabelWithSkill enemyId sType (msgs <> [msg])
   EngageLabel enemyId msgs -> EngageLabel enemyId (msgs <> [msg])
@@ -137,7 +142,6 @@ uiAnd ui msg = case ui of
   CardPile pile msgs -> CardPile pile (msgs <> [msg])
   Info flavor -> Info flavor
   ScenarioLabel label scenarioId msgs -> ScenarioLabel label scenarioId (msgs <> [msg])
-
 
 data PileCard = PileCard
   { cardId :: CardId
@@ -169,6 +173,11 @@ data AmountTarget = MinAmountTarget Int | MaxAmountTarget Int | TotalAmountTarge
 data Question msg
   = ChooseOne {choices :: [UI msg]}
   | PlayerWindowChooseOne {choices :: [UI msg]}
+  | -- | A seat's choices for an open window, built by @runWindow@. The
+    -- @WindowAsk@ handler queues a @Do (CheckWindows ws)@ behind the ask, which
+    -- rebuilds every seat from scratch, so a seat left over after another seat
+    -- answers is stale and must be dropped rather than re-asked (#5160).
+    WindowChooseOne {choices :: [UI msg]}
   | ChooseOneFromEach {groups :: [[UI msg]]}
   | ChooseN {amount :: Int, choices :: [UI msg]}
   | ChooseSome {choices :: [UI msg]}
@@ -197,6 +206,13 @@ data Question msg
   | ChooseUpgradeDeck
   | ChooseDeck
   | QuestionLabel {label :: Text, card :: Maybe CardCode, question :: Question msg}
+  | -- | Wraps any Question with a header that the frontend renders as
+    -- "Pay <cost>", using its own Cost rendering.
+    PayCostQuestion {cost :: Cost, question :: Question msg}
+  | -- | Wraps any Question with the Source that prompted it, which the frontend
+    -- highlights on the board while the question is pending (e.g. an enemy
+    -- fleeing via Elusive), plus an optional tooltip shown on that source.
+    QuestionWithSource {source :: Source, tooltip :: Maybe Tooltip, question :: Question msg}
   | Read {flavorText :: FlavorText, readChoices :: ReadChoices msg, readCards :: Maybe [CardCode]}
   | PickSupplies
       {pointsRemaining :: Int, chosenSupplies :: [Supply], choices :: [UI msg], resupply :: Bool}
@@ -205,6 +221,7 @@ data Question msg
   | PickScenarioSettings
   | PickCampaignSettings
   | PickCampaignSpecific Text Value
+  | PickScenarioSpecific Text Value
   | ChooseExchangeAmounts
       { source :: Source
       , investigator1Id :: InvestigatorId
@@ -238,22 +255,12 @@ evadeLabel
   -> t msg
   -> UI msg
 evadeLabel (asId -> enemy) (toList -> msgs) = EvadeLabel enemy msgs
-
 fightLabel
   :: (AsId enemy, IdOf enemy ~ EnemyId, msg ~ Element (t msg), MonoFoldable (t msg))
   => enemy
   -> t msg
   -> UI msg
 fightLabel (asId -> enemy) (toList -> msgs) = FightLabel enemy msgs
-
-fightLabelWith
-  :: (AsId enemy, IdOf enemy ~ EnemyId, msg ~ Element (t msg), MonoFoldable (t msg))
-  => SkillType
-  -> enemy
-  -> t msg
-  -> UI msg
-fightLabelWith sType (asId -> enemy) (toList -> msgs) = FightLabelWithSkill enemy sType msgs
-
 targetLabel
   :: (Targetable target, msg ~ Element (t msg), MonoFoldable (t msg))
   => target

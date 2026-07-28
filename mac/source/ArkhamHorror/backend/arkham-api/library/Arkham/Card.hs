@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-orphans -Wno-deprecations #-}
 
 module Arkham.Card (
   module Arkham.Card,
@@ -18,6 +18,7 @@ import Arkham.Card.Id as X
 import Arkham.Card.PlayerCard as X (PlayerCard (..))
 
 import Arkham.Action (Action)
+import Arkham.Actions
 import Arkham.Calculation
 import Arkham.Card.EncounterCard
 import Arkham.Card.PlayerCard
@@ -116,16 +117,8 @@ class (HasTraits a, HasCardDef a, HasCardCode a) => IsCard a where
   toTabooList _ = Nothing
   toMutated :: a -> Maybe Text
   toMutated _ = Nothing
-
-toCards :: (IsCard a, Functor f) => f a -> f Card
-toCards = fmap toCard
-
 sameCard :: (IsCard a, IsCard b) => a -> b -> Bool
 sameCard a b = toCardId a == toCardId b
-
-cardIds :: IsCard a => [a] -> [CardId]
-cardIds = map toCardId
-
 class MonadRandom m => CardGen m where
   genEncounterCard :: HasCardDef a => a -> m EncounterCard
   genPlayerCard :: HasCardDef a => a -> m PlayerCard
@@ -199,12 +192,6 @@ genFlippedCard a = flipCard <$> genCard a
 
 genCards :: (HasCardDef a, CardGen m, Traversable t) => t a -> m (t Card)
 genCards = traverse genCard
-
-genSetAsideCards :: (HasCardDef a, CardGen m) => [a] -> m [Card]
-genSetAsideCards cards = traverse genCard $ concatMap splay cards
- where
-  splay card = replicate (fromMaybe 0 $ cdEncounterSetQuantity $ toCardDef card) card
-
 genPlayerCards :: (HasCardDef a, CardGen m, Traversable t) => t a -> m (t PlayerCard)
 genPlayerCards = traverse genPlayerCard
 
@@ -265,10 +252,12 @@ cardMatch a (toCardMatcher -> cardMatcher) = case cardMatcher of
   CardWithCardCodeExact cardCode -> CardCodeExact (toCardCode a) == cardCode
   CardWithId cardId -> toCardId a == cardId
   CardWithTitle title -> (nameTitle . cdName $ toCardDef a) == title
+  CardWithTitleContaining sub -> T.toLower sub `T.isInfixOf` T.toLower (nameTitle . cdName $ toCardDef a)
   CardWithTrait trait -> trait `member` toTraits a
   CardWithClass role -> role `member` cdClassSymbols (toCardDef a)
-  CardWithLevel n -> Just n == cdLevel (toCardDef a)
-  CardWithMaxLevel n -> maybe False (<= n) $ cdLevel (toCardDef a)
+  CardWithLevel n -> Just n == (toCard a).level
+  CardWithMaxLevel n -> maybe False (<= n) $ (toCard a).level
+  CardWithMaxPrintedHealth n -> maybe False (<= n) (cdHealth (toCardDef a) >>= fixedHealth)
   FastCard -> isJust $ cdFastWindow (toCardDef a)
   CardMatches ms -> all (cardMatch a) ms
   CardWithVengeance -> isJust . cdVengeancePoints $ toCardDef a
@@ -289,8 +278,9 @@ cardMatch a (toCardMatcher -> cardMatcher) = case cardMatcher of
   NonExceptional -> not . cdExceptional $ toCardDef a
   PermanentCard -> cdPermanent $ toCardDef a
   NotCard m -> not (cardMatch a m)
-  CardWithAction action -> elem action $ cdActions $ toCardDef a
-  CardWithoutAction -> null $ cdActions $ toCardDef a
+  CardWithAction action -> elem action $ actionsToList $ cdActions $ toCardDef a
+  CardWithoutAction -> null $ actionsToList $ cdActions $ toCardDef a
+  CardIsStoryAsset -> and [isJust $ cdEncounterSet (toCardDef a), toCardType a == AssetType]
   CardWithPrintedLocationSymbol sym ->
     (== Just sym) . cdLocationRevealedSymbol $ toCardDef a
   CardWithPrintedLocationConnection sym ->
@@ -306,6 +296,9 @@ isNonWeakness = (`cardMatch` NonWeakness)
 
 filterCards :: (IsCardMatcher a, IsCard b) => a -> [b] -> [b]
 filterCards matcher = filter ((`cardMatch` matcher) . toCard)
+
+countCards :: (IsCardMatcher a, IsCard b) => a -> [b] -> Int
+countCards matcher = count ((`cardMatch` matcher) . toCard)
 
 findCardMatch
   :: (IsCardMatcher a, IsCard card, Element cards ~ card, MonoFoldable cards)
@@ -347,6 +340,17 @@ setTaboo mtaboo card = do
   go = \case
     PlayerCard pc -> PlayerCard (pc {pcTabooList = mtaboo, pcMutated = tabooMutated mtaboo pc})
     other -> other
+
+setFacedown :: CardGen m => Bool -> Card -> m Card
+setFacedown b card = do
+  let result = go card
+  replaceCard (toCardId result) result
+  pure result
+ where
+  go = \case
+    PlayerCard pc -> PlayerCard pc {pcFacedown = Just b}
+    EncounterCard ec -> EncounterCard ec {ecFacedown = Just b}
+    VengeanceCard vc -> VengeanceCard (go vc)
 
 data Card
   = PlayerCard PlayerCard
@@ -423,6 +427,9 @@ isEncounterCard = \case
   VengeanceCard _ -> False
 
 instance HasField "actions" Card [Action] where
+  getField = actionsToList . cdActions . toCardDef
+
+instance HasField "cardActions" Card Actions where
   getField = cdActions . toCardDef
 
 instance HasField "skills" Card [SkillIcon] where
@@ -438,7 +445,11 @@ instance HasField "printedCost" Card Int where
   getField = (.printedCost) . toCardDef
 
 instance HasField "level" Card (Maybe Int) where
-  getField = cdLevel . toCardDef
+  getField c =
+    let def = toCardDef c
+     in if null (cdCustomizations def)
+          then cdLevel def
+          else Just $ (sum (map fst (IntMap.elems c.customizations)) + 1) `div` 2
 
 instance HasField "experienceCost" Card Int where
   getField c =
@@ -467,15 +478,28 @@ instance Eq Card where
 
 flipCard :: Card -> Card
 flipCard (EncounterCard ec) =
-  if cdDoubleSided (toCardDef ec)
-    then case cdOtherSide (toCardDef ec) of
-      Just otherSideCode -> EncounterCard $ ec {ecCardCode = otherSideCode, ecOriginalCardCode = otherSideCode}
-      Nothing -> EncounterCard $ ec {ecIsFlipped = not <$> ecIsFlipped ec}
-    else EncounterCard ec {ecIsFlipped = Just False}
+  let
+    def = toCardDef ec
+   in
+    if cdDoubleSided def
+      then case cdOtherSide def of
+        Just otherSideCode -> EncounterCard $ ec {ecCardCode = otherSideCode, ecOriginalCardCode = otherSideCode}
+        Nothing -> EncounterCard $ ec {ecIsFlipped = not <$> ecIsFlipped ec}
+      else EncounterCard ec {ecIsFlipped = Just False}
 flipCard (PlayerCard pc) = case cdOtherSide (toCardDef pc) of
   Just otherSide -> PlayerCard $ pc {pcCardCode = otherSide}
   Nothing -> PlayerCard pc
 flipCard (VengeanceCard c) = VengeanceCard c
+
+forceFlipCard :: Card -> Card
+forceFlipCard (EncounterCard ec) =
+  case cdOtherSide (toCardDef ec) of
+    Just otherSideCode -> EncounterCard $ ec {ecCardCode = otherSideCode, ecOriginalCardCode = otherSideCode}
+    Nothing -> EncounterCard $ ec {ecIsFlipped = not <$> ecIsFlipped ec}
+forceFlipCard (PlayerCard pc) = case cdOtherSide (toCardDef pc) of
+  Just otherSide -> PlayerCard $ pc {pcCardCode = otherSide}
+  Nothing -> PlayerCard pc
+forceFlipCard (VengeanceCard c) = VengeanceCard c
 
 showRevealed :: Card -> Card
 showRevealed card@(EncounterCard ec) =

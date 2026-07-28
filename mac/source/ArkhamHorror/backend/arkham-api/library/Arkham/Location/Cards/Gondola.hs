@@ -20,7 +20,7 @@ instance HasAbilities Gondola where
   getAbilities (Gondola x) =
     withBaseAbilities
       x
-      [ skillTestAbility $ restrictedAbility x 1 Here $ ActionAbility [] Nothing $ ActionCost 1
+      [ skillTestAbility $ restrictedAbility x 1 Here $ ActionAbility mempty Nothing $ ActionCost 1
       | locationRevealed x
       ]
 
@@ -38,8 +38,8 @@ instance RunMessage Gondola where
       push
         $ chooseOne
           player
-          [ Label "Test {combat} (2)" [beginSkillTest sid iid (attrs.ability 1) attrs #combat (Fixed 2)]
-          , Label "Test {agility} (2)" [beginSkillTest sid iid (attrs.ability 1) attrs #agility (Fixed 2)]
+          [ Label "$label.test count=i:2 skill=s:\"combat\"" [beginSkillTest sid iid (attrs.ability 1) attrs #combat (Fixed 2)]
+          , Label "$label.test count=i:2 skill=s:\"agility\"" [beginSkillTest sid iid (attrs.ability 1) attrs #agility (Fixed 2)]
           ]
       pure l
     PassedSkillTest _ _ source SkillTestInitiatorTarget {} _ _ | isAbilitySource attrs 1 source -> do

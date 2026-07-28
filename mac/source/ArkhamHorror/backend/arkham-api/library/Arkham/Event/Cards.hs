@@ -21,6 +21,9 @@ import Arkham.Event.Cards.TheInnsmouthConspiracy as X
 import Arkham.Event.Cards.ThePathToCarcosa as X
 import Arkham.Event.Cards.TheScarletKeys as X
 import Arkham.Event.Cards.TommyMuldoon2 as X
+import Arkham.Event.Cards.CarolynFern2 as X
+import Arkham.Event.Cards.MarieLambeau2 as X
+import Arkham.Event.Cards.MiguelDeLaCruz as X
 import Arkham.Prelude hiding (catch)
 
 allPlayerEventCards :: Map CardCode CardDef
@@ -65,6 +68,7 @@ allPlayerEventCards =
       , barricade
       , barricade3
       , beguile
+      , bendBlood5
       , bellyOfTheBeast
       , bideYourTime
       , bindMonster2
@@ -76,6 +80,7 @@ allPlayerEventCards =
       , bloodEclipse3
       , bloodOfKnYan3
       , bloodRite
+      , bloodWard2
       , bloodWillHaveBlood2
       , bolas
       , bounty
@@ -91,6 +96,8 @@ allPlayerEventCards =
       , callTheBeyond2
       , callingInFavors
       , captivatingDiscovery
+      , causticReaction
+      , causticReaction2
       , catch
       , cheapShot
       , cheapShot2
@@ -101,7 +108,9 @@ allPlayerEventCards =
       , cleanSweep2
       , cleanThemOut
       , closeCall2
+      , communeWithTheCosmos5
       , confound3
+      , consumeLife
       , connectTheDots
       , contraband
       , contraband2
@@ -131,9 +140,11 @@ allPlayerEventCards =
       , darkProphecy
       , dawnStar1
       , deadEnds
+      , deEscalate
       , decipheredReality5
       , decisiveStrike2
       , decoy
+      , decoyTrap
       , deepKnowledge
       , delayTheInevitable
       , deliverance3
@@ -192,9 +203,11 @@ allPlayerEventCards =
       , extraAmmunition1
       , falseSurrender
       , fangOfTyrthrha4
+      , favorOfBaalshandor
       , faustianBargain
       , fendOff3
       , fickleFortune3
+      , fieldDressing1
       , fightOrFlight
       , fineTuning1
       , firstWatch
@@ -216,6 +229,7 @@ allPlayerEventCards =
       , getOverHere
       , getOverHere2
       , ghastlyRevelation
+      , glassing
       , glimpseTheUnthinkable1
       , glimpseTheUnthinkable5
       , glory
@@ -223,6 +237,8 @@ allPlayerEventCards =
       , grievousWound
       , grift
       , gritYourTeeth
+      , guerrillaTactics
+      , guerrillaTactics2
       , guidance
       , guidance1
       , guidedByFaith
@@ -234,9 +250,11 @@ allPlayerEventCards =
       , heroicRescue
       , heroicRescue2
       , hiddenPocket
+      , hiddenShelter
       , hidingSpot
       , hitAndRun
       , hitMe
+      , hypnotize2
       , holdUp
       , honedInstinct
       , hotStreak2
@@ -256,6 +274,8 @@ allPlayerEventCards =
       , improvisedWeapon2
       , inTheShadows
       , infighting3
+      , infuseLife
+      , insidiousTruths
       , intelReport
       , interrogate
       , intimidation
@@ -290,9 +310,11 @@ allPlayerEventCards =
       , lucky
       , lucky2
       , lucky3
+      , lieInWait
       , lure1
       , lure2
       , makeEmSing
+      , makeshiftBomb3
       , makeshiftTrap
       , makingPreparations
       , manipulateDestiny2
@@ -305,6 +327,7 @@ allPlayerEventCards =
       , mindOverMatter2
       , mindWipe1
       , mindWipe3
+      , mirrorForm
       , miracleWish5
       , momentOfRespite3
       , moneyTalks
@@ -363,6 +386,8 @@ allPlayerEventCards =
       , primedForAction
       , protectingTheAnirniq2
       , psychicSensitivity
+      , psychoanalysis
+      , psychoanalysis3
       , pushedToTheLimit
       , putrescentRot
       , quantumFlux
@@ -380,13 +405,16 @@ allPlayerEventCards =
       , refine
       , regurgitation
       , reliable1
+      , respite2
       , restrained
+      , retribution2
       , riastrad1
       , righteousHunt1
       , rightToolForTheJob
       , rightUnderTheirNoses
       , rightUnderTheirNoses3
       , riteOfEquilibrium5
+      , ropeTrap2
       , sacrifice1
       , salvage2
       , scarletRot
@@ -422,6 +450,7 @@ allPlayerEventCards =
       , spectralRazor
       , spectralRazor2
       , spectralShield
+      , spiritualCharm
       , spiritualEcho2
       , stakeout
       , stakeout3
@@ -435,6 +464,7 @@ allPlayerEventCards =
       , stockAmmoReload2
       , stormOfSpirits
       , stormOfSpirits3
+      , stalkPrey
       , stouthearted
       , stringOfCurses
       , sureGamble3
@@ -475,6 +505,7 @@ allPlayerEventCards =
       , truthFromFiction
       , truthFromFiction2
       , twentyOneOrBust
+      , ultimateSacrifice4
       , unbridledKnowledge5
       , uncageTheSoul
       , uncageTheSoul3
@@ -486,6 +517,8 @@ allPlayerEventCards =
       , unearthTheAncients2
       , untimelyTransaction1
       , unsolvedCase
+      , unflappable
+      , unflappable1
       , vamp
       , vamp3
       , vantagePoint

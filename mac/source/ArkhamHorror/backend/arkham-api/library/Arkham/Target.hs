@@ -19,6 +19,7 @@ import Arkham.Phase
 import Arkham.Prelude
 import Arkham.Scenario.Deck
 import Arkham.Tarot
+import Arkham.UltimatumsAndBoons.Types
 import Arkham.Trait
 import Control.Lens (Getting)
 import Control.Lens.Plated (Plated)
@@ -71,6 +72,7 @@ data Target
   | AbilityTarget InvestigatorId AbilityRef
   | BothTarget Target Target
   | TarotTarget TarotCard
+  | UltimatumOrBoonTarget UltimatumOrBoon
   | BatchTarget BatchId
   | ActiveCostTarget ActiveCostId
   | LabeledTarget Text Target -- Use with caution, this is not a real target
@@ -130,27 +132,6 @@ instance HasField "investigator" Target (Maybe InvestigatorId) where
 instance HasField "investigator" (Maybe Target) (Maybe InvestigatorId) where
   getField Nothing = Nothing
   getField (Just t) = t.investigator
-
-target_ :: Target -> Target
-target_ = id
-{-# INLINE target_ #-}
-
-bothTarget :: (Targetable a, Targetable b) => a -> b -> Target
-bothTarget a b = BothTarget (toTarget a) (toTarget b)
-
-actualTarget :: Target -> Target
-actualTarget = \case
-  LabeledTarget _ t -> actualTarget t
-  ProxyTarget t _ -> actualTarget t
-  IndexedTarget _ t -> actualTarget t
-  SkillTestInitiatorTarget t -> actualTarget t
-  BothTarget t1 t2 -> BothTarget (actualTarget t1) (actualTarget t2)
-  other -> other
-
-investigatorTarget :: Target -> Maybe InvestigatorId
-investigatorTarget (InvestigatorTarget iid) = Just iid
-investigatorTarget _ = Nothing
-
 instance IsLabel "encounterDeck" Target where
   fromLabel = EncounterDeckTarget
 
@@ -167,10 +148,6 @@ pattern InitiatorProxy t a <- SkillTestInitiatorTarget (ProxyTarget t a)
 class WithTarget a where
   getTarget :: a -> Maybe Target
   setTarget :: Targetable target => target -> a -> a
-
-maybeIsTarget :: (Targetable target, WithTarget a) => target -> a -> Bool
-maybeIsTarget target a = maybe False (isTarget target) (getTarget a)
-
 class Targetable a where
   toTarget :: a -> Target
   isTarget :: a -> Target -> Bool

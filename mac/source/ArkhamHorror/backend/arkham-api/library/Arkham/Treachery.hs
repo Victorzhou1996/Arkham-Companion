@@ -7,7 +7,6 @@ import Arkham.Card.PlayerCard
 import Arkham.Classes
 import Arkham.Id
 import Arkham.Prelude
-import Arkham.Tracing
 import Arkham.Treachery.Runner
 import Arkham.Treachery.Treacheries
 
@@ -24,7 +23,7 @@ createTreachery a iid tid =
     _ -> Nothing
 
 instance RunMessage Treachery where
-  runMessage msg t@(Treachery a) = withSpan_ ("Treachery[" <> unCardCode (toCardCode t) <> "].runMessage") do
+  runMessage msg t@(Treachery a) = do
     if t.placement.outOfGame
       then case msg of
         ReturnLocationToGame _ -> Treachery <$> runMessage msg a
@@ -530,6 +529,8 @@ allTreacheries =
       , --- The Heart of Madness [eote]
         SomeTreacheryCard primevalTerror
       , SomeTreacheryCard rootsOfTheEarth
+      , --- The Great Seal [eote]
+        SomeTreacheryCard electrostaticDischarge
       , --- Agents of the Unknown [eote]
         SomeTreacheryCard theMadnessWithin
       , --- Creatures in the Ice [eote]
@@ -639,18 +640,60 @@ allTreacheries =
       , --- Written in Rock [fhv]
         SomeTreacheryCard caveIn
       , SomeTreacheryCard wildRide
+      , --- Hemlock House [fhv]
+        SomeTreacheryCard outOfTheWalls
+      , SomeTreacheryCard pulledIn
+      , --- The Silent Heath [fhv]
+        SomeTreacheryCard commandingResonance
+      , SomeTreacheryCard defendTheNest
+      , --- The Lost Sister [fhv]
+        SomeTreacheryCard reclaimedByNature
+      , SomeTreacheryCard luminousGrowth
+      , --- The Thing in the Depths [fhv]
+        SomeTreacheryCard groundDisturbance
+      , SomeTreacheryCard sinkingSludge
       , --- The Twisted Hollow [fhv]
         SomeTreacheryCard deepShadows
       , SomeTreacheryCard lurkingFear
       , SomeTreacheryCard stolenLight
       , --- The First Day [fhv]
         SomeTreacheryCard swarm
+      , --- The Second Day [fhv]
+        SomeTreacheryCard downpour
+      , --- The Final Day [fhv]
+        SomeTreacheryCard otherworldlyVisions
       , --- Horrors in the Rock [fhv]
         SomeTreacheryCard chromaBlight
       , SomeTreacheryCard calcification
-      , --- Horrors in the Rock [fhv]
+      , --- Agents of the Colour [fhv]
+        SomeTreacheryCard alienWhispers
+      , --- Transfiguration [fhv]
+        SomeTreacheryCard strangeMutations
+      , SomeTreacheryCard fungalRot
+      , --- Blight [fhv]
+        SomeTreacheryCard enervation
+      , SomeTreacheryCard desiccation
+      , --- Refractions [fhv]
         SomeTreacheryCard empyreanBrilliance
       , SomeTreacheryCard captivatingGleam
+      , --- The Forest [fhv]
+        SomeTreacheryCard bloom
+      , SomeTreacheryCard wallOfThorns
+      , SomeTreacheryCard callOfTheWild
+      , --- Myconids [fhv]
+        SomeTreacheryCard psychotropicSpores
+      , --- Mutations [fhv]
+        SomeTreacheryCard suddenMutation
+      , SomeTreacheryCard unnaturalGrowth
+      , --- The Longest Night [fhv]
+        SomeTreacheryCard endlessNight
+      , SomeTreacheryCard incursion
+      , --- Fate of the Vale [fhv]
+        SomeTreacheryCard sublimation
+      , SomeTreacheryCard fragmentation
+      , SomeTreacheryCard euphoria
+      , --- Fire [fhv]
+        SomeTreacheryCard fire
       , -- The Drowned City
         -- signature [tdc]
         SomeTreacheryCard illDoItMyself
@@ -790,6 +833,8 @@ allTreacheries =
       , -- Harvey Walters
         SomeTreacheryCard thriceDamnedCuriosity
       , SomeTreacheryCard obsessive
+      , -- Carolyn Fern
+        SomeTreacheryCard lethalCuriosity
       , -- Jacqueline Fine
         SomeTreacheryCard darkFuture
       , SomeTreacheryCard nihilism
@@ -799,6 +844,11 @@ allTreacheries =
       , -- Tommy Muldoon
         SomeTreacheryCard looseCannon
       , SomeTreacheryCard overconfident
+      , -- Carolyn Fern
+        SomeTreacheryCard unbrokenWeb
+      , -- Marie Lambeau
+        SomeTreacheryCard calledToGuinee
+      , SomeTreacheryCard hemophobia
       , -- André Patel
         SomeTreacheryCard unaware
       , SomeTreacheryCard weightOfTheWorld
@@ -820,6 +870,15 @@ allTreacheries =
       , SomeTreacheryCard mesmerize
       , SomeTreacheryCard abduction
       , SomeTreacheryCard acridMiasma
+      , --- Sands of Egypt
+        SomeTreacheryCard eclipse
+      , SomeTreacheryCard sandstorm
+      , SomeTreacheryCard terrorUnderThePyramids
+      , SomeTreacheryCard swarmOfLocusts
+      , SomeTreacheryCard slumber
+      , SomeTreacheryCard darkSacrifice
+      , SomeTreacheryCard theBlackWind
+      , SomeTreacheryCard abyssalReach
       , --- Murder at the Excelsior Hotel
         SomeTreacheryCard whatHaveYouDone
       , SomeTreacheryCard noxiousFumes
@@ -918,4 +977,133 @@ allTreacheries =
         SomeTreacheryCard yaztaroth
       , --- Dark Revelations
         SomeTreacheryCard liberOmniumFinium
+      , --- Core 2026
+        --- Cosmic Evils
+        SomeTreacheryCard cosmicEvils
+      , --- Eldritch Lore
+        SomeTreacheryCard unspeakableTruths
+      , SomeTreacheryCard forbiddenSecrets
+      , --- Hallucinations
+        SomeTreacheryCard extraplanarVisions
+      , SomeTreacheryCard wildCompulsion
+      , --- Fire!
+        SomeTreacheryCard fire1
+      , SomeTreacheryCard noxiousSmoke
+      , --- Mad Science
+        SomeTreacheryCard mutated1
+      , --- Arcane Lock
+        SomeTreacheryCard arcaneLock
+      , --- Bad Weather
+        SomeTreacheryCard downpour_BadWeather
+      , SomeTreacheryCard flashFlood
+      , --- Dead Ends
+        SomeTreacheryCard raisingSuspicions
+      , SomeTreacheryCard redHerring
+      , --- Torment
+        SomeTreacheryCard aerialPursuit
+      , --- Gangs of Arkham
+        SomeTreacheryCard crossfire
+      , --- Whippoorwills (Chapter 2)
+        SomeTreacheryCard eagerForDeath2
+      , --- Cultists
+        SomeTreacheryCard blasphemousInvocation
+      , --- Reeking Decay
+        SomeTreacheryCard unnaturalDecay
+      , SomeTreacheryCard putridVapors
+      , --- Flying Terrors
+        SomeTreacheryCard languor
+      , SomeTreacheryCard dissonance
+      , SomeTreacheryCard torment
+      , SomeTreacheryCard markOfElokoss
+      , SomeTreacheryCard ashenRebirth
+      , -- The Blob That Ate Everything
+        SomeTreacheryCard realityAcid
+      , SomeTreacheryCard devouringOoze
+      , SomeTreacheryCard corrosiveSlime
+      , SomeTreacheryCard consumingMaw
+      , SomeTreacheryCard waveOfOoze
+      , SomeTreacheryCard causticDissemination
+      , SomeTreacheryCard stickyFeet
+      , SomeTreacheryCard replication
+      , SomeTreacheryCard itsGotMe
+      , SomeTreacheryCard alienFoodChain
+      , -- War of the Outer Gods
+        SomeTreacheryCard deathAndDecay
+      , SomeTreacheryCard predatorsCall
+      , SomeTreacheryCard feastOfLocusts
+      , SomeTreacheryCard hellfireWarOfTheOuterGods
+      , SomeTreacheryCard ravagesOfWar
+      , SomeTreacheryCard whileTheySleep
+      , -- The Labyrinths of Lunacy
+        SomeTreacheryCard unnaturalWeariness
+      , SomeTreacheryCard poisonousGas
+      , SomeTreacheryCard dreadfulMechanism
+      , SomeTreacheryCard bloodAndRust
+      , SomeTreacheryCard paradoxEffect
+      , SomeTreacheryCard harvestedPain
+      , -- Machinations Through Time
+        SomeTreacheryCard aTearInTimeMachinationsThroughTime
+      , SomeTreacheryCard abducted
+      , SomeTreacheryCard brokenSpace
+      , SomeTreacheryCard dimensionalBreach
+      , SomeTreacheryCard fromAllAngles
+      , SomeTreacheryCard lostInTimeMachinationsThroughTime
+      , SomeTreacheryCard mergingTimelinesMachinationsThroughTime
+      , SomeTreacheryCard openPortal
+      , SomeTreacheryCard temporalDistortion
+      , SomeTreacheryCard vanishingHistory
+      , -- Death of Stars
+        SomeTreacheryCard inevitableEnd
+      , -- Children of Paradise
+        SomeTreacheryCard huntDown
+      , -- Swarm of Assimilation
+        SomeTreacheryCard transmogrify
+      , -- Relics of the Past
+        SomeTreacheryCard vengeantPast
+      , --- The Drowned City
+        SomeTreacheryCard caughtInTheCrossfire
+      , SomeTreacheryCard endOfNegotiations
+      , SomeTreacheryCard torturedVisions
+      , SomeTreacheryCard drawnToDarkness
+      , SomeTreacheryCard seafloorFrieze
+      , SomeTreacheryCard lookOut
+      , SomeTreacheryCard hungryWalls
+      , SomeTreacheryCard dangerousCuriosity
+      , SomeTreacheryCard alienEggs
+      , SomeTreacheryCard parasiticTransformation
+      , SomeTreacheryCard deadlyMechanisms
+      , SomeTreacheryCard ancientVaultO
+      , SomeTreacheryCard ancientVaultN
+      , SomeTreacheryCard ancientVaultP
+      , SomeTreacheryCard ancientVaultG
+      , SomeTreacheryCard ancientVaultI
+      , SomeTreacheryCard ruinedOrrery
+      , SomeTreacheryCard cosmicOmen
+      , SomeTreacheryCard erodedFrieze
+      , SomeTreacheryCard stElmosFire
+      , SomeTreacheryCard acrophobia
+      , SomeTreacheryCard wingsOfTerror
+      , SomeTreacheryCard lostInTheClouds
+      , SomeTreacheryCard layWaste
+      , SomeTreacheryCard eyesOfYchlecht
+      , SomeTreacheryCard grossPlasticity
+      , SomeTreacheryCard arkhamUnderAssault
+      , SomeTreacheryCard infected
+      , SomeTreacheryCard eyeOfTheDeep
+      , SomeTreacheryCard cunningMimicry
+      , SomeTreacheryCard elderMist
+      , SomeTreacheryCard corrosiveFog
+      , SomeTreacheryCard dreamingMigration
+      , SomeTreacheryCard underseaHunt
+      , SomeTreacheryCard deadlyTorrent
+      , SomeTreacheryCard somethingInTheWater
+      , SomeTreacheryCard ominousSilence
+      , SomeTreacheryCard cyclopeanArchitecture
+      , SomeTreacheryCard crumblingMasonry
+      , SomeTreacheryCard cthulhuFhtagn
+      , SomeTreacheryCard oppressiveInfluence
+      , SomeTreacheryCard domination
+      , SomeTreacheryCard stillBehindYou
+      , SomeTreacheryCard deepOneAmbush
+      , SomeTreacheryCard infernalMachinery
       ]

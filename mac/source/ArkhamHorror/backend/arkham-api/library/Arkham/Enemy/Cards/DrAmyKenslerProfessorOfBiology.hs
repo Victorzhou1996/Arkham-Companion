@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.DrAmyKenslerProfessorOfBiology (drAmyKenslerProfessorO
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Helpers.SkillTest.Lifted (parley)
 import Arkham.Matcher
@@ -21,7 +21,7 @@ instance HasAbilities DrAmyKenslerProfessorOfBiology where
       ]
 
 drAmyKenslerProfessorOfBiology :: EnemyCard DrAmyKenslerProfessorOfBiology
-drAmyKenslerProfessorOfBiology = enemy DrAmyKenslerProfessorOfBiology Cards.drAmyKenslerProfessorOfBiology (4, Static 2, 3) (1, 1)
+drAmyKenslerProfessorOfBiology = enemy DrAmyKenslerProfessorOfBiology Cards.drAmyKenslerProfessorOfBiology
 
 instance RunMessage DrAmyKenslerProfessorOfBiology where
   runMessage msg e@(DrAmyKenslerProfessorOfBiology attrs) = runQueueT $ case msg of

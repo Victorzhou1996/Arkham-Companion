@@ -2,7 +2,7 @@ module Arkham.Agenda.Cards.TheFamiliar (theFamiliar) where
 
 import Arkham.Ability
 import Arkham.Agenda.Cards qualified as Cards
-import Arkham.Agenda.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Agenda.Import.Lifted
 import Arkham.Deck qualified as Deck
 import Arkham.Enemy.Cards qualified as Enemies
 import Arkham.Helpers.Act
@@ -29,7 +29,7 @@ instance HasAbilities TheFamiliar where
   getAbilities (TheFamiliar a) =
     [ mkAbility a 1
         $ freeReaction
-        $ EnemyDefeated #after You ByAny
+        $ IfEnemyDefeated #after You ByAny
         $ mapOneOf enemyIs [Enemies.nahab, Enemies.brownJenkin]
     ]
 

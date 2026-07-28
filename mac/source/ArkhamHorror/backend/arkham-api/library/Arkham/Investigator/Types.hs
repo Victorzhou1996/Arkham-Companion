@@ -30,6 +30,7 @@ import Arkham.Discard
 import Arkham.Discover
 import Arkham.Draw.Types
 import Arkham.Helpers
+import Arkham.I18n
 import Arkham.Id
 import {-# SOURCE #-} Arkham.Investigator
 import Arkham.Investigator.Cards
@@ -161,6 +162,7 @@ data instance Field Investigator :: Type -> Type where
   InvestigatorUnhealedHorrorThisRound :: Field Investigator Int
   InvestigatorMeta :: Field Investigator Value
   InvestigatorBeganRoundAt :: Field Investigator (Maybe LocationId)
+  InvestigatorPreviousLocation :: Field Investigator (Maybe LocationId)
   InvestigatorSearch :: Field Investigator (Maybe Search)
   --
   InvestigatorSupplies :: Field Investigator [Supply]
@@ -259,6 +261,7 @@ instance FromJSON (SomeField Investigator) where
     "InvestigatorUnhealedHorrorThisRound" -> pure $ SomeField InvestigatorUnhealedHorrorThisRound
     "InvestigatorMeta" -> pure $ SomeField InvestigatorMeta
     "InvestigatorBeganRoundAt" -> pure $ SomeField InvestigatorBeganRoundAt
+    "InvestigatorPreviousLocation" -> pure $ SomeField InvestigatorPreviousLocation
     "InvestigatorSupplies" -> pure $ SomeField InvestigatorSupplies
     _ -> error "Unknown Field Investigator"
 
@@ -266,6 +269,7 @@ data InvestigatorForm
   = RegularForm
   | YithianForm
   | HomunculusForm
+  | ShatteredForm
   | TransfiguredForm CardCode
   deriving stock (Show, Ord, Eq, Generic, Data)
   deriving anyclass ToJSON
@@ -319,6 +323,10 @@ data InvestigatorAttrs = InvestigatorAttrs
   , investigatorMulligansTaken :: Int
   , investigatorBondedCards :: [Card]
   , investigatorMeta :: Value
+  , -- meta belonging to the form we are transfigured into, kept apart from
+    -- investigatorMeta because the investigator we transfigured from still reads
+    -- theirs (their signature cards are in our deck) and the two shapes differ
+    investigatorFormMeta :: Value
   , investigatorUnhealedHorrorThisRound :: Int
   , investigatorSealedChaosTokens :: [ChaosToken]
   , -- handling liquid courage
@@ -333,6 +341,8 @@ data InvestigatorAttrs = InvestigatorAttrs
     investigatorSeals :: Set Seal
   , -- monterey jack
     investigatorBeganRoundAt :: Maybe LocationId
+  , -- previous location (set when moving)
+    investigatorPreviousLocation :: Maybe LocationId
   , -- investigator specific logs
     investigatorLog :: CampaignLog
   , -- internal tracking
@@ -503,6 +513,12 @@ instance HasField "combat" InvestigatorAttrs Int where
 instance HasField "agility" InvestigatorAttrs Int where
   getField = investigatorAgility
 
+instance HasField "health" InvestigatorAttrs Int where
+  getField = investigatorHealth
+
+instance HasField "sanity" InvestigatorAttrs Int where
+  getField = investigatorSanity
+
 instance HasField "classSymbol" InvestigatorAttrs ClassSymbol where
   getField = investigatorClass
 
@@ -551,22 +567,32 @@ instance Show Investigator where
 instance ToJSON Investigator where
   toJSON (Investigator a) = toJSON a
 
+-- | Attrs as the form we are transfigured into sees them. A transfigured form never
+-- gets SetupInvestigator, so its meta is uninitialized rather than inherited from the
+-- investigator we transfigured from, whose meta is a different shape and still theirs.
+asFormAttrs :: InvestigatorAttrs -> InvestigatorAttrs
+asFormAttrs a = a {investigatorMeta = investigatorFormMeta a}
+
 instance HasModifiersFor Investigator where
   getModifiersFor (Investigator a) = do
     case investigatorForm (toAttrs a) of
       TransfiguredForm inner -> withInvestigatorCardCode inner \(SomeInvestigator @a) ->
-        getModifiersFor (investigatorFromAttrs @a (toAttrs a))
+        getModifiersFor (investigatorFromAttrs @a (asFormAttrs $ toAttrs a))
       _ -> getModifiersFor a
 
 instance HasChaosTokenValue Investigator where
-  getChaosTokenValue iid chaosTokenFace (Investigator a) = getChaosTokenValue iid chaosTokenFace a
+  getChaosTokenValue iid chaosTokenFace (Investigator a) =
+    case investigatorForm (toAttrs a) of
+      TransfiguredForm inner -> withInvestigatorCardCode inner \(SomeInvestigator @a) ->
+        getChaosTokenValue iid chaosTokenFace (investigatorFromAttrs @a (asFormAttrs $ toAttrs a))
+      _ -> getChaosTokenValue iid chaosTokenFace a
 
 data SomeInvestigator = forall a. IsInvestigator a => SomeInvestigator
 
 instance HasAbilities Investigator where
   getAbilities i@(Investigator a) = case investigatorForm (toAttrs a) of
     TransfiguredForm inner -> withInvestigatorCardCode inner \(SomeInvestigator @a) ->
-      getAbilities @a (investigatorFromAttrs @a (toAttrs a)) <> inateAbilities
+      getAbilities @a (investigatorFromAttrs @a (asFormAttrs $ toAttrs a)) <> inateAbilities
     _ -> baseAbilities <> inateAbilities
    where
     baseAbilities = getAbilities a
@@ -578,7 +604,7 @@ instance HasAbilities Investigator where
           actionAbility
       | notNull (investigatorKeys $ toAttrs a)
       ]
-        <> [ withTooltip "Give Seal"
+        <> [ withI18n (withI18nTooltip "giveSeal")
                $ restricted
                  i
                  501
@@ -586,7 +612,7 @@ instance HasAbilities Investigator where
                  actionAbility
            | notNull (investigatorSeals $ toAttrs a)
            ]
-        <> [ withTooltip "Take Seal"
+        <> [ withI18n (withI18nTooltip "takeSeal")
                $ restricted
                  i
                  502
@@ -595,8 +621,8 @@ instance HasAbilities Investigator where
                  )
                  actionAbility
            ]
-        <> [ restricted i PlayAbility (Self <> Never) $ ActionAbility [#play] Nothing $ ActionCost 1
-           , restricted i ResourceAbility (Self <> Never) $ ActionAbility [#resource] Nothing $ ActionCost 1
+        <> [ restricted i PlayAbility (Self <> Never) $ ActionAbility #play Nothing $ ActionCost 1
+           , restricted i ResourceAbility (Self <> Never) $ ActionAbility #resource Nothing $ ActionCost 1
            ]
 
 instance Entity Investigator where
@@ -704,6 +730,7 @@ instance FromJSON InvestigatorAttrs where
     investigatorMulligansTaken <- o .: "mulligansTaken"
     investigatorBondedCards <- o .: "bondedCards"
     investigatorMeta <- o .: "meta"
+    investigatorFormMeta <- o .:? "formMeta" .!= Null
     investigatorUnhealedHorrorThisRound <- o .: "unhealedHorrorThisRound"
     investigatorSealedChaosTokens <- o .:? "sealedChaosTokens" .!= []
     investigatorHorrorHealed <- o .: "horrorHealed"
@@ -714,6 +741,7 @@ instance FromJSON InvestigatorAttrs where
     investigatorKeys <- o .: "keys"
     investigatorSeals <- o .:? "seals" .!= mempty
     investigatorBeganRoundAt <- o .:? "beganRoundAt"
+    investigatorPreviousLocation <- o .:? "previousLocation"
     investigatorLog <- o .: "log"
     investigatorDiscarding <- o .:? "discarding"
     investigatorDiscover <- o .:? "discover"
@@ -732,4 +760,5 @@ instance FromJSON InvestigatorForm where
   parseJSON (String "RegularForm") = pure RegularForm
   parseJSON (String "YithianForm") = pure YithianForm
   parseJSON (String "HomunculusForm") = pure HomunculusForm
+  parseJSON (String "ShatteredForm") = pure ShatteredForm
   parseJSON v = $(mkParseJSON defaultOptions ''InvestigatorForm) v

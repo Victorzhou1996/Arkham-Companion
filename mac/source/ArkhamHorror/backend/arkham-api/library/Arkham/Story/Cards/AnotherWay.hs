@@ -25,18 +25,20 @@ instance RunMessage AnotherWay where
       chooseOneM iid $ scenarioI18n do
         questionLabeledCard attrs
         labeled' "anotherWay.reject" do
-          exhaustThis alejandro
+          exhaustWith attrs alejandro
           disengageFromAll alejandro
-          gameModifier attrs iid $ CannotParleyWith $ enemyIs Enemies.alejandroVela
+          eachInvestigator \iid' ->
+            gameModifier attrs iid' $ CannotParleyWith $ enemyIs Enemies.alejandroVela
         labeled' "anotherWay.accept" do
           removeEnemy alejandro
           advanceToAct' attrs 1 Acts.timelock A
-          gameModifiers
-            attrs
-            iid
-            [ CannotParleyWith $ enemyIs Enemies.ichtacaScionOfYig
-            , CannotBeAttackedBy $ EnemyWithTrait Trait.Cultist
-            , CannotBeEngagedBy $ EnemyWithTrait Trait.Cultist
-            ]
+          eachInvestigator \iid' -> 
+            gameModifiers
+              attrs
+              iid'
+              [ CannotParleyWith $ enemyIs Enemies.ichtacaScionOfYig
+              , CannotBeAttackedBy $ EnemyWithTrait Trait.Cultist
+              , CannotBeEngagedBy $ EnemyWithTrait Trait.Cultist
+              ]
       pure s
     _ -> AnotherWay <$> liftRunMessage msg attrs

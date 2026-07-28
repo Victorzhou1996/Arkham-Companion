@@ -2,7 +2,9 @@ module Arkham.Location.Cards.ProtoplasmicPool (protoplasmicPool) where
 
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Seal
+import Arkham.Helpers.Cost (getSpendableClueCount)
 import Arkham.Helpers.GameValue
+import Arkham.I18n
 import Arkham.Location.Cards qualified as Cards
 import Arkham.Location.Import.Lifted
 import Arkham.Matcher
@@ -32,12 +34,13 @@ instance RunMessage ProtoplasmicPool where
       targetAmount <- perPlayer 1
       iids <- select $ investigatorAt attrs
       enemies <- select $ EnemyCanBeDamagedBySource (attrs.ability 1)
-      chooseOneM iid do
-        labeled "Spend 1 {perPlayer} clues as a group to activate the seal" do
+      totalClues <- getSpendableClueCount iids
+      chooseOrRunOneM iid $ withI18n $ countVar targetAmount do
+        labeledValidate' (totalClues >= targetAmount) "spendCluesToActivate" do
           push $ SpendClues targetAmount iids
           activateSeal SealB
           chooseOneAtATimeM iid $ targets enemies $ nonAttackEnemyDamage (Just iid) (attrs.ability 1) 2
-        labeled "Do not spend clues" nothing
+        labeled' "doNotSpendClues" nothing
 
       pure l
     _ -> ProtoplasmicPool <$> liftRunMessage msg attrs

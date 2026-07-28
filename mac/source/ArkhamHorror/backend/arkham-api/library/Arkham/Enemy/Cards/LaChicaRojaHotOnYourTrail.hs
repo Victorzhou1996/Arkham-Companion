@@ -4,7 +4,7 @@ import Arkham.Ability
 import Arkham.Campaigns.TheScarletKeys.Helpers
 import Arkham.Campaigns.TheScarletKeys.Key.Matcher
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Query (getInvestigators, getLead)
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
@@ -16,7 +16,7 @@ newtype LaChicaRojaHotOnYourTrail = LaChicaRojaHotOnYourTrail EnemyAttrs
 
 laChicaRojaHotOnYourTrail :: EnemyCard LaChicaRojaHotOnYourTrail
 laChicaRojaHotOnYourTrail =
-  enemy LaChicaRojaHotOnYourTrail Cards.laChicaRojaHotOnYourTrail (3, Static 3, 5) (1, 1)
+  enemy LaChicaRojaHotOnYourTrail Cards.laChicaRojaHotOnYourTrail
     & setSpawnAt (FarthestLocationFromYou Anywhere)
 
 instance HasAbilities LaChicaRojaHotOnYourTrail where

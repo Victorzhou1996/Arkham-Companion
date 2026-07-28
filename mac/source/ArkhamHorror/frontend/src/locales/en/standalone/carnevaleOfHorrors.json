@@ -1,4 +1,31 @@
 {
+  "specialRules": [
+    {
+      "title": "Counter-clockwise",
+      "body": "<p class='basic'>Some cards instruct the players to find the nearest location in the counter-clockwise direction. This is an exception to the above rule and should be followed as though locations are connected counter-clockwise.</p>"
+    },
+    {
+      "title": "“Across from”",
+      "body": "<p class='basic'>The location “across from” another location is the farthest location, equidistant in both the clockwise and counter-clockwise directions. For the purposes of this scenario, “across from your location” and “across from you” have the same meaning.</p>"
+    }
+  ],
+  "label": {
+    "doNotAddMask": "Do not add a mask",
+    "medicoDellaPeste": {
+      "heal1Damage": "Heal 1 damage",
+      "heal1Horror": "Heal 1 horror"
+    }
+  },
+  "massHysteria": {
+    "label": {
+      "shuffleMaskedCarnevaleGoers": "Shuffle Masked Carnevale-Goers"
+    }
+  },
+  "lostInVenice": {
+    "label": {
+      "moveAcross": "Move to the location across from you"
+    }
+  },
   "tokens": {
     "easyStandard": {
       "skull": "-2. This token has an additional -1 for each Innocent Reveler underneath the agenda deck.",

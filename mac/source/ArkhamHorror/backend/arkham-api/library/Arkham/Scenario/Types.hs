@@ -67,6 +67,7 @@ data instance Field Scenario :: Type -> Type where
   ScenarioHasEncounterDeck :: Field Scenario Bool
   ScenarioDifficulty :: Field Scenario Difficulty
   ScenarioDecks :: Field Scenario (Map ScenarioDeckKey [Card])
+  ScenarioDeckDiscards :: Field Scenario (Map ScenarioDeckKey [Card])
   ScenarioVictoryDisplay :: Field Scenario [Card]
   ScenarioRemembered :: Field Scenario (Set ScenarioLogKey)
   ScenarioCounts :: Field Scenario (Map ScenarioCountKey Int)
@@ -111,11 +112,15 @@ data ScenarioAttrs = ScenarioAttrs
   , scenarioLocationLayout :: [GridTemplateRow]
   , scenarioGrid :: Grid
   , scenarioDecks :: Map ScenarioDeckKey [Card]
+  , scenarioDeckDiscards :: Map ScenarioDeckKey [Card]
   , scenarioLog :: Set ScenarioLogKey
   , scenarioCounts :: Map ScenarioCountKey Int
   , scenarioStandaloneCampaignLog :: CampaignLog
   , scenarioSetAsideCards :: [Card]
   , scenarioInResolution :: Bool
+  , scenarioUseHardExpertReference :: Bool
+  -- ^ Ultimatum of Malevolence: use the Hard/Expert reference side while
+  -- nominally playing Easy/Standard (isEasyStandard/isHardExpert honor this)
   , scenarioNoRemainingInvestigatorsHandler :: Target
   , scenarioVictoryDisplay :: [Card]
   , scenarioChaosBag :: ChaosBag
@@ -199,6 +204,12 @@ instance HasField "decks" ScenarioAttrs (Map ScenarioDeckKey [Card]) where
 
 instance HasField "deck" ScenarioAttrs (ScenarioDeckKey -> [Card]) where
   getField a k = findWithDefault [] k a.decks
+
+instance HasField "deckDiscards" ScenarioAttrs (Map ScenarioDeckKey [Card]) where
+  getField = scenarioDeckDiscards
+
+instance HasField "deckDiscard" ScenarioAttrs (ScenarioDeckKey -> [Card]) where
+  getField a k = findWithDefault [] k a.deckDiscards
 
 instance HasField "log" ScenarioAttrs (Set ScenarioLogKey) where
   getField = scenarioLog
@@ -300,12 +311,14 @@ scenario f cardCode name difficulty layout =
       , scenarioLocationLayout = layout
       , scenarioGrid = initGrid
       , scenarioDecks = mempty
+      , scenarioDeckDiscards = mempty
       , scenarioLog = mempty
       , scenarioCounts = mempty
       , scenarioSetAsideCards = mempty
       , scenarioStandaloneCampaignLog = mkCampaignLog
       , scenarioCardsUnderScenarioReference = mempty
       , scenarioInResolution = False
+      , scenarioUseHardExpertReference = False
       , scenarioNoRemainingInvestigatorsHandler = ScenarioTarget
       , scenarioVictoryDisplay = mempty
       , scenarioChaosBag = emptyChaosBag
@@ -424,11 +437,13 @@ instance FromJSON ScenarioAttrs where
     scenarioLocationLayout <- o .: "locationLayout"
     scenarioGrid <- o .:? "grid" .!= initGrid
     scenarioDecks <- o .: "decks"
+    scenarioDeckDiscards <- o .:? "deckDiscards" .!= mempty
     scenarioLog <- o .: "log"
     scenarioCounts <- o .: "counts"
     scenarioStandaloneCampaignLog <- o .: "standaloneCampaignLog"
     scenarioSetAsideCards <- o .: "setAsideCards"
     scenarioInResolution <- o .: "inResolution"
+    scenarioUseHardExpertReference <- o .:? "useHardExpertReference" .!= False
     scenarioNoRemainingInvestigatorsHandler <- o .: "noRemainingInvestigatorsHandler"
     scenarioVictoryDisplay <- o .: "victoryDisplay"
     scenarioChaosBag <- o .: "chaosBag"

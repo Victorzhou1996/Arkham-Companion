@@ -20,8 +20,6 @@ mimeticNemesisInfiltratorOfRealities =
   enemy
     MimeticNemesisInfiltratorOfRealities
     Cards.mimeticNemesisInfiltratorOfRealities
-    (5, Static 3, 5)
-    (3, 3)
 
 instance HasModifiersFor MimeticNemesisInfiltratorOfRealities where
   getModifiersFor (MimeticNemesisInfiltratorOfRealities a) = do
@@ -33,7 +31,7 @@ instance HasAbilities MimeticNemesisInfiltratorOfRealities where
     extend1 a
       $ mkAbility a 1
       $ forced
-      $ EnemyWouldTakeDamage #when (SourceOwnedBy You) (be a)
+      $ EnemyWouldTakeDamage #when (SourceUsedBy You) (be a)
 
 instance RunMessage MimeticNemesisInfiltratorOfRealities where
   runMessage msg e@(MimeticNemesisInfiltratorOfRealities attrs) = runQueueT $ case msg of

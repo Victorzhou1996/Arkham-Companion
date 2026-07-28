@@ -58,6 +58,9 @@ getApiV1ArkhamCardsR = do
       , "09749b"
       , "10510b"
       , "10511b"
+      , "10644b"
+      , "10645b"
+      , "10647b"
       , "88035b"
       , "88036b"
       , "88037b"
@@ -73,6 +76,7 @@ getApiV1ArkhamCardsR = do
       , "88051b"
       , "88052b"
       , "88053b"
+      , "11691b" -- The Final Seal (special act/agenda, not a card back)
       ]
     safeDCodes = ["03084d", "88038d"]
 

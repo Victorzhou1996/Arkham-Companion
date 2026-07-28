@@ -1,5 +1,24 @@
 {
   "heading": "Scenario II-A",
+  "specialRules": [
+    {
+      "title": "Locations in The Search for Kadath",
+      "body": "<p class='basic'>Each of the locations in this scenario have no unrevealed side, and therefore they enter play with their revealed side faceup. Instead of an unrevealed side, these locations have story cards on their reverse sides. Whenever a location in this scenario enters play (including during setup), place clues on that location equal to its clue value, as normal.</p><p class='basic'>Locations can be flipped over in one of two ways. Most are flipped over by the _veiled_ keyword, as described below. Some locations are instead flipped over by an ability printed on that location.</p><p class='basic'>Once a location has been flipped over and its story text has been read, it cannot be flipped over again for the remainder of the game unless otherwise noted.</p>"
+    },
+    {
+      "title": "Veiled",
+      "body": "<p class='basic'>Many of the locations in this scenario have the _veiled_ keyword. This keyword represents that a location contains unknown lore or assistance that must be sought out by the investigators before it can be of use to them.</p><p class='basic'>As a {'{'}action{'}'} ability, an investigator at a _veiled_ location with no clues on it may flip that location over, resolving the text on its other side.</p>"
+    },
+    {
+      "title": "Enemies with Swarming and Victory",
+      "body": "<p class='basic'>When Victory X appears on a _swarming_ enemy, this text is only active for the host card. Swarm cards cannot enter the victory display and are never worth victory points.</p>"
+    }
+  ],
+  "waresOfBaharna": {
+    "label": {
+      "chooseInvestigator": "Choose investigator to decide on returning discard"
+    }
+  },
   "tokens": {
     "easyStandard": {
       "skull": "-X. X is the number of Signs of the Gods the investigators have uncovered.",
@@ -12,6 +31,26 @@
       "cultist": "Reveal another token. If this token is revealed during an investigation and this skill test fails, increase that location's shroud by 2 for the remainder of the round.",
       "tablet": "-3. If you fail, either take 1 damage and 1 horror, or place 1 doom on the current agenda.",
       "elderThing": "+1. The black cat points you in the right direction. If this token is revealed during an investigation and you succeed, discover 1 additional clue."
+    }
+  },
+  "label": {
+    "leaveEmptyHanded": "Leave empty-handed",
+    "forceIntoTemple": "Force your way into the temple.",
+    "placeNightgaunt": "Place Tenebrous Nightgaunt in city location",
+    "virgilGray": {
+      "heal1HorrorFromVirgilGray": "Heal 1 horror from Virgil Gray"
+    }
+  },
+  "dreamlandsEclipse": {
+    "label": {
+      "shroudPlus2": "Your location gets +2 shroud for this investigation"
+    }
+  },
+  "theDoomThatCameBefore": {
+    "label": {
+      "visitOriab": "Visit the isle of Oriab to the south. Resolve Oriab Setup in the Campaign Guide.",
+      "visitForbiddenLands": "Visit the Forbidden Lands to the north. Resolve Forbidden Lands Setup in the Campaign Guide.",
+      "visitTimelessRealm": "Visit the kingdom of the Timeless Realm to the east. Resolve Timeless Realm Setup in the Campaign Guide."
     }
   }
 }

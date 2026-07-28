@@ -58,35 +58,34 @@ interface PerInvestigator {
   total: number
 }
 
+const allInvestigators = computed<Record<string, Investigator>>(() => ({
+  ...props.game.investigators,
+  ...props.game.killedInvestigators,
+}))
+
 const perInvestigator = computed<Record<string, PerInvestigator>>(() => {
-  return props.investigators.reduce((acc, i) => {
-    const gains = props.entries.filter(
-      (entry: XpEntry) =>
-        entry.tag === 'InvestigatorGainXp' && entry.investigator === i.id
-    )
-    const losses = props.entries.filter(
-      (entry: XpEntry) =>
-        entry.tag === 'InvestigatorLoseXp' && entry.investigator === i.id
-    )
-
-    const entries = [...gains, ...losses]
+  const gains = props.entries.filter((e: XpEntry) => e.tag === 'InvestigatorGainXp')
+  const losses = props.entries.filter((e: XpEntry) => e.tag === 'InvestigatorLoseXp')
+  const iids = new Set([...gains.map(e => e.investigator), ...losses.map(e => e.investigator)])
+  return [...iids].reduce((acc, iid) => {
+    const iGains = gains.filter(e => e.investigator === iid)
+    const iLosses = losses.filter(e => e.investigator === iid)
+    const entries = [...iGains, ...iLosses]
     if (entries.length === 0) return acc
-
-    const total =
-      gains.reduce((acc, entry) => acc + entry.details.amount, 0) -
-      losses.reduce((acc, entry) => acc + entry.details.amount, 0)
-
-    acc[i.id] = { entries, total }
+    const total = iGains.reduce((s, e) => s + e.details.amount, 0)
+                - iLosses.reduce((s, e) => s + e.details.amount, 0)
+    acc[iid] = { entries, total }
     return acc
   }, {} as Record<string, PerInvestigator>)
 })
 
-const headerInvestigators = computed(() => {
+const headerInvestigators = computed<[Investigator, number][]>(() => {
   if (unspendableXp.value) {
-    return props.investigators.map(i => ([i, (perInvestigator.value[i.id]?.total || 0) + totalVictoryDisplay.value]))
+    return props.investigators.map((i): [Investigator, number] => ([i, (perInvestigator.value[i.id]?.total || 0) + totalVictoryDisplay.value]))
   }
-
-  return props.investigators.map(i => ([i, (perInvestigator.value[i.id]?.total || 0) + totalVictoryDisplay.value])).filter(([_i, t]) => t !== 0)
+  return props.investigators
+    .map((i): [Investigator, number] => ([i, (perInvestigator.value[i.id]?.total || 0) + totalVictoryDisplay.value]))
+    .filter(([_i, t]) => t !== 0)
 })
 
 function format(s: string) {
@@ -140,7 +139,7 @@ const scenarioIconId = computed<string | null>(() => {
         </div>
       </section>
       <section class="group" v-for="([iid, info]) in Object.entries(perInvestigator)" :key="name">
-        <header class="entry-header"><h3>{{format(game.investigators[iid].name.title)}}</h3><span class="amount" :class="{ 'amount--negative': info.total < 0 }">{{ $t('upgrade.xp', {total: info.total}) }}</span></header>
+        <header class="entry-header"><h3>{{format(allInvestigators[iid]?.name.title ?? iid)}}</h3><span class="amount" :class="{ 'amount--negative': info.total < 0 }">{{ $t('upgrade.xp', {total: info.total}) }}</span></header>
         <div v-for="(entry, idx) in info.entries" :key="idx" class="entry">
           <span v-html="format(entry.details.sourceName)"></span>
           <span v-if="entry.tag !== 'InvestigatorLoseXp'" class="amount">+{{entry.details.amount}}</span>
@@ -229,7 +228,7 @@ h2.title {
     padding: 2px 8px;
     margin-left: -5px;
     margin-bottom: 5px;
-    z-index: -1;
+    z-index: var(--z-index-neg-1);
     border-radius: 0 4px 4px 0;
   }
 }

@@ -15,6 +15,7 @@ import Arkham.SkillTest.Base as X (SkillTestDifficulty (..))
 import Arkham.Source as X
 import Arkham.Target as X
 
+import Arkham.Behavior.Heal qualified as Heal
 import Arkham.Card
 import Arkham.ChaosToken
 import Arkham.Classes.HasGame
@@ -46,6 +47,7 @@ import Arkham.Matcher (
   EventMatcher (EventAttachedToAsset),
  )
 import Arkham.Message qualified as Msg
+import Arkham.Message.Lifted (withBatched)
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Timing qualified as Timing
@@ -76,7 +78,7 @@ hasUses :: AssetAttrs -> Bool
 hasUses = any (> 0) . toList . assetUses
 
 instance RunMessage Asset where
-  runMessage msg x@(Asset a) = withSpan_ ("Asset[" <> unCardCode (toCardCode x) <> "].runMessage") do
+  runMessage msg x@(Asset a) = do
     if x.placement.outOfGame
       then case msg of
         ReturnLocationToGame _ -> Asset <$> runMessage msg a
@@ -134,7 +136,7 @@ instance RunMessage AssetAttrs where
                   horrorAsset =
                     AssetHorrorLabel
                       aid
-                      [ Msg.AssignAssetDamageWithCheck aid source 1 0 False
+                      [ Msg.AssignAssetDamageWithCheck aid source 0 1 False
                       , assignRestOfSanityDamage
                       ]
                   horrorInvestigator iid' =
@@ -157,29 +159,42 @@ instance RunMessage AssetAttrs where
       when canDamage do
         mods <- getModifiers a
         let n = sum [x | DamageTaken x <- mods]
+            extraHealth = sum [x | HealthModifier x <- mods]
+            extraSanity = sum [x | SanityModifier x <- mods]
+            remainingHealth = maybe 0 (max 0 . subtract (assetDamage a) . (+ extraHealth)) assetHealth
+            remainingSanity = maybe 0 (max 0 . subtract (assetHorror a) . (+ extraSanity)) assetSanity
+            damage' = min (max 0 $ damage + n) remainingHealth
+            horror' = min (max 0 horror) remainingSanity
         let
           damageEffect = case source of
             EnemyAttackSource _ -> AttackDamageEffect
             _ -> NonAttackDamageEffect
-        pushAll
-          $ [PlaceDamage source (toTarget a) (damage + n) | damage > 0]
-          <> [PlaceHorror source (toTarget a) horror | horror > 0]
-          <> [ CheckWindows
-                 $ [ mkWhen (Window.DealtDamage source damageEffect (toTarget a) damage)
-                   | damage > 0
-                   ]
-                 <> [ mkWhen (Window.DealtHorror source (toTarget a) horror)
-                    | horror > 0
-                    ]
-             , checkDefeated source aid
-             , CheckWindows
-                 $ [ mkAfter (Window.DealtDamage source damageEffect (toTarget a) damage)
-                   | damage > 0
-                   ]
-                 <> [ mkAfter (Window.DealtHorror source (toTarget a) horror)
-                    | horror > 0
-                    ]
-             ]
+        when (damage' > 0 || horror' > 0) do
+          pushAll
+            $ [PlaceDamage source (toTarget a) damage' | damage' > 0]
+            <> [PlaceHorror source (toTarget a) horror' | horror' > 0]
+            <> [ CheckWindows
+                   $ [ mkWhen (Window.DealtDamage source damageEffect (toTarget a) damage')
+                     | damage' > 0
+                     ]
+                   <> [ mkWhen (Window.DealtHorror source (toTarget a) horror')
+                      | horror' > 0
+                      ]
+                   <> [ mkWhen (Window.WouldTakeDamageOrHorror source (toTarget a) damage' horror')
+                      | damage' > 0 || horror' > 0
+                      ]
+               , checkDefeated source aid
+               , CheckWindows
+                   $ [ mkAfter (Window.DealtDamage source damageEffect (toTarget a) damage')
+                     | damage' > 0
+                     ]
+                   <> [ mkAfter (Window.DealtHorror source (toTarget a) horror')
+                      | horror' > 0
+                      ]
+                   <> [ mkWhen (Window.WouldTakeDamageOrHorror source (toTarget a) damage' horror')
+                      | damage' > 0 || horror' > 0
+                      ]
+               ]
       pure a
     Msg.AssignAssetDamageWithCheck aid source damage horror doCheck | aid == assetId -> do
       canDamage <- matches a.id (AssetCanBeDamagedBySource source)
@@ -196,7 +211,18 @@ instance RunMessage AssetAttrs where
             pushAll
               $ [PlaceDamage source (toTarget a) damage' | damage' > 0]
               <> [PlaceHorror source (toTarget a) horror' | horror' > 0]
-      pure a
+      -- This places the real tokens, so clear any damage/horror that was assigned
+      -- (but not yet placed) on this asset during deferred assignment.
+      pure $ a & assignedHealthDamageL .~ 0 & assignedSanityDamageL .~ 0
+    Msg.AssignAssetDamageDeferred aid source damage horror | aid == assetId -> do
+      -- Accumulate assigned-but-unplaced damage/horror so the soaked amount is
+      -- visible while the player is still distributing a source's damage. The
+      -- tokens themselves are placed later by AssignAssetDamageWithCheck.
+      canDamage <- matches a.id (AssetCanBeDamagedBySource source)
+      pure
+        $ if canDamage
+          then a & assignedHealthDamageL +~ damage & assignedSanityDamageL +~ horror
+          else a
     IncreaseCustomization iid cardCode customization choices | toCardCode a == cardCode && a `ownedBy` iid -> do
       case customizationIndex a customization of
         Nothing -> pure a
@@ -208,7 +234,7 @@ instance RunMessage AssetAttrs where
               }
     SetOriginalCardCode cardCode -> pure $ a & originalCardCodeL .~ cardCode
     SealedChaosToken token _ (isTarget a -> True) -> do
-      pure $ a & sealedChaosTokensL %~ (token :)
+      pure $ a & sealedChaosTokensL %~ (\ts -> if token `elem` ts then ts else token : ts)
     SealedChaosToken token _ _ -> do
       pure $ a & sealedChaosTokensL %~ filter (/= token)
     UnsealChaosToken token -> pure $ a & sealedChaosTokensL %~ filter (/= token)
@@ -217,13 +243,14 @@ instance RunMessage AssetAttrs where
       pure $ a & sealedChaosTokensL %~ filter ((/= face) . chaosTokenFace)
     ReadyExhausted -> do
       mods <- getModifiers a
-      phase <- getPhase
-      unless (CannotReady `elem` mods || (phase == #upkeep && DoesNotReadyDuringUpkeep `elem` mods)) do
-        case a.controller of
-          Just iid -> do
-            modifiers <- getModifiers iid
-            pushWhen (ControlledAssetsCannotReady `notElem` modifiers) (Ready $ toTarget a)
-          _ -> push (Ready $ toTarget a)
+      runMaybeT_ do
+        guard $ CannotReady `notElem` mods
+        phase <- lift getPhase
+        guard $ not $ phase == #upkeep && DoesNotReadyDuringUpkeep `elem` mods
+        for_ a.controller \iid -> do
+          modifiers <- getModifiers iid
+          guard $ ControlledAssetsCannotReady `notElem` modifiers
+        lift $ push $ Ready (toTarget a)
       pure a
     RemoveAllDoom _ target | isTarget a target -> pure $ a & tokensL %~ removeAllTokens Doom
     PlaceTokens source target tType n | isTarget a target -> runQueueT do
@@ -255,7 +282,17 @@ instance RunMessage AssetAttrs where
             Just iid | tType `elem` [#damage, #horror] -> do
               push $ PlaceTokens source (toTarget iid) tType n
               pure a
-            _ -> pure $ a & tokensL %~ addTokens tType n
+            _ -> do
+              when
+                ( source
+                    == GameSource
+                    && ( (tType == #damage && isJust assetHealth)
+                           || (tType == #horror && isJust assetSanity)
+                       )
+                )
+                $ push
+                $ CheckDefeated source (toTarget a)
+              pure $ a & tokensL %~ addTokens tType n
     InvestigatorDiscardAllClues s iid | a `ownedBy` iid -> do
       runMessage (RemoveAllClues s (toTarget a)) a
     RemoveAllClues s (isTarget a -> True) -> do
@@ -382,19 +419,23 @@ instance RunMessage AssetAttrs where
     ApplyHealing source -> do
       let health = findWithDefault 0 source assetAssignedHealthHeal
       let sanity = findWithDefault 0 source assetAssignedSanityHeal
-      when (health > 0 || sanity > 0) do
-        pushM
-          $ checkWindows
-          $ [mkWindow Timing.After (Window.Healed DamageType (toTarget a) source health) | health > 0]
-          <> [mkWindow Timing.After (Window.Healed HorrorType (toTarget a) source sanity) | sanity > 0]
-      pure $ a & tokensL %~ subtractTokens Token.Damage health . subtractTokens Token.Horror sanity
+      when (health > 0) $ Heal.pushHealedAfter DamageType (toTarget a) source health
+      when (sanity > 0) $ Heal.pushHealedAfter HorrorType (toTarget a) source sanity
+      pure
+        $ a
+        & tokensL
+        %~ subtractTokens Token.Damage health
+        . subtractTokens Token.Horror sanity
+        & assignedHealthHealL
+        %~ deleteMap source
+        & assignedSanityHealL
+        %~ deleteMap source
     HealDamage (isTarget a -> True) source amount -> do
       mods <- getModifiers a
       let n = sum [x | HealingTaken x <- mods]
       let amount' = amount + n
-      afterWindow <- checkWindows [mkWindow Timing.After (Window.Healed DamageType (toTarget a) source n)]
       push $ AssignedHealing (toTarget a)
-      push afterWindow
+      Heal.pushHealedAfter DamageType (toTarget a) source n
       runMessage (RemoveTokens source (toTarget a) Token.Damage amount') a
     HealDamageDelayed (isTarget a -> True) source amount -> do
       mods <- getModifiers a
@@ -407,8 +448,7 @@ instance RunMessage AssetAttrs where
       let n = sum [x | HealingTaken x <- mods]
       let amount' = amount + n
       push $ AssignedHealing (toTarget a)
-      afterWindow <- checkWindows [mkWindow Timing.After (Window.Healed HorrorType (toTarget a) source n)]
-      push afterWindow
+      Heal.pushHealedAfter HorrorType (toTarget a) source n
       runMessage (RemoveTokens source (toTarget a) Token.Horror amount') a
     HealHorrorDelayed (isTarget a -> True) source amount -> do
       mods <- getModifiers a
@@ -568,7 +608,8 @@ instance RunMessage AssetAttrs where
     Exile target | a `isTarget` target -> do
       pushAll [RemoveFromPlay $ toSource a, Exiled target (toCard a)]
       pure $ a & exiledL .~ True
-    RemoveFromPlay source | isSource a source -> do
+    RemoveFromPlay source | isSource a source -> runQueueT do
+      batchId <- getCurrentBatchId >>= maybe getRandom pure
       attachedAssets <- select $ AssetAttachedToAsset $ AssetWithId (toId a)
       attachedEvents <- select $ EventAttachedToAsset $ AssetWithId (toId a)
       windowMsg <-
@@ -576,13 +617,14 @@ instance RunMessage AssetAttrs where
           ( (`mkWindow` Window.LeavePlay (toTarget a))
               <$> [Timing.When, Timing.AtIf, Timing.After]
           )
-      pushAll
-        $ windowMsg
-        : [UnsealChaosToken token | token <- assetSealedChaosTokens]
-          <> [Discard Nothing GameSource (toTarget a') | a' <- attachedAssets]
-          <> [Discard Nothing GameSource (toTarget a') | a' <- attachedEvents]
-          <> map (DiscardedCard . toCardId) a.cardsUnderneath
-          <> [RemovedFromPlay source]
+      withBatched batchId \_ ->
+        pushAll
+          $ windowMsg
+          : [UnsealChaosToken token | token <- assetSealedChaosTokens]
+            <> [Discard Nothing GameSource (toTarget a') | a' <- attachedAssets]
+            <> [Discard Nothing GameSource (toTarget a') | a' <- attachedEvents]
+            <> map (DiscardedCard . toCardId) a.cardsUnderneath
+            <> [RemovedFromPlay source]
       pure $ a & cardsUnderneathL .~ []
     When (PlaceInBonded _iid card) | toCardId a == card.id -> do
       removeAllMessagesMatching \case
@@ -601,19 +643,16 @@ instance RunMessage AssetAttrs where
     PlaceKey (isTarget a -> True) k -> do
       pure $ a & (keysL %~ insertSet k)
     HealAllDamage (isTarget a -> True) source | assetDamage a > 0 -> do
-      afterWindow <- checkWindows [mkAfter $ Window.Healed #damage (toTarget a) source (assetDamage a)]
-      push afterWindow
+      Heal.pushHealedAfter DamageType (toTarget a) source (assetDamage a)
       pure $ a & tokensL %~ removeAllTokens Token.Damage
     HealAllHorror (isTarget a -> True) source | assetHorror a > 0 -> do
-      afterWindow <- checkWindows [mkAfter $ Window.Healed #horror (toTarget a) source (assetHorror a)]
-      push afterWindow
+      Heal.pushHealedAfter HorrorType (toTarget a) source (assetHorror a)
       pure $ a & tokensL %~ removeAllTokens Token.Horror
     HealAllDamageAndHorror (isTarget a -> True) source | assetDamage a > 0 || assetHorror a > 0 -> do
-      afterWindow <-
-        checkWindows
-          $ [mkAfter $ Window.Healed #damage (toTarget a) source (assetDamage a) | assetDamage a > 0]
-          <> [mkAfter $ Window.Healed #horror (toTarget a) source (assetHorror a) | assetHorror a > 0]
-      push afterWindow
+      when (assetDamage a > 0)
+        $ Heal.pushHealedAfter DamageType (toTarget a) source (assetDamage a)
+      when (assetHorror a > 0)
+        $ Heal.pushHealedAfter HorrorType (toTarget a) source (assetHorror a)
       pure
         $ a
         & (tokensL %~ removeAllTokens Token.Horror . removeAllTokens Token.Damage)
@@ -624,23 +663,34 @@ instance RunMessage AssetAttrs where
       runMessage (PlaceAsset aid placement) a
     TakeControlOfAsset iid aid | aid == assetId -> do
       pushM $ checkWindows $ (`mkWindow` Window.TookControlOfAsset iid aid) <$> [#when, #after]
-      when (isOutOfPlayPlacement a.placement) do
+      let entersPlay = isOutOfPlayPlacement a.placement
+      uses <-
+        if entersPlay && Map.null (Map.filterWithKey (\k _ -> tokenIsUse k) assetTokens)
+          then toModifiedStartingUses a assetPrintedUses
+          else pure mempty
+      when entersPlay do
         whenEnterMsg <- checkWindows [mkWhen (Window.EnterPlay $ toTarget a)]
         afterEnterMsg <- checkWindows [mkAfter (Window.EnterPlay $ toTarget a)]
 
         pushAll
           $ [ActionCannotBeUndone | not assetCanLeavePlayByNormalMeans]
           <> [whenEnterMsg, CardEnteredPlay iid (toCard a), afterEnterMsg]
-      pure $ a & placementL .~ InPlayArea iid & controllerL ?~ iid
+      pure
+        $ a
+        & placementL
+        .~ InPlayArea iid
+        & controllerL
+        ?~ iid
+        & (tokensL %~ Map.unionWith (+) uses . coerce)
     LoseControlOfAsset aid | aid == assetId -> do
       pure $ a & controllerL .~ Nothing
     ReplacedInvestigatorAsset iid aid | aid == assetId -> do
       pure $ a & placementL .~ InPlayArea iid & controllerL ?~ iid
     AddToVictory _ (AssetTarget aid) | aid == assetId -> do
-      pure $ a & placementL .~ OutOfPlay Zone.VictoryDisplayZone
+      pure $ a & placementL .~ OutOfPlay Zone.VictoryDisplayZone & controllerL .~ Nothing
     AddToScenarioDeck key target | isTarget a target -> do
       pushAll
-        [AddCardToScenarioDeck key (toCard a), RemoveFromGame (toTarget a)]
+        [RemoveFromGame (toTarget a), AddCardToScenarioDeck key (toCard a)]
       pure $ a & placementL .~ Unplaced
     ShuffleCardsIntoDeck _ cards ->
       pure $ a & cardsUnderneathL %~ filter (`notElem` cards)
@@ -654,13 +704,11 @@ instance RunMessage AssetAttrs where
       pure a
     CardEnteredPlay _ card ->
       pure $ a & cardsUnderneathL %~ filter (/= card)
-    Exhaust target | a `isTarget` target -> do
-      pushAll $ doFrame (Exhaust target) (Window.Exhausts (toTarget a))
+    Exhaust ea | a `isTarget` ea.target -> do
+      pushAll $ doFrame (Exhaust ea) (Window.Exhausts (toTarget a))
       pure a
-    Do (Exhaust target) | a `isTarget` target -> do
-      pure $ a & exhaustedL .~ True
-    ExhaustThen target msgs | a `isTarget` target -> do
-      unless assetExhausted $ pushAll msgs
+    Do (Exhaust ea) | a `isTarget` ea.target -> do
+      unless assetExhausted $ pushAll ea.thenMsgs
       pure $ a & exhaustedL .~ True
     Ready target | a `isTarget` target -> case a.controller of
       Just iid -> do

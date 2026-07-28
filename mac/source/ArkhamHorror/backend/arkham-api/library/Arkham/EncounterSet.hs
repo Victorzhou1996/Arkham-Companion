@@ -283,6 +283,19 @@ data EncounterSet
   | TheBayou
   | CurseOfTheRougarou
   | CarnevaleOfHorrors
+  | TheLabyrinthsOfLunacy
+  | LabyrinthsOfLunacySingleGroup
+  | LabyrinthsOfLunacyEpicMultiplayer
+  | TheEternalSlumber
+  | TheNightsUsurper
+  | BrotherhoodOfTheBeast
+  | SandsOfEgypt
+  | AbyssalTribute
+  | AbyssalGifts
+  | WarOfTheOuterGods
+  | DeathOfStars
+  | ChildrenOfParadise
+  | SwarmOfAssimilation
   | MurderAtTheExcelsiorHotel
   | AlienInterference
   | ExcelsiorManagement
@@ -290,14 +303,78 @@ data EncounterSet
   | VileExperiments
   | SinsOfThePast
   | TheBlobThatAteEverythingELSE
+  | TheBlobThatAteEverything
+  | MiGoIncursion
+  | BlobEpicMultiplayer
+  | BlobSingleGroup
   | FortuneAndFolly
   | FortunesChosen
   | PlanInShambles
   | TheMidwinterGala
+  | MachinationsThroughTime
+  | MachinationsThroughTimeSingleGroup
+  | MachinationsThroughTimeEpicMultiplayer
   | FilmFatale
   | CosmicJourney
   | ForgottenIsland
   | AbominableContessa
+  | SpreadingFlames
+  | AshenPilgrims
+  | Bystanders
+  | CosmicEvils
+  | EldritchLore
+  | Hallucinations
+  | Fire1
+  | MadScience
+  | ArcaneLock
+  | BadWeather
+  | DeadEnds
+  | Torment
+  | GangsOfArkham
+  | Cultists
+  | ReekingDecay
+  | FlyingTerrors
+  | MiskatonicUniversity
+  | Arkham
+  | PeopleOfArkham
+  | Whippoorwills2
+  | Sewers
+  | SmokeAndMirrors
+  | QueenOfAsh
+  | ReadOrDie
+  | AllOrNothing
+  | BadBlood
+  | ByTheBook
+  | RedTideRising
+  | LaidToRest
+  | RelicsOfThePast
+  | EnthrallingEncore
+  | -- The Drowned City
+    OneLastJob
+  | TheWesternWall
+  | TheDrownedQuarter
+  | TheApiary
+  | TheGrandVault
+  | CourtOfTheAncients
+  | ObsidianCanyons
+  | SepulchreOfTheSleeper
+  | TheDoomOfArkhamPartI
+  | TheDoomOfArkhamPartII
+  | Tasks
+  | TdcExpedition
+  | StarSpawn
+  | UnderseaCreatures
+  | Flood
+  | Domination
+  | DeepOnes
+  | Stowaways
+  | Pilgrims
+  | CosmicLegacy
+  | ElderMist
+  | Rlyeh
+  | TheInescapable
+  | Dreams
+  | AlienMachinery
   | Test
   deriving stock (Show, Eq, Ord, Bounded, Enum, Data)
 

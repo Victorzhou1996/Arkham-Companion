@@ -63,6 +63,8 @@ data GameCalculation
   | EnemyMaybeGameValueFieldCalculation EnemyId (Field Enemy (Maybe GameCalculation))
   | EnemyFieldCalculation EnemyId (Field Enemy Int)
   | VictoryDisplayCountCalculation ExtendedCardMatcher
+  | LocationMatcherFieldCalculation LocationMatcher (Field Location Int)
+  | EnemyLocationFieldCalculation EnemyId (Field Location Int)
   | LocationFieldCalculation LocationId (Field Location Int)
   | LocationGameValueFieldCalculation LocationId (Field Location GameValue)
   | LocationMaybeFieldCalculation LocationId (Field Location (Maybe Int))
@@ -88,10 +90,6 @@ data GameCalculation
   | IfInvestigatorExistsCalculation InvestigatorId InvestigatorMatcher GameCalculation GameCalculation
   deriving stock (Show, Ord, Eq, Data, Generic)
   deriving FromJSON via MaybeFixed
-
-recordedCount :: IsCampaignLogKey k => k -> GameCalculation
-recordedCount = RecordedCount . toCampaignLogKey
-
 newtype MaybeFixed = MaybeFixed GameCalculation
 
 instance FromJSON MaybeFixed where

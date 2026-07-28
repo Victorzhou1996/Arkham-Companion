@@ -365,11 +365,38 @@ allActs =
       --- Written in Stone
       SomeActCard descentIntoTheMines
     , SomeActCard theUndergroundMaze
+    , --- Hemlock House
+      SomeActCard strangeInfestation
+    , SomeActCard againstTheHouse
+    , SomeActCard theHeartOfTheHouse
+    , --- The Silent Heath
+      SomeActCard aLostLegacy
+    , SomeActCard searchingTheHeath
+    , --- The Lost Sister
+      SomeActCard theMissingSibling
+    , SomeActCard onTheTrail
+    , SomeActCard faceToCarapace
+    , --- The Thing in the Depths
+      SomeActCard aBotanicalSurvey
+    , SomeActCard discoveryOfALifetime
     , --- The Twisted Hollow
       SomeActCard desperateSearch
     , SomeActCard wheresBertie
+    , --- The Longest Night
+      SomeActCard theLongestNight
     , --- Day of Rest
       SomeActCard dawnOfTheFirstDay
+    , --- Day of Rain
+      SomeActCard dawnOfTheSecondDay
+    , --- Day of the Feast
+      SomeActCard dawnOfTheFinalDay
+    , --- Fate of the Vale
+      SomeActCard shatteredMemories
+    , SomeActCard lostSelf
+    , SomeActCard fateOfTheValeV1
+    , SomeActCard fateOfTheValeV2
+    , SomeActCard fateOfTheValeV3
+    , SomeActCard fateOfTheValeV4
     , -- Return to Night of the Zealot
       --- Return to the Gathering
       SomeActCard mysteriousGateway
@@ -415,6 +442,18 @@ allActs =
       SomeActCard theCarnevaleConspiracy
     , SomeActCard getToTheBoats
     , SomeActCard row
+    , -- The Eternal Slumber
+      SomeActCard curseOfEndlessSleep
+    , SomeActCard secretsInTheSand
+    , SomeActCard theHourOfJudgment
+    , -- The Night's Usurper
+      SomeActCard searchForTheGate
+    , SomeActCard intoTheGate
+    , SomeActCard theNightsUsurper
+    , -- War of the Outer Gods
+      SomeActCard warOfTheOuterGods
+    , SomeActCard closeThePortal
+    , SomeActCard closeAllPortals
     , -- Murder at the Excelsior Hotel
       SomeActCard whatHappened
     , SomeActCard followingLeads
@@ -437,4 +476,74 @@ allActs =
     , --- Abominable Contessa
       SomeActCard theAbominableContessa
     , SomeActCard bloodbath
+    , --- Core2026
+      --- Spreading Flames
+      SomeActCard whereTheresSmoke
+    , SomeActCard escapeTheDorms
+    , SomeActCard searchingForDrArmitage
+    , SomeActCard blazeOfGlory
+    , --- Smoke And Mirrors
+      SomeActCard augursOfFlame
+    , --- Queen of Ash
+      SomeActCard searchTheSewers
+    , SomeActCard stopTheRite
+    , -- The Blob That Ate Everything
+      SomeActCard exposeTheAnomaly
+    , SomeActCard extraterrestrialPhysiology
+    , SomeActCard blackwatersBane
+    , SomeActCard exposeTheAnomalyEpicMultiplayer
+    , SomeActCard blackwatersBaneEpicMultiplayer
+    , -- The Labyrinths of Lunacy
+      SomeActCard sealedInGroupA
+    , SomeActCard wateryGraveGroupB
+    , SomeActCard theLeversGroupC
+    , SomeActCard distortionsInTimeGroupA
+    , SomeActCard seepingDeathGroupB
+    , SomeActCard thePetGroupC
+    , SomeActCard theEscapeTheLabyrinthsOfLunacy
+    , -- Machinations Through Time
+      SomeActCard walkingThroughTime
+    , -- Read or Die
+      SomeActCard speedReading
+    , -- All or Nothing
+      SomeActCard playingCards
+    , SomeActCard hotOnYourTail
+    , -- Bad Blood
+      SomeActCard aWalkDownMemoryLane
+    , -- By the Book
+      SomeActCard captureTheConspirators
+    , -- Laid to Rest
+      SomeActCard laidToRest
+    , -- Red Tide Rising
+      SomeActCard searchingForDad
+    , -- Enthralling Encore
+      SomeActCard breakFreeFromThePast
+    , -- Relics of the Past
+      SomeActCard crumblingRuin
+    , SomeActCard findTheWayOut
+    , --- The Drowned City
+      SomeActCard questioningTheGangsV1
+    , SomeActCard questioningTheGangsV2
+    , SomeActCard theSheldonGang
+    , SomeActCard theOBannionGang
+    , SomeActCard faceTheMusic
+    , SomeActCard descendIntoTheAbyss
+    , SomeActCard ascendTheWall
+    , SomeActCard reactivateTheCore
+    , SomeActCard unsettlingSigns
+    , SomeActCard lostPilgrims
+    , SomeActCard theHiveMind
+    , SomeActCard carefulNavigation
+    , SomeActCard backThroughTheMachine
+    , SomeActCard stepsOfGiants
+    , SomeActCard escapeTheTowerV1
+    , SomeActCard escapeTheTowerV2
+    , SomeActCard searchingTheSpires
+    , SomeActCard toTheAncientDome
+    , SomeActCard scouringTheSpires
+    , SomeActCard deadlySkies
+    , SomeActCard returnToTheShoreline
+    , SomeActCard thePhantomShop
+    , SomeActCard fightBack
+    , SomeActCard banishHim
     ]

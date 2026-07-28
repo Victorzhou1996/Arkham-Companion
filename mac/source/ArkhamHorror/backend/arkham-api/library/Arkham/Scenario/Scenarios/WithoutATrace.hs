@@ -54,7 +54,7 @@ withoutATrace difficulty =
 instance HasChaosTokenValue WithoutATrace where
   getChaosTokenValue iid tokenFace (WithoutATrace attrs) = case tokenFace of
     Skull -> do
-      x <- selectCount Anywhere
+      x <- selectCount $ not_ (LocationWithPlacement InTheShadows)
       pure $ toChaosTokenValue attrs Skull (x `div` 2) x
     Cultist -> pure $ toChaosTokenValue attrs Cultist 4 6
     Tablet -> do
@@ -170,32 +170,47 @@ instance RunMessage WithoutATrace where
         push $ Msg.CreateConcealedCard card
         push $ Msg.PlaceConcealedCard lead (toId card) (InPosition pos)
     ScenarioSpecific "exposed[CityOfRemnantsL]" v -> do
-      let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v
+      let (iid, c) :: (InvestigatorId, ConcealedCard) = toResult v
       let meta = toResult @LocationsInShadowsMetadata attrs.meta
       let locationsInShadows = meta.locationsInShadows
-      for_ locationsInShadows.left \loc -> do
-        scenarioSpecific "exposed[CityOfRemnants]" (iid, LeftPosition, loc)
-        do_ msg
-        forTarget_ loc msg
-      pure s
+      case locationsInShadows.left of
+        Just loc -> do
+          scenarioSpecific "exposed[CityOfRemnants]" (iid, LeftPosition, loc)
+          do_ msg
+          forTarget_ loc msg
+          pure s
+        Nothing -> do
+          removeFromGame c
+          let concealedCards = Map.map (filter (/= c.id)) meta.concealedCards
+          pure $ WithoutATrace $ attrs & metaL .~ toJSON (meta {concealedCards})
     ScenarioSpecific "exposed[CityOfRemnantsM]" v -> do
-      let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v
+      let (iid, c) :: (InvestigatorId, ConcealedCard) = toResult v
       let meta = toResult @LocationsInShadowsMetadata attrs.meta
       let locationsInShadows = meta.locationsInShadows
-      for_ locationsInShadows.middle \loc -> do
-        scenarioSpecific "exposed[CityOfRemnants]" (iid, MiddlePosition, loc)
-        do_ msg
-        forTarget_ loc msg
-      pure s
+      case locationsInShadows.middle of
+        Just loc -> do
+          scenarioSpecific "exposed[CityOfRemnants]" (iid, MiddlePosition, loc)
+          do_ msg
+          forTarget_ loc msg
+          pure s
+        Nothing -> do
+          removeFromGame c
+          let concealedCards = Map.map (filter (/= c.id)) meta.concealedCards
+          pure $ WithoutATrace $ attrs & metaL .~ toJSON (meta {concealedCards})
     ScenarioSpecific "exposed[CityOfRemnantsR]" v -> do
-      let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v
+      let (iid, c) :: (InvestigatorId, ConcealedCard) = toResult v
       let meta = toResult @LocationsInShadowsMetadata attrs.meta
       let locationsInShadows = meta.locationsInShadows
-      for_ locationsInShadows.right \loc -> do
-        scenarioSpecific "exposed[CityOfRemnants]" (iid, RightPosition, loc)
-        do_ msg
-        forTarget_ loc msg
-      pure s
+      case locationsInShadows.right of
+        Just loc -> do
+          scenarioSpecific "exposed[CityOfRemnants]" (iid, RightPosition, loc)
+          do_ msg
+          forTarget_ loc msg
+          pure s
+        Nothing -> do
+          removeFromGame c
+          let concealedCards = Map.map (filter (/= c.id)) meta.concealedCards
+          pure $ WithoutATrace $ attrs & metaL .~ toJSON (meta {concealedCards})
     ForTarget (LocationTarget loc) (ScenarioSpecific x v) | x `elem` ["exposed[CityOfRemnantsL]", "exposed[CityOfRemnantsM]", "exposed[CityOfRemnantsR]"] -> do
       let (iid, _c) :: (InvestigatorId, ConcealedCard) = toResult v
       withLocationOf iid \current -> do
@@ -316,30 +331,30 @@ instance RunMessage WithoutATrace where
           record TheCellKnowsTheTrueNatureOfTheCoterie
           record AlikiIsOnYourSide
           resolutionWithXp "resolution1" $ allGainXpWithBonus' attrs $ toBonus "bonus" 1
-          markTime 3
           leadChooseOneM do
             labeled' "bermuda" $ campaignSpecific "setCurrent" Bermuda
             labeled' "yborCity" $ campaignSpecific "setCurrent" YborCity
             labeled' "sanJuan" $ campaignSpecific "setCurrent" SanJuan
+          markTime 3
           endOfScenario
         Resolution 2 -> do
           record TheCellKnowsTheTrueNatureOfTheCoterie
           record YouHaventSeenTheLastOfAlikiZoniUperetria
           resolutionWithXp "resolution2" $ allGainXpWithBonus' attrs $ toBonus "bonus" 1
-          markTime 2
           leadChooseOneM do
             labeled' "bermuda" $ campaignSpecific "setCurrent" Bermuda
             labeled' "yborCity" $ campaignSpecific "setCurrent" YborCity
             labeled' "sanJuan" $ campaignSpecific "setCurrent" SanJuan
+          markTime 2
           endOfScenario
         Resolution 3 -> do
           record AlikiIsOnYourSide
           resolutionWithXp "resolution3" $ allGainXp' attrs
-          markTime 2
           leadChooseOneM do
             labeled' "bermuda" $ campaignSpecific "setCurrent" Bermuda
             labeled' "yborCity" $ campaignSpecific "setCurrent" YborCity
             labeled' "sanJuan" $ campaignSpecific "setCurrent" SanJuan
+          markTime 2
           endOfScenario
         Resolution 4 -> do
           record YouHaventSeenTheLastOfAlikiZoniUperetria

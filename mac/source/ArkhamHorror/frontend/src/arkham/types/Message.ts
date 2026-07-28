@@ -1,6 +1,7 @@
 import * as JsonDecoder from 'ts.data.json';
 import { Ability, abilityDecoder } from '@/arkham/types/Ability';
 import { chaosBagStepDecoder, ChaosBagStep } from '@/arkham/types/ChaosBag';
+import { Cost, costDecoder } from '@/arkham/types/Cost';
 import { SkillType, skillTypeDecoder } from '@/arkham/types/SkillType';
 import { ArkhamKey, arkhamKeyDecoder } from '@/arkham/types/Key';
 import { Target, targetDecoder } from '@/arkham/types/Target';
@@ -10,6 +11,7 @@ import { tarotCardDecoder, TarotCard } from '@/arkham/types/TarotCard';
 
 export enum MessageType {
   LABEL = 'Label',
+  COST_LABEL = 'CostLabel',
   INFO = 'Info',
   INVALID_LABEL = 'InvalidLabel',
   TARGET_LABEL = 'TargetLabel',
@@ -29,6 +31,7 @@ export enum MessageType {
   FIGHT_LABEL = 'FightLabel',
   FIGHT_LABEL_WITH_SKILL = 'FightLabelWithSkill',
   EVADE_LABEL = 'EvadeLabel',
+  EVADE_LABEL_WITH_SKILL = 'EvadeLabelWithSkill',
   ENGAGE_LABEL = 'EngageLabel',
   GRID_LABEL = 'GridLabel',
   TAROT_LABEL = 'TarotLabel',
@@ -41,7 +44,7 @@ export enum MessageType {
 }
 
 export type AbilityMessage = {
-  contents: AbilityLabel | FightLabel | FightLabelWithSkill | EvadeLabel
+  contents: AbilityLabel | FightLabel | FightLabelWithSkill | EvadeLabel | EvadeLabelWithSkill
   displayAsAction: boolean
   index: number
 }
@@ -59,6 +62,11 @@ export type Done = {
 export type Label = {
   tag: MessageType.LABEL
   label: string
+}
+
+export type CostLabel = {
+  tag: MessageType.COST_LABEL
+  cost: Cost
 }
 
 export type InvalidLabel = {
@@ -210,6 +218,19 @@ export const evadeLabelDecoder = JsonDecoder.object<EvadeLabel>(
     enemyId: JsonDecoder.string(),
   }, 'EvadeLabel')
 
+export type EvadeLabelWithSkill = {
+  tag: MessageType.EVADE_LABEL_WITH_SKILL
+  enemyId: string
+  skillType: SkillType
+}
+
+export const evadeLabelWithSkillDecoder = JsonDecoder.object<EvadeLabelWithSkill>(
+  {
+    tag: JsonDecoder.literal(MessageType.EVADE_LABEL_WITH_SKILL),
+    enemyId: JsonDecoder.string(),
+    skillType: skillTypeDecoder,
+  }, 'EvadeLabelWithSkill')
+
 export type EngageLabel = {
   tag: MessageType.ENGAGE_LABEL
   enemyId: string
@@ -335,8 +356,17 @@ export const skillTestApplyResultsButtonDecoder = JsonDecoder.object<SkillTestAp
     tag: JsonDecoder.literal(MessageType.SKILL_TEST_APPLY_RESULTS_BUTTON),
   }, 'SkillTestApplyResultsButton')
 
-export type Message =
+type MessageCommon = {
+  label?: string
+  target?: Target
+  component?: Component
+  investigatorId?: string
+  index?: number
+}
+
+export type Message = MessageCommon & (
   | Label
+  | CostLabel
   | Info
   | InvalidLabel
   | TooltipLabel
@@ -355,8 +385,9 @@ export type Message =
   | SkillTestApplyResultsButton 
   | FightLabel 
   | FightLabelWithSkill
-  | EvadeLabel 
-  | EngageLabel 
+  | EvadeLabel
+  | EvadeLabelWithSkill
+  | EngageLabel
   | GridLabel 
   | TarotLabel 
   | Done 
@@ -365,6 +396,7 @@ export type Message =
   | SkipTriggersButton 
   | CardPile
   | ScenarioLabel
+)
 
 export const skipTriggersDecoder = JsonDecoder.object<SkipTriggersButton>(
   {
@@ -383,6 +415,12 @@ export const labelDecoder = JsonDecoder.object<Label>(
     tag: JsonDecoder.literal(MessageType.LABEL),
     label: JsonDecoder.string()
   }, 'Label')
+
+export const costLabelDecoder = JsonDecoder.object<CostLabel>(
+  {
+    tag: JsonDecoder.literal(MessageType.COST_LABEL),
+    cost: costDecoder
+  }, 'CostLabel')
 
 export const invalidLabelDecoder = JsonDecoder.object<InvalidLabel>(
   {
@@ -481,6 +519,7 @@ export const effectActionButtonDecoder = JsonDecoder.object<EffectActionButton>(
 export const messageDecoder = JsonDecoder.oneOf<Message>(
   [
     labelDecoder,
+    costLabelDecoder,
     invalidLabelDecoder,
     infoDecoder,
     cardPileDecoder,
@@ -501,6 +540,7 @@ export const messageDecoder = JsonDecoder.oneOf<Message>(
     fightLabelDecoder,
     fightLabelWithSkillDecoder,
     evadeLabelDecoder,
+    evadeLabelWithSkillDecoder,
     engageLabelDecoder,
     gridLabelDecoder,
     tarotLabelDecoder,
@@ -518,6 +558,7 @@ export function choiceRequiresModal(c: Message) {
   switch (c.tag) {
     case 'Done': return true;
     case 'Label': return true;
+    case 'CostLabel': return true;
     case 'SkillLabel': return true;
     case 'SkillLabelWithLabel': return true;
     case 'PortraitLabel': return true;

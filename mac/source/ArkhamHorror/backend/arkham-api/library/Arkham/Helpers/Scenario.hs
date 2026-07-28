@@ -8,6 +8,8 @@ import Arkham.ClassSymbol
 import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
+import Arkham.Decklist.RandomBasicWeakness
+import Arkham.Decklist.Type
 import Arkham.Difficulty
 import {-# SOURCE #-} Arkham.Game ()
 import Arkham.Helpers
@@ -31,7 +33,6 @@ import Control.Lens (non, _1, _2)
 import Control.Monad.Writer
 import Data.Aeson.KeyMap qualified as KeyMap
 import Data.Aeson.Types
-import Data.List.NonEmpty qualified as NE
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
 
@@ -69,36 +70,26 @@ getVictoryDisplay = scenarioField ScenarioVictoryDisplay
 
 inVictoryDisplay :: (HasGame m, Tracing m) => CardMatcher -> m Bool
 inVictoryDisplay matcher = any (`cardMatch` matcher) <$> getVictoryDisplay
-
-whenStandalone :: (HasGame m, Tracing m) => m () -> m ()
-whenStandalone = whenM getIsStandalone
-
 unlessStandalone :: (HasGame m, Tracing m) => m () -> m ()
 unlessStandalone = unlessM getIsStandalone
 
 addRandomBasicWeaknessIfNeeded
-  :: MonadRandom m => ClassSymbol -> Int -> Deck PlayerCard -> m (Deck PlayerCard, [CardDef])
-addRandomBasicWeaknessIfNeeded investigatorClass playerCount deck = do
-  let
-    multiplayerFilter =
-      if playerCount < 2
-        then notElem MultiplayerOnly . cdDeckRestrictions
-        else const True
-    notForClass = \case
-      OnlyClass c -> c /= investigatorClass
-      _ -> True
-    classOnlyFilter = not . any notForClass . cdDeckRestrictions
-    weaknessFilter = and . sequence [multiplayerFilter, classOnlyFilter]
+  :: MonadRandom m => ClassSymbol -> Int -> Maybe ArkhamDBDecklist -> Deck PlayerCard -> m (Deck PlayerCard, [CardDef])
+addRandomBasicWeaknessIfNeeded investigatorClass playerCount mDecklist deck = do
   runWriterT do
     Deck <$> flip filterM (unDeck deck) \card -> do
       when
         (toCardDef card == randomWeakness)
-        (sample (NE.fromList $ filter weaknessFilter nonCampaignOnlyWeaknesses) >>= tell . pure)
+        (sampleRandomBasicWeakness context >>= tell . pure)
       pure $ toCardDef card /= randomWeakness
  where
-  nonCampaignOnlyWeaknesses =
-    filter (not . isCampaignOnly) allBasicWeaknesses
-  isCampaignOnly = elem CampaignModeOnly . cdDeckRestrictions
+  context =
+    RandomBasicWeaknessContext
+      { rbwInvestigatorClass = investigatorClass
+      , rbwPlayerCount = playerCount
+      , rbwDecklist = mDecklist
+      , rbwStandalone = True
+      }
 
 toChaosTokenValue :: ScenarioAttrs -> ChaosTokenFace -> Int -> Int -> ChaosTokenValue
 toChaosTokenValue attrs t esVal heVal =
@@ -109,13 +100,15 @@ toChaosTokenValue attrs t esVal heVal =
 byDifficulty :: ScenarioAttrs -> a -> a -> a
 byDifficulty attrs a b = if isEasyStandard attrs then a else b
 
+-- Ultimatum of Malevolence flips the reference side without changing the
+-- actual difficulty (chaos bag construction etc. still use the real value).
 isEasyStandard :: ScenarioAttrs -> Bool
-isEasyStandard ScenarioAttrs {scenarioDifficulty} =
-  scenarioDifficulty `elem` [Easy, Standard]
+isEasyStandard ScenarioAttrs {scenarioDifficulty, scenarioUseHardExpertReference} =
+  not scenarioUseHardExpertReference && scenarioDifficulty `elem` [Easy, Standard]
 
 isHardExpert :: ScenarioAttrs -> Bool
-isHardExpert ScenarioAttrs {scenarioDifficulty} =
-  scenarioDifficulty `elem` [Hard, Expert]
+isHardExpert ScenarioAttrs {scenarioDifficulty, scenarioUseHardExpertReference} =
+  scenarioUseHardExpertReference || scenarioDifficulty `elem` [Hard, Expert]
 
 getScenarioDeck :: (HasGame m, Tracing m) => ScenarioDeckKey -> m [Card]
 getScenarioDeck k = scenarioFieldMap ScenarioDecks (Map.findWithDefault [] k)

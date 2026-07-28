@@ -13,7 +13,7 @@ newtype ScreechingBanshee = ScreechingBanshee EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 screechingBanshee :: EnemyCard ScreechingBanshee
-screechingBanshee = enemy ScreechingBanshee Cards.screechingBanshee (3, Static 3, 1) (2, 0)
+screechingBanshee = enemy ScreechingBanshee Cards.screechingBanshee
 
 instance HasAbilities ScreechingBanshee where
   getAbilities (ScreechingBanshee a) =
@@ -21,7 +21,7 @@ instance HasAbilities ScreechingBanshee where
       $ restricted a 1 (thisExists a (EnemyAt HauntedLocation))
       $ forced
       $ EnemyDealtDamage #when AnyDamageEffect (be a)
-      $ SourceOwnedBy You
+      $ SourceUsedBy You
       <> NotSource (mapOneOf SourceWithTrait [Spell, Relic])
 
 instance RunMessage ScreechingBanshee where

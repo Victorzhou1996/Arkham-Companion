@@ -15,7 +15,7 @@ newtype YithianObserver = YithianObserver EnemyAttrs
 
 yithianObserver :: EnemyCard YithianObserver
 yithianObserver =
-  enemy YithianObserver Cards.yithianObserver (4, Static 4, 3) (1, 1)
+  enemy YithianObserver Cards.yithianObserver
     & setPrey FewestCardsInHand
 
 instance HasAbilities YithianObserver where
@@ -27,7 +27,7 @@ instance RunMessage YithianObserver where
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       emptyHand <- fieldMap InvestigatorHand null iid
       if emptyHand
-        then nextSkillTestModifiers iid attrs attrs [DamageDealt 1, HorrorDealt 1]
+        then thisSkillTestModifiers iid attrs attrs [DamageDealt 1, HorrorDealt 1]
         else randomDiscard iid attrs
       pure e
     _ -> YithianObserver <$> liftRunMessage msg attrs

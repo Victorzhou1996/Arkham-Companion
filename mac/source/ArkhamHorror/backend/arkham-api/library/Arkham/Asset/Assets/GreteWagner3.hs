@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.GreteWagner3 (greteWagner3) where
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Asset.Import.Lifted
 import Arkham.ForMovement
 import Arkham.Helpers.Modifiers
 import Arkham.Matcher
@@ -20,7 +20,7 @@ instance HasModifiersFor GreteWagner3 where
 instance HasAbilities GreteWagner3 where
   getAbilities (GreteWagner3 a) =
     [ controlled a 1 (CanDiscoverCluesAt $ orConnected NotForMovement YourLocation)
-        $ triggered (EnemyDefeated #after You ByAny AnyEnemy) (exhaust a <> damageCost a 1)
+        $ triggered (IfEnemyDefeated #after You ByAny AnyEnemy) (exhaust a <> damageCost a 1)
     ]
 
 instance RunMessage GreteWagner3 where

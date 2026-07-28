@@ -14,7 +14,7 @@ newtype BroodOfYogSothoth = BroodOfYogSothoth EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity, HasAbilities)
 
 broodOfYogSothoth :: EnemyCard BroodOfYogSothoth
-broodOfYogSothoth = enemy BroodOfYogSothoth Cards.broodOfYogSothoth (6, Static 1, 3) (2, 2)
+broodOfYogSothoth = enemy BroodOfYogSothoth Cards.broodOfYogSothoth
 
 instance HasModifiersFor BroodOfYogSothoth where
   getModifiersFor (BroodOfYogSothoth a) = do
@@ -23,14 +23,15 @@ instance HasModifiersFor BroodOfYogSothoth where
       a
       [ HealthModifier healthModifier
       , CanOnlyBeAttackedByAbilityOn $ singleton Assets.esotericFormula.cardCode
+      , CannotBeDamagedByPlayerSourcesExcept (SourceIsAsset (AssetIs Assets.esotericFormula.cardCode))
       ]
 
 instance RunMessage BroodOfYogSothoth where
   runMessage msg e@(BroodOfYogSothoth attrs) = runQueueT $ case msg of
-    Msg.EnemyDamage eid (damageAssignmentSource -> (.asset) -> Just aid) | eid == enemyId attrs -> do
+    Msg.DealDamage (EnemyTarget eid) (damageAssignmentSource -> (.asset) -> Just aid) | eid == enemyId attrs -> do
       isEsotericFormula <- aid <=~> AssetWithTitle "Esoteric Formula"
       if isEsotericFormula
         then BroodOfYogSothoth <$> liftRunMessage msg attrs
         else pure e
-    Msg.EnemyDamage eid _ | eid == enemyId attrs -> pure e
+    Msg.DealDamage (EnemyTarget eid) _ | eid == enemyId attrs -> pure e
     _ -> BroodOfYogSothoth <$> liftRunMessage msg attrs

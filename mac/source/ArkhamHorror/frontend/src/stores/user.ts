@@ -13,10 +13,13 @@ export interface UserState {
   token: string | null
 }
 
+export type RegistrationResult = Authentication | { verificationRequired: true; email: string }
+
 export const useUserStore = defineStore("user", () => {
   const currentUser = ref<User | null>(null)
   const token = ref<string | null>(null)
   const isAdmin = ref(false)
+  let storageRestorePromise: Promise<void> | null = null
 
   async function authenticate(credentials: Credentials) {
     const authentication = await api.post<Authentication>('authenticate', credentials)
@@ -25,9 +28,18 @@ export const useUserStore = defineStore("user", () => {
   }
 
   async function register(registration: Registration) {
-    const authentication = await api.post<Authentication>('register', registration)
+    const response = await api.post<RegistrationResult>('register', registration)
+    if ('token' in response.data) {
+      token.value = response.data.token
+      await setCurrentUser()
+    }
+    return response.data
+  }
+
+  async function verifyRegistration(email: string, code: string) {
+    const authentication = await api.post<Authentication>('register/verify', { email, code })
     token.value = authentication.data.token
-    setCurrentUser()
+    await setCurrentUser()
   }
 
   function logout() {
@@ -55,13 +67,19 @@ export const useUserStore = defineStore("user", () => {
     logout()
   }
 
-  async function loadUserFromStorage() {
-    if (currentUser.value) return
+  function loadUserFromStorage(): Promise<void> {
+    if (currentUser.value) return Promise.resolve()
+    if (storageRestorePromise) return storageRestorePromise
+
     const tokenFromStorage = localStorage.getItem('arkham-token');
     if (tokenFromStorage !== null && tokenFromStorage !== undefined) {
       token.value = tokenFromStorage
-      await setCurrentUser()
+      storageRestorePromise = setCurrentUser().finally(() => {
+        storageRestorePromise = null
+      })
+      return storageRestorePromise
     }
+    return Promise.resolve()
   }
 
   function signOut() {
@@ -69,5 +87,5 @@ export const useUserStore = defineStore("user", () => {
     token.value = null
   }
 
-  return { token, currentUser, isAdmin, loadUserFromStorage, authenticate, register, logout, deleteAccount }
+  return { token, currentUser, isAdmin, loadUserFromStorage, authenticate, register, verifyRegistration, logout, deleteAccount, setCurrentUser }
 })

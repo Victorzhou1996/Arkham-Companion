@@ -98,7 +98,9 @@ instance RunMessage ToTheForbiddenPeaks where
 
       unless (eliyahIsAlive && woodenSledgeRecovered) do
         whenM hasRemainingFrostTokens $ addChaosToken #frost
-
+      doStep 1 PreScenarioSetup
+      pure s
+    DoStep 1 PreScenarioSetup -> do
       claypoolIsAlive <- getPartnerIsAlive Assets.averyClaypoolAntarcticGuide
       blueStory
         $ validateEntry claypoolIsAlive "claypool.alive"
@@ -110,9 +112,12 @@ instance RunMessage ToTheForbiddenPeaks where
       unless claypoolIsAlive do
         chooseOneM lead do
           whenM hasRemainingFrostTokens do
-            labeled "Add 1 {frost} token to the chaos bag" $ addChaosToken #frost
-          labeled "Each investigator suffers 1 physical trauma." $ eachInvestigator (`sufferPhysicalTrauma` 1)
-
+            labeled' "addFrostToken" $ addChaosToken #frost
+          countVar 1 $ labeled' "eachInvestigatorSuffersPhysicalTrauma" $ eachInvestigator (`sufferPhysicalTrauma` 1)
+      doStep 2 PreScenarioSetup
+      pure s
+    DoStep 2 PreScenarioSetup -> do
+      lead <- getLead
       takadaIsAlive <- getPartnerIsAlive Assets.takadaHirokoAeroplaneMechanic
       blueStory
         $ validateEntry takadaIsAlive "takada.alive"
@@ -122,9 +127,11 @@ instance RunMessage ToTheForbiddenPeaks where
       unless takadaIsAlive do
         chooseOneM lead do
           whenM hasRemainingFrostTokens do
-            labeled "Add 1 {frost} token to the chaos bag" $ addChaosToken #frost
-          labeled "Each investigator suffers 1 mental trauma." $ eachInvestigator (`sufferMentalTrauma` 1)
-
+            labeled' "addFrostToken" $ addChaosToken #frost
+          countVar 1 $ labeled' "eachInvestigatorSuffersMentalTrauma" $ eachInvestigator (`sufferMentalTrauma` 1)
+      doStep 3 PreScenarioSetup
+      pure s
+    DoStep 3 PreScenarioSetup -> do
       scoutedTheMountainPass <- getHasRecord TheInvestigatorsScoutedTheMountainPass
       blueStory
         $ validateEntry scoutedTheMountainPass "theMountainPass.scouted"
@@ -138,8 +145,8 @@ instance RunMessage ToTheForbiddenPeaks where
       partners <- getRemainingPartners
       unless (null partners) do
         chooseOneM iid do
-          questionLabeled "Choose a partner for this scenario"
-          labeled "Do not take a partner" nothing
+          questionLabeledI "choosePartnerForScenario"
+          labeledI "doNotTakeAPartner" nothing
           for_ partners \partner -> do
             inPlay <- selectAny $ assetIs partner.cardCode
             unless inPlay do

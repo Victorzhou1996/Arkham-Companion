@@ -15,11 +15,12 @@ newtype SerpentOfTenochtitlan = SerpentOfTenochtitlan EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 serpentOfTenochtitlan :: EnemyCard SerpentOfTenochtitlan
-serpentOfTenochtitlan = enemy SerpentOfTenochtitlan Cards.serpentOfTenochtitlan (3, Static 5, 3) (1, 1)
+serpentOfTenochtitlan = enemy SerpentOfTenochtitlan Cards.serpentOfTenochtitlan
 
 instance HasModifiersFor SerpentOfTenochtitlan where
   getModifiersFor (SerpentOfTenochtitlan a) = do
-    atAncientLocation <- selectAny $ EnemyWithId a.id <> at_ (LocationWithTrait Ancient)
+    atAncientLocation <-
+      selectAny $ EnemyWithId a.id <> at_ (LocationWithTrait Ancient <> LocationWithAnyClues)
     modifySelf a
       $ if atAncientLocation
         then [AddKeyword Retaliate, AddKeyword Alert]

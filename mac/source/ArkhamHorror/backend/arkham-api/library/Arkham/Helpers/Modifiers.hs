@@ -14,7 +14,11 @@ import Arkham.Id
 import Arkham.Matcher.Types
 import Arkham.Message
 import Arkham.Modifier
-import Arkham.Modifier as X (ModifierType (..), pattern CannotMoveExceptByScenarioCardEffects)
+import Arkham.Modifier as X (
+  ModifierType (..),
+  setActiveDuringSetup,
+  pattern CannotMoveExceptByScenarioCardEffects,
+ )
 import Arkham.Phase (Phase)
 import Arkham.Placement
 import Arkham.Prelude
@@ -92,7 +96,18 @@ getModifiers' (toTarget -> BothTarget t1 t2) = do
     <> findWithDefault [] ThisTarget allMods
 getModifiers' (toTarget -> target) = do
   allMods <- getAllModifiers
-  pure $ findWithDefault [] ThisTarget allMods <> findWithDefault [] target allMods
+  let rawMods = findWithDefault [] ThisTarget allMods <> findWithDefault [] target allMods
+  if CannotReceiveModifiersFromPlayerSources `notElem` map modifierType rawMods
+    then pure rawMods
+    else
+      pure
+        $ filter
+          ( \m ->
+              modifierType m
+                == CannotReceiveModifiersFromPlayerSources
+                || not (isPlayerCardSource (modifierSource m))
+          )
+          rawMods
 
 hasModifier
   :: (HasGame m, Targetable a) => a -> ModifierType -> m Bool
@@ -104,11 +119,6 @@ hasAnyModifier a ms = any (`elem` ms) <$> getModifiers (toTarget a)
 
 semaphore :: (HasGame m, Targetable target) => target -> m () -> m ()
 semaphore target body = whenM (withoutModifier target Semaphore) body
-
-whenWithoutModifier :: (HasGame m, Targetable a) => a -> ModifierType -> m () -> m ()
-whenWithoutModifier a m body = do
-  b <- withoutModifier a m
-  when b body
 
 withoutModifier :: (HasGame m, Targetable a) => a -> ModifierType -> m Bool
 withoutModifier a m = not <$> hasModifier a m
@@ -130,6 +140,31 @@ modifySelf
   -> [ModifierType]
   -> m ()
 modifySelf target mods = tell . MonoidalMap . singletonMap (toTarget target) =<< toModifiers target mods
+
+immuneToPlayerEffect :: [ModifierType]
+immuneToPlayerEffect =
+  [ CannotBeAttackedByPlayerSourcesExcept $ SourceIsAbility BasicAbility
+  , CannotBeEvadedByPlayerSourcesExcept $ SourceIsAbility BasicAbility
+  , CannotBeDamagedByPlayerSourcesExcept $ SourceIsAbility BasicAbility
+  , CannotBeEngagedByPlayerSourcesExcept $ SourceIsAbility BasicAbility
+  , CannotReceiveModifiersFromPlayerSources
+  , CannotBeExhaustedBy SourceIsPlayerCard
+  , CannotBeDefeatedBy SourceIsPlayerCard
+  , CannotBeRemovedBy SourceIsPlayerCard
+  , CannotBeMovedBy SourceIsPlayerCard
+  , CannotBeDisengagedBy SourceIsPlayerCard
+  ]
+
+immuneToPlayerEffects
+  :: ( Targetable target
+     , Sourceable target
+     , HasGame m
+     , Tracing m
+     , MonadWriter (MonoidalMap Target [Modifier]) m
+     )
+  => target
+  -> m ()
+immuneToPlayerEffects target = modifySelf target immuneToPlayerEffect
 
 modifySelf1
   :: ( Targetable target
@@ -409,11 +444,6 @@ maybeModifySelf
   -> MaybeT m [ModifierType]
   -> m ()
 maybeModifySelf a = tell . MonoidalMap . singletonMap (toTarget a) <=< modified a . fromMaybe [] <=< runMaybeT
-
-maybeModified
-  :: (Sourceable a, HasGame m, Tracing m) => a -> MaybeT m [ModifierType] -> m [Modifier]
-maybeModified a = modified a . fromMaybe [] <=< runMaybeT
-
 modified_
   :: ( Sourceable a
      , Targetable target
@@ -561,7 +591,8 @@ effectModifiers
 effectModifiers source ms = EffectModifiers <$> toModifiers source ms
 
 effectModifiersWith
-  :: (HasGame m, Tracing m, Sourceable a) => (Modifier -> Modifier) -> a -> [ModifierType] -> m (EffectMetadata Message)
+  :: (HasGame m, Tracing m, Sourceable a)
+  => (Modifier -> Modifier) -> a -> [ModifierType] -> m (EffectMetadata Message)
 effectModifiersWith f source ms = EffectModifiers . map f <$> toModifiers source ms
 
 createWindowModifierEffect

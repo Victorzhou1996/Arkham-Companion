@@ -4,6 +4,7 @@ import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.Helpers.Investigator (searchBondedFor)
+import Arkham.I18n
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Placement
@@ -25,7 +26,7 @@ rodOfCarnamagosScepterOfTheMadSeer2 =
 
 instance HasAbilities RodOfCarnamagosScepterOfTheMadSeer2 where
   getAbilities (RodOfCarnamagosScepterOfTheMadSeer2 (With attrs _)) =
-    [ restricted attrs 1 ControlsThis
+    [ restricted attrs 1 (ControlsThis <> DuringSkillTest AnySkillTest)
         $ FastAbility (ChooseEnemyCost (NonEliteEnemy <> EnemyAt Anywhere) <> exhaust attrs)
     ]
 
@@ -40,9 +41,10 @@ instance RunMessage RodOfCarnamagosScepterOfTheMadSeer2 where
         when (curses > 0) do
           rots <- searchBondedFor iid (CardWithTrait Rot)
           focusCards rots do
-            chooseUpToNM iid curses "Done attaching Rots" do
+            cardI18n $ scope "rodOfCarnamagosScepterOfTheMadSeer2" $ chooseUpToNM' iid curses "doneAttachingRots" do
               targets rots \rot -> do
                 obtainCard rot
                 push $ CreateEventAt iid rot (AttachedToEnemy eid)
+      push $ ReturnChaosTokens tokens
       pure a
     _ -> RodOfCarnamagosScepterOfTheMadSeer2 . (`with` meta) <$> liftRunMessage msg attrs

@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.SeepingNightmare (seepingNightmare) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Modifiers
 import Arkham.Keyword
 import Arkham.Matcher
@@ -13,7 +13,7 @@ newtype SeepingNightmare = SeepingNightmare EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 seepingNightmare :: EnemyCard SeepingNightmare
-seepingNightmare = enemy SeepingNightmare Cards.seepingNightmare (3, Static 6, 3) (2, 2)
+seepingNightmare = enemy SeepingNightmare Cards.seepingNightmare
 
 instance HasModifiersFor SeepingNightmare where
   getModifiersFor (SeepingNightmare a) = do

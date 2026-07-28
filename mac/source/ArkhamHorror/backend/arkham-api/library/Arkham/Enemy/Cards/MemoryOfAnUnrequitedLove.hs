@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.MemoryOfAnUnrequitedLove (memoryOfAnUnrequitedLove) wh
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (DiscoverClues, EnemyDefeated)
+import Arkham.Enemy.Import.Lifted hiding (DiscoverClues)
 import Arkham.Helpers.Story
 import Arkham.Helpers.Window
 import Arkham.Matcher
@@ -15,7 +15,7 @@ newtype MemoryOfAnUnrequitedLove = MemoryOfAnUnrequitedLove EnemyAttrs
 
 memoryOfAnUnrequitedLove :: EnemyCard MemoryOfAnUnrequitedLove
 memoryOfAnUnrequitedLove =
-  enemyWith MemoryOfAnUnrequitedLove Cards.memoryOfAnUnrequitedLove (4, PerPlayer 3, 3) (1, 1)
+  enemyWith MemoryOfAnUnrequitedLove Cards.memoryOfAnUnrequitedLove
     $ preyL
     .~ Prey (ControlsAsset $ assetIs Assets.drAmyKenslerProfessorOfBiology)
 

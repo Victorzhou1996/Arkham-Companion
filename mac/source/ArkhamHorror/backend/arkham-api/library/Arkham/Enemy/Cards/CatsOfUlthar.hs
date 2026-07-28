@@ -4,7 +4,7 @@ import Arkham.Ability
 import Arkham.Campaigns.TheDreamEaters.Helpers
 import Arkham.Campaigns.TheDreamEaters.Key
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Modifiers (ModifierType (..), maybeModified_)
 import Arkham.Helpers.SkillTest (getSkillTest)
 import Arkham.Matcher
@@ -15,7 +15,7 @@ newtype CatsOfUlthar = CatsOfUlthar EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 catsOfUlthar :: EnemyCard CatsOfUlthar
-catsOfUlthar = enemy CatsOfUlthar Cards.catsOfUlthar (1, Static 1, 1) (1, 0)
+catsOfUlthar = enemy CatsOfUlthar Cards.catsOfUlthar
 
 -- This is a bit weird to handle, but this is the only card that does that so
 -- we affect the first token drawn and treat it like you need to draw an

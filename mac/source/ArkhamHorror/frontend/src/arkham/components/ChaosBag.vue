@@ -67,9 +67,12 @@ function imageFor(tokenFace: string) {
 }
 
 const revealedChaosTokens = computed(() => {
+  if (props.skillTest) return props.game.skillTestChaosTokens
+
   if (props.game.focusedChaosTokens.length > 0) {
     const tokens = [...props.game.skillTestChaosTokens, ...props.game.focusedChaosTokens]
-    return Array.from(new Set(tokens.map(JSON.stringify))).map(JSON.parse);
+    return Array.from(new Set(tokens.map((token) => JSON.stringify(token))))
+      .map((token) => JSON.parse(token) as (typeof tokens)[number]);
   }
 
   return props.game.skillTestChaosTokens;
@@ -102,7 +105,7 @@ const choose = (idx: number) => emit('choose', idx)
     </div>
 
     <div v-if="debug.active && tokenAction !== -1" class="token-preview">
-      <div class="token-debug" v-for="tokenFace in allTokenFaces" :key="tokenFace" @click="debug.send(game.id, {tag: 'ForceChaosTokenDraw', contents: tokenFace})">
+      <div class="token-debug" v-for="tokenFace in allTokenFaces" :key="tokenFace" @click="debug.send(game.id, {tag: 'ChaosBagMessage', contents: {tag: 'ForceChaosTokenDraw_', contents: tokenFace}})">
         <img
           class="token"
           :src="imageFor(tokenFace)"
@@ -123,7 +126,7 @@ const choose = (idx: number) => emit('choose', idx)
 
 <style scoped>
 .token--can-draw {
-  border: min(5px, 1vw) solid #ff00ff;
+  border: min(5px, 1vw) solid var(--select);
   border-radius: 500px;
   cursor: pointer;
 }
@@ -217,7 +220,7 @@ const choose = (idx: number) => emit('choose', idx)
   display: inline;
   img {
     cursor: pointer;
-    border: 1px solid #ff00ff;
+    border: 1px solid var(--select);
     border-radius: 30px;
     width: 30px;
     &.token-big {

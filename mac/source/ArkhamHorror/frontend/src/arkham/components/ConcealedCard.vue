@@ -86,7 +86,7 @@ function isAbility(v: Message): v is AbilityLabel {
     return true
   }
 
-  if (v.tag === MessageType.EVADE_LABEL && v.enemyId === id.value) {
+  if ((v.tag === MessageType.EVADE_LABEL || v.tag === MessageType.EVADE_LABEL_WITH_SKILL) && v.enemyId === id.value) {
     return true
   }
 
@@ -196,7 +196,7 @@ async function clicked() {
       @choose="chooseAbility"
     />
     <template v-if="debug.active">
-      <button @click="debugging = true">Debug</button>
+      <button @click="debugging = true">{{ $t('concealedCard.debug') }}</button>
     </template>
     <DebugConcealedCard v-if="debugging" :game="game" :card="card" :playerId="playerId" @close="debugging = false" @choose="$emit('choose', $event)"/>
   </div>

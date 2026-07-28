@@ -1,6 +1,7 @@
 module Arkham.Enemy.Cards.TheRougarou (TheRougarou (..), theRougarou) where
 
 import Arkham.Ability
+import Arkham.Constants
 import Arkham.DamageEffect
 import Arkham.Enemy.Cards qualified as Cards
 import Arkham.Enemy.Import.Lifted
@@ -18,7 +19,7 @@ newtype TheRougarou = TheRougarou (EnemyAttrs `With` Meta)
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 theRougarou :: EnemyCard TheRougarou
-theRougarou = enemy (TheRougarou . (`with` Meta 0)) Cards.theRougarou (3, PerPlayer 5, 3) (2, 2)
+theRougarou = enemy (TheRougarou . (`with` Meta 0)) Cards.theRougarou
 
 instance HasAbilities TheRougarou where
   getAbilities (TheRougarou (a `With` meta)) = do
@@ -32,8 +33,8 @@ instance HasAbilities TheRougarou where
       then do
         let
           engageAction =
-            restricted a 102 (OnSameLocation <> not_ (thisEnemy $ EnemyIsEngagedWith You))
-              $ ActionAbility [#engage] Nothing (GroupClueCost (ByPlayerCount 1 1 2 2) Anywhere <> ActionCost 1)
+            restricted a AbilityEngage (OnSameLocation <> not_ (thisEnemy $ EnemyIsEngagedWith You))
+              $ ActionAbility #engage Nothing (GroupClueCost (ByPlayerCount 1 1 2 2) Anywhere <> ActionCost 1)
         firstAbility : filter (not . (`abilityIs` #engage)) actions' <> [engageAction]
       else firstAbility : actions'
 
@@ -50,6 +51,6 @@ instance RunMessage TheRougarou where
         . (`with` Meta (damagePerPhase metadata `mod` damageThreshold))
         <$> liftRunMessage msg attrs
     EndPhase -> TheRougarou . (`with` Meta 0) <$> liftRunMessage msg attrs
-    Msg.EnemyDamage eid (damageAssignmentAmount -> n) | eid == attrs.id -> do
+    Msg.DealDamage (EnemyTarget eid) (damageAssignmentAmount -> n) | eid == attrs.id -> do
       TheRougarou . (`with` Meta (damagePerPhase metadata + n)) <$> liftRunMessage msg attrs
     _ -> TheRougarou . (`with` metadata) <$> liftRunMessage msg attrs

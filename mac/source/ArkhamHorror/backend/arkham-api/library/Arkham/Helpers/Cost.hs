@@ -2,8 +2,8 @@ module Arkham.Helpers.Cost where
 
 import Arkham.Ability
 import Arkham.Action (Action)
-import Arkham.Asset.Cards.TheCircleUndone qualified as Assets
 import Arkham.Asset.Types (Field (..))
+import Arkham.Asset.Uses
 import Arkham.Campaigns.TheScarletKeys.Concealed.Kind
 import Arkham.Campaigns.TheScarletKeys.Key.Matcher
 import Arkham.Capability
@@ -14,15 +14,15 @@ import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Cost.FieldCost
 import Arkham.Distance
-import Arkham.Enemy.Types (Field (EnemySealedChaosTokens))
+import Arkham.Enemy.Types (Field (EnemySealedChaosTokens, EnemyTokens))
 import Arkham.Event.Types (Field (..))
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.Action (additionalActionCovers)
 import {-# SOURCE #-} Arkham.Helpers.Calculation
 import Arkham.Helpers.Card (extendedCardMatch, getModifiedCardCost)
 import Arkham.Helpers.ChaosBag
-import {-# SOURCE #-} Arkham.Helpers.Criteria (passesCriteria)
 import Arkham.Helpers.ChaosToken (matchChaosToken)
+import {-# SOURCE #-} Arkham.Helpers.Criteria (passesCriteria)
 import Arkham.Helpers.Customization
 import Arkham.Helpers.GameValue
 import {-# SOURCE #-} Arkham.Helpers.Investigator ()
@@ -52,7 +52,6 @@ import Arkham.Scenario.Types (Field (..))
 import Arkham.SkillType
 import Arkham.Source
 import Arkham.Target
-import Arkham.Token
 import Arkham.Token qualified as Token
 import Arkham.Tracing
 import Arkham.Window (Window (..))
@@ -62,6 +61,28 @@ import Control.Monad.State.Strict (evalStateT, get, put)
 import Data.List qualified as List
 import Data.List.Extra (nubOrd)
 import Data.Set qualified as Set
+
+hasSkillTestCost :: Cost -> Bool
+hasSkillTestCost = \case
+  SkillTestCost {} -> True
+  Costs xs -> any hasSkillTestCost xs
+  OrCost xs -> any hasSkillTestCost xs
+  OptionalCost x -> hasSkillTestCost x
+  CostWhenEnemy _ x -> hasSkillTestCost x
+  CostWhenTreachery _ x -> hasSkillTestCost x
+  CostWhenTreacheryElse _ a b -> hasSkillTestCost a || hasSkillTestCost b
+  CostOnlyWhen _ x -> hasSkillTestCost x
+  CostIfEnemy _ a b -> hasSkillTestCost a || hasSkillTestCost b
+  CostIfCustomization _ a b -> hasSkillTestCost a || hasSkillTestCost b
+  CostIfRemembered _ a b -> hasSkillTestCost a || hasSkillTestCost b
+  UpTo _ x -> hasSkillTestCost x
+  AtLeastOne _ x -> hasSkillTestCost x
+  AsIfAtLocationCost _ x -> hasSkillTestCost x
+  NonBlankedCost x -> hasSkillTestCost x
+  LabeledCost _ x -> hasSkillTestCost x
+  XCost x -> hasSkillTestCost x
+  OneOfDistanceCost _ x -> hasSkillTestCost x
+  _ -> False
 
 getCanAffordCost
   :: (HasCallStack, HasGame m, Tracing m, Sourceable source)
@@ -73,6 +94,32 @@ getCanAffordCost
   -> m Bool
 getCanAffordCost iid source actions windows' cost =
   getCanAffordCost_ iid source actions windows' True cost
+
+{- | Total uses of @uType@ spendable from @assets@, including uses granted by
+other assets/events via @ProvidesUses@/@ProvidesProxyUses@ modifiers.
+-}
+getSpendableUseCount :: (Tracing m, HasGame m) => [AssetId] -> UseType -> m Int
+getSpendableUseCount assets uType =
+  flip evalStateT assets $ do
+    sum <$> for assets \asset -> do
+      mods <- lift $ getModifiers asset
+      alreadyCounted <- get
+      fromOtherSources <-
+        sum <$> for mods \case
+          ProvidesUses uType' (AssetSource s) | uType' == uType -> do
+            if s `elem` alreadyCounted
+              then pure 0
+              else do
+                put $ s : alreadyCounted
+                lift $ fieldMap AssetUses (findWithDefault 0 uType) s
+          ProvidesProxyUses pType uType' (AssetSource s) | uType' == uType -> do
+            if s `elem` alreadyCounted
+              then pure 0
+              else do
+                put $ s : alreadyCounted
+                lift $ fieldMap AssetUses (findWithDefault 0 pType) s
+          _ -> pure 0
+      lift $ fieldMap AssetUses ((+ fromOtherSources) . findWithDefault 0 uType) asset
 
 getCanAffordCost_
   :: (HasCallStack, HasGame m, Tracing m, Sourceable source)
@@ -134,6 +181,8 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
         targets <- select tm
         targets & anyM \case
           ScenarioTarget -> scenarioFieldMap ScenarioTokens ((> 0) . countTokens tkn)
+          LocationTarget lid -> fieldMap LocationTokens ((> 0) . countTokens tkn) lid
+          EnemyTarget lid -> fieldMap EnemyTokens ((> 0) . countTokens tkn) lid
           _ -> pure False
       PlaceKeyCost _ k -> fieldMap InvestigatorKeys (elem k) iid
       GroupSpendKeyCost k lm -> selectAny (Matcher.InvestigatorAt lm <> Matcher.InvestigatorWithKey k)
@@ -176,31 +225,41 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
         pure $ x >= n
       AddCurseTokenCost n -> do
         x <- getRemainingCurseTokens
-        -- Are you Parallel Rex?
-        canParallelRex <-
-          iid
-            <=~> ( Matcher.InvestigatorIs "90078"
-                     <> Matcher.InvestigatorAt Matcher.Anywhere
-                     <> Matcher.InvestigatorWithAnyClues
-                 )
-        z <-
-          if canParallelRex
-            then fieldMap InvestigatorClues (* 2) iid
-            else pure 0
-        pure $ x + z >= n
+        if x >= n
+          then pure True
+          else
+            -- Parallel Rex's reaction only triggers when 2+ curse tokens would be added
+            if n < 2
+              then pure False
+              else do
+                canParallelRex <-
+                  iid
+                    <=~> ( Matcher.InvestigatorIs "90078"
+                             <> Matcher.InvestigatorAt Matcher.Anywhere
+                             <> Matcher.InvestigatorWithAnyClues
+                         )
+                if canParallelRex
+                  then do
+                    z <- fieldMap InvestigatorClues (* 2) iid
+                    pure $ x + z >= n
+                  else pure False
       AddCurseTokensCost n _ -> do
         x <- getRemainingCurseTokens
-        canParallelRex <-
-          iid
-            <=~> ( Matcher.InvestigatorIs "90078"
-                     <> Matcher.InvestigatorAt Matcher.Anywhere
-                     <> Matcher.InvestigatorWithAnyClues
-                 )
-        z <-
-          if canParallelRex
-            then fieldMap InvestigatorClues (* 2) iid
-            else pure 0
-        pure $ x + z >= n
+        if x >= n
+          then pure True
+          else do
+            canParallelRex <-
+              iid
+                <=~> ( Matcher.InvestigatorIs "90078"
+                         <> Matcher.InvestigatorAt Matcher.Anywhere
+                         <> Matcher.InvestigatorWithAnyClues
+                     )
+            if canParallelRex
+              then do
+                z <- fieldMap InvestigatorClues (* 2) iid
+                -- Smallest Rex-payable amount is max n 2; if that fits, the cost is affordable.
+                pure $ x + z >= max n 2
+              else pure False
       SkillTestCost {} -> pure True
       AsIfAtLocationCost lid c -> do
         withModifiers' iid (toModifiers source [AsIfAt lid])
@@ -308,27 +367,7 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
         selectAny $ Matcher.replaceYouMatcher iid matcher <> Matcher.DiscardableAsset
       UseCost assetMatcher uType n -> do
         assets <- select (Matcher.replaceYouMatcher iid assetMatcher)
-        uses <- flip evalStateT assets $ do
-          sum <$> for assets \asset -> do
-            mods <- lift $ getModifiers asset
-            alreadyCounted <- get
-            fromOtherSources <-
-              sum <$> for mods \case
-                ProvidesUses uType' (AssetSource s) | uType' == uType -> do
-                  if s `elem` alreadyCounted
-                    then pure 0
-                    else do
-                      put $ s : alreadyCounted
-                      lift $ fieldMap AssetUses (findWithDefault 0 uType) s
-                ProvidesProxyUses pType uType' (AssetSource s) | uType' == uType -> do
-                  if s `elem` alreadyCounted
-                    then pure 0
-                    else do
-                      put $ s : alreadyCounted
-                      lift $ fieldMap AssetUses (findWithDefault 0 pType) s
-                _ -> pure 0
-
-            lift $ fieldMap AssetUses ((+ fromOtherSources) . findWithDefault 0 uType) asset
+        uses <- getSpendableUseCount assets uType
         pure $ uses >= n
       EventUseCost eventMatcher uType n -> do
         events <- select eventMatcher
@@ -352,8 +391,7 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
             pure $ uses >= drawnCardsValue
       UseCostUpTo assetMatcher uType n _ -> do
         assets <- select assetMatcher
-        uses <-
-          sum <$> traverse (fieldMap AssetUses (findWithDefault 0 uType)) assets
+        uses <- getSpendableUseCount assets uType
         pure $ uses >= n
       UnlessFastActionCost n ->
         getCanAffordCost_ iid source actions windows' canModify (ActionCost n)
@@ -390,7 +428,8 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
         n <- perPlayer 1
         pure $ spendableClues >= n
       DiscoveredCluesCost -> pure True
-      PlaceClueOnLocationCost n -> do
+      PlaceClueOnLocationCost gv -> do
+        n <- getPlayerCountValue gv
         canParallelRex <- iid <=~> Matcher.InvestigatorIs "90078"
         z <-
           if canParallelRex
@@ -400,29 +439,34 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
         pure $ (clues + z) >= n
       GroupClueCost n locationMatcher -> do
         cost <- getPlayerCountValue n
-        iids <- select $ Matcher.InvestigatorAt locationMatcher
+        let lm = Matcher.replaceYouMatcher iid locationMatcher
+        iids <- select $ Matcher.InvestigatorAt lm
         totalSpendableClues <- getSpendableClueCount iids
         pure $ totalSpendableClues >= cost
       SameLocationGroupClueCost n locationMatcher -> do
         totalClues <- getPlayerCountValue n
-        select locationMatcher >>= anyM \lid -> do
+        let lm = Matcher.replaceYouMatcher iid locationMatcher
+        select lm >>= anyM \lid -> do
           total <- getSpendableClueCount =<< select (Matcher.investigatorAt lid)
           pure $ total >= totalClues
       GroupResourceCost n locationMatcher -> do
         cost <- getPlayerCountValue n
-        iids <- select $ Matcher.InvestigatorAt locationMatcher
+        let lm = Matcher.replaceYouMatcher iid locationMatcher
+        iids <- select $ Matcher.InvestigatorAt lm
         totalSpendableClues <- sum <$> traverse getSpendableResources iids
         pure $ totalSpendableClues >= cost
       GroupDiscardCost n extendedCardMatcher locationMatcher -> do
         cost <- getPlayerCountValue n
+        let lm = Matcher.replaceYouMatcher iid locationMatcher
         cards <-
           selectCount
-            $ Matcher.InHandOf Matcher.NotForPlay (Matcher.InvestigatorAt locationMatcher)
+            $ Matcher.InHandOf Matcher.NotForPlay (Matcher.InvestigatorAt lm)
             <> extendedCardMatcher
             <> Matcher.basic Matcher.DiscardableCard
         pure $ cards >= cost
       GroupClueCostRange (cost, _) locationMatcher -> do
-        iids <- select $ Matcher.InvestigatorAt locationMatcher
+        let lm = Matcher.replaceYouMatcher iid locationMatcher
+        iids <- select $ Matcher.InvestigatorAt lm
         totalSpendableClues <- getSpendableClueCount iids
         pure $ totalSpendableClues >= cost
       IncreaseCostOfThis cardId n -> do
@@ -471,15 +515,16 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
       DiscardDrawnCardCost -> pure True -- TODO: Make better
       ExileCost _ -> iid <=~> Matcher.InvestigatorCanRemoveCardsFromDeck -- TODO: Make better
       RemoveCost _ -> pure True -- TODO: Make better
-      HorrorCost _ (InvestigatorTarget iid') _ -> matches iid' (Matcher.InvestigatorWithoutModifier CannotBeDamaged) -- TODO: Make better
+      HorrorCost _ (InvestigatorTarget iid') _ -> matches iid' Matcher.InvestigatorCanBeDamaged -- TODO: Make better
       HorrorCost {} -> pure True -- TODO: Make better
-      HorrorCostX {} -> matches iid (Matcher.InvestigatorWithoutModifier CannotBeDamaged) -- TODO: Make better
-      DamageCost _ (InvestigatorTarget iid') _ -> matches iid' (Matcher.InvestigatorWithoutModifier CannotBeDamaged) -- TODO: Make better
+      HorrorCostX {} -> matches iid Matcher.InvestigatorCanBeDamaged -- TODO: Make better
+      DamageCost _ (InvestigatorTarget iid') _ -> matches iid' Matcher.InvestigatorCanBeDamaged -- TODO: Make better
       DamageCost {} -> pure True -- TODO: Make better
-      DirectDamageCost _ inner _ -> selectAny (inner <> Matcher.InvestigatorWithoutModifier CannotBeDamaged) -- TODO: Make better
-      DirectHorrorCost _ inner _ -> selectAny (inner <> Matcher.InvestigatorWithoutModifier CannotBeDamaged) -- TODO: Make better
-      DirectDamageAndHorrorCost _ inner _ _ -> selectAny (inner <> Matcher.InvestigatorWithoutModifier CannotBeDamaged) -- TODO: Make better
-      InvestigatorDamageCost _ inner _ _ -> selectAny (inner <> Matcher.InvestigatorWithoutModifier CannotBeDamaged) -- TODO: Make better
+      DirectDamageCost _ inner _ -> selectAny (inner <> Matcher.InvestigatorCanBeDamaged) -- TODO: Make better
+      DirectHorrorCost _ inner _ -> selectAny (inner <> Matcher.InvestigatorCanBeDamaged) -- TODO: Make better
+      DirectDamageAndHorrorCost _ inner _ _ -> selectAny (inner <> Matcher.InvestigatorCanBeDamaged) -- TODO: Make better
+      InvestigatorDamageCost _ inner _ _ -> selectAny (inner <> Matcher.InvestigatorCanBeDamaged) -- TODO: Make better
+      EachInvestigatorDamageCost _ inner _ _ -> selectAny (inner <> Matcher.InvestigatorCanBeDamaged) -- TODO: Make better
       DoomCost _ (AgendaMatcherTarget agendaMatcher) _ -> selectAny agendaMatcher
       DoomCost {} -> pure True -- TODO: Make better
       EnemyDoomCost _ enemyMatcher -> selectAny enemyMatcher
@@ -492,6 +537,15 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
         handCards <- mapMaybe (preview _PlayerCard) <$> field InvestigatorHand iid
         let countF = if null skillTypes then const True else (`member` insertSet WildIcon skillTypes)
         let total = sum $ map (count countF . cdSkills . toCardDef) handCards
+        pure $ total >= n
+      GroupSkillIconCost n skillTypes locationMatcher -> do
+        let lm = Matcher.replaceYouMatcher iid locationMatcher
+        iids <- select $ Matcher.InvestigatorAt lm
+        let countF = if null skillTypes then const True else (`member` insertSet WildIcon skillTypes)
+        total <-
+          sum <$> for iids \iid' -> do
+            handCards <- mapMaybe (preview _PlayerCard) <$> field InvestigatorHand iid'
+            pure $ sum $ map (count countF . cdSkills . toCardDef) handCards
         pure $ total >= n
       SameSkillIconCost n -> do
         handCards <- mapMaybe (preview _PlayerCard) <$> field InvestigatorHand iid
@@ -589,6 +643,10 @@ getCanAffordCost_ !iid !(toSource -> source) !actions !windows' !canModify cost_
         n <- calculate (Matcher.replaceYouMatcher iid calc)
         resources <- getSpendableResources iid
         pure $ resources >= n
+      CalculatedClueCost calc -> do
+        n <- calculate (Matcher.replaceYouMatcher iid calc)
+        clues <- getSpendableClueCount [iid]
+        pure $ clues >= n
       CalculatedHandDiscardCost calc matcher -> do
         n <- calculate (Matcher.replaceYouMatcher iid calc)
         getCanAffordCost_ iid source actions windows' canModify (HandDiscardCost n matcher)
@@ -600,9 +658,8 @@ getSpendableResources :: (HasGame m, Tracing m) => InvestigatorId -> m Int
 getSpendableResources iid = do
   mods <- getModifiers iid
   let extraResources = sum [x | ExtraResources x <- mods]
-  familyInheritanceResources <-
-    selectSum AssetResources $ Matcher.assetIs Assets.familyInheritance <> Matcher.assetControlledBy iid
-  fieldMap InvestigatorResources (+ (familyInheritanceResources + extraResources)) iid
+  pooledResources <- sum <$> traverse (field AssetResources) [aid | AsIfResourcePool aid <- mods]
+  fieldMap InvestigatorResources (+ (pooledResources + extraResources)) iid
 
 getSpendableClueCount :: (HasGame m, Tracing m) => [InvestigatorId] -> m Int
 getSpendableClueCount investigatorIds =

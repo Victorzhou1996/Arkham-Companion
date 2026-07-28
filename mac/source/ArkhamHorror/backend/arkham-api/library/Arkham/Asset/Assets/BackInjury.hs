@@ -5,6 +5,7 @@ import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.Capability
 import Arkham.Helpers.Modifiers (ModifierType (..), modified_)
+import Arkham.I18n
 import Arkham.Message.Lifted.Choose
 import Arkham.Placement
 
@@ -16,7 +17,7 @@ backInjury :: AssetCard BackInjury
 backInjury = assetWith BackInjury Cards.backInjury (canLeavePlayByNormalMeansL .~ False)
 
 instance HasAbilities BackInjury where
-  getAbilities (BackInjury attrs) = [restrictedAbility attrs 1 OnSameLocation $ ActionAbility [] Nothing (ActionCost 2)]
+  getAbilities (BackInjury attrs) = [restrictedAbility attrs 1 OnSameLocation $ ActionAbility mempty Nothing (ActionCost 2)]
 
 instance HasModifiersFor BackInjury where
   getModifiersFor (BackInjury a) = case a.placement of
@@ -27,11 +28,10 @@ instance RunMessage BackInjury where
   runMessage msg t@(BackInjury attrs) = runQueueT $ case msg of
     Revelation iid (isSource attrs -> True) -> do
       chooseOrRunOneM iid do
-        labeled "Put Back Injury into play in your threat area" do
+        (cardI18n $ labeled' "backInjury.putBackInjuryIntoPlayInYourThreatArea") do
           putCardIntoPlay iid attrs
-          checkDefeated attrs iid
         whenM (lift $ can.shuffle.deck iid) do
-          labeled "Take 1 damage and shuffle it into your deck" do
+          (cardI18n $ labeled' "backInjury.take1DamageAndShuffleItIntoYourDeck") do
             assignDamage iid attrs 1
             shuffleIntoDeck iid attrs
       pure t

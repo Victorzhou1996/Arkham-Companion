@@ -22,7 +22,7 @@ instance HasAbilities ZoeySamarasParallel where
         $ selfAbility a 1 HasRemainingBlessTokens
         $ freeReaction
         $ EnemyDealtDamage #after AnyDamageEffect AnyEnemy
-        $ SourceOwnedBy You
+        $ SourceUsedBy You
     , playerLimit PerRound
         $ selfAbility a 2 (DuringSkillTest (YourSkillTest #attacking <> SkillTestBeforeRevealingChaosTokens))
         $ FastAbility
@@ -41,6 +41,6 @@ instance RunMessage ZoeySamarasParallel where
       addChaosToken #bless
       pure i
     UseThisAbility iid (isSource attrs -> True) 2 -> do
-      nextSkillTestModifier iid (attrs.ability 2) iid (DamageDealt 1)
+      thisSkillTestModifier iid (attrs.ability 2) iid (DamageDealt 1)
       pure i
     _ -> ZoeySamarasParallel <$> liftRunMessage msg attrs

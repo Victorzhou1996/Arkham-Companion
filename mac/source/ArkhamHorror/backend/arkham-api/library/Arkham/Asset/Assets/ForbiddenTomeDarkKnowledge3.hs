@@ -35,7 +35,7 @@ instance HasAbilities ForbiddenTomeDarkKnowledge3 where
               , exists $ HealableAsset (toSource a) DamageType $ AssetAt YourLocation
               ]
         )
-        $ ActionAbility [] Nothing
+        $ ActionAbility mempty Nothing
         $ ActionCost 4
         <> exhaust a
     ]
@@ -57,7 +57,7 @@ instance RunMessage ForbiddenTomeDarkKnowledge3 where
               [ HealDamage target (toSource attrs) 1
               , chooseOne
                   player
-                  [ targetLabel enemy [EnemyDamage enemy $ nonAttack (Just iid) (toSource attrs) 1]
+                  [ targetLabel enemy [DealDamage (EnemyTarget enemy) $ nonAttack (Just iid) (toSource attrs) 1]
                   | enemy <- enemies
                   ]
               ]

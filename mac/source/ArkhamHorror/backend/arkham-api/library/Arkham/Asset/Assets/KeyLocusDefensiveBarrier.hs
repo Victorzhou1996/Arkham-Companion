@@ -30,7 +30,7 @@ instance HasModifiersFor KeyLocusDefensiveBarrier where
 
 instance HasAbilities KeyLocusDefensiveBarrier where
   getAbilities (KeyLocusDefensiveBarrier a) =
-    [ basicAbility $ restricted a AbilityAttack OnSameLocation $ ActionAbility [#fight] #combat (ActionCost 1)
+    [ basicAbility $ restricted a AbilityAttack OnSameLocation $ ActionAbility #fight #combat (ActionCost 1)
     , restricted a 1 OnSameLocation $ actionAbilityWithCost (ClueCost $ Static 1)
     , mkAbility a 2 $ forced $ AssetDefeated #when ByAny (be a)
     ]
@@ -78,7 +78,7 @@ instance RunMessage KeyLocusDefensiveBarrier where
       for_ alternateSuccess $ \target' ->
         push $ Successful (Action.Fight, toTarget attrs) iid source target' n
       pure a
-    Msg.EnemyDamage eid damageAssignment | coerce eid == attrs.id -> do
+    Msg.DealDamage (EnemyTarget eid) damageAssignment | coerce eid == attrs.id -> do
       mods <- getModifiers attrs
       unless (CannotBeDamaged `elem` mods) do
         let
@@ -88,10 +88,10 @@ instance RunMessage KeyLocusDefensiveBarrier where
         checkWhen $ Window.DealtDamage source damageEffect (toTarget attrs) damageAmount
         checkAfter $ Window.DealtDamage source damageEffect (toTarget attrs) damageAmount
         checkWhen $ Window.TakeDamage source damageEffect (toTarget attrs) damageAmount
-        push $ EnemyDamaged eid damageAssignment
+        push $ Damaged (EnemyTarget eid) damageAssignment
         checkAfter $ Window.TakeDamage source damageEffect (toTarget attrs) damageAmount
       pure a
-    EnemyDamaged eid damageAssignment | coerce eid == attrs.id -> do
+    Damaged (EnemyTarget eid) damageAssignment | coerce eid == attrs.id -> do
       mods <- getModifiers attrs
       unless (CannotBeDamaged `elem` mods) do
         amount' <- getModifiedDamageAmount attrs damageAssignment

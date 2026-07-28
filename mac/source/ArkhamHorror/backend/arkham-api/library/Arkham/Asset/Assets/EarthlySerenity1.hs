@@ -29,7 +29,7 @@ instance RunMessage EarthlySerenity1 where
       pushWhen (n == 0) $ LoseResources iid (attrs.ability 1) 1
       pure a
     DoStep n msg'@(PassedThisSkillTest iid (isAbilitySource attrs 1 -> True)) | n > 0 -> do
-      targets <- select $ affectsOthers $ colocatedWith iid
+      targets <- select $ affectsOthersKnown iid $ colocatedWith iid
       choices <- concatForM targets \target -> do
         canHealDamage <- canHaveDamageHealed (attrs.ability 1) target
         canHealHorror <- canHaveHorrorHealed (attrs.ability 1) target
@@ -40,9 +40,8 @@ instance RunMessage EarthlySerenity1 where
         player <- getPlayer iid
         chooseOne
           iid
-          [ Label "Do not spend a charge to heal" []
-          , Label
-              "Spend a charge to heal"
+          [ Label "$label.cards.earthlySerenity1.doNotSpendAChargeToHeal" []
+          , Label "$label.cards.earthlySerenity1.spendAChargeToHeal"
               [ SpendUses (attrs.ability 1) (toTarget attrs) Charge 1
               , Msg.chooseOne player choices
               , DoStep (n - 1) msg'

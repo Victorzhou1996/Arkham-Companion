@@ -59,19 +59,18 @@ instance RunMessage EldritchSophist where
       chargeChoices <-
         select
           $ not_ (AssetWithId aid)
-          <> AssetControlledBy (affectsOthers $ colocatedWith iid)
+          <> AssetControlledBy (affectsOthersKnown iid $ colocatedWith iid)
           <> oneOf [AssetWithoutUses, AssetWithUseType Charge]
       secretChoices <-
         select
           $ not_ (AssetWithId aid)
-          <> AssetControlledBy (affectsOthers $ colocatedWith iid)
+          <> AssetControlledBy (affectsOthersKnown iid $ colocatedWith iid)
           <> oneOf [AssetWithoutUses, AssetWithUseType Secret]
 
       player <- getPlayer iid
       push
         $ chooseOrRunOne player
-        $ [ Label
-            "Move Charge"
+        $ [ Label "$label.cards.eldritchSophist.moveCharge"
             [ chooseOne
                 player
                 [ targetLabel c [MoveTokens (attrs.ability 1) (toSource aid) (toTarget c) Charge 1]
@@ -80,8 +79,7 @@ instance RunMessage EldritchSophist where
             ]
           | hasCharge
           ]
-        <> [ Label
-            "Move Secret"
+        <> [ Label "$label.cards.eldritchSophist.moveSecret"
             [ chooseOne
                 player
                 [ targetLabel c [MoveTokens (attrs.ability 1) (toSource aid) (toTarget c) Secret 1]

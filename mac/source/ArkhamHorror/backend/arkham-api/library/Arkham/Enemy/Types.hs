@@ -14,13 +14,14 @@ import Arkham.Classes.HasAbilities
 import Arkham.Classes.HasModifiersFor
 import Arkham.Classes.RunMessage.Internal
 import Arkham.Constants
+import Arkham.Deck
 import Arkham.Enemy.Cards
 import Arkham.Enemy.Types.Attrs as X
-import Arkham.GameValue
+import Arkham.EnemyLocation.Cards (allEnemyLocationCards)
 import Arkham.Id
 import Arkham.Key
 import Arkham.Keyword
-import Arkham.Matcher
+import Arkham.Matcher hiding (EnemyDrawnFrom)
 import Arkham.Modifier
 import Arkham.Name
 import Arkham.Placement
@@ -91,6 +92,7 @@ data instance Field Enemy :: Type -> Type where
   EnemyBearer :: Field Enemy (Maybe InvestigatorId)
   EnemyCardsUnderneath :: Field Enemy [Card]
   EnemyLastKnownLocation :: Field Enemy (Maybe LocationId)
+  EnemyDrawnFrom :: Field Enemy (Maybe DeckSignifier)
 
 deriving stock instance Show (Field Enemy typ)
 deriving stock instance Ord (Field Enemy typ)
@@ -116,7 +118,9 @@ instance FromJSON (SomeField Enemy) where
     "EnemyDoom" -> pure $ SomeField EnemyDoom
     "EnemyExactDoom" -> pure $ SomeField EnemyExactDoom
     "EnemyEvade" -> pure $ SomeField Arkham.Enemy.Types.EnemyEvade
+    "EnemyEvadeActual" -> pure $ SomeField EnemyEvadeActual
     "EnemyFight" -> pure $ SomeField Arkham.Enemy.Types.EnemyFight
+    "EnemyFightActual" -> pure $ SomeField EnemyFightActual
     "EnemyTokens" -> pure $ SomeField EnemyTokens
     "EnemyClues" -> pure $ SomeField EnemyClues
     "EnemyDamage" -> pure $ SomeField EnemyDamage
@@ -140,9 +144,11 @@ instance FromJSON (SomeField Enemy) where
     "EnemySpawnedBy" -> pure $ SomeField EnemySpawnedBy
     "EnemySpawnDetails" -> pure $ SomeField EnemySpawnDetails
     "EnemyAttacking" -> pure $ SomeField EnemyAttacking
+    "EnemyWantsToAttack" -> pure $ SomeField EnemyWantsToAttack
     "EnemyBearer" -> pure $ SomeField EnemyBearer
     "EnemyCardsUnderneath" -> pure $ SomeField EnemyCardsUnderneath
     "EnemyLastKnownLocation" -> pure $ SomeField EnemyLastKnownLocation
+    "EnemyDrawnFrom" -> pure $ SomeField EnemyDrawnFrom
     _ -> error "no such field"
 
 data instance Field (OutOfPlayEntity _ Enemy) :: Type -> Type where
@@ -161,17 +167,16 @@ instance IsCard EnemyAttrs where
   toCardOwner = enemyBearer
 
 instance HasCardDef EnemyAttrs where
-  toCardDef e = case lookup (enemyCardCode e) allEnemyCards of
-    Just def -> def
-    Nothing -> error $ "missing card def for enemy " <> show (enemyCardCode e)
+  toCardDef e =
+    case lookup (enemyCardCode e) allEnemyCards <|> lookup (enemyCardCode e) allEnemyLocationCards of
+      Just def -> def
+      Nothing -> error $ "missing card def for enemy " <> show (enemyCardCode e)
 
 enemy
   :: (EnemyAttrs -> a)
   -> CardDef
-  -> (Int, GameValue, Int)
-  -> (Int, Int)
   -> CardBuilder EnemyId a
-enemy f cardDef stats damageStats = enemyWith f cardDef stats damageStats id
+enemy f cardDef = enemyWith f cardDef id
 
 preyIsBearer :: EnemyAttrs -> EnemyAttrs
 preyIsBearer a = a {enemyPrey = BearerOf (toId a)}
@@ -219,11 +224,9 @@ isConcealed _ = False
 enemyWith
   :: (EnemyAttrs -> a)
   -> CardDef
-  -> (Int, GameValue, Int)
-  -> (Int, Int)
   -> (EnemyAttrs -> EnemyAttrs)
   -> CardBuilder EnemyId a
-enemyWith f cardDef (fight, health, evade) (healthDamage, sanityDamage) g =
+enemyWith f cardDef g =
   CardBuilder
     { cbCardDef = cardDef
     , cbCardBuilder = \cardId eid ->
@@ -235,12 +238,12 @@ enemyWith f cardDef (fight, health, evade) (healthDamage, sanityDamage) g =
             , enemyCardCode = toCardCode cardDef
             , enemyOriginalCardCode = toCardCode cardDef
             , enemyPlacement = Unplaced
-            , enemyFight = Just $ Fixed fight
-            , enemyHealth = Just $ GameValueCalculation health
-            , enemyEvade = Just $ Fixed evade
+            , enemyFight = GameValueCalculation . unFight <$> cdFight cardDef
+            , enemyHealth = GameValueCalculation . unHealth <$> cdHealth cardDef
+            , enemyEvade = GameValueCalculation . unEvade <$> cdEvade cardDef
             , enemyAssignedDamage = mempty
-            , enemyHealthDamage = healthDamage
-            , enemySanityDamage = sanityDamage
+            , enemyHealthDamage = maybe 0 healthDamageInt (cdHealthDamage cardDef)
+            , enemySanityDamage = maybe 0 sanityDamageInt (cdSanityDamage cardDef)
             , enemyPrey = Prey Anyone
             , enemyModifiers = mempty
             , enemyExhausted = False
@@ -281,17 +284,20 @@ pattern EvadeCriteria :: Criterion
 pattern EvadeCriteria =
   Criteria
     [ OnSameLocation
-      , EnemyCriteria (ThisEnemy (EnemyMatchAll [EnemyIsEngagedWith You, EnemyWithEvade]))
+      , EnemyCriteria
+          ( ThisEnemy
+              (EnemyMatchAll [EnemyIsEngagedWith You, EnemyWithEvade, EnemyWithoutModifier CannotBeEvaded])
+          )
       ]
 
 instance HasAbilities EnemyAttrs where
   getAbilities e =
     [ basicAbility
         $ restrictedAbility e AbilityAttack canFightCriteria
-        $ ActionAbility [#fight] #combat (ActionCost 1)
+        $ ActionAbility #fight #combat (ActionCost 1)
     , basicAbility
         $ restrictedAbility e AbilityEvade EvadeCriteria
-        $ ActionAbility [#evade] #agility (ActionCost 1)
+        $ ActionAbility #evade #agility (ActionCost 1)
     , basicAbility
         $ restrictedAbility
           e
@@ -303,7 +309,7 @@ instance HasAbilities EnemyAttrs where
               <> EnemyCriteria (ThisEnemy $ EnemyCanEngage You)
               <> InvestigatorExists (You <> InvestigatorWithoutModifier CannotBeEngaged)
           )
-        $ ActionAbility [#engage] Nothing (ActionCost 1)
+        $ ActionAbility #engage Nothing (ActionCost 1)
     ]
 
 instance Entity EnemyAttrs where
@@ -456,13 +462,6 @@ instance Sourceable Enemy where
   isSource = isSource . toAttrs
 
 data SomeEnemyCard = forall a. IsEnemy a => SomeEnemyCard (EnemyCard a)
-
-liftSomeEnemyCard :: (forall a. EnemyCard a -> b) -> SomeEnemyCard -> b
-liftSomeEnemyCard f (SomeEnemyCard a) = f a
-
-someEnemyCardCode :: SomeEnemyCard -> CardCode
-someEnemyCardCode = liftSomeEnemyCard toCardCode
-
 someEnemyCardCodes :: SomeEnemyCard -> [(CardCode, SomeEnemyCard)]
 someEnemyCardCodes (SomeEnemyCard CardBuilder {..}) =
   [ ( code
@@ -512,6 +511,7 @@ fieldLens = \case
   EnemyBearer -> bearerL
   EnemyCardsUnderneath -> cardsUnderneathL
   EnemyLastKnownLocation -> lastKnownLocationL
+  EnemyDrawnFrom -> drawnFromL
  where
   virtual = error "virtual attribute can not be set directly"
 

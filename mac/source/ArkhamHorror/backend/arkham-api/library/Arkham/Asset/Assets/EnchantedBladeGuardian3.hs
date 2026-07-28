@@ -36,8 +36,8 @@ instance RunMessage EnchantedBladeGuardian3 where
       pushWhen (findWithDefault 0 Charge (assetUses attrs) > 0)
         $ chooseOne
           player
-          [ Label "Spend 1 use to empower" [DoStep 1 (SpendUses (attrs.ability 1) (toTarget attrs) Charge 1)]
-          , Label "Do not spend use" []
+          [ Label "$label.spendUseToEmpower" [DoStep 1 (SpendUses (attrs.ability 1) (toTarget attrs) Charge 1)]
+          , Label "$label.doNotSpendUse" []
           ]
       pure a
     DoStep 1 msg'@(SpendUses _ (isTarget attrs -> True) _ _) -> do
@@ -48,7 +48,7 @@ instance RunMessage EnchantedBladeGuardian3 where
             damageDealt <- skillTestModifier sid (toAbilitySource attrs 1) iid (DamageDealt 1)
             pushAll [msg', damageDealt]
           pure . EnchantedBladeGuardian3 $ attrs `with` Metadata (Just sid)
-    EnemyDefeated _ _ (isAbilitySource attrs 1 -> True) _ | isJust (empowered meta) -> do
+    Defeated (EnemyTarget _) _ (isAbilitySource attrs 1 -> True) _ | isJust (empowered meta) -> do
       for_ attrs.controller \iid -> do
         let drawing = drawCards iid (toAbilitySource attrs 1) 1
         pushAll [drawing, HealHorror (toTarget iid) (attrs.ability 1) 1]

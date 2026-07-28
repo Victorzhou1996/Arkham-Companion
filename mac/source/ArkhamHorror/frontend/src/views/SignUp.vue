@@ -14,35 +14,56 @@ const registration = reactive<Registration>({
   password: '',
 })
 const signUpError = ref<string|null>(null)
+const verificationCode = ref('')
+const awaitingVerification = ref(false)
+const onlineMode = import.meta.env.VITE_ONLINE_MODE === 'true'
 
 const { t } = useI18n()
 
 async function register() {
   signUpError.value = null
   try {
-    await store.register(registration)
-    const { nextUrl } = route.query
-    if (nextUrl) {
-      router.push({ path: nextUrl as string })
-    } else {
-      router.push({ path: '/' })
+    const result = await store.register(registration)
+    if (onlineMode && 'verificationRequired' in result) {
+      awaitingVerification.value = true
+      return
     }
-  } catch {
-    signUpError.value = t("usernameOrEmailAlreadyTaken")
+    finishRegistration()
+  } catch (error: any) {
+    signUpError.value = error?.response?.data?.message ?? t("usernameOrEmailAlreadyTaken")
+  }
+}
+
+async function verify() {
+  signUpError.value = null
+  try {
+    await store.verifyRegistration(registration.email, verificationCode.value)
+    finishRegistration()
+  } catch (error: any) {
+    signUpError.value = error?.response?.data?.message ?? t('verificationCodeInvalid')
+  }
+}
+
+function finishRegistration() {
+  const { nextUrl } = route.query
+  if (nextUrl) {
+    router.push({ path: nextUrl as string })
+  } else {
+    router.push({ path: '/' })
   }
 }
 </script>
 
 <template>
-  <form @submit.prevent="register">
+  <form @submit.prevent="awaitingVerification ? verify() : register()">
     <header><i class="secret"></i></header>
-    <div class="error" v-if="signUpError">{{signUpError}}</div>
     <section>
       <div>
         <input
           v-model="registration.username"
           type="text"
           :placeholder="$t('username')"
+          :disabled="awaitingVerification"
         />
       </div>
       <div>
@@ -50,6 +71,7 @@ async function register() {
           v-model="registration.email"
           type="email"
           :placeholder="$t('email')"
+          :disabled="awaitingVerification"
         />
       </div>
       <div>
@@ -57,11 +79,31 @@ async function register() {
           v-model="registration.password"
           type="password"
           :placeholder="$t('password')"
+          :disabled="awaitingVerification"
         />
       </div>
-      <div>
-        <button>{{$t('register')}}</button>
+      <div v-if="awaitingVerification">
+        <p class="verification-help">{{ $t('verificationCodeSent') }}</p>
+        <input
+          v-model="verificationCode"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          :placeholder="$t('verificationCode')"
+        />
       </div>
+      <p v-if="signUpError" class="error">{{ signUpError }}</p>
+      <div>
+        <button>{{ awaitingVerification ? $t('verifyEmail') : $t('register') }}</button>
+      </div>
+      <button
+        v-if="awaitingVerification"
+        class="secondary"
+        type="button"
+        @click="register"
+      >
+        {{ $t('resendVerificationCode') }}
+      </button>
     </section>
   </form>
 </template>
@@ -95,7 +137,7 @@ input {
 button {
   outline: 0;
   padding: 15px;
-  background: #6E8640;
+  background: var(--button-1);
   text-transform: uppercase;
   color: white;
   border: 0;
@@ -103,6 +145,19 @@ button {
   &:hover {
       background: hsl(80, 35%, 32%);
   }
+}
+
+button.secondary {
+  margin-top: 8px;
+  background: var(--background-dark);
+}
+
+.verification-help {
+  margin: 0 0 10px;
+}
+
+.error {
+  color: var(--danger);
 }
 
 i.secret {
@@ -121,13 +176,5 @@ i.secret {
     font-family: "Arkham";
     content: "\0048";
   }
-}
-
-.error {
-  background:#E3CCCD;
-  color: #900000;
-  border-radius: 5px;
-  margin: 10px 5px;
-  padding: 5px 10px;
 }
 </style>

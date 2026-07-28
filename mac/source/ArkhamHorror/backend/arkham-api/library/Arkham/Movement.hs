@@ -22,7 +22,13 @@ data Movement = Movement
   , movePayAdditionalCosts :: Bool
   , moveAfter :: [Message]
   , moveAdditionalEnterCosts :: Cost
+  , moveSkipEngagement :: Bool
   , moveId :: MovementId
+  , moveForced :: Bool
+  , -- Whether the enemy was in play when this move was created. Used to abort
+    -- the move if the enemy leaves play (e.g. is set aside) before the move
+    -- commits its placement, so a stale move can't drag it back into play.
+    moveFromInPlay :: Bool
   }
   deriving stock (Show, Ord, Eq, Data)
 
@@ -53,8 +59,14 @@ instance HasField "after" Movement [Message] where
 instance HasField "additionalEnterCosts" Movement Cost where
   getField = moveAdditionalEnterCosts
 
+instance HasField "skipEngagement" Movement Bool where
+  getField = moveSkipEngagement
+
 instance HasField "id" Movement MovementId where
   getField = moveId
+
+instance HasField "forced" Movement Bool where
+  getField = moveForced
 
 data MovementMeans = Direct | OneAtATime | Towards | Place | TowardsN Int
   deriving stock (Show, Ord, Eq, Data)
@@ -62,6 +74,10 @@ data MovementMeans = Direct | OneAtATime | Towards | Place | TowardsN Int
 -- Forced movement should not require additional costs
 uncancellableMove :: Movement -> Movement
 uncancellableMove m = m {moveCancelable = False, movePayAdditionalCosts = False}
+
+-- Forced movement should not require additional costs
+forcedMove :: Movement -> Movement
+forcedMove m = m {moveCancelable = False, movePayAdditionalCosts = False, moveForced = True}
 
 afterMove :: [Message] -> Movement -> Movement
 afterMove msgs m = m {moveAfter = msgs}
@@ -87,7 +103,10 @@ move (toSource -> moveSource) (toTarget -> moveTarget) lid = do
       , movePayAdditionalCosts = True
       , moveAfter = []
       , moveAdditionalEnterCosts = Free
+      , moveSkipEngagement = False
       , moveId
+      , moveForced = False
+      , moveFromInPlay = True
       }
 
 moveToMatch
@@ -108,7 +127,10 @@ moveToMatch (toSource -> moveSource) (toTarget -> moveTarget) matcher = do
       , movePayAdditionalCosts = True
       , moveAfter = []
       , moveAdditionalEnterCosts = Free
+      , moveSkipEngagement = False
       , moveId
+      , moveForced = False
+      , moveFromInPlay = True
       }
 
 moveTowards
@@ -129,7 +151,10 @@ moveTowards (toSource -> moveSource) (toTarget -> moveTarget) (asId -> locationI
       , movePayAdditionalCosts = True
       , moveAfter = []
       , moveAdditionalEnterCosts = Free
+      , moveSkipEngagement = False
       , moveId
+      , moveForced = False
+      , moveFromInPlay = True
       }
 
 moveTowardsMatching
@@ -150,17 +175,11 @@ moveTowardsMatching (toSource -> moveSource) (toTarget -> moveTarget) matcher = 
       , movePayAdditionalCosts = True
       , moveAfter = []
       , moveAdditionalEnterCosts = Free
+      , moveSkipEngagement = False
       , moveId
+      , moveForced = False
+      , moveFromInPlay = True
       }
-
-moveToLocationMatcher :: Movement -> LocationMatcher
-moveToLocationMatcher = destinationToLocationMatcher . moveDestination
-
-destinationToLocationMatcher :: Destination -> LocationMatcher
-destinationToLocationMatcher = \case
-  ToLocation lid -> LocationWithId lid
-  ToLocationMatching matcher -> matcher
-
 $(deriveToJSON defaultOptions ''MovementMeans)
 
 instance FromJSON MovementMeans where
@@ -183,6 +202,9 @@ instance FromJSON Movement where
     movePayAdditionalCosts <- o .: "movePayAdditionalCosts"
     moveAfter <- o .: "moveAfter"
     moveAdditionalEnterCosts <- o .:? "moveAdditionalEnterCosts" .!= Free
+    moveSkipEngagement <- o .:? "moveSkipEngagement" .!= False
     moveId <- o .:? "moveId" .!= MovementId (fromWords64 6128981282234515924 12039885860129472512)
+    moveForced <- o .:? "moveForced" .!= False
+    moveFromInPlay <- o .:? "moveFromInPlay" .!= True
 
     pure Movement {..}

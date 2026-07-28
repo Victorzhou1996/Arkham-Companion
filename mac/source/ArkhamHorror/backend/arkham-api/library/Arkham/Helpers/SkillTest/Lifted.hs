@@ -9,7 +9,14 @@ import Arkham.Helpers.Ref (sourceToTarget)
 import Arkham.Id
 import Arkham.Investigate (mkInvestigateLocation)
 import Arkham.Investigate.Types qualified as I
-import Arkham.Message (Message (..), pattern BeginSkillTest)
+import Arkham.Message (
+  Message (..),
+  pattern BeginSkillTest,
+  pattern NextChaosBagStep,
+  pattern RunBag,
+  pattern RunSkillTest,
+  pattern SkillTestEnds,
+ )
 import Arkham.Message.Lifted
 import Arkham.Prelude
 import Arkham.SkillTest.Base (
@@ -177,6 +184,15 @@ investigate_
   -> source
   -> m ()
 investigate_ sid iid source = investigateEdit_ sid iid source id
+
+investigateWith_
+  :: (Sourceable source, ReverseQueue m)
+  => SkillType
+  -> SkillTestId
+  -> InvestigatorId
+  -> source
+  -> m ()
+investigateWith_ sType sid iid source = investigateEdit_ sid iid source \i -> i {I.investigateSkillType = sType}
 
 investigateEdit_
   :: (Sourceable source, ReverseQueue m)

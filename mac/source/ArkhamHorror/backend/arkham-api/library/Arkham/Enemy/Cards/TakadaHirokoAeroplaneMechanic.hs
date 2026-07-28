@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.TakadaHirokoAeroplaneMechanic (takadaHirokoAeroplaneMe
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Matcher
 
@@ -12,7 +12,7 @@ newtype TakadaHirokoAeroplaneMechanic = TakadaHirokoAeroplaneMechanic EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 takadaHirokoAeroplaneMechanic :: EnemyCard TakadaHirokoAeroplaneMechanic
-takadaHirokoAeroplaneMechanic = enemy TakadaHirokoAeroplaneMechanic Cards.takadaHirokoAeroplaneMechanic (3, Static 3, 3) (2, 0)
+takadaHirokoAeroplaneMechanic = enemy TakadaHirokoAeroplaneMechanic Cards.takadaHirokoAeroplaneMechanic
 
 instance HasAbilities TakadaHirokoAeroplaneMechanic where
   getAbilities (TakadaHirokoAeroplaneMechanic a) =

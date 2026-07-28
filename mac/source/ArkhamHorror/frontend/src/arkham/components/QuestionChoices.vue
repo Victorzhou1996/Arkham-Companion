@@ -3,7 +3,8 @@ import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import FormattedEntry from '@/arkham/components/FormattedEntry.vue'
 import { MessageType, Message } from '@/arkham/types/Message';
 import { formatContent } from '@/arkham/helpers';
-import { handleI18n } from '@/arkham/i18n';
+import { handleEmbeddedI18n } from '@/arkham/i18n';
+import { formatCost } from '@/arkham/cost';
 import { useI18n } from 'vue-i18n';
 import type { Game } from '@/arkham/types/Game';
 
@@ -20,29 +21,72 @@ const choose = (idx: number) => emit('choose', idx)
 
 const { t } = useI18n()
 const label = function(body: string) {
-  if (body.startsWith("$")) {
-    return formatContent(handleI18n(body.slice(1), t))
+  return formatContent(handleEmbeddedI18n(body, t))
+}
+
+const drownedCityTaskCards: Record<string, string> = {
+  noPlaceLikeHome: '11753a',
+  walkInFaith: '11754a',
+  toeTheLine: '11755a',
+  goodMoney: '11756a',
+  proveYourWorth: '11757a',
+  doNoHarm: '11758a',
+  dreamsOfDestruction: '11759a',
+  plumbTheDepths: '11760a',
+}
+
+const drownedCityTaskNames: Record<string, string> = {
+  'No Place Like Home': 'noPlaceLikeHome',
+  'Walk in Faith': 'walkInFaith',
+  'Toe the Line': 'toeTheLine',
+  'Good Money': 'goodMoney',
+  'Prove Your Worth': 'proveYourWorth',
+  'Do No Harm': 'doNoHarm',
+  'Dreams of Destruction': 'dreamsOfDestruction',
+  'Plumb the Depths': 'plumbTheDepths',
+}
+
+const drownedCityTaskKey = (body: string) => {
+  const raw = body.trim()
+  const i18nKey = raw.replace(/^\$/, '')
+  const prefix = 'theDrownedCity.anOfferYouCantRefuse.label.'
+  if (i18nKey.startsWith(prefix)) {
+    const key = i18nKey.slice(prefix.length)
+    return key in drownedCityTaskCards ? key : null
   }
-  return formatContent(body)
+  if (raw in drownedCityTaskCards) return raw
+
+  const localized = handleEmbeddedI18n(body, t)
+  return drownedCityTaskNames[localized] ?? null
+}
+
+const drownedCityTaskCardCode = (body: string) => {
+  const key = drownedCityTaskKey(body)
+  return key ? drownedCityTaskCards[key] : undefined
+}
+
+const drownedCityTaskRecommendation = (body: string) => {
+  const key = drownedCityTaskKey(body)
+  return key ? label(`$theDrownedCity.anOfferYouCantRefuse.recommended.${key}`) : null
 }
 </script>
 <template>
   <div class='question-choices'>
     <template v-for="[choice, index] in choices" :key="index">
-      <template v-if="choice.tag === 'AbilityLabel' && ['DisplayAsCard'].includes(choice.ability.displayAs)">
+      <template v-if="choice.tag === MessageType.ABILITY_LABEL">
         <AbilityButton
           :ability="choice"
           :game="game"
           @click="choose(index)"
           />
       </template>
-      <template v-if="choice.tag === MessageType.TOOLTIP_LABEL">
-        <button @click="choose(index)" v-tooltip="choice.tooltip">{{choice.label}}</button>
+      <template v-else-if="choice.tag === MessageType.TARGET_LABEL">
+        <button @click="choose(index)">{{ t('continue') }}</button>
       </template>
-      <template v-if="choice.tag === MessageType.ABILITY_LABEL && choice.ability.type.tag === 'ConstantReaction'">
-        <button @click="choose(index)">{{choice.ability.type.label}}</button>
+      <template v-else-if="choice.tag === MessageType.TOOLTIP_LABEL">
+        <button @click="choose(index)" v-tooltip="choice.tooltip">{{ t(choice.label) }}</button>
       </template>
-      <div v-if="choice.tag === MessageType.LABEL" class="message-label">
+      <div v-else-if="choice.tag === MessageType.LABEL" class="message-label">
         <button v-if="choice.label == 'Choose {skull}'" @click="choose(index)">
           Choose <i class="iconSkull"></i>
         </button>
@@ -55,13 +99,50 @@ const label = function(body: string) {
         <button v-else-if="choice.label == 'Choose {elderThing}'" @click="choose(index)">
           Choose <i class="iconElderThing"></i>
         </button>
+        <button
+          v-else-if="drownedCityTaskCardCode(choice.label)"
+          @click="choose(index)"
+          class="task-choice"
+        >
+          <span class="choice-content">
+            <span class="choice-label" v-html="label(choice.label)"></span>
+            <span
+              v-if="drownedCityTaskRecommendation(choice.label)"
+              class="choice-subtext"
+              v-html="drownedCityTaskRecommendation(choice.label)"
+            ></span>
+          </span>
+        </button>
         <button v-else @click="choose(index)" v-html="label(choice.label)"></button>
       </div>
-      <div v-else-if="choice.tag === MessageType.INVALID_LABEL" class="message-label">
-        <button v-html="label(choice.label)" disabled></button>
+      <div v-else-if="choice.tag === MessageType.COST_LABEL" class="message-label">
+        <button @click="choose(index)" v-html="label(formatCost(choice.cost, t))"></button>
+      </div>
+      <div
+        v-else-if="choice.tag === MessageType.INVALID_LABEL"
+        class="message-label"
+      >
+        <button
+          v-if="drownedCityTaskCardCode(choice.label)"
+          class="task-choice"
+          disabled
+        >
+          <span class="choice-content">
+            <span class="choice-label" v-html="label(choice.label)"></span>
+            <span
+              v-if="drownedCityTaskRecommendation(choice.label)"
+              class="choice-subtext"
+              v-html="drownedCityTaskRecommendation(choice.label)"
+            ></span>
+          </span>
+        </button>
+        <button v-else v-html="label(choice.label)" disabled></button>
       </div>
       <div v-else-if="choice.tag === MessageType.INFO" class="message-label">
-        <FormattedEntry :entry="choice.flavor" />
+        <FormattedEntry v-for="(entry, entryIndex) in choice.flavor.body" :key="entryIndex" :entry="entry" />
+      </div>
+      <div v-else-if="choice.tag === MessageType.DONE" class="message-label">
+        <button @click="choose(index)" v-html="label(choice.label)"></button>
       </div>
 
       <a
@@ -77,7 +158,7 @@ const label = function(body: string) {
         class="button"
         @click="choose(index)"
       >
-        Use <i :class="`icon${choice.skillType}`"></i>: {{choice.label}}
+        Use <i :class="`icon${choice.skillType}`"></i>: {{ t(choice.label) }}
       </a>
     </template>
   </div>
@@ -87,7 +168,7 @@ const label = function(body: string) {
 
 a.button {
   display: block;
-  background-color: #333;
+  background-color: var(--neutral-dark);
   color: white;
   border: 1px solid #666;
   cursor: pointer;
@@ -125,7 +206,7 @@ a.button:active {
 }
 
 button, a.button {
-  background-color: #532e61;
+  background-color: var(--button-2);
   border-radius: 0.6em;
   border: 0;
   color: #DDD;
@@ -154,8 +235,51 @@ button, a.button {
     font-family: "ArkhamIcons";
     content: "\E91A";
     margin-right: 10px;
+    flex: 0 0 auto;
+  }
+
+  &.task-choice {
+    align-items: flex-start;
+    text-align: left;
   }
 }
+
+.choice-content,
+.choice-label {
+  display: block;
+}
+
+.choice-content {
+  flex: 1 1 auto;
+}
+
+.choice-subtext {
+  color: #cfc6d8;
+  display: block;
+  font-size: 0.72em;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 4px;
+  text-transform: none;
+}
+
+.choice-subtext :deep(.guardian-icon)::before,
+.choice-subtext :deep(.seeker-icon)::before,
+.choice-subtext :deep(.rogue-icon)::before,
+.choice-subtext :deep(.mystic-icon)::before,
+.choice-subtext :deep(.survivor-icon)::before {
+  display: inline-block;
+  font-family: "Arkham";
+  font-size: 1.1em;
+  font-weight: normal;
+  text-transform: none;
+}
+
+.choice-subtext :deep(.guardian-icon)::before { content: "\0051"; }
+.choice-subtext :deep(.seeker-icon)::before { content: "\0045"; }
+.choice-subtext :deep(.rogue-icon)::before { content: "\0054"; }
+.choice-subtext :deep(.mystic-icon)::before { content: "\0057"; }
+.choice-subtext :deep(.survivor-icon)::before { content: "\0052"; }
 
   button:hover, a.button:hover {
   background-color: #311b3e;
@@ -218,6 +342,15 @@ i.iconSkillAgility:before {
   flex-direction: column;
   &:has(.question-label) {
     padding: 10px;
+  }
+}
+
+:deep(.message-label) {
+  .agility-icon, .combat-icon, .intellect-icon, .willpower-icon {
+    display: contents;
+    &::before {
+      display: contents;
+    }
   }
 }
 </style>

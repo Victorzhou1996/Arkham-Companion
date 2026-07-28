@@ -38,7 +38,7 @@ instance RunMessage TalismanOfProtection where
     CardIsEnteringPlay iid card | toCardId card == toCardId attrs -> do
       owner <- field AssetOwner (toId attrs)
       when (Just iid == owner) $ do
-        iids <- select $ affectsOthers $ colocatedWith iid
+        iids <- select $ affectsOthersKnown iid $ colocatedWith iid
         chooseOrRunOneM iid $ targets iids \iid' -> do
           if Just iid' == owner then nothing else handleTarget iid attrs iid'
       TalismanOfProtection <$> liftRunMessage msg attrs
@@ -60,7 +60,7 @@ instance RunMessage TalismanOfProtection where
       h <- field InvestigatorAssignedHorror iid
       d <- field InvestigatorAssignedDamage iid
       chooseOrRunOne iid
-        $ Label "Done canceling" []
+        $ Label "$label.cards.talismanOfProtection.doneCanceling" []
         : [HorrorLabel iid [CancelAssignedDamage (toTarget iid) 0 1, DoStep (n - 1) msg'] | h > 0]
           <> [DamageLabel iid [CancelAssignedDamage (toTarget iid) 1 0, DoStep (n - 1) msg'] | d > 0]
       pure a

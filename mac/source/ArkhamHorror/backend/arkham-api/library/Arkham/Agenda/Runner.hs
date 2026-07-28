@@ -6,7 +6,7 @@ import Arkham.Agenda.Sequence as X
 import Arkham.Agenda.Types as X
 import Arkham.Calculation as X
 import Arkham.Helpers.Effect as X
-import Arkham.Helpers.Message as X hiding (EnemyDefeated, InvestigatorEliminated)
+import Arkham.Helpers.Message as X hiding (InvestigatorEliminated)
 import Arkham.Helpers.SkillTest as X
 import Arkham.Id as X
 import Arkham.SkillTest.Base as X (SkillTestDifficulty (..))
@@ -121,7 +121,7 @@ instance RunMessage AgendaAttrs where
       _ -> do
         enabled <- chaosTokenEffect source token $ ChaosTokenFaceModifier [MinusFive]
         pushAll
-          [ ChaosTokenCanceled iid source token
+          [ SendMessage (toTarget iid) (ChaosTokenCanceled iid source token)
           , enabled
           ]
         pure $ a {agendaUsedWheelOfFortuneX = True}
@@ -130,4 +130,6 @@ instance RunMessage AgendaAttrs where
       pure a
     PlaceTokens _source target tType n | isTarget a target -> do
       pure $ a & tokensL . at tType . non 0 %~ (+ n)
+    RemoveTokens _source target tType n | isTarget a target -> do
+      pure $ a & tokensL . at tType . non 0 %~ max 0 . subtract n
     _ -> pure a

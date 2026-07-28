@@ -6,7 +6,7 @@ import Arkham.Enemy.Import.Lifted
 import Arkham.Enemy.Types (Field (EnemyLocation), keysL)
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Key
-import Arkham.Matcher hiding (EnemyDefeated)
+import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Placement
 import Arkham.Projection
@@ -16,7 +16,7 @@ newtype ReawakenedElderThing = ReawakenedElderThing EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 reawakenedElderThing :: EnemyCard ReawakenedElderThing
-reawakenedElderThing = enemy ReawakenedElderThing Cards.reawakenedElderThing (2, Static 3, 1) (1, 1)
+reawakenedElderThing = enemy ReawakenedElderThing Cards.reawakenedElderThing
 
 instance HasAbilities ReawakenedElderThing where
   getAbilities (ReawakenedElderThing a) =
@@ -33,7 +33,7 @@ instance RunMessage ReawakenedElderThing where
       chooseOrRunOneM iid do
         for_ ks \k -> labeled ("Place " <> keyName k) (placeKey attrs k)
       pure e
-    EnemyDefeated eid _ _ _ | eid == attrs.id -> do
+    Defeated (EnemyTarget eid) _ _ _ | eid == attrs.id -> do
       mloc <- field EnemyLocation attrs.id
       for_ mloc $ for_ (enemyKeys attrs) . placeKey
       ReawakenedElderThing <$> liftRunMessage msg (attrs & keysL .~ mempty)

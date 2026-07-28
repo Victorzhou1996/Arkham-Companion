@@ -6,7 +6,7 @@ import Arkham.Asset.Import.Lifted
 import Arkham.Asset.Uses
 import Arkham.Helpers.SkillTest.Lifted
 import Arkham.I18n
-import Arkham.Investigate.Types
+import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Modifier
 
@@ -19,14 +19,17 @@ secondSight = asset SecondSight Cards.secondSight
 
 instance HasAbilities SecondSight where
   getAbilities (SecondSight a) =
-    [skillTestAbility $ controlled_ a 1 $ investigateActionWith_ #willpower]
+    [ skillTestAbility
+        $ controlled a 1 (exists $ YourLocation <> InvestigatableLocation)
+        $ investigateActionWith_ #willpower
+    ]
 
 instance RunMessage SecondSight where
   runMessage msg a@(SecondSight attrs) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       sid <- getRandom
       onRevealChaosTokenEffect sid #cultist attrs attrs $ doStep 1 msg
-      investigateEdit_ sid iid (attrs.ability 1) \i -> i {investigateSkillType = #willpower}
+      investigateWith_ #willpower sid iid (attrs.ability 1)
       pure a
     DoStep 1 (UseThisAbility iid (isSource attrs -> True) 1) -> do
       if attrs.use #charge == 0
@@ -38,8 +41,8 @@ instance RunMessage SecondSight where
     PassedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
       when (attrs.use #charge > 0) do
         withSkillTest \sid ->
-          chooseOneM iid do
-            labeled "Spend 1 charge to discover 1 additional clue" do
+          chooseOneM iid $ cardI18n $ scope "secondSight" do
+            labeled' "spendChargeForClue" do
               removeTokens (attrs.ability 1) attrs Charge 1
               skillTestModifier sid (attrs.ability 1) iid (DiscoveredClues 1)
             withI18n skip_

@@ -16,11 +16,12 @@ newtype TheManInThePallidMask = TheManInThePallidMask EnemyAttrs
 
 theManInThePallidMask :: EnemyCard TheManInThePallidMask
 theManInThePallidMask =
-  enemy TheManInThePallidMask Cards.theManInThePallidMask (4, Static 3, 4) (0, 1)
+  enemy TheManInThePallidMask Cards.theManInThePallidMask
     & setSpawnAt (FarthestLocationFromAll Anywhere)
 
 instance HasAbilities TheManInThePallidMask where
-  getAbilities (TheManInThePallidMask a) = extend1 a $ restricted a 1 OnSameLocation investigateAction_
+  getAbilities (TheManInThePallidMask a) =
+    extend1 a $ restricted a 1 (OnSameLocation <> exists (YourLocation <> InvestigatableLocation)) investigateAction_
 
 instance RunMessage TheManInThePallidMask where
   runMessage msg e@(TheManInThePallidMask attrs) = runQueueT $ case msg of

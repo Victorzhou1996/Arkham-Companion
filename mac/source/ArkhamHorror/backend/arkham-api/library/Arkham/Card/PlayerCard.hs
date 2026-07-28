@@ -5,12 +5,14 @@ module Arkham.Card.PlayerCard where
 import Arkham.Asset.Cards
 import Arkham.Card.CardCode
 import Arkham.Card.CardDef
+import Arkham.Card.CardType
 import Arkham.Card.Class
 import Arkham.Card.Cost
 import Arkham.Card.Id
 import Arkham.Customization
 import Arkham.Enemy.Cards (allSpecialEnemyCards)
 import Arkham.Id
+import Arkham.Investigator.Cards qualified as InvestigatorCards
 import Arkham.Json
 import Arkham.Name
 import Arkham.PlayerCard
@@ -29,8 +31,13 @@ data PlayerCard = MkPlayerCard
   , pcCustomizations :: Customizations
   , pcTabooList :: Maybe TabooList
   , pcMutated :: Maybe Text
+  , pcMeta :: Maybe (Map Text [CardCode])
+  , pcFacedown :: Maybe Bool
   }
   deriving stock (Show, Ord, Data)
+
+instance HasField "kind" PlayerCard CardType where
+  getField = (.kind) . toCardDef
 
 instance HasField "victoryPoints" PlayerCard (Maybe Int) where
   getField = (.victoryPoints) . toCardDef
@@ -78,12 +85,14 @@ instance HasCardDef PlayerCard where
     Just def -> maybe def (`tabooListModify` def) (pcTabooList c)
     Nothing -> case lookup (pcCardCode c) allEncounterAssetCards of
       Just def -> def
-      Nothing ->
-        error
-          $ "missing card def for player card "
-          <> show (pcCardCode c)
-          <> "\n"
-          <> prettyCallStack callStack
+      Nothing -> case lookup (pcCardCode c) InvestigatorCards.allInvestigatorCards of
+        Just def -> def
+        Nothing ->
+          error
+            $ "missing card def for player card "
+            <> show (pcCardCode c)
+            <> "\n"
+            <> prettyCallStack callStack
 
 instance Named PlayerCard where
   toName = toName . toCardDef
@@ -102,6 +111,8 @@ lookupPlayerCard cardDef cardId =
     , pcCustomizations = mempty
     , pcTabooList = Nothing
     , pcMutated = Nothing
+    , pcMeta = Nothing
+    , pcFacedown = Nothing
     }
 
 setPlayerCardOwner :: InvestigatorId -> PlayerCard -> PlayerCard
@@ -112,7 +123,7 @@ setTaboo mtaboo pc = pc {pcTabooList = mtaboo, pcMutated = tabooMutated mtaboo p
 
 tabooMutated :: Maybe TabooList -> PlayerCard -> Maybe Text
 tabooMutated Nothing _ = Nothing
-tabooMutated jtbl pc = tabooMutated' jtbl (pcCardCode pc)
+tabooMutated jtbl pc = asum $ map (tabooMutated' jtbl) (toCardDef pc).cardCodes
 
 tabooMutated' :: Maybe TabooList -> CardCode -> Maybe Text
 tabooMutated' = \case

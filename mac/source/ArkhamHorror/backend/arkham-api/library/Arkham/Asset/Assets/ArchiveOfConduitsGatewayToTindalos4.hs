@@ -36,7 +36,7 @@ instance RunMessage ArchiveOfConduitsGatewayToTindalos4 where
     UseThisAbility iid (isSource attrs -> True) 2 -> do
       iids <-
         select
-          $ affectsOthers
+          $ affectsOthersKnown iid
           $ InvestigatorCanMoveTo (attrs.ability 2) (LocationWithEnemy $ EnemyWithToken Token.Leyline)
       chooseOrRunOneM iid $ targets iids $ handleTarget iid (attrs.ability 2)
       pure a
@@ -52,8 +52,8 @@ instance RunMessage ArchiveOfConduitsGatewayToTindalos4 where
           chooseTargetM iid enemies \enemy -> do
             moveTo (attrs.ability 2) iid' location
             chooseOneM iid do
-              labeled "Do not remove Leyline" nothing
-              labeled "Remove Leyline" do
+              labeledI "doNotRemoveLeyline" nothing
+              labeledI "removeLeyline" do
                 removeTokens (attrs.ability 2) (toTarget enemy) Token.Leyline 1
                 nonAttackEnemyDamage (Just iid) (attrs.ability 2) 1 enemy
       pure a

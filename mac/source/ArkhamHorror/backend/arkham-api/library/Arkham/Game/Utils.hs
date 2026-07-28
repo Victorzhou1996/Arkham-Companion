@@ -27,6 +27,8 @@ import Arkham.Investigator (promoInvestigators)
 import Arkham.Investigator.Types (Field (..), Investigator, investigatorResources)
 import Arkham.Keyword (Sealing (..))
 import Arkham.Keyword qualified as Keyword
+import Arkham.EnemyLocation.EnemyProxy (toEnemyLocationEnemyProxy)
+import Arkham.EnemyLocation.Proxy (toEnemyLocationProxy)
 import Arkham.Location.Types (Location)
 import Arkham.Matcher.Target (matchTarget)
 import Arkham.Prelude
@@ -195,6 +197,8 @@ createActiveCostForAdditionalCardCosts iid card = do
             , activeCostInvestigator = iid
             , activeCostSealedChaosTokens = []
             , activeCostCancelled = False
+            , activeCostChosenOrAction = Nothing
+            , activeCostPendingEventId = Nothing
             }
 
 getEnemy :: (HasCallStack, HasGame m) => EnemyId -> m Enemy
@@ -210,11 +214,14 @@ maybeEnemy eid = do
     <|> getInDiscardEntity enemiesL eid g
     <|> getInEncounterDiscardEntity enemiesL eid g
     <|> getRemovedEntity enemiesL eid g
+    <|> ( let lid = LocationId (coerce (unEnemyId eid))
+           in fmap (toEnemyLocationEnemyProxy . toAttrs) $ preview (entitiesL . enemyLocationsL . ix lid) g
+        )
 
 getSkill :: (HasCallStack, HasGame m) => SkillId -> m Skill
 getSkill sid = fromJustNote missingSkill <$> maybeSkill sid
  where
-  missingSkill = "Unknown skill: " <> show sid
+  missingSkill = "Unknown skill: " <> show sid <> "\n\n" <> prettyCallStack callStack
 
 maybeSkill :: HasGame m => SkillId -> m (Maybe Skill)
 maybeSkill sid = do
@@ -280,7 +287,9 @@ getCostForCard iid card isPlayAction = do
         Just resources -> case cdCost (toCardDef card) of
           Just (AnyMatchingCardCost ecMatcher) -> do
             cards <- select ecMatcher
-            pure $ Cost.OrCost $ map (Cost.ResourceCost . getCost) cards
+            pure $ case nubOrd (map (Cost.ResourceCost . getCost) cards) of
+              [x] -> x
+              xs -> Cost.OrCost xs
           Just (MatchingEnemyFieldCost enemyMatcher enemyCostField) -> do
             enemies <- select enemyMatcher
             let enemyField = case enemyCostField of
@@ -289,17 +298,18 @@ getCostForCard iid card isPlayAction = do
             pure $ Cost.OrCost $ map Cost.ResourceCost $ nubOrd values
           _ ->
             pure
-              $ if resources == 0
+              $ if isDynamic card
                 then
-                  if isDynamic card
-                    then case maxDynamic card of
-                      Nothing -> Cost.UpTo (Fixed $ investigatorResources $ toAttrs investigator') (Cost.ResourceCost 1)
-                      Just c ->
-                        Cost.UpTo
-                          (MaxCalculation c (Fixed $ investigatorResources $ toAttrs investigator'))
-                          (Cost.ResourceCost 1)
-                    else Cost.Free
-                else Cost.ResourceCost resources
+                  let
+                    availableForX = max 0 (investigatorResources (toAttrs investigator') - resources)
+                    dynamicPart = case maxDynamic card of
+                      Nothing -> Cost.UpTo (Fixed availableForX) (Cost.ResourceCost 1)
+                      Just c -> Cost.UpTo (MaxCalculation c (Fixed availableForX)) (Cost.ResourceCost 1)
+                  in
+                    if resources == 0
+                      then dynamicPart
+                      else Cost.ResourceCost resources <> dynamicPart
+                else if resources == 0 then Cost.Free else Cost.ResourceCost resources
 
       investigateCosts <- runDefaultMaybeT [] do
         guard isInvestigate
@@ -368,6 +378,8 @@ createActiveCostForCard iid card isPlayAction windows' = do
       , activeCostInvestigator = iid
       , activeCostSealedChaosTokens = []
       , activeCostCancelled = False
+      , activeCostChosenOrAction = Nothing
+      , activeCostPendingEventId = Nothing
       }
 
 data MissingLocation = MissingLocation Text CallStack
@@ -386,9 +398,14 @@ getLocation lid = fromMaybe missingLocation <$> maybeLocation lid
 maybeLocation :: HasGame m => LocationId -> m (Maybe Location)
 maybeLocation lid = do
   g <- getGame
-  pure
-    $ preview (entitiesL . locationsL . ix lid) g
-    <|> getRemovedEntity locationsL lid g
+  case preview (entitiesL . locationsL . ix lid) g <|> getRemovedEntity locationsL lid g of
+    Just l -> pure (Just l)
+    Nothing -> pure $ fmap (toEnemyLocationProxy . toAttrs) $ preview (entitiesL . enemyLocationsL . ix lid) g
+
+maybeEnemyLocation :: HasGame m => LocationId -> m (Maybe EnemyLocationId)
+maybeEnemyLocation lid = do
+  g <- getGame
+  pure $ EnemyLocationId . toId <$> preview (entitiesL . enemyLocationsL . ix lid) g
 
 modeScenario :: GameMode -> Maybe Scenario
 modeScenario = \case
@@ -424,10 +441,6 @@ gameEvents = entitiesEvents . gameEntities
 
 gameConcealed :: Game -> EntityMap ConcealedCard
 gameConcealed = entitiesConcealed . gameEntities
-
-gameEffects :: Game -> EntityMap Effect
-gameEffects = entitiesEffects . gameEntities
-
 gameActs :: Game -> EntityMap Act
 gameActs = entitiesActs . gameEntities
 

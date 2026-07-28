@@ -1,3 +1,5 @@
+{-# LANGUAGE NoFieldSelectors #-}
+
 module Arkham.Message.Lifted.Choose where
 
 import Arkham.Ability.Types
@@ -15,10 +17,11 @@ import Arkham.Helpers.SkillTest.Lifted (beginSkillTestEdit)
 import Arkham.I18n
 import Arkham.Id
 import Arkham.Key
+import Arkham.Location.Grid
 import Arkham.Matcher.Enemy
 import Arkham.Matcher.Investigator
 import Arkham.Matcher.Location
-import Arkham.Message (Message (Would), uiToRun)
+import Arkham.Message (Message (Would), questionWithSource, uiToRun)
 import Arkham.Message qualified as Msg
 import Arkham.Message.Lifted
 import Arkham.Prelude
@@ -42,6 +45,7 @@ data ChooseState = ChooseState
   { terminated :: Bool
   , label :: Maybe Text
   , labelCardCode :: Maybe CardCode
+  , source :: Maybe Source
   }
 
 newtype ChooseT m a = ChooseT {unChooseT :: StateT ChooseState (WriterT [UI Message] m) a}
@@ -71,7 +75,7 @@ instance MonadTrans ChooseT where
   lift = ChooseT . lift . lift
 
 runChooseT :: ChooseT m a -> m ((a, ChooseState), [UI Message])
-runChooseT = runWriterT . (`runStateT` ChooseState False Nothing Nothing) . unChooseT
+runChooseT (ChooseT m) = runWriterT (runStateT m (ChooseState False Nothing Nothing Nothing))
 
 leadChooseOneM :: ReverseQueue m => ChooseT m a -> m ()
 leadChooseOneM choices = do
@@ -88,16 +92,6 @@ leadChooseOrRunOneM choices = do
   lead <- getLead
   chooseOrRunOneM lead choices
 
-playerChooseOneM :: ReverseQueue m => PlayerId -> ChooseT m a -> m ()
-playerChooseOneM pid choices = do
-  ((_, ChooseState {label, labelCardCode}), choices') <- runChooseT choices
-  unless (shouldSkipQuestion choices') do
-    case label of
-      Nothing -> push $ Msg.chooseOne pid choices'
-      Just l -> case labelCardCode of
-        Nothing -> push $ Msg.Ask pid (QuestionLabel l Nothing $ ChooseOne choices')
-        Just cCode -> push $ Msg.Ask pid (QuestionLabel l (Just cCode) $ ChooseOne choices')
-
 isInvalidChoice :: UI Message -> Bool
 isInvalidChoice (InvalidLabel {}) = True
 isInvalidChoice _ = False
@@ -108,15 +102,19 @@ shouldSkipQuestion choices = all isInvalidChoice choices
 
 chooseOneM :: ReverseQueue m => InvestigatorId -> ChooseT m a -> m ()
 chooseOneM iid choices = do
-  ((_, ChooseState {label, labelCardCode}), choices') <- runChooseT choices
+  ((_, ChooseState {label, labelCardCode, source}), choices') <- runChooseT choices
   unless (shouldSkipQuestion choices') do
-    case label of
-      Nothing -> case labelCardCode of
-        Nothing -> chooseOne iid choices'
-        Just cCode -> questionLabelWithCard "@none" cCode iid $ ChooseOne choices'
-      Just l -> case labelCardCode of
-        Nothing -> questionLabel l iid $ ChooseOne choices'
-        Just cCode -> questionLabelWithCard l cCode iid $ ChooseOne choices'
+    case source of
+      Just s -> do
+        pid <- getPlayer iid
+        push $ questionWithSource s pid $ labelWrap label labelCardCode $ ChooseOne choices'
+      Nothing -> case label of
+        Nothing -> case labelCardCode of
+          Nothing -> chooseOne iid choices'
+          Just cCode -> questionLabelWithCard "@none" cCode iid $ ChooseOne choices'
+        Just l -> case labelCardCode of
+          Nothing -> questionLabel l iid $ ChooseOne choices'
+          Just cCode -> questionLabelWithCard l cCode iid $ ChooseOne choices'
 
 chooseSomeM :: ReverseQueue m => InvestigatorId -> Text -> ChooseT m a -> m ()
 chooseSomeM iid txt choices = do
@@ -129,7 +127,7 @@ chooseSomeM iid txt choices = do
 chooseSomeM' :: (HasI18n, ReverseQueue m) => InvestigatorId -> Text -> ChooseT m a -> m ()
 chooseSomeM' iid txt choices = do
   ((_, ChooseState {label}), choices') <- runChooseT choices
-  let lbl = "$" <> ikey ("label." <> txt)
+  let lbl = "$" <> labelKey txt
   unless (shouldSkipQuestion choices') do
     case label of
       Nothing -> chooseSome iid lbl choices'
@@ -146,7 +144,7 @@ chooseSome1M iid txt choices = do
 chooseSome1M' :: (HasI18n, ReverseQueue m) => InvestigatorId -> Text -> ChooseT m a -> m ()
 chooseSome1M' iid txt choices = do
   ((_, ChooseState {label}), choices') <- runChooseT choices
-  let lbl = "$" <> ikey ("label." <> txt)
+  let lbl = "$" <> labelKey txt
   unless (shouldSkipQuestion choices') do
     case label of
       Nothing -> chooseSome1 iid lbl choices'
@@ -159,13 +157,19 @@ chooseOneFromEachM iid choices = do
 
 chooseOrRunOneM :: ReverseQueue m => InvestigatorId -> ChooseT m a -> m ()
 chooseOrRunOneM iid choices = do
-  ((_, ChooseState {label}), choices') <- runChooseT choices
+  ((_, ChooseState {label, labelCardCode, source}), choices') <- runChooseT choices
   unless (shouldSkipQuestion choices') do
-    case label of
-      Nothing -> chooseOrRunOne iid choices'
-      Just l -> case choices' of
+    case source of
+      Just s -> case choices' of
         [x] -> push $ uiToRun x
-        _ -> questionLabel l iid $ ChooseOne choices'
+        _ -> do
+          pid <- getPlayer iid
+          push $ questionWithSource s pid $ labelWrap label labelCardCode $ ChooseOne choices'
+      Nothing -> case label of
+        Nothing -> chooseOrRunOne iid choices'
+        Just l -> case choices' of
+          [x] -> push $ uiToRun x
+          _ -> questionLabel l iid $ ChooseOne choices'
 
 chooseOrRunNM :: ReverseQueue m => InvestigatorId -> Int -> ChooseT m a -> m ()
 chooseOrRunNM iid n choices = do
@@ -201,12 +205,12 @@ chooseUpToNM_ iid n choices = chooseUpToNMI' iid n "done" choices
 
 chooseUpToNM' :: (HasI18n, ReverseQueue m) => InvestigatorId -> Int -> Text -> ChooseT m a -> m ()
 chooseUpToNM' iid n done choices = do
-  let lbl = "$" <> ikey ("label." <> done)
+  let lbl = "$" <> labelKey done
   chooseUpToNM iid n lbl choices
 
 chooseUpToNMI' :: ReverseQueue m => InvestigatorId -> Int -> Text -> ChooseT m a -> m ()
 chooseUpToNMI' iid n done choices = do
-  let lbl = withI18n $ "$" <> ikey ("label." <> done)
+  let lbl = withI18n $ "$" <> labelKey done
   chooseUpToNM iid n lbl choices
 
 chooseOneAtATimeM :: ReverseQueue m => InvestigatorId -> ChooseT m a -> m ()
@@ -235,7 +239,7 @@ labeled label action = unterminated do
 labeled' :: (HasI18n, ReverseQueue m) => Text -> QueueT Message m () -> ChooseT m ()
 labeled' label action = unterminated do
   msgs <- lift $ capture action
-  tell [Label ("$" <> ikey ("label." <> label)) msgs]
+  tell [Label ("$" <> labelKey label) msgs]
 
 info' :: ReverseQueue m => FlavorTextBuilder () -> ChooseT m ()
 info' flavor = unterminated $ tell [Info $ buildFlavor flavor]
@@ -243,18 +247,18 @@ info' flavor = unterminated $ tell [Info $ buildFlavor flavor]
 labeledI :: ReverseQueue m => Text -> QueueT Message m () -> ChooseT m ()
 labeledI label action = unterminated do
   msgs <- lift $ capture action
-  tell [Label (withI18n $ "$" <> ikey ("label." <> label)) msgs]
+  tell [Label (withI18n $ "$" <> labelKey label) msgs]
 
 labeledValidate' :: (HasI18n, ReverseQueue m) => Bool -> Text -> QueueT Message m () -> ChooseT m ()
 labeledValidate' valid label action = unterminated do
   if valid
     then do
       msgs <- lift $ capture action
-      tell [Label ("$" <> ikey ("label." <> label)) msgs]
-    else tell [InvalidLabel ("$" <> ikey ("label." <> label))]
+      tell [Label ("$" <> labelKey label) msgs]
+    else tell [InvalidLabel ("$" <> labelKey label)]
 
 invalidLabeled' :: (HasI18n, ReverseQueue m) => Text -> ChooseT m ()
-invalidLabeled' label = unterminated $ tell [InvalidLabel ("$" <> ikey ("label." <> label))]
+invalidLabeled' label = unterminated $ tell [InvalidLabel ("$" <> labelKey label)]
 
 chooseTest :: (HasI18n, ReverseQueue m) => SkillType -> Int -> QueueT Message m () -> ChooseT m ()
 chooseTest skind n body = countVar n $ skillVar skind $ labeled' "test" body
@@ -287,6 +291,17 @@ chooseBeginSkillTestEdit
 chooseBeginSkillTestEdit sid iid source target kinds n f = do
   chooseOneM iid $ for_ kinds \kind -> skillLabeled kind $ beginSkillTestEdit sid iid source target kind n f
 
+chooseRevelationSkillTest
+  :: (Sourceable source, ReverseQueue m)
+  => SkillTestId
+  -> InvestigatorId
+  -> source
+  -> [SkillType]
+  -> GameCalculation
+  -> m ()
+chooseRevelationSkillTest sid iid source kinds n = do
+  chooseBeginSkillTestEdit sid iid source iid kinds n setIsRevelation
+
 skip :: ReverseQueue m => Text -> ChooseT m ()
 skip = (`labeled` nothing)
 
@@ -297,6 +312,9 @@ gridLabeled :: ReverseQueue m => Text -> QueueT Message m () -> ChooseT m ()
 gridLabeled label action = unterminated do
   msgs <- lift $ capture action
   tell [GridLabel label msgs]
+
+gridLabeled_ :: ReverseQueue m => Pos -> QueueT Message m () -> ChooseT m ()
+gridLabeled_ (gridLabel -> label) = gridLabeled label
 
 portraitLabeled :: ReverseQueue m => InvestigatorId -> QueueT Message m () -> ChooseT m ()
 portraitLabeled iid action = unterminated do
@@ -355,7 +373,7 @@ tarotLabeled tarotCard action = unterminated do
 scenarioLabeled' :: (HasI18n, ReverseQueue m) => Text -> Text -> QueueT Message m () -> ChooseT m ()
 scenarioLabeled' label scenarioId action = unterminated do
   msgs <- lift $ capture action
-  tell [ScenarioLabel ("$" <> ikey ("label." <> label)) scenarioId msgs]
+  tell [ScenarioLabel ("$" <> labelKey label) scenarioId msgs]
 
 cardsLabeled :: (ReverseQueue m, HasCardCode a) => [a] -> (a -> QueueT Message m ()) -> ChooseT m ()
 cardsLabeled as action = traverse_ (\a -> cardLabeled a (action a)) as
@@ -404,13 +422,6 @@ skillLabeled :: ReverseQueue m => SkillType -> QueueT Message m () -> ChooseT m 
 skillLabeled skillType action = unterminated do
   msgs <- lift $ capture action
   tell [SkillLabel skillType msgs]
-
-skillsLabeled :: ReverseQueue m => [SkillType] -> (SkillType -> QueueT Message m ()) -> ChooseT m ()
-skillsLabeled skills action = unterminated do
-  for_ skills \skillType -> do
-    msgs <- lift $ capture (action skillType)
-    tell [SkillLabel skillType msgs]
-
 targeting :: (ReverseQueue m, Targetable target) => target -> QueueT Message m () -> ChooseT m ()
 targeting target action = unterminated do
   msgs <- lift $ capture action
@@ -448,6 +459,14 @@ chooseTargetM
   -> (target -> QueueT Message m ())
   -> m ()
 chooseTargetM iid ts action = chooseOneM iid $ unterminated $ for_ ts \t -> targeting t (action t)
+
+chooseHandleTargetM
+  :: (ReverseQueue m, Targetable target, Sourceable source)
+  => InvestigatorId
+  -> source
+  -> [target]
+  -> m ()
+chooseHandleTargetM iid source ts = chooseTargetM iid ts $ handleTarget iid source
 
 chooseThisM
   :: (ReverseQueue m, Targetable target)
@@ -498,10 +517,23 @@ questionLabeled :: ReverseQueue m => Text -> ChooseT m ()
 questionLabeled label = modify $ \s -> s {Arkham.Message.Lifted.Choose.label = Just label}
 
 questionLabeled' :: (HasI18n, ReverseQueue m) => Text -> ChooseT m ()
-questionLabeled' label = modify $ \s -> s {Arkham.Message.Lifted.Choose.label = Just $ "$" <> ikey ("label." <> label)}
+questionLabeled' label = modify $ \s -> s {Arkham.Message.Lifted.Choose.label = Just $ "$" <> labelKey label}
+
+questionLabeledI :: ReverseQueue m => Text -> ChooseT m ()
+questionLabeledI label = modify $ \s -> s {Arkham.Message.Lifted.Choose.label = Just $ withI18n $ "$" <> labelKey label}
 
 questionLabeledCard :: (ReverseQueue m, HasCardCode a) => a -> ChooseT m ()
 questionLabeledCard a = modify $ \s -> s {Arkham.Message.Lifted.Choose.labelCardCode = Just (toCardCode a)}
+
+-- | Attach a source to the question so the client highlights that entity (e.g.
+-- the acting enemy during Hunter/Patrol/Warring movement). Honored by
+-- 'chooseOneM' and 'chooseOrRunOneM'.
+questionSourced :: (ReverseQueue m, Sourceable a) => a -> ChooseT m ()
+questionSourced a = modify $ \s -> s {Arkham.Message.Lifted.Choose.source = Just (toSource a)}
+
+labelWrap :: Maybe Text -> Maybe CardCode -> Question Message -> Question Message
+labelWrap Nothing Nothing q = q
+labelWrap mlabel mcard q = QuestionLabel (fromMaybe "@none" mlabel) mcard q
 
 storyWithContinue :: ReverseQueue m => FlavorText -> Text -> m ()
 storyWithContinue txt button = storyWithChooseOneM txt $ labeled button nothing
@@ -509,7 +541,7 @@ storyWithContinue txt button = storyWithChooseOneM txt $ labeled button nothing
 storyWithChooseOneM :: ReverseQueue m => FlavorText -> ChooseT m a -> m ()
 storyWithChooseOneM txt choices = do
   (_, choices') <- runChooseT choices
-  unless (null choices') $ storyWithChooseOne txt choices'
+  unless (shouldSkipQuestion choices') $ storyWithChooseOne txt choices'
 
 storyWithContinue' :: (HasI18n, ReverseQueue m) => FlavorTextBuilder () -> m ()
 storyWithContinue' builder = storyWithChooseOneM' builder $ unscoped $ labeled' "continue" nothing
@@ -517,7 +549,7 @@ storyWithContinue' builder = storyWithChooseOneM' builder $ unscoped $ labeled' 
 storyWithChooseOneM' :: ReverseQueue m => FlavorTextBuilder () -> ChooseT m a -> m ()
 storyWithChooseOneM' builder choices = do
   (_, choices') <- runChooseT choices
-  unless (null choices') $ storyWithChooseOne (buildFlavor builder) choices'
+  unless (shouldSkipQuestion choices') $ storyWithChooseOne (buildFlavor builder) choices'
 
 investigatorStoryWithChooseOneM'
   :: ReverseQueue m => InvestigatorId -> FlavorTextBuilder () -> ChooseT m a -> m ()

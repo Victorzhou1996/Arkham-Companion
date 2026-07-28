@@ -4,6 +4,7 @@ import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.ChaosToken
+import Arkham.Exhaust (mkExhaustionThen)
 import Arkham.Helpers.Modifiers qualified as Msg
 import Arkham.Helpers.SkillTest (withSkillTest)
 import Arkham.Matcher
@@ -32,7 +33,7 @@ instance RunMessage RecallTheFuture2 where
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       tokens <- sort . nub . map (.face) <$> select (IncludeSealed $ IncludeTokenPool AnyChaosToken)
       chooseOneM iid do
-        for_ tokens \t -> labeled (tshow t) $ handleTarget iid attrs t
+        for_ tokens \t -> chaosTokenLabeled t $ handleTarget iid attrs t
       pure a
     HandleTargetChoice _ (isSource attrs -> True) (ChaosTokenFaceTarget t) -> do
       pure . RecallTheFuture2 $ attrs `with` Metadata (Just t)
@@ -43,7 +44,7 @@ instance RunMessage RecallTheFuture2 where
           push
             $ If
               (Window.RevealChaosTokenAssetAbilityEffect iid [token] (toId attrs))
-              [ExhaustThen (toTarget attrs) [enable]]
+              [Exhaust (mkExhaustionThen attrs attrs [enable])]
       pure a
     SkillTestEnds {} -> pure . RecallTheFuture2 $ attrs `with` Metadata Nothing
     _ -> RecallTheFuture2 . (`with` metadata) <$> liftRunMessage msg attrs

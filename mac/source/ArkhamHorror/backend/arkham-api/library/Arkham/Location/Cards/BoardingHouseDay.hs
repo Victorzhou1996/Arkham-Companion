@@ -1,7 +1,7 @@
 module Arkham.Location.Cards.BoardingHouseDay (boardingHouseDay) where
 
 import Arkham.Ability
-import Arkham.Campaigns.TheFeastOfHemlockVale.Helpers (campaignI18n, codex)
+import Arkham.Campaigns.TheFeastOfHemlockVale.Helpers
 import Arkham.Helpers.Healing
 import Arkham.Location.Cards qualified as Cards
 import Arkham.Location.Import.Lifted
@@ -12,14 +12,15 @@ newtype BoardingHouseDay = BoardingHouseDay LocationAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 boardingHouseDay :: LocationCard BoardingHouseDay
-boardingHouseDay = symbolLabel $ location BoardingHouseDay Cards.boardingHouseDay 0 (Static 0)
+boardingHouseDay = symbolLabel $ location BoardingHouseDay Cards.boardingHouseDay 3 (Static 0)
 
 instance HasAbilities BoardingHouseDay where
   getAbilities (BoardingHouseDay a) =
     campaignI18n
       $ extendRevealed
         a
-        [ groupLimit PerGame $ withI18nTooltip "boardingHouse.day.codex" $ restricted a 1 Here actionAbility
+        [ withI18nTooltip "boardingHouse.day.codex"
+            $ restricted a 1 (Here <> youCanTriggerCodex 9) actionAbility
         , playerLimit PerGame
             $ withI18nTooltip "boardingHouse.day.heal"
             $ withCriteria
@@ -33,6 +34,6 @@ instance RunMessage BoardingHouseDay where
       codex iid (attrs.ability 1) 9
       pure l
     UseThisAbility iid (isSource attrs -> True) 2 -> do
-      chooseHealDamageOrHorror (attrs.ability 1) iid
+      chooseHealDamageOrHorror (UseAbilitySource iid (toSource attrs) 1) iid
       pure l
     _ -> BoardingHouseDay <$> liftRunMessage msg attrs

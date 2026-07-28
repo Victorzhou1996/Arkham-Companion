@@ -55,7 +55,6 @@ import Data.UUID.V4 as X
 import Helpers.Message as X hiding (playEvent)
 import Test.Hspec as X
 
-import Arkham.CampaignLogKey
 import Arkham.ActiveCost
 import Arkham.Agenda.Cards qualified as Cards
 import Arkham.Agenda.Cards.WhatsGoingOn
@@ -64,6 +63,7 @@ import Arkham.Agenda.Types
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Types
 import Arkham.Calculation
+import Arkham.CampaignLogKey
 import Arkham.Classes.HasGame
 import Arkham.Debug
 import Arkham.Difficulty
@@ -71,6 +71,7 @@ import Arkham.Enemy.Cards qualified as Cards
 import Arkham.Enemy.Types
 import Arkham.Entities qualified as Entities
 import Arkham.Event.Types
+import Arkham.Epic.Types (HasMaybeEpic (..))
 import Arkham.Game qualified as Game
 import Arkham.Game.Settings
 import Arkham.Game.State
@@ -100,6 +101,7 @@ import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.State
 import Data.IntMap.Strict qualified as IntMap
 import Data.Map.Strict qualified as Map
+import Data.Text qualified as T
 import GHC.OverloadedLabels
 import GHC.TypeLits
 import OpenTelemetry.Attributes qualified as A
@@ -255,6 +257,9 @@ instance CardGen TestAppT where
 
 runTestApp :: TestApp -> TestAppT a -> IO a
 runTestApp testApp = flip evalStateT testApp . unTestAppT
+
+instance HasMaybeEpic TestApp where
+  getMaybeEpicEnv _ = Nothing
 
 instance HasGameRef TestApp where
   gameRefL = lens game $ \m x -> m {game = x}
@@ -635,10 +640,13 @@ createMessageChecker :: (Message -> Bool) -> TestAppT (IORef Bool)
 createMessageChecker f = do
   ref <- liftIO $ newIORef False
   testApp <- get
+  -- Chain rather than replace, so several checkers can watch the same game.
+  let prev = testLogger testApp
   put
     $ testApp
-      { testLogger =
-          Just (\msg -> when (f msg) (liftIO $ atomicWriteIORef ref True))
+      { testLogger = Just \msg -> do
+          for_ prev ($ msg)
+          when (f msg) (liftIO $ atomicWriteIORef ref True)
       }
   pure ref
 
@@ -695,11 +703,24 @@ skip = chooseOptionMatching "skip" \case
   SkipTriggersButton {} -> True
   _ -> False
 
+-- | Peel off display-only question wrappers (source highlight, header label)
+-- that the frontend renders but that tests should see through. Also normalizes
+-- the window-ask flavors of ChooseOne, which differ from a plain ChooseOne only
+-- in whether the queue regenerates the seat (see Entity.Answer), not in how a
+-- spec answers them.
+stripQuestionWrappers :: Question msg -> Question msg
+stripQuestionWrappers = \case
+  QuestionLabel _ _ q -> stripQuestionWrappers q
+  QuestionWithSource _ _ q -> stripQuestionWrappers q
+  PayCostQuestion _ q -> stripQuestionWrappers q
+  WindowChooseOne cs -> ChooseOne cs
+  q -> q
+
 chooseOnlyOption :: HasCallStack => String -> TestAppT ()
 chooseOnlyOption _reason = do
   questionMap <- gameQuestion <$> getGame
   case mapToList questionMap of
-    [(_, question)] -> case question of
+    [(_, question)] -> case stripQuestionWrappers question of
       ChooseOne [msg] -> push (uiToRun msg) <* runMessages
       PlayerWindowChooseOne [msg] -> push (uiToRun msg) <* runMessages
       ChooseOneAtATime [msg] -> push (uiToRun msg) <* runMessages
@@ -712,12 +733,18 @@ chooseFirstOption :: HasCallStack => String -> TestAppT ()
 chooseFirstOption _reason = do
   questionMap <- gameQuestion <$> getGame
   case mapToList questionMap of
-    [(_, question)] -> case question of
+    [(_, question)] -> case stripQuestionWrappers question of
       ChooseOne (msg : _) -> push (uiToRun msg) >> runMessages
       PlayerWindowChooseOne (msg : _) -> push (uiToRun msg) >> runMessages
       ChooseOneAtATime (msg : _) -> push (uiToRun msg) >> runMessages
       _ -> error "spec expectation mismatch"
     _ -> error "There must be at least one option"
+
+chooseCardSkillTestOption :: (HasCallStack, HasCardCode code) => code -> TestAppT ()
+chooseCardSkillTestOption (toCardCode -> code) = do
+  chooseOptionMatching "use card option" \case
+    Label str _ -> tshow code `T.isInfixOf` str
+    _ -> False
 
 chooseOptionMatching :: HasCallStack => String -> (UI Message -> Bool) -> TestAppT ()
 chooseOptionMatching _reason f = do
@@ -726,26 +753,35 @@ chooseOptionMatching _reason f = do
     [(iid, question)] -> go iid question
     other -> error $ "There must be only one question to use this function\n" <> show other
  where
-  go iid question = case question of
-    QuestionLabel _ _ q -> go iid q
+  notFound msgs =
+    liftIO $ expectationFailure $ "could not find a matching message in: " <> show msgs
+  go iid question = case stripQuestionWrappers question of
     ChooseOne msgs -> case find f msgs of
       Just msg -> push (uiToRun msg) <* runMessages
-      Nothing -> liftIO $ expectationFailure "could not find a matching message"
+      Nothing -> notFound msgs
     PlayerWindowChooseOne msgs -> case find f msgs of
       Just msg -> push (uiToRun msg) <* runMessages
-      Nothing -> liftIO $ expectationFailure "could not find a matching message"
+      Nothing -> notFound msgs
     ChooseOneAtATime msgs -> case find f msgs of
       Just msg -> do
         pushIfAny (deleteFirst msg msgs) (Ask iid $ ChooseOneAtATime $ deleteFirst msg msgs)
         push (uiToRun msg)
         runMessages
-      Nothing -> liftIO $ expectationFailure "could not find a matching message"
+      Nothing -> notFound msgs
     ChooseN n msgs -> case find f msgs of
       Just msg -> do
         pushWhen (n > 1) (Ask iid $ ChooseN (n - 1) $ deleteFirst msg msgs)
         push (uiToRun msg)
         runMessages
-      Nothing -> liftIO $ expectationFailure "could not find a matching message"
+      Nothing -> notFound msgs
+    ChooseUpToN n msgs -> case find f msgs of
+      Just msg -> do
+        case msg of
+          Done _ -> pure ()
+          _ -> pushWhen (n > 1) (Ask iid $ ChooseUpToN (n - 1) $ deleteFirst msg msgs)
+        push (uiToRun msg)
+        runMessages
+      Nothing -> notFound msgs
     _ -> error $ "unsupported questions type: " <> show question
 
 debug :: (Investigator -> TestAppT ()) -> Investigator -> TestAppT ()
@@ -831,8 +867,13 @@ mkTestTracer = do
   pure $ makeTracer tp instrLib tracerOptions
 
 scenarioTest :: ScenarioId -> (Investigator -> TestAppT ()) -> IO ()
-scenarioTest scenarioId body = do
-  investigator <- testInvestigator Investigators.jennyBarnes
+scenarioTest = scenarioTestWith Investigators.jennyBarnes
+
+-- | Like 'scenarioTest' but lets the caller choose which investigator the game
+-- is seeded with (rather than the default Jenny Barnes).
+scenarioTestWith :: CardDef -> ScenarioId -> (Investigator -> TestAppT ()) -> IO ()
+scenarioTestWith investigatorDef scenarioId body = do
+  investigator <- testInvestigator investigatorDef
   let scenario' = lookupScenario scenarioId Easy
   g <- newGame scenario' investigator
   gameRef <- newIORef g
@@ -852,6 +893,10 @@ newGame scenario' investigator = do
       Game
         { gameWindowDepth = 0
         , gameWindowStack = Nothing
+        , gameWindowTick = 0
+        , gameSimultaneousAsks = mempty
+        , gameWindowTickStack = []
+        , gameEntryTicks = mempty
         , gameRunWindows = True
         , gameDepthLock = 0
         , gamePhaseHistory = mempty
@@ -884,6 +929,7 @@ newGame scenario' investigator = do
         , gameGameState = IsActive
         , gameFoundCards = mempty
         , gameFocusedCards = mempty
+        , gameHighlightedCards = mempty
         , gameFocusedTarotCards = mempty
         , gameFocusedChaosTokens = mempty
         , gameActiveCard = Nothing
@@ -894,6 +940,7 @@ newGame scenario' investigator = do
         , gameQuestion = mempty
         , gameActionCanBeUndone = False
         , gameActionDiff = []
+        , gameActionSnapshot = Transient Nothing
         , gameInAction = False
         , gameCards = mempty
         , gameActiveCost = mempty
@@ -907,6 +954,12 @@ newGame scenario' investigator = do
         , gamePerformTarotReadings = False
         , gameCurrentBatchId = Nothing
         , gameScenarioSteps = 0
+        , gameUndoActionStep = Nothing
+        , gameUndoTurnStep = Nothing
+        , gameUndoPhaseStep = Nothing
+        , gameUndoRoundStep = Nothing
+        , gameAsIfAtIgnored = mempty
+        , gameLocationOffsets = mempty
         }
 
   liftIO $ do

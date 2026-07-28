@@ -17,9 +17,10 @@ newtype AkachiOnyele = AkachiOnyele InvestigatorAttrs
 
 instance HasModifiersFor AkachiOnyele where
   getModifiersFor (AkachiOnyele a) =
-    modifySelect
+    modifySelectWith
       a
       (AssetControlledBy (InvestigatorWithId a.id) <> AssetWithUseType Charge)
+      setActiveDuringSetup
       [AdditionalStartingUses 1]
 
 akachiOnyele :: InvestigatorCard AkachiOnyele

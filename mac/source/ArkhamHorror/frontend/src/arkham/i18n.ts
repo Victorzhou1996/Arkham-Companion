@@ -19,6 +19,39 @@ export const handleI18n = (body: string, t: (key: string, params: { [key: string
   return t(key, params)
 }
 
+export const handleEmbeddedI18n = (body: string, t: (key: string, params: { [key: string]: any }) => string) => {
+  const trimmed = body.trim()
+
+  if (isWholeI18nToken(trimmed)) {
+    return handleI18n(trimmed, t)
+  }
+
+  return body.replace(/\$[A-Za-z0-9_.]+(?!\s+[A-Za-z0-9_]+=[is]:)/g, (token) => {
+    const localized = handleI18n(token, t)
+    const key = token.slice(1)
+    return localized === key ? token : localized
+  })
+}
+
+function isWholeI18nToken(input: string) {
+  if (!input.startsWith('$')) {
+    return false
+  }
+
+  const spaceIndex = input.indexOf(' ')
+  if (spaceIndex === -1) {
+    return true
+  }
+
+  const rest = input.substring(spaceIndex + 1).trim()
+  if (!rest) {
+    return false
+  }
+
+  const value = '(?:"(?:[^"\\\\]|\\\\.)*"|\\S+)'
+  return new RegExp(`^[A-Za-z0-9_]+=[is]:${value}(\\s+[A-Za-z0-9_]+=[is]:${value})*$`).test(rest)
+}
+
 function parseInput(input: string) {
     // Remove leading and trailing whitespace
     input = input.trim();

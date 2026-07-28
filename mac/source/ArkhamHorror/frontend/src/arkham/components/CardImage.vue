@@ -41,6 +41,7 @@ const vertical = computed(() => {
     "c07199",
     "c09615",
     "c10607a",
+    "c10661",
     "c50026a",
     "c53029",
     "c53030",
@@ -81,8 +82,15 @@ const backImage = computed(() => {
   if (doubleSided)
     return imgsrc(`cards/${props.card.art.replace(/a$/, '')}b.avif`)
 
-  if (['EnemyType', 'StoryType', 'TreacheryType', 'EncounterAssetType', 'EncounterEventType'].includes(cardType))
+  if (['EnemyType', 'StoryType', 'TreacheryType', 'EncounterAssetType', 'EncounterEventType'].includes(cardType)) {
+    if (props.card.meta?.customBack)
+      return imgsrc(`backs/${props.card.meta.customBack}`)
     return imgsrc('encounter_back.jpg')
+  }
+
+  // Player-type cards (e.g. earned Artifact assets) may also define a custom back.
+  if (props.card.meta?.customBack)
+    return imgsrc(`backs/${props.card.meta.customBack}`)
 
   return imgsrc('player_back.jpg')
   

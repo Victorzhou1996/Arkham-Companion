@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.LoganHastingsBountyHunter (loganHastingsBountyHunter)
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Asset.Import.Lifted
 import Arkham.Capability
 import Arkham.Helpers.Modifiers (ModifierType (..), controllerGets)
 import Arkham.Matcher
@@ -20,7 +20,7 @@ instance HasModifiersFor LoganHastingsBountyHunter where
 instance HasAbilities LoganHastingsBountyHunter where
   getAbilities (LoganHastingsBountyHunter a) =
     [ controlled a 1 (youExist can.gain.resources)
-        $ triggered (EnemyDefeated #after You ByAny AnyEnemy) (exhaust a)
+        $ triggered (IfEnemyDefeated #after You ByAny AnyEnemy) (exhaust a)
     ]
 
 instance RunMessage LoganHastingsBountyHunter where

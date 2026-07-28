@@ -38,7 +38,7 @@ instance RunMessage EnchantWeapon3 where
     PlayThisEvent iid (is attrs -> True) -> do
       assets <-
         getUpgradeTargets iid
-          $ AssetControlledBy (affectsOthers $ colocatedWith iid)
+          $ AssetControlledBy (affectsOthersKnown iid $ colocatedWith iid)
           <> #weapon
           <> not_ (AssetWithAttachedEvent $ eventIs Cards.enchantWeapon3)
       chooseOneM iid do
@@ -50,6 +50,6 @@ instance RunMessage EnchantWeapon3 where
       pure e
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       owner <- field EventOwner (toId attrs)
-      nextSkillTestModifiers iid (attrs.ability 1) iid [AddSkillValueOf #willpower owner, DamageDealt 1]
+      thisSkillTestModifiers iid (attrs.ability 1) iid [AddSkillValueOf #willpower owner, DamageDealt 1]
       pure e
     _ -> EnchantWeapon3 <$> liftRunMessage msg attrs

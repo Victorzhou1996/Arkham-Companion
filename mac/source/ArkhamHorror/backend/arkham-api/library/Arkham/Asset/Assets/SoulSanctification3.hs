@@ -19,12 +19,12 @@ soulSanctification3 = asset SoulSanctification3 Cards.soulSanctification3
 instance HasModifiersFor SoulSanctification3 where
   getModifiersFor (SoulSanctification3 a) = case a.controller of
     Nothing -> pure mempty
-    Just controller -> modifySelect a Anyone $ CanHealAtFull (sourceOwnedBy controller) <$> [#damage, #horror]
+    Just controller -> modifySelect a Anyone $ CanHealAtFull (sourceUsedBy controller) <$> [#damage, #horror]
 
 instance HasAbilities SoulSanctification3 where
   getAbilities (SoulSanctification3 a) =
     [ wantsSkillTest (YourSkillTest AnySkillTest)
-        $ limitedAbility (PlayerLimit PerTestOrAbility 2)
+        $ limitedAbility (PlayerLimit PerTest 2)
         $ controlled a 1 DuringAnySkillTest
         $ FastAbility (assetUseCost a Offering 1)
     ]
@@ -35,12 +35,12 @@ instance RunMessage SoulSanctification3 where
       withSkillTest \sid -> skillTestModifier sid (attrs.ability 1) iid (AnySkillValue 2)
       pure a
     ExcessHealDamage _iid source n -> do
-      isControlled <- maybe (pure False) (sourceMatches source . sourceOwnedBy) attrs.controller
+      isControlled <- maybe (pure False) (sourceMatches source . sourceUsedBy) attrs.controller
       if isControlled
         then liftRunMessage (PlaceTokens (toSource attrs) (toTarget attrs) Offering n) a
         else pure a
     ExcessHealHorror _iid source n -> do
-      isControlled <- maybe (pure False) (sourceMatches source . sourceOwnedBy) attrs.controller
+      isControlled <- maybe (pure False) (sourceMatches source . sourceUsedBy) attrs.controller
       if isControlled
         then liftRunMessage (PlaceTokens (toSource attrs) (toTarget attrs) Offering n) a
         else pure a

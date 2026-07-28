@@ -1,4 +1,5 @@
 import * as JsonDecoder from 'ts.data.json';
+import { v2Optional, withDefault } from '@/arkham/parser';
 import { Name, nameDecoder } from '@/arkham/types/Name';
 
 type CardCost
@@ -21,11 +22,14 @@ export type CardDef = {
   cardType: string;
   art: string;
   level: number | null;
+  stage?: number | null;
   name: Name;
   cardTraits: string[];
   skills: SkillIcon[];
   cost: CardCost | null;
   otherSide: string | null;
+  meta: Record<string, any>;
+  encounterSet?: any;
 }
 
 const cardCostDecoder = JsonDecoder.oneOf<CardCost>([
@@ -47,16 +51,23 @@ const skillIconDecoder = JsonDecoder.oneOf<SkillIcon>([
 export const cardDefDecoder = JsonDecoder.object<CardDef>(
   {
     art: JsonDecoder.string(),
-    level: JsonDecoder.nullable(JsonDecoder.number()),
-    otherSide: JsonDecoder.nullable(JsonDecoder.string()),
+    level: withDefault(null, JsonDecoder.number()),
+    stage: JsonDecoder.oneOf([
+      JsonDecoder.number(),
+      JsonDecoder.null().map(() => undefined),
+      JsonDecoder.undefined(),
+    ], 'optional stage'),
+    otherSide: withDefault(null, JsonDecoder.string()),
     cardType: JsonDecoder.string(),
     cardCode: JsonDecoder.string(),
-    doubleSided: JsonDecoder.boolean(),
-    classSymbols: JsonDecoder.array<string>(JsonDecoder.string(), 'string[]'),
-    cardTraits: JsonDecoder.array<string>(JsonDecoder.string(), 'string[]'),
-    skills: JsonDecoder.array<SkillIcon>(skillIconDecoder, 'SkillIcon[]'),
+    doubleSided: withDefault(false, JsonDecoder.boolean()),
+    classSymbols: withDefault([], JsonDecoder.array<string>(JsonDecoder.string(), 'string[]')),
+    cardTraits: withDefault([], JsonDecoder.array<string>(JsonDecoder.string(), 'string[]')),
+    skills: withDefault([], JsonDecoder.array<SkillIcon>(skillIconDecoder, 'SkillIcon[]')),
     name: nameDecoder,
-    cost: JsonDecoder.nullable(cardCostDecoder),
+    cost: withDefault(null, cardCostDecoder),
+    meta: JsonDecoder.succeed().map((v: any) => v ?? {}),
+    encounterSet: v2Optional(JsonDecoder.succeed()),
   },
   'CardDef',
 );

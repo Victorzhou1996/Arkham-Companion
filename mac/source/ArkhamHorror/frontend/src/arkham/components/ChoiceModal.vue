@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n';
 import type { Game } from '@/arkham/types/Game';
 import * as ArkhamGame from '@/arkham/types/Game';
 import { choiceRequiresModal } from '@/arkham/types/Message';
-import { formatContent, replaceIcons } from '@/arkham/helpers';
-import { handleI18n } from '@/arkham/i18n';
+import { formatContent } from '@/arkham/helpers';
+import { handleEmbeddedI18n } from '@/arkham/i18n';
 import { QuestionType } from '@/arkham/types/Question';
 import Draggable from '@/components/Draggable.vue';
 import Question from '@/arkham/components/Question.vue';
@@ -32,7 +32,10 @@ const searchedCards = computed(() => {
 
   const playerZones = playerCards.filter(([, c]) => c.length > 0)
 
-  const encounterCards = Object.entries(props.game.scenario?.foundCards ? props.game.scenario.foundCards : props.game.foundCards)
+  const encounterCards = Object.entries({
+    ...(props.game.scenario?.foundCards ?? {}),
+    ...props.game.foundCards,
+  })
   const encounterZones = encounterCards.filter(([, c]) => c.length > 0)
 
   return [...playerZones, ...encounterZones]
@@ -43,20 +46,12 @@ const focusedCards = computed(() => {
     return []
   }
 
-  const { focusedCards, foundCards } = props.game
-
-  if (focusedCards.length === 0) {
-    if (Object.values(props.game.foundCards).some((v) => v.length > 0)) {
-      return Object.values(props.game.foundCards).flat()
-    }
-  }
-
   return props.game.focusedCards
 })
 
 const paymentAmountsLabel = computed(() => {
   if (question.value?.tag === QuestionType.CHOOSE_PAYMENT_AMOUNTS) {
-    return replaceIcons(question.value.label)
+    return question.value.label
   }
 
   return null
@@ -66,22 +61,32 @@ const choicesRequireModal = computed(() => choices.value.some(choiceRequiresModa
 
 const tokenChoices = computed(() => props.game.scenario?.chaosBag.choice)
 
+const damageAssignmentTokens = computed(() => ArkhamGame.damageAssignmentTokens(props.game, props.playerId))
+
 const requiresModal = computed(() => {
+  // Damage/horror assignment is done by clicking cards; show the pending tokens
+  // on the investigator instead of popping the choice modal.
+  if (damageAssignmentTokens.value) {
+    return false
+  }
   if (props.noStory && question.value?.tag === QuestionType.READ) {
     return false
+  }
+  if (question.value?.tag === QuestionType.READ) {
+    return true
   }
   if (inSkillTest.value) {
     return false
   }
 
-  return ((props.game.focusedChaosTokens.length > 0 || tokenChoices.value !== null) && !inSkillTest.value) || focusedCards.value.length > 0 || searchedCards.value.length > 0 || paymentAmountsLabel.value || amountsLabel.value || choicesRequireModal.value || ['Read', 'QuestionLabel', 'DropDown', 'ChooseExchangeAmounts'].includes(question.value?.tag)
+  return ((props.game.focusedChaosTokens.length > 0 || tokenChoices.value !== null) && !inSkillTest.value) || focusedCards.value.length > 0 || searchedCards.value.length > 0 || paymentAmountsLabel.value || amountsLabel.value || choicesRequireModal.value || ['QuestionLabel', 'DropDown', 'ChooseExchangeAmounts', 'PayCostQuestion'].includes(question.value?.tag)
 })
 
 const question = computed(() => props.game.question[props.playerId])
 
 const amountsLabel = computed(() => {
   if (question.value?.tag === QuestionType.CHOOSE_AMOUNTS) {
-    return replaceIcons(question.value.label)
+    return question.value.label
   }
 
   if (question.value?.tag === QuestionType.QUESTION_LABEL && question.value?.question?.tag === QuestionType.CHOOSE_AMOUNTS) {
@@ -92,7 +97,7 @@ const amountsLabel = computed(() => {
 })
 
 const label = function(body: string) {
-  return formatContent(body.startsWith("$") ? handleI18n(body.slice(1), t) : body)
+  return formatContent(handleEmbeddedI18n(body, t))
 }
 
 const skillTestResults = computed(() => props.game.skillTestResults)
@@ -114,7 +119,7 @@ const title = computed(() => {
 
   if (question.value && question.value.tag === QuestionType.READ) {
     if (question.value.flavorText.title) {
-      return question.value.flavorText.title
+      return handleEmbeddedI18n(question.value.flavorText.title, t)
     }
 
     return t("Story")
@@ -143,7 +148,12 @@ const title = computed(() => {
 </script>
 
 <template>
-  <Draggable v-if="requiresModal">
+  <Draggable
+    v-if="requiresModal"
+    center-in-selector=".scenario-body"
+    avoid-selector=".location-cell--can-interact, .location-cell--can-interact .location-wrapper, .location-cell--can-interact .card-frame"
+    click-through-chrome
+  >
     <template #handle><h1 v-html="label(title)"></h1></template>
     <div class='choice-modal-wrapper'>
       <p class="body" v-if="body" v-html="label(body)"></p>
@@ -167,5 +177,10 @@ const title = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.choice-modal-wrapper .body {
+  text-align: center;
+  margin: 0;
 }
 </style>

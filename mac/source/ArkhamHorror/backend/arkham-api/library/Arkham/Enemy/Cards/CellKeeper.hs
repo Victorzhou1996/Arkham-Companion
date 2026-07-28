@@ -16,7 +16,7 @@ newtype CellKeeper = CellKeeper EnemyAttrs
 
 cellKeeper :: EnemyCard CellKeeper
 cellKeeper =
-  enemy CellKeeper Cards.cellKeeper (3, Static 3, 2) (0, 2)
+  enemy CellKeeper Cards.cellKeeper
     & setSpawnAt (LocationWithTrait Sanctum)
 
 instance HasAbilities CellKeeper where
@@ -41,6 +41,6 @@ instance RunMessage CellKeeper where
     UseCardAbility iid (isSource attrs -> True) 2 _ _ -> do
       chooseOrRunOneM iid $ withI18n do
         for_ (setToList $ enemyKeys attrs) \k ->
-          withVar "name" (String $ keyName k) $ labeled' "takeControlOfNamedKey" $ placeKey iid k
+          withVar "name" (String $ keyName k) $ labeled' "takeControlOfSpecificKey" $ placeKey iid k
       pure e
     _ -> CellKeeper <$> liftRunMessage msg attrs

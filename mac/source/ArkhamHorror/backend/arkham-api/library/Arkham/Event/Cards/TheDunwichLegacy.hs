@@ -59,7 +59,7 @@ seekingAnswers :: CardDef
 seekingAnswers =
   (event "02023" "Seeking Answers" 1 Seeker)
     { cdSkills = [#intellect, #agility]
-    , cdActions = [#investigate]
+    , cdActions = #investigate
     , cdCardTraits = singleton Insight
     }
 
@@ -77,7 +77,7 @@ bindMonster2 =
   (event "02031" "Bind Monster" 3 Mystic)
     { cdSkills = [#willpower, #intellect]
     , cdCardTraits = singleton Spell
-    , cdActions = [#evade]
+    , cdActions = #evade
     , cdLevel = Just 2
     }
 
@@ -86,7 +86,7 @@ baitAndSwitch =
   (event "02034" "Bait and Switch" 1 Survivor)
     { cdSkills = [#intellect, #agility]
     , cdCardTraits = setFromList [Trick]
-    , cdActions = [#evade]
+    , cdActions = #evade
     }
 
 emergencyAid :: CardDef
@@ -113,7 +113,7 @@ iveGotAPlan =
   (event "02107" "\"I've got a plan!\"" 3 Seeker)
     { cdSkills = [#intellect, #combat]
     , cdCardTraits = setFromList [Insight, Tactic]
-    , cdActions = [#fight]
+    , cdActions = #fight
     }
 
 contraband :: CardDef
@@ -201,7 +201,7 @@ imOuttaHere =
     { cdSkills = [#agility, #agility]
     , cdCardTraits = setFromList [Trick, Spirit]
     , cdCriteria = Just Criteria.ScenarioCardHasResignAbility
-    , cdActions = [#resign]
+    , cdActions = #resign
     }
 
 hypnoticGaze :: CardDef
@@ -242,7 +242,7 @@ preposterousSketches =
     { cdSkills = [#willpower, #intellect]
     , cdCardTraits = singleton Insight
     , cdCriteria = Just Criteria.ClueOnLocation
-    , cdAlternateCardCodes = ["60218"]
+    , cdAlternateCardCodes = ["60218", "60263"]
     }
 
 emergencyCache2 :: CardDef
@@ -258,7 +258,7 @@ ifItBleeds :: CardDef
 ifItBleeds =
   (event "02225" "\"If it bleeds...\"" 1 Guardian)
     { cdSkills = [#willpower, #combat]
-    , cdFastWindow = Just $ EnemyDefeated #after You ByAny $ EnemyWithTrait Monster
+    , cdFastWindow = Just $ IfEnemyDefeated #after You ByAny $ EnemyWithTrait Monster
     }
 
 exposeWeakness1 :: CardDef
@@ -303,7 +303,11 @@ aChanceEncounter =
   (event "02270" "A Chance Encounter" 1 Survivor)
     { cdSkills = [#willpower, #intellect]
     , cdCardTraits = singleton Fortune
-    , cdCriteria = Just $ Criteria.ReturnableCardInDiscard Criteria.AnyPlayerDiscard #ally
+    , cdCriteria =
+        Just
+          $ Criteria.ReturnableCardInDiscard Criteria.AnyPlayerDiscard
+          $ #ally
+          <> CardWithoutUniqueCopyInPlay
     }
 
 momentOfRespite3 :: CardDef
@@ -320,7 +324,7 @@ monsterSlayer5 =
   (event "02300" "Monster Slayer" 1 Guardian)
     { cdSkills = [#combat, #wild]
     , cdCardTraits = singleton Spirit
-    , cdActions = [#fight]
+    , cdActions = #fight
     , cdLevel = Just 5
     }
 
@@ -329,7 +333,7 @@ decipheredReality5 =
   (event "02303" "Deciphered Reality" 4 Seeker)
     { cdSkills = [#intellect, #intellect, #willpower]
     , cdCardTraits = singleton Insight
-    , cdActions = [#investigate]
+    , cdActions = #investigate
     , cdLevel = Just 5
     }
 

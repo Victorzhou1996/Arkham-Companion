@@ -140,6 +140,7 @@ data WindowMatcher
   | EnemyWouldReady Timing EnemyMatcher
   | EnemyReadies Timing EnemyMatcher
   | EnemyEnters Timing Where EnemyMatcher
+  | EnemyEntersYourLocation Timing EnemyMatcher
   | EnemyLeaves Timing Where EnemyMatcher
   | AgendaAdvances Timing AgendaMatcher
   | ActAdvances Timing ActMatcher
@@ -196,7 +197,9 @@ data WindowMatcher
   | WouldRevealChaosTokens Timing Who
   | Discarded Timing (Maybe Who) SourceMatcher ExtendedCardMatcher
   | DiscardedFromHand Timing Who SourceMatcher ExtendedCardMatcher
+  | DiscardedFromDeck Timing Who SourceMatcher ExtendedCardMatcher
   | WouldDiscardFromHand Timing Who SourceMatcher
+  | WouldDiscardFromDeck Timing Who SourceMatcher
   | AssetHealed Timing DamageType AssetMatcher SourceMatcher
   | InvestigatorHealed Timing DamageType InvestigatorMatcher SourceMatcher
   | AssetWouldBeDiscarded Timing AssetMatcher
@@ -222,6 +225,7 @@ data WindowMatcher
   | EnemyAttemptsToSpawnAt Timing EnemyMatcher LocationMatcher
   | EnemyWouldSpawnAt EnemyMatcher LocationMatcher
   | EnemySpawns Timing Where EnemyMatcher
+  | EnemyFlipped Timing EnemyMatcher
   | EnemyPlaced Timing Placement EnemyMatcher
   | EnemyEntersPlay Timing EnemyMatcher
   | EnemyMovedTo Timing Where MovesViaMatcher EnemyMatcher
@@ -233,7 +237,17 @@ data WindowMatcher
   | RoundBegins Timing
   | RoundEnds Timing
   | DuringTurn Who
+  | -- | "You have an action to take." Matches the @NonFast@ action-taking window
+    -- (present on your real turn AND during a granted "as if it were your turn"
+    -- action), unlike @DuringTurn@ which means it is genuinely your turn. Action
+    -- abilities default to this so they remain usable with a granted action,
+    -- while "during your turn" Fast cards stay on @DuringTurn@. See #4894.
+    DuringYourAction Who
   | Enters Timing Who Where
+  | -- | Matches the @EnteringLocationWithEnemy@ window: the investigator entered
+    -- a location that had 1+ enemies at the moment of entry, evaluated then (not
+    -- re-checked after engagement). See #4813.
+    EntersLocationWithEnemy Timing Who
   | Leaves Timing Who Where
   | WouldMove Timing Who SourceMatcher FromWhere ToWhere
   | EnemyWouldMove Timing EnemyMatcher SourceMatcher FromWhere ToWhere
@@ -249,6 +263,7 @@ data WindowMatcher
   | WouldDrawExactlyOneCard Timing Who DeckMatcher
   | DrawCard Timing Who ExtendedCardMatcher DeckMatcher
   | DrawsCards Timing Who CardListMatcher ValueMatcher
+  | DrewCardsFromOwnDeck Timing Who
   | PlayCard Timing Who ExtendedCardMatcher
   | PlayEventDiscarding Timing Who EventMatcher
   | PlayEvent Timing Who EventMatcher
@@ -257,6 +272,7 @@ data WindowMatcher
   | PhaseEnds Timing PhaseMatcher
   | PlayerHasPlayableCard CostStatus ExtendedCardMatcher
   | RevealLocation Timing Who Where
+  | RevealLocationForcedAbilities Timing Who Where (Maybe Where)
   | UnrevealedRevealLocation Timing Who Where
   | FlipLocation Timing Who Where
   | PutLocationIntoPlay Timing Who Where
@@ -285,6 +301,8 @@ data WindowMatcher
   | EnemyExhausts Timing EnemyMatcher
   | EntersThreatArea Timing Who CardMatcher
   | ScenarioCountIncremented Timing ScenarioCountKey
+  | ScenarioCountDecremented Timing ScenarioCountKey
+  | RememberedLogKey Timing ScenarioLogKey
   | IncreasedAlarmLevel Timing Who
   | WindowWhen Criterion WindowMatcher
   | ScenarioEvent Timing (Maybe InvestigatorMatcher) Text

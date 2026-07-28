@@ -5,7 +5,7 @@ import Arkham.Card.CardDef
 import Arkham.Card.CardType
 import Arkham.Card.Cost
 import Arkham.ClassSymbol
-import Arkham.Criteria (Criterion, exists)
+import Arkham.Criteria (Criterion, youExist)
 import Arkham.Criteria qualified as Criteria
 import Arkham.Id
 import Arkham.Matcher
@@ -32,9 +32,12 @@ multiClassEvent cCode name cost classSymbols = baseEvent cCode name cost (setFro
 signature :: InvestigatorId -> CardDef -> CardDef
 signature iid cd = cd {cdDeckRestrictions = [Signature iid], cdLevel = Nothing}
 
+fast :: CardDef -> CardDef
+fast cd = cd {cdFastWindow = Just FastPlayerWindow}
+
 canDiscoverCluesAtYourLocation :: Criterion
 canDiscoverCluesAtYourLocation =
-  Criteria.Criteria
-    [ exists $ YourLocation <> LocationWithAnyClues
-    , exists $ You <> InvestigatorCanDiscoverCluesAt YourLocation
-    ]
+  youExist
+    $ InvestigatorCanDiscoverCluesAt
+    $ YourLocation
+    <> oneOf [LocationWithAnyClues, LocationWithConcealedCard]

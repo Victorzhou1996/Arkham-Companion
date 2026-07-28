@@ -22,7 +22,7 @@ instance HasAbilities WishEater where
   getAbilities (WishEater attrs) =
     [ restricted attrs 1 ControlsThis
         $ triggered
-          (RevealChaosToken #when You $ oneOf [#skull, #cultist, #tablet, #elderthing])
+          (RevealChaosToken #cancel You $ oneOf [#skull, #cultist, #tablet, #elderthing])
           (assetUseCost attrs Charge 1)
     , controlled
         attrs
@@ -49,6 +49,7 @@ instance RunMessage WishEater where
       pushAll
         $ [HealDamage (InvestigatorTarget iid) source 1 | healDamage]
         <> [HealHorror (InvestigatorTarget iid) source 1 | healHorror]
+        <> [ChaosTokenCanceled iid source token]
       cancelChaosToken token
       pure a
     UseThisAbility iid (isSource attrs -> True) 2 -> do

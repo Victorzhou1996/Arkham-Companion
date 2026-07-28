@@ -3,6 +3,7 @@
 
 module Arkham.Matcher.Enemy where
 
+import {-# SOURCE #-} Arkham.Calculation
 import Arkham.Campaigns.TheScarletKeys.Key.Matcher
 import Arkham.Card.CardCode
 import Arkham.Card.Id
@@ -75,6 +76,7 @@ data EnemyMatcher
   | EnemyWithMaybeFieldLessThanOrEqualToThis EnemyId (Field Enemy (Maybe Int))
   | EnemyWithMaybeFieldLessThanOrEqualTo Int (Field Enemy (Maybe Int))
   | EnemyWithRemainingHealth ValueMatcher
+  | EnemyWithRemainingHealthLessThan GameCalculation
   | EnemyWithDamage ValueMatcher
   | EnemyWithDoom ValueMatcher
   | EnemyWithMostDoom EnemyMatcher
@@ -91,6 +93,7 @@ data EnemyMatcher
   | NearestEnemyTo InvestigatorId EnemyMatcher
   | NearestEnemyToFallback InvestigatorId EnemyMatcher
   | NearestEnemyToLocation LocationId EnemyMatcher
+  | NearestEnemyToLocationMatch LocationMatcher EnemyMatcher
   | NearestEnemyToLocationFallback LocationId EnemyMatcher
   | NearestEnemyToAnInvestigator EnemyMatcher
   | EnemyIs CardCode
@@ -105,6 +108,10 @@ data EnemyMatcher
   | CanEvadeEnemy Source -- This checks for an ability
   | EnemyCanBeEvadedBy Source -- This is not checking for an ability
   | EnemyCanBeDefeatedBy Source
+  | EnemyCanBeRemovedBy Source
+  | EnemyCanBeMovedBy Source
+  | EnemyCanBeDisengagedBy Source
+  | EnemyCanBeEngagedBy Source
   | CanFightEnemyWithOverride CriteriaOverride
   | CanEvadeEnemyWithOverride CriteriaOverride -- This checks for an ability but overrides the criteria
   | CanEngageEnemy Source
@@ -122,6 +129,7 @@ data EnemyMatcher
   | EnemyWithoutModifier ModifierType
   | EnemyWithModifier ModifierType
   | EnemyWithEvade
+  | EnemyWithEvadeValue Int
   | EnemyWithFight
   | UnengagedEnemy
   | UniqueEnemy
@@ -156,6 +164,7 @@ data EnemyMatcher
   | SignatureEnemy
   | EnemyHiddenInHand InvestigatorMatcher
   | EnemyWithConcealed
+  | EnemyWithHorrorValue
   | -- | Must be replaced
     ThatEnemy
   deriving stock (Show, Eq, Ord, Data)
@@ -165,6 +174,9 @@ instance HasField "canDamage" Source EnemyMatcher where
 
 enemy_ :: EnemyMatcher -> EnemyMatcher
 enemy_ = id
+
+enemyCanBeEvadedBy :: Sourceable source => source -> EnemyMatcher
+enemyCanBeEvadedBy = EnemyCanBeEvadedBy . toSource
 
 instance IsString EnemyMatcher where
   fromString = EnemyWithTitle . fromString
@@ -218,6 +230,20 @@ instance IsEnemyMatcher EnemyMatcher where
 instance IsEnemyMatcher EnemyId where
   toEnemyMatcher = EnemyWithId
 
+{- | True when knowing an enemy is merely "any in-play enemy" already guarantees it
+matches the matcher (the matcher adds no further restriction). Used to decide whether
+non-enemy fight targets that are attackable "as if an enemy" (Mist-Pylons, Key Loci)
+should be offered -- they only make sense for an unrestricted fight, not one narrowed
+by e.g. @EnemyCanAttack You@.
+-}
+coveredByAnyInPlayEnemy :: EnemyMatcher -> Bool
+coveredByAnyInPlayEnemy = \case
+  AnyEnemy -> True
+  InPlayEnemy m -> coveredByAnyInPlayEnemy m
+  EnemyOneOf ms -> any coveredByAnyInPlayEnemy ms
+  EnemyMatchAll ms -> all coveredByAnyInPlayEnemy ms
+  _ -> False
+
 data EnemyAttackMatcher
   = AnyEnemyAttack
   | AttackOfOpportunityAttack
@@ -246,7 +272,11 @@ instance Not EnemyAttackMatcher where
   not_ = NotEnemyAttack
 
 mconcat
-  [ deriveJSON defaultOptions ''PreyMatcher
+  [ deriveToJSON defaultOptions ''PreyMatcher
+  , [d|
+      instance FromJSON PreyMatcher where
+        parseJSON value = $(mkParseJSON defaultOptions ''PreyMatcher) value <|> (Prey <$> parseJSON value)
+      |]
   , deriveToJSON defaultOptions ''EnemyMatcher
   , deriveJSON defaultOptions ''EnemyAttackMatcher
   ]

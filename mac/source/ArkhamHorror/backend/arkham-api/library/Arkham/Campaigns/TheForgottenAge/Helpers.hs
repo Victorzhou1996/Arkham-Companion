@@ -230,7 +230,7 @@ explore iid source cardMatcher exploreRule matchCount = do
         [] -> unless (null drawn) do
           focusCards drawn do
             chooseOneM iid do
-              labeled "No Matches Found" do
+              labeledI "noMatchesFound" do
                 unfocusCards
                 deck' <- shuffle (drawn <> rest)
                 setScenarioDeck ExplorationDeck deck'
@@ -286,11 +286,8 @@ getVengeancePoints c = do
     then pure Nothing
     else getCardField cdVengeancePoints card
 
-getHasVengeancePoints :: (ConvertToCard c, HasGame m, Tracing m) => c -> m Bool
-getHasVengeancePoints c = isJust <$> getVengeancePoints c
-
 exploreAction :: Cost -> AbilityType
-exploreAction cost = ActionAbility [#explore] Nothing (ActionCost 1 <> cost)
+exploreAction cost = ActionAbility #explore Nothing (ActionCost 1 <> cost)
 
 exploreAction_ :: AbilityType
 exploreAction_ = exploreAction mempty
@@ -333,6 +330,8 @@ supplyLabel s = case s of
   KeyOfEztli -> go "keyOfEztli"
   MysteriousScepter -> go "mysteriousScepter"
   StickyGoop -> go "stickyGoop"
+  Journal -> go "journal"
+  Satchel -> go "satchel"
  where
   go label =
     campaignI18n

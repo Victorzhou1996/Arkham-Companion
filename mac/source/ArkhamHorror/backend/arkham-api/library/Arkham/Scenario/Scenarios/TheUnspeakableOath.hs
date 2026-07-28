@@ -221,19 +221,18 @@ instance RunMessage TheUnspeakableOath where
       case attrs.deck MonstersDeck of
         [] -> failSkillTest
         (x : xs) -> do
-          monster <- sample (x :| xs)
+          monster <- setFacedown True =<< sample (x :| xs)
           chooseOneM iid do
-            labeled
-              "Randomly choose an enemy from among the set-aside Monster enemies and place it beneath the act deck without looking at it"
+            labeled' "placeMonsterUnderActDeck"
               $ placeUnderneath ActDeckTarget [monster]
-            labeled "This test automatically fails" failSkillTest
+            labeled' "thisTestAutomaticallyFails" failSkillTest
       pure s
     FailedSkillTest iid _ _ (ChaosTokenTarget token) _ _ -> do
       case token.face of
         Skull -> case attrs.deck MonstersDeck of
           [] -> pure ()
           (x : xs) -> do
-            monster <- sample (x :| xs)
+            monster <- setFacedown True =<< sample (x :| xs)
             placeUnderneath ActDeckTarget [monster]
         Cultist | isHardExpert attrs -> assignHorror iid Cultist 1
         Tablet | isHardExpert attrs -> assignHorror iid Tablet 1
@@ -243,7 +242,7 @@ instance RunMessage TheUnspeakableOath where
       defeated <- select DefeatedInvestigator
       investigators <- allInvestigators
       unless (null defeated) do
-        flavor $ scope "defeated" $ h "title" >> p "body"
+        flavor $ scope "defeated" $ setTitle "title" >> p "body"
         for_ defeated drivenInsane
       if length defeated == length investigators
         then gameOver

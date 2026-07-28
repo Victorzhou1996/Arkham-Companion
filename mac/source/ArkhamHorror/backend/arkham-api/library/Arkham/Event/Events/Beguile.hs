@@ -53,8 +53,11 @@ instance RunMessage Beguile where
     UseAbility iid ab _ | isSource attrs ab.source && ab.index == 1 -> do
       case attrs.placement.attachedTo of
         Just (EnemyTarget eid) -> do
+          canMove <- selectAny $ be eid <> EnemyCanBeMovedBy (toSource $ attrs.ability 1)
           locations <-
-            selectAny $ RevealedLocation <> LocationCanBeEnteredBy eid <> connectedFrom (locationWithEnemy eid)
+            if canMove
+              then selectAny $ RevealedLocation <> LocationCanBeEnteredBy eid <> connectedFrom (locationWithEnemy eid)
+              else pure False
           investigate' <-
             selectAny
               $ PerformableAbility [ActionCostModifier (-1), IgnoreOnSameLocation]
@@ -70,9 +73,9 @@ instance RunMessage Beguile where
               <> AbilityOnEnemy (at_ (locationWithEnemy eid))
 
           chooseOrRunOne iid
-            $ [Label "Move attached enemy to a revealed connecting location" [DoStep 1 msg] | locations]
-            <> [Label "Perform a basic investigate action at it's location" [DoStep 2 msg] | investigate']
-            <> [Label "Perform a basic evade action at it's location" [DoStep 3 msg] | evade]
+            $ [Label "$cards.label.beguile.moveAttachedEnemy" [DoStep 1 msg] | locations]
+            <> [Label "$cards.label.beguile.basicInvestigate" [DoStep 2 msg] | investigate']
+            <> [Label "$cards.label.beguile.basicEvade" [DoStep 3 msg] | evade]
         _ -> error "Beguile: EnemyTarget not found"
       pure e
     DoStep n (UseAbility iid ab ws) | isSource attrs ab.source && ab.index == 1 -> do
@@ -86,9 +89,11 @@ instance RunMessage Beguile where
       case attrs.placement.attachedTo.enemy of
         Just eid -> case fromMaybe (1 :: Int) (getEventMeta attrs) of
           1 -> do
-            locations <-
-              select $ RevealedLocation <> LocationCanBeEnteredBy eid <> connectedFrom (locationWithEnemy eid)
-            chooseOne iid [targetLabel location [EnemyMove eid location] | location <- locations]
+            canMove <- selectAny $ be eid <> EnemyCanBeMovedBy (toSource $ attrs.ability 1)
+            when canMove do
+              locations <-
+                select $ RevealedLocation <> LocationCanBeEnteredBy eid <> connectedFrom (locationWithEnemy eid)
+              chooseOne iid [targetLabel location [EnemyMove eid location] | location <- locations]
           2 -> do
             field EnemyLocation eid >>= traverse_ \lid -> do
               abilities <-

@@ -24,6 +24,8 @@ import Arkham.Message
 import Arkham.Source
 import Arkham.Target
 import Arkham.Token
+import Arkham.Window qualified as Window
+import Control.Exception (evaluate, try)
 import Data.Aeson
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
@@ -41,8 +43,20 @@ data Answer
   | CampaignSettingsAnswer CampaignSettings
   | DeckAnswer {deckId :: ArkhamDeckId, playerId :: PlayerId}
   | DeckListAnswer {deckList :: ArkhamDBDecklist, playerId :: PlayerId}
+  | -- | Trigger for the server to answer this seat's parked question via the AI
+    -- decision engine. Wire shape: @{ "tag": "AiAnswer", "playerId": <uuid> }@.
+    -- Resolved in 'Api.Handler.Arkham.Games.Shared.updateGame'; see the
+    -- 'handleAnswerPure' note below for why it is not handled here.
+    AiAnswer {playerId :: PlayerId}
+  | -- | Trigger for the server to commit a single card from this seat's parked
+    -- /assist/ skill-test window (another investigator is performing the test)
+    -- via the AI decision engine. Wire shape:
+    -- @{ "tag": "AiAssist", "playerId": <uuid> }@. Resolved in
+    -- 'Api.Handler.Arkham.Games.Shared.updateGame' (see 'handleAnswerPure').
+    AiAssist {playerId :: PlayerId}
   | PickDestinyAnswer [DestinyDrawing]
   | CampaignSpecificAnswer Text Value
+  | ScenarioSpecificAnswer Text Value
   | ExchangeAmountsAnswer
       { source :: Source
       , fromInvestigator :: InvestigatorId
@@ -57,15 +71,22 @@ data Answer
 data QuestionResponse = QuestionResponse
   { qrChoice :: Int
   , qrPlayerId :: Maybe PlayerId
+  , qrQuestionVersion :: Maybe Int
   }
   deriving stock (Show, Generic)
 
-newtype PaymentAmountsResponse = PaymentAmountsResponse
-  {parAmounts :: Map UUID Int}
+data PaymentAmountsResponse = PaymentAmountsResponse
+  { parAmounts :: Map UUID Int
+  , parQuestionVersion :: Maybe Int
+  , parPlayerId :: Maybe PlayerId
+  }
   deriving stock (Show, Generic)
 
-newtype AmountsResponse = AmountsResponse
-  {arAmounts :: Map UUID Int}
+data AmountsResponse = AmountsResponse
+  { arAmounts :: Map UUID Int
+  , arQuestionVersion :: Maybe Int
+  , arPlayerId :: Maybe PlayerId
+  }
   deriving stock (Show, Generic)
 
 data PartnerDetailsResponse = PartnerDetailsResponse
@@ -77,13 +98,25 @@ data PartnerDetailsResponse = PartnerDetailsResponse
   deriving anyclass FromJSON
 
 instance FromJSON QuestionResponse where
-  parseJSON = genericParseJSON $ aesonOptions $ Just "qr"
+  parseJSON = withObject "QuestionResponse" \o -> do
+    qrChoice <- o .: "choice"
+    qrPlayerId <- o .:? "playerId"
+    qrQuestionVersion <- o .:? "questionVersion"
+    pure QuestionResponse {..}
 
 instance FromJSON PaymentAmountsResponse where
-  parseJSON = genericParseJSON $ aesonOptions $ Just "par"
+  parseJSON = withObject "PaymentAmountsResponse" \o -> do
+    parAmounts <- o .: "amounts"
+    parQuestionVersion <- o .:? "questionVersion"
+    parPlayerId <- o .:? "playerId"
+    pure PaymentAmountsResponse {..}
 
 instance FromJSON AmountsResponse where
-  parseJSON = genericParseJSON $ aesonOptions $ Just "ar"
+  parseJSON = withObject "AmountsResponse" \o -> do
+    arAmounts <- o .: "amounts"
+    arQuestionVersion <- o .:? "questionVersion"
+    arPlayerId <- o .:? "playerId"
+    pure AmountsResponse {..}
 
 data StandaloneSetting
   = SetKey CampaignLogKey Bool
@@ -221,12 +254,17 @@ data CampaignSettings = CampaignSettings
   deriving stock Show
 
 instance FromJSON CampaignSettings where
-  parseJSON = withObject "CampaignSettings" $ \o ->
+  parseJSON = withObject "CampaignSettings" $ \o -> do
+    options <- o .: "options" >>= traverse parseOption
     CampaignSettings
       <$> (o .: "keys")
       <*> (o .: "counts")
       <*> (o .: "sets")
-      <*> (o .: "options")
+      <*> pure options
+   where
+    parseOption = \case
+      String s -> parseJSON (object ["tag" .= String s])
+      v -> parseJSON v
 
 instance FromJSON CampaignRecorded where
   parseJSON = withObject "CampaignRecorded" $ \o ->
@@ -263,13 +301,16 @@ answerPlayer :: Answer -> Maybe PlayerId
 answerPlayer = \case
   Answer response -> qrPlayerId response
   Raw _ -> Nothing
-  AmountsAnswer _ -> Nothing
-  PaymentAmountsAnswer _ -> Nothing
+  AmountsAnswer response -> arPlayerId response
+  PaymentAmountsAnswer response -> parPlayerId response
   StandaloneSettingsAnswer _ -> Nothing
   CampaignSettingsAnswer _ -> Nothing
   CampaignSpecificAnswer {} -> Nothing
+  ScenarioSpecificAnswer {} -> Nothing
   DeckAnswer _ pid -> Just pid
   DeckListAnswer _ pid -> Just pid
+  AiAnswer pid -> Just pid
+  AiAssist pid -> Just pid
   PickDestinyAnswer _ -> Nothing
   ExchangeAmountsAnswer {} -> Nothing
   CampaignStepAnswer _ -> Nothing
@@ -287,21 +328,66 @@ handled = pure . Handled
 unhandled :: Applicative m => Text -> m Reply
 unhandled = pure . Unhandled
 
+{- | The messages that start this seat's deck-setup sub-flow.
+
+Inside a multi-seat barrier the sub-flow is self-contained and ends in
+'SeatResolved', which drops this seat's slot, re-parks the seats still waiting
+(each from its own durable slot) and, once every seat has resolved, runs the
+barrier's continuation. The barrier owns re-parking, so this must NOT re-push an
+'AskMap': that would park the remaining seats /ahead/ of the rest of THIS seat's
+sub-flow and strand its tail behind them.
+
+Outside a barrier the old re-push is kept: 'ChooseUpgradeDeck' (migrated in phase
+2) and The Dream Eaters' hand-rolled sequential deck prompts still use it.
+-}
+deckChosen :: Game -> PlayerId -> ArkhamDBDecklist -> [Message]
+deckChosen game playerId dl = case barrierSeat playerId game of
+  Just (bid, _) -> [LoadDecklist playerId dl, SeatResolved bid playerId]
+  Nothing -> LoadDecklist playerId dl : reAskOthers game playerId
+
+{- | Re-park the seats still owed a question after @playerId@ answered.
+
+Empty for a seat inside a multi-seat barrier: the barrier republishes the seats
+still waiting from their own durable slots when this seat emits 'SeatResolved'.
+Re-pushing here would instead park them /ahead/ of the rest of THIS seat's
+sub-flow, stranding its tail behind them.
+-}
+reAskOthers :: Game -> PlayerId -> [Message]
+reAskOthers game playerId
+  | isJust (barrierSeat playerId game) = []
+  | otherwise =
+      let question' = Map.delete playerId (gameQuestion game)
+       in [AskMap question' | not (Map.null question')]
+
 handleAnswer :: Game -> PlayerId -> Answer -> DB Reply
-handleAnswer Game {..} playerId = \case
+handleAnswer game playerId = \case
   DeckAnswer deckId _ -> do
     deck <- get404 deckId
     let investigatorId = investigator_code $ arkhamDeckList deck
     update (coerce playerId) [ArkhamPlayerInvestigatorId =. coerce investigatorId]
-    let question' = Map.delete playerId gameQuestion
-    handled $ LoadDecklist playerId (arkhamDeckList deck)
-      : [AskMap question' | not (Map.null question')]
+    handled $ deckChosen game playerId (arkhamDeckList deck)
   DeckListAnswer dl _ -> do
     let investigatorId = investigator_code dl
     update (coerce playerId) [ArkhamPlayerInvestigatorId =. coerce investigatorId]
-    let question' = Map.delete playerId gameQuestion
-    handled $ LoadDecklist playerId dl
-      : [AskMap question' | not (Map.null question')]
+    handled $ deckChosen game playerId dl
+  other -> liftIO $ handleAnswerPure game playerId other
+
+-- | Like 'handleAnswer' but with no DB access. Returns 'Unhandled' for
+-- 'DeckAnswer' / 'DeckListAnswer', which require updating an 'ArkhamPlayer'
+-- row. Used by the headless replay CLI.
+handleAnswerPure :: Game -> PlayerId -> Answer -> IO Reply
+handleAnswerPure game@Game {..} playerId = \case
+  DeckAnswer {} -> unhandled "DeckAnswer requires database access"
+  DeckListAnswer {} -> unhandled "DeckListAnswer requires database access"
+  -- AiAnswer is resolved upstream in updateGame (it runs the AI decision
+  -- engine over the parked game and recurses with the concrete answer).
+  -- Keeping the call out of this module avoids an Entity.Answer <-> Ai.Decision
+  -- import cycle. Reaching here means no server-side AI resolution ran.
+  AiAnswer {} -> unhandled "AiAnswer must be resolved by the server (updateGame)"
+  -- AiAssist is likewise resolved upstream in updateGame (it runs the assist
+  -- decision engine over the parked game and recurses with the concrete commit
+  -- answer). Reaching here means no server-side AI resolution ran.
+  AiAssist {} -> unhandled "AiAssist must be resolved by the server (updateGame)"
   StandaloneSettingsAnswer settings' -> do
     let standaloneCampaignLog = makeStandaloneCampaignLog settings'
     handled [SetCampaignLog standaloneCampaignLog]
@@ -309,72 +395,162 @@ handleAnswer Game {..} playerId = \case
     let campaignLog' = makeCampaignLog settings'
     handled [SetCampaignLog campaignLog']
   CampaignSpecificAnswer k v -> do
-    handled [CampaignSpecific k v]
+    let
+      unwrap = \case
+        QuestionLabel _ _ q' -> unwrap q'
+        PayCostQuestion _ q' -> unwrap q'
+        QuestionWithSource _ _ q' -> unwrap q'
+        q' -> q'
+    case unwrap <$> Map.lookup playerId gameQuestion of
+      Just (PickCampaignSpecific {}) -> handled $ CampaignSpecific k v : reAskOthers game playerId
+      _ -> unhandled "Wrong question type"
+  ScenarioSpecificAnswer k v -> do
+    let
+      unwrap = \case
+        QuestionLabel _ _ q' -> unwrap q'
+        PayCostQuestion _ q' -> unwrap q'
+        QuestionWithSource _ _ q' -> unwrap q'
+        q' -> q'
+    case unwrap <$> Map.lookup playerId gameQuestion of
+      Just (PickScenarioSpecific {}) -> handled $ ScenarioSpecific k v : reAskOthers game playerId
+      _ -> unhandled "Wrong question type"
   CampaignStepAnswer k -> do
-    case gameMode of
-      This c -> case c.step of
-        CS.ContinueCampaignStep {} -> handled [NextCampaignStep (Just k)]
-        _ -> handled []
-      These c s -> case s.step of
-        Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
-        _ -> case c.step of
+    let
+      unwrap = \case
+        QuestionLabel _ _ q' -> unwrap q'
+        PayCostQuestion _ q' -> unwrap q'
+        QuestionWithSource _ _ q' -> unwrap q'
+        q' -> q'
+    case unwrap <$> Map.lookup playerId gameQuestion of
+      Just ContinueCampaign -> case gameMode of
+        This c -> case c.step of
           CS.ContinueCampaignStep {} -> handled [NextCampaignStep (Just k)]
+          CS.StandaloneScenarioStep _ (CS.ContinueCampaignStep {}) -> handled [NextCampaignStep (Just k)]
           _ -> handled []
-      That s -> case s.step of
-        Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
-        _ -> handled []
+        These c s -> case s.step of
+          Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
+          Just (CS.ScenarioStepWithOptions {}) -> handled [ScenarioCampaignStep k.normalize]
+          _ -> case c.step of
+            CS.ContinueCampaignStep {} -> handled [NextCampaignStep (Just k)]
+            CS.StandaloneScenarioStep _ (CS.ContinueCampaignStep {}) -> handled [NextCampaignStep (Just k)]
+            _ -> handled []
+        That s -> case s.step of
+          Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
+          _ -> handled []
+      _ -> unhandled "Wrong question type"
   PickDestinyAnswer choices -> do
     handled [SetDestiny $ Map.fromList $ map (\(DestinyDrawing scope card) -> (scope, card)) choices]
   ExchangeAmountsAnswer source fromInvestigator toInvestigator token n -> do
     if n < 0
       then handled [MoveTokens source (toSource toInvestigator) (toTarget fromInvestigator) token (abs n)]
       else handled [MoveTokens source (toSource fromInvestigator) (toTarget toInvestigator) token n]
-  AmountsAnswer response -> case Map.lookup playerId gameQuestion of
-    Just (ChooseAmounts _ _ choices target) -> do
-      let nameMap = Map.fromList $ map (\(AmountChoice cId lbl _ _) -> (cId, lbl)) choices
-      let toNamedUUID uuid = NamedUUID (Map.findWithDefault (error "Missing key") uuid nameMap) uuid
-      let question' = Map.delete playerId gameQuestion
-      let amounts = map (first toNamedUUID) $ Map.toList $ arAmounts response
-      handled
-        $ ResolveAmounts (playerInvestigator gameEntities playerId) amounts target
-        : [AskMap question' | not (Map.null question')]
-    Just (QuestionLabel _ _ (ChooseAmounts _ _ choices target)) -> do
-      let nameMap = Map.fromList $ map (\(AmountChoice cId lbl _ _) -> (cId, lbl)) choices
-      let toNamedUUID uuid = NamedUUID (Map.findWithDefault (error "Missing key") uuid nameMap) uuid
-      let question' = Map.delete playerId gameQuestion
-      let amounts = map (first toNamedUUID) $ Map.toList $ arAmounts response
-      handled
-        $ ResolveAmounts (playerInvestigator gameEntities playerId) amounts target
-        : [AskMap question' | not (Map.null question')]
-    _ -> unhandled "Wrong question type"
-  PaymentAmountsAnswer response ->
-    case Map.lookup playerId gameQuestion of
-      Just (ChoosePaymentAmounts _ _ info) -> do
-        let costMap = Map.fromList $ map (\(PaymentAmountChoice cId _ _ _ _ cost) -> (cId, cost)) info
+  AmountsAnswer response ->
+    case arQuestionVersion response of
+      Just v | v /= gameScenarioSteps -> unhandled "Stale question"
+      _ -> do
         let
-          combinePaymentAmounts n = \case
-            PayCost acId iid skip (UseCost aMatcher uType m) -> [PayCost acId iid skip (UseCost aMatcher uType (n * m))]
-            PayCost acId iid skip (ResourceCost _) | n == 0 -> [PayCost acId iid skip (ResourceCost 0)]
-            PayCost acId iid skip other -> [PayCost acId iid skip (fold $ replicate n other)]
-            payMsg -> replicate n payMsg
-        let handleCost (cId, n) = combinePaymentAmounts n $ Map.findWithDefault Noop cId costMap
-        handled $ concatMap handleCost $ Map.toList (parAmounts response)
-      _ -> unhandled "Wrong question type"
+          doResolve choices target = do
+            let nameMap = Map.fromList $ map (\(AmountChoice cId lbl _ _) -> (cId, lbl)) choices
+            let lookupChoice (uuid, n) =
+                  (\lbl -> (NamedUUID lbl uuid, n)) <$> Map.lookup uuid nameMap
+            case traverse lookupChoice (Map.toList $ arAmounts response) of
+              Nothing -> unhandled "Wrong choice id"
+              Just amounts ->
+                handled
+                  $ ResolveAmounts (playerInvestigator gameEntities playerId) amounts target
+                  : reAskOthers game playerId
+        case Map.lookup playerId gameQuestion of
+          Just (ChooseAmounts _ _ choices target) -> doResolve choices target
+          Just (QuestionLabel _ _ (ChooseAmounts _ _ choices target)) -> doResolve choices target
+          _ -> unhandled "Wrong question type"
+  PaymentAmountsAnswer response ->
+    case parQuestionVersion response of
+      Just v | v /= gameScenarioSteps -> unhandled "Stale question"
+      _ -> case Map.lookup playerId gameQuestion of
+        Just (PayCostQuestion _ (ChoosePaymentAmounts _ _ info)) -> do
+          let costMap = Map.fromList $ map (\(PaymentAmountChoice cId _ _ _ _ cost) -> (cId, cost)) info
+          let
+            combinePaymentAmounts n = \case
+              PayCost acId iid skip (UseCost aMatcher uType m) -> [PayCost acId iid skip (UseCost aMatcher uType (n * m))]
+              PayCost acId iid skip (ResourceCost _) | n == 0 -> [PayCost acId iid skip (ResourceCost 0)]
+              PayCost acId iid skip other -> [PayCost acId iid skip (fold $ replicate n other)]
+              payMsg -> replicate n payMsg
+          let handleCost (cId, n) = combinePaymentAmounts n $ Map.findWithDefault Noop cId costMap
+          handled $ concatMap handleCost $ Map.toList (parAmounts response)
+        Just (ChoosePaymentAmounts _ _ info) -> do
+          let costMap = Map.fromList $ map (\(PaymentAmountChoice cId _ _ _ _ cost) -> (cId, cost)) info
+          let
+            combinePaymentAmounts n = \case
+              PayCost acId iid skip (UseCost aMatcher uType m) -> [PayCost acId iid skip (UseCost aMatcher uType (n * m))]
+              PayCost acId iid skip (ResourceCost _) | n == 0 -> [PayCost acId iid skip (ResourceCost 0)]
+              PayCost acId iid skip other -> [PayCost acId iid skip (fold $ replicate n other)]
+              payMsg -> replicate n payMsg
+          let handleCost (cId, n) = combinePaymentAmounts n $ Map.findWithDefault Noop cId costMap
+          handled $ concatMap handleCost $ Map.toList (parAmounts response)
+        _ -> unhandled "Wrong question type"
   Raw message -> do
-    let isPlayerWindowChoose = \case
-          PlayerWindowChooseOne _ -> True
-          _ -> False
-    if not (Map.null gameQuestion) && not (any isPlayerWindowChoose $ toList gameQuestion)
+    let inFastWindow =
+          maybe
+            False
+            (any (any (\w -> Window.windowType w == Window.FastPlayerWindow)))
+            gameWindowStack
+    if not (Map.null gameQuestion) && not (any isRegeneratedWindowChoose $ toList gameQuestion)
       then case message of
         PassSkillTest -> handled [message]
         FailSkillTest -> handled [message]
         ForceChaosTokenDraw _ -> handled [message]
+        -- Settings updates regenerate the pending question themselves when a
+        -- fast player window is open (UpdateGlobalSetting re-runs runWindow);
+        -- skip the stale AskMap so it doesn't clobber the regenerated one.
+        UpdateGlobalSetting {} | inFastWindow -> handled [message]
+        UpdateCardSetting {} | inFastWindow -> handled [message]
+        SetAsIfRuling {} | inFastWindow -> handled [message]
         _ -> handled [message, AskMap gameQuestion]
       else handled [message]
-  Answer response -> do
-    maybe (unhandled "Player not being asked") (\q -> handled $ go id q response)
-      $ Map.lookup playerId gameQuestion
+  Answer response ->
+    case qrQuestionVersion response of
+      Just v | v /= gameScenarioSteps -> unhandled "Stale question"
+      _ ->
+        maybe
+          (unhandled "Player not being asked")
+          ( \q -> do
+              result <- try @SomeException $ evaluate $ go id q response
+              case result of
+                Left _ -> unhandled "Wrong question type"
+                Right msgs -> do
+                  -- Re-ask ONLY leftover deck-selection seats. ChooseDeck has no
+                  -- regeneration path: if it is dropped when another seat answers,
+                  -- the campaign starts a man down. Every other multi-seat ask is
+                  -- either rebuilt by the queue (PlayerWindow re-pushes itself,
+                  -- WindowAsk queues a trailing Do (CheckWindows), the skill-test
+                  -- loop re-asks the commit window) or was satisfied by this answer
+                  -- (story Read continues for the table). Re-parking those hands a
+                  -- stale, decline-less question to the other player -- forcing a
+                  -- Joey ability (#5159), a commit to a finished test (#5164), or a
+                  -- second copy of every rules-book entry -- so they are dropped,
+                  -- which was the pre-#5151 behavior for all seats.
+                  --
+                  -- A seat inside a multi-seat barrier is exempt: the barrier
+                  -- republishes the seats still waiting from their own durable slots
+                  -- when this seat emits SeatResolved. Re-pushing here would park them
+                  -- ahead of the rest of THIS seat's sub-flow and strand its tail.
+                  -- (Unreachable while ChooseDeck -- a barrier's only question today --
+                  -- is answered via DeckAnswer; needed once phase 2/3 put
+                  -- ChooseUpgradeDeck / Read, which answer through here, in a barrier.)
+                  let question'
+                        | isJust (barrierSeat playerId game) = mempty
+                        | otherwise = Map.filter isDeckQuestion $ Map.delete playerId gameQuestion
+                  handled $ msgs <> [AskMap question' | not (Map.null question')]
+          )
+          $ Map.lookup playerId gameQuestion
  where
+  -- Seats the queue rebuilds on its own: PlayerWindow re-pushes itself, and a
+  -- WindowChooseOne is followed by the Do (CheckWindows ws) that WindowAsk
+  -- queues behind it. Re-parking either hands back a stale question (#5160).
+  isRegeneratedWindowChoose = \case
+    PlayerWindowChooseOne _ -> True
+    WindowChooseOne _ -> True
+    _ -> False
   go
     :: (Question Message -> Question Message)
     -> Question Message
@@ -382,6 +558,8 @@ handleAnswer Game {..} playerId = \case
     -> [Message]
   go f q response = case q of
     QuestionLabel lbl mCard q' -> go (QuestionLabel lbl mCard) q' response
+    PayCostQuestion cost q' -> go (PayCostQuestion cost) q' response
+    QuestionWithSource s tt q' -> go (QuestionWithSource s tt) q' response
     Read t (BasicReadChoices qs) mcs -> case qs !!? qrChoice response of
       Nothing -> [Ask playerId $ f $ Read t (BasicReadChoices qs) mcs]
       Just msg -> [uiToRun msg]
@@ -413,6 +591,9 @@ handleAnswer Game {..} playerId = \case
       Just msg -> [uiToRun msg]
     PlayerWindowChooseOne qs -> case qs !!? qrChoice response of
       Nothing -> [Ask playerId $ f $ PlayerWindowChooseOne qs]
+      Just msg -> [uiToRun msg]
+    WindowChooseOne qs -> case qs !!? qrChoice response of
+      Nothing -> [Ask playerId $ f $ WindowChooseOne qs]
       Just msg -> [uiToRun msg]
     ChooseOneFromEach qs -> case concat qs !!? qrChoice response of
       Nothing -> [Ask playerId $ f $ ChooseOneFromEach qs]

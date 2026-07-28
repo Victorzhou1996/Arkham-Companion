@@ -68,6 +68,7 @@ data ModifierType
   | AdditionalCostToCommit InvestigatorId Cost
   | AdditionalCostToEnter Cost
   | AdditionalCostToEnterMatching LocationMatcher Cost
+  | AdditionalCostToExplore Cost
   | AdditionalCostToInvestigate Cost
   | AdditionalCostToLeave Cost
   | AdditionalCostToResign Cost
@@ -93,6 +94,7 @@ data ModifierType
   | AsIfNotEngagedWith EnemyId
   | AsIfInHand Card
   | AsIfInHandFor ForPlay CardId
+  | AsIfResourcePool AssetId
   | AsIfUnderControlOf InvestigatorId
   | AsIfTurn InvestigatorId
   | EnemyAttacksOverride InvestigatorMatcher
@@ -131,6 +133,7 @@ data ModifierType
   | CanOnlyBeDefeatedBy SourceMatcher
   | CanOnlyBeDefeatedByDamage
   | CanOnlyUseCardsInRole ClassSymbol
+  | CanPlayAtLocation CardMatcher LocationMatcher
   | CanPlayFromDiscard CardMatcher
   | CanPlayTopOfDeck CardMatcher
   | CanPlayTopmostOfDiscard (Maybe CardType, [Trait])
@@ -145,6 +148,7 @@ data ModifierType
   | CancelAttacksByEnemies Card EnemyMatcher
   | CancelEffects
   | CancelSkills
+  | CancelEachCommittedCard
   | Cancelled
   | CannotAffectOtherPlayersWithPlayerEffectsExceptDamage
   | CannotAssignDamage InvestigatorId
@@ -154,13 +158,18 @@ data ModifierType
   | CannotBeAttacked
   | CannotBeAttackedBy EnemyMatcher
   | CannotBeAttackedByPlayerSourcesExcept SourceMatcher
+  | CannotBeEvadedByPlayerSourcesExcept SourceMatcher
+  | CannotReceiveModifiersFromPlayerSources
+  | CannotBeExhaustedBy SourceMatcher
   | CannotBeDamaged
   | CannotBeDamagedByPlayerSources SourceMatcher
   | CannotBeDamagedByPlayerSourcesExcept SourceMatcher
   | CannotBeDamagedBySourcesExcept SourceMatcher
   | CannotBeDefeated
+  | CannotBeDefeatedBy SourceMatcher
   | CannotBeEngaged
   | CannotBeEngagedBy EnemyMatcher
+  | CannotBeEngagedByPlayerSourcesExcept SourceMatcher
   | CannotBeEnteredBy EnemyMatcher
   | CannotBeEvaded
   | CannotBeFlipped
@@ -168,6 +177,9 @@ data ModifierType
   | CannotBeFullyFlooded
   | CannotBeHuntedBy EnemyMatcher
   | CannotBeMoved
+  | CannotBeMovedBy SourceMatcher
+  | CannotBeDisengagedBy SourceMatcher
+  | CannotBeRemovedBy SourceMatcher
   | CannotBeRevealed
   | CannotCancelHorror
   | CannotCancelHorrorFrom Source
@@ -188,6 +200,7 @@ data ModifierType
   | CannotEvade EnemyMatcher
   | CannotExplore
   | CannotFight EnemyMatcher
+  | CannotGainAdditionalActions
   | CannotGainResources
   | CannotGainResourcesFromPlayerCardEffects
   | CannotGainXP
@@ -204,7 +217,6 @@ data ModifierType
   | CannotMove
   | CancelMovement MovementId
   | CannotMoveExceptByScenarioCardEffects
-  | CannotMoveMoreThanOnceEachTurn -- DEPRECATED
   | CannotMulligan
   | CannotParleyWith EnemyMatcher
   | CannotPerformSkillTest
@@ -245,6 +257,7 @@ data ModifierType
   | CountsAsInvestigatorForHunterEnemies
   | CountsAsDifferentLocation
   | DamageDealt Int
+  | DamageDealtCalculation GameCalculation
   | DamageDealtToInvestigator Int
   | DamageTaken Int
   | HorrorTaken Int
@@ -307,7 +320,6 @@ data ModifierType
   | MaxHandSize Int
   | HandSizeCardCount Int
   | HealHorrorAsIfOnInvestigator Target Int
-  | HealHorrorOnThisAsIfInvestigator InvestigatorId -- DEPRECATED
   | HealingTaken Int
   | HealthModifier Int
   | HealthModifierWithMin Int (Min Int)
@@ -320,7 +332,6 @@ data ModifierType
   | IgnoreAllCosts
   | IgnoreAloof
   | IgnoreAttacksOfOpportunity
-  | IgnoreBarriers
   | IgnoreChaosToken
   | IgnoreChaosTokenEffects
   | IgnoreChaosTokenModifier
@@ -378,7 +389,14 @@ data ModifierType
   | Persist
   | OnlyFirstCopyCardCountsTowardMaximumHandSize
   | OtherDoomSubtracts
+  | -- | Like 'ForceSpawn', but only replaces an enemy's normal spawn location
+    -- (a scenario rule, e.g. Dead Heat forcing Ghoul/Risen enemies to a random
+    -- location). A 'ForceSpawn' from a drawing effect (On the Hunt, Kicking the
+    -- Hornet's Nest) takes precedence over this.
+    OverwrittenSpawn SpawnAt
   | PlaceOnBottomOfDeckInsteadOfDiscard
+  | -- | Player cards that would be discarded are placed beneath the target instead
+    PlaceUnderneathInsteadOfDiscard Target
   | PlaySource Source
   | PlayUnderControlOf InvestigatorId
   | PlayableCardOf InvestigatorId Card
@@ -426,6 +444,8 @@ data ModifierType
   | SkillModifiersAffectOtherSkill SkillType SkillType
   | SkillTestAutomaticallySucceeds
   | SkillTestAutomaticallyFails
+  | -- | If the test would succeed by at least this much, it fails instead
+    AutomaticallyFailIfSucceedByAtLeast Int
   | SkillTestResultValueModifier Int
   | SkipMythosPhaseStep MythosPhaseStep
   | SlotCanBe SlotType SlotType
@@ -455,6 +475,9 @@ data ModifierType
   | BecomeHomunculusWhenDefeated
   | BecomeInvestigator InvestigatorId
   | DrawsEachEncounterCard
+  | -- | When drawing encounter cards (e.g. the mythos draw), present this target
+    -- to click instead of the encounter deck. The draw itself is unchanged.
+    DrawEncounterCardsVia TargetMatcher
   deriving stock (Show, Eq, Ord, Data)
 
 data UIModifier
@@ -464,10 +487,15 @@ data UIModifier
   | ImportantToScenario Text
   | OverlayCheckmark {left :: Double, top :: Double} -- See The Stakeout for example
   | Rotated Int
+  | Positioned {x :: Double, y :: Double} -- player-driven location drag offset (un-zoomed CSS px)
+  | Oversized
   deriving stock (Show, Eq, Ord, Data)
 
 instance IsLabel "combat" (Int -> ModifierType) where
   fromLabel = SkillModifier #combat
+
+instance IsLabel "combat" (Integer -> ModifierType) where
+  fromLabel = SkillModifier #combat . fromIntegral
 
 instance IsLabel "agility" (Int -> ModifierType) where
   fromLabel = SkillModifier #agility
@@ -484,6 +512,9 @@ instance IsLabel "willpower" (Int -> ModifierType) where
 instance IsLabel "damage" (Int -> ModifierType) where
   fromLabel = DamageDealt
 
+instance IsLabel "damage" (Integer -> ModifierType) where
+  fromLabel = DamageDealt . fromIntegral
+
 instance IsLabel "noAction" ModifierType where
   fromLabel = ActionCostModifier (-1)
 
@@ -492,6 +523,9 @@ instance IsLabel "retaliate" ModifierType where
 
 instance IsLabel "alert" ModifierType where
   fromLabel = AddKeyword Alert
+
+instance IsLabel "aloof" ModifierType where
+  fromLabel = AddKeyword Aloof
 
 data Modifier = Modifier
   { modifierSource :: Source
@@ -526,6 +560,18 @@ mconcat
         parseJSON = withObject "ModifierType" \v -> do
           tag :: Text <- v .: "tag"
           case tag of
+            "CanPlayUnderControlOf" -> do
+              let parseRecord o = do
+                    cmatch <- o .: "cardMatcher" <|> o .: "card"
+                    imatch <- o .: "investigatorMatcher" <|> o .: "investigator"
+                    pure $ CanPlayUnderControlOf cmatch imatch
+              mContents <- v .:? "contents"
+              case mContents of
+                Just contents ->
+                  (uncurry CanPlayUnderControlOf <$> parseJSON contents)
+                    <|> withObject "CanPlayUnderControlOf" parseRecord contents
+                    <|> (flip CanPlayUnderControlOf Anyone <$> parseJSON contents)
+                Nothing -> parseRecord v
             "MaxDamageTaken" -> do
               contents <- (Right <$> v .: "contents") <|> (Left <$> v .: "contents")
               case contents of

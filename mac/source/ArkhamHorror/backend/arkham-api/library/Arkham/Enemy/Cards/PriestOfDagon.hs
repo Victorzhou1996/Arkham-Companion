@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.PriestOfDagon (priestOfDagon, PriestOfDagon (..)) wher
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated, EnemyEvaded)
+import Arkham.Enemy.Import.Lifted hiding (EnemyEvaded)
 import Arkham.Matcher
 
 newtype PriestOfDagon = PriestOfDagon EnemyAttrs
@@ -10,7 +10,7 @@ newtype PriestOfDagon = PriestOfDagon EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 priestOfDagon :: EnemyCard PriestOfDagon
-priestOfDagon = enemyWith PriestOfDagon Cards.priestOfDagon (3, Static 2, 3) (1, 1) spawnAtEmptyLocation
+priestOfDagon = enemyWith PriestOfDagon Cards.priestOfDagon spawnAtEmptyLocation
 
 instance HasAbilities PriestOfDagon where
   getAbilities (PriestOfDagon a) =

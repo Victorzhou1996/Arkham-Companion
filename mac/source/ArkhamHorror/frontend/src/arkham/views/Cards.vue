@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { watch, ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { fetchCards } from '@/arkham/api';
 import { useRouter, useRoute, LocationQueryValue } from 'vue-router';
 import * as Arkham from '@/arkham/types/CardDef';
@@ -9,6 +10,8 @@ import sets from '@/arkham/data/sets.json'
 import cycles from '@/arkham/data/cycles.json'
 import { shallowRef } from 'vue';
 import { useDbCardStore, ArkhamDBCard } from '@/stores/dbCards'
+
+const { t } = useI18n()
 
 enum View {
   Image = "IMAGE",
@@ -57,7 +60,10 @@ const SET_FONT_CHARS: Record<string, string> = {
   jac:       '\u004E', ste:       '\u0050',
   // Cycle 61 — Investigator Starter Decks (Chapter 2)
   tom:       '\uE918',
+  car:       '\uE919',
   and:       '\uE91B',
+  mar:       '\uE91A',
+  mig:       '\uE91C',
   // Cycle 70 — Side Stories
   cotr:      '\u0051', coh:       '\uEA24', lol:       '\u0053',
   guardians: '\u0054', hotel:     '\u0055', blob:      '\u0056',
@@ -95,7 +101,7 @@ const includeEncounter = computed(() => route.query.includeEncounter === "true")
 const store = useDbCardStore()
 
 const CACHE_KEY_PREFIX = 'arkham_cards_cache_'
-const CACHE_VERSION = 'v1'
+const CACHE_VERSION = 'v2'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 const getCachedCards = (withEncounter: boolean): Arkham.CardDef[] | null => {
@@ -117,10 +123,37 @@ const setCachedCards = (cards: Arkham.CardDef[], withEncounter: boolean) => {
   } catch { /* ignore quota errors */ }
 }
 
+const localizeCards = (cards: Arkham.CardDef[]) => {
+  const language = localStorage.getItem('language') || 'en'
+  if (language === 'en') return cards
+
+  for (const card of cards) {
+    const match: ArkhamDBCard | null = store.getDbCard(card.art)
+    if (!match) continue
+
+    card.name.title = match.name
+    if (match.subname) card.name.subtitle = match.subname
+
+    if (match.faction_name && card.classSymbols.length > 0) card.classSymbols[0] = match.faction_name
+    if (match.faction2_name && card.classSymbols.length > 1) {
+      card.classSymbols[1] = match.faction2_name
+      if (match.faction3_name && card.classSymbols.length > 2) card.classSymbols[2] = match.faction3_name
+    }
+
+    card.cardType = match.type_name
+
+    if (match.traits) card.cardTraits = match.traits.split('.').filter(item => item != "" && item != " ")
+  }
+
+  return cards
+}
+
 const fetchData = async () => {
+  await store.initDbCards()
+
   const cached = getCachedCards(includeEncounter.value)
   if (cached) {
-    allCards.value = cached
+    allCards.value = localizeCards(cached)
     return
   }
   fetchCards(includeEncounter.value).then(async (response) => {
@@ -130,7 +163,7 @@ const fetchData = async () => {
       return 0
     })
     setCachedCards(sorted, includeEncounter.value)
-    allCards.value = sorted
+    allCards.value = localizeCards(sorted)
   })
 }
 
@@ -153,7 +186,15 @@ interface CardSet {
   code: string
   cycle: number
   encounterDuplicates?: number
+  // Unused code numbers within [min, max] that don't correspond to a real card,
+  // so they aren't counted toward the set total.
+  missing?: string[]
 }
+
+// Total card count for an encounter set: every code in [min, max], plus any
+// duplicate-back cards, minus the unused (missing) numbers in that range.
+const encounterSetTotal = (set: CardSet) =>
+  set.max - set.min + 1 + (set.encounterDuplicates ?? 0) - (set.missing?.length ?? 0)
 
 interface CardCycle {
   name: string
@@ -161,11 +202,71 @@ interface CardCycle {
   code: string
 }
 
-const filter = ref<Filter>({ cardTypes: [], text: [], level: null, cycle: null, set: "core", classes: [], traits: [], encounterSets: []})
+interface CardSearchIndex {
+  set?: CardSet
+  setCode?: string
+  cycle?: number
+  nameLower: string
+  codeLower: string
+  typeLower: string
+  classSymbolsLower: string[]
+  traitsLower: string[]
+  encounterCode?: string
+}
 
-// 提前初始化中文卡牌数据，避免 watcher 竞态
-const language = localStorage.getItem('language') || 'en'
-if (language !== 'en') await store.initDbCards()
+const setsByCycle = (sets as CardSet[]).reduce<Map<number, CardSet[]>>((acc, set) => {
+  const cycleSets = acc.get(set.cycle)
+  if (cycleSets) cycleSets.push(set)
+  else acc.set(set.cycle, [set])
+  return acc
+}, new Map())
+
+const cyclesByNumber = new Map((cycles as CardCycle[]).map((cycle) => [cycle.cycle, cycle]))
+
+const cardSetCache = new Map<string, CardSet | undefined>()
+
+const findCardSetByArt = (art: string) => {
+  const cached = cardSetCache.get(art)
+  if (cached !== undefined || cardSetCache.has(art)) return cached
+
+  const cardCode = parseInt(art)
+  const set = (sets as CardSet[]).find((s) => cardCode >= s.min && cardCode <= s.max)
+  cardSetCache.set(art, set)
+  return set
+}
+
+const dbCardForPackCode = (packCode?: string) => {
+  if (!packCode) return null
+  return store.dbCards.find((card) => card.pack_code === packCode) ?? null
+}
+
+const dbCardForSet = (set?: CardSet) => {
+  if (!set) return null
+  return dbCardForPackCode(set.code) ?? store.dbCards.find((card) => {
+    const cardCode = parseInt(card.code)
+    return cardCode >= set.min && cardCode <= set.max
+  }) ?? null
+}
+
+const localizedSetName = (set?: CardSet) => dbCardForSet(set)?.pack_name ?? set?.name ?? ''
+
+const localizedCycleName = (cycle: CardCycle) => {
+  const firstSet = (setsByCycle.get(cycle.cycle) ?? [])[0]
+  return dbCardForPackCode(cycle.code)?.pack_name ?? dbCardForSet(firstSet)?.pack_name ?? cycle.name
+}
+
+const localizedCycleNameByNumber = (cycleNumber?: number) => {
+  const cycle = cycleNumber ? cyclesByNumber.get(cycleNumber) : undefined
+  return cycle ? localizedCycleName(cycle) : ''
+}
+
+const searchText = (...parts: Array<string | null | undefined>) =>
+  parts
+    .flatMap((part) => part ? [part] : [])
+    .join(' ')
+    .toLowerCase()
+
+const filter = ref<Filter>({ cardTypes: [], text: [], level: null, cycle: null, set: "core", classes: [], traits: [], encounterSets: []})
 
 await fetchData()
 
@@ -182,55 +283,70 @@ watch(() => activeChapter.value, (newChapter) => {
   router.push({ name: 'Cards', query: { ...route.query, chapter: newChapter === 1 ? undefined : String(newChapter) }})
 })
 
-const applyZhNames = () => {
-  const language = localStorage.getItem('language') || 'en'
-  if (language === 'en') return
-  if (!allCards.value || store.dbCards.length === 0) return
-
-  for (const card of allCards.value) {
-    const match: ArkhamDBCard | null = store.getDbCard(card.art)
-    if (!match) continue
-
-    // Name
-    card.name.title = match.name
-    if (match.subname) card.name.subtitle = match.subname
-
-    // Class
-    if (match.faction_name && card.classSymbols.length > 0) card.classSymbols[0] = match.faction_name
-    if (match.faction2_name && card.classSymbols.length > 1) {
-      card.classSymbols[1] = match.faction2_name
-      if (match.faction3_name && card.classSymbols.length > 2) card.classSymbols[2] = match.faction3_name
-    }
-
-    // Type
-    card.cardType = match.type_name
-
-    // Traits
-    if (match.traits) card.cardTraits = match.traits.split('.').filter(item => item != "" && item != " ")
-  }
-}
-
-watch(() => allCards.value, applyZhNames)
-watch(() => store.dbCards, applyZhNames)
+watch(() => allCards.value, (cards) => {
+  if (cards) localizeCards(cards)
+})
 
 const chapter1Cycles = computed(() => cycles.filter((c) => !CHAPTER_2_CYCLES.has(c.cycle)))
 const chapter2Cycles = computed(() => cycles.filter((c) => CHAPTER_2_CYCLES.has(c.cycle)))
 const displayedCycles = computed(() => activeChapter.value === 2 ? chapter2Cycles.value : chapter1Cycles.value)
 
-const cycleCount = (cycle: CardCycle) => {
-  if (!allCards.value) return 0
-  const cycleSets = sets.filter((s) => s.cycle == cycle.cycle)
-  return allCards.value.filter((c) => {
-    const cSet = cardSet(c)
-    return cSet ? cycleSets.includes(cSet) : false
-  }).length
-}
+const cardSearchIndex = computed(() => {
+  const index = new Map<string, CardSearchIndex>()
+
+  for (const card of allCards.value ?? []) {
+    const set = findCardSetByArt(card.art)
+    const match: ArkhamDBCard | null = store.getDbCard(card.art)
+
+    index.set(card.cardCode, {
+      set,
+      setCode: set?.code,
+      cycle: set?.cycle,
+      nameLower: searchText(
+        cardName(card),
+        match?.name,
+        match?.real_name,
+        match?.subname,
+        match?.pack_name,
+        match?.pack_code,
+        match?.encounter_name,
+        match?.encounter_code,
+        set?.name,
+        localizedSetName(set),
+        localizedCycleNameByNumber(set?.cycle),
+      ),
+      codeLower: card.cardCode.toLowerCase(),
+      typeLower: cardType(card).toLowerCase().trim(),
+      classSymbolsLower: card.classSymbols.map((cs) => cs.toLowerCase()),
+      traitsLower: card.cardTraits.map((trait) => trait.toLowerCase()),
+      encounterCode: match?.encounter_code,
+    })
+  }
+
+  return index
+})
+
+const cardCounts = computed(() => {
+  const bySet = new Map<string, number>()
+  const byCycle = new Map<number, number>()
+  const index = cardSearchIndex.value
+
+  for (const card of allCards.value ?? []) {
+    const meta = index.get(card.cardCode)
+    if (meta?.setCode) bySet.set(meta.setCode, (bySet.get(meta.setCode) ?? 0) + 1)
+    if (meta?.cycle) byCycle.set(meta.cycle, (byCycle.get(meta.cycle) ?? 0) + 1)
+  }
+
+  return { bySet, byCycle }
+})
+
+const cycleCount = (cycle: CardCycle) => cardCounts.value.byCycle.get(cycle.cycle) ?? 0
 
 const cycleCountText = (cycle: CardCycle) => {
   if (!allCards.value) return 0
   const implementedCount = cycleCount(cycle)
-  const cycleSets = sets.filter((s) => s.cycle == cycle.cycle)
-  const total = cycleSets.reduce((acc, set) => acc + (includeEncounter.value ? set.max - set.min + 1 + (set.encounterDuplicates ? set.encounterDuplicates : 0) : set.playerCards), 0)
+  const cycleSets = setsByCycle.get(cycle.cycle) ?? []
+  const total = cycleSets.reduce((acc, set) => acc + (includeEncounter.value ? encounterSetTotal(set) : set.playerCards), 0)
 
   if (implementedCount == total) {
     return ""
@@ -239,14 +355,11 @@ const cycleCountText = (cycle: CardCycle) => {
   return ` (${implementedCount}/${total})`
 }
 
-const setCount = (set: CardSet) => {
-  if (!allCards.value) return 0
-  return allCards.value.filter((c) => cardSet(c) == set).length
-}
+const setCount = (set: CardSet) => cardCounts.value.bySet.get(set.code) ?? 0
 
 const setCountText = (set: CardSet) => {
   const implementedCount = setCount(set)
-  const total = includeEncounter.value ? set.max - set.min + 1 + (set.encounterDuplicates ? set.encounterDuplicates : 0) : set.playerCards
+  const total = includeEncounter.value ? encounterSetTotal(set) : set.playerCards
 
   if (implementedCount == total) {
     return ""
@@ -259,46 +372,38 @@ const cards = computed(() => {
   if (!allCards.value) return []
 
   const { classes, encounterSets, traits, cycle, set, text, level, cardTypes } = filter.value
-  const cycleSets = cycle ? sets.filter((s) => s.cycle == cycle) : null
+  const classSet = classes.length > 0 ? new Set(classes) : null
+  const traitSet = traits.length > 0 ? new Set(traits) : null
+  const encounterSet = encounterSets.length > 0 ? new Set(encounterSets) : null
+  const cardTypeSet = cardTypes.length > 0 ? new Set(cardTypes.map((ct) => ct.toLowerCase().trim())) : null
+  const textLower = text.map((t) => t.toLowerCase())
+  const codeText = textLower.map((t) => `c${t}`)
+  const index = cardSearchIndex.value
 
   return allCards.value.filter((c) => {
     if (c.cardCode === "cx05184") return false
-    if (cycleSets) {
-      const cSet = cardSet(c)
-      if (!cSet || !cycleSets.includes(cSet)) return false
+
+    const meta = index.get(c.cardCode)
+    if (!meta) return false
+
+    if (cycle && meta.cycle !== cycle) return false
+    if (set && meta.setCode !== set) return false
+
+    if (classSet && !meta.classSymbolsLower.some((cs) => classSet.has(cs))) return false
+    if (traitSet && !meta.traitsLower.some((trait) => traitSet.has(trait))) return false
+
+    if (encounterSet) {
+      if (!meta.encounterCode || !encounterSet.has(meta.encounterCode)) return false
     }
 
-    if (set) {
-      let cCode = cardSet(c)?.code
-      if (!cCode || cCode !== set) return false
-    }
-
-    if (classes.length > 0) {
-      if (!c.classSymbols.some((cs) => classes.includes(cs.toLowerCase()))) return false
-    }
-
-    if (traits.length > 0) {
-      if (!c.cardTraits.some((cs) => traits.includes(cs.toLowerCase()))) return false
-    }
-
-    if (encounterSets.length > 0) {
-      const match: ArkhamDBCard | null = store.getDbCard(c.art)
-      if (!match) return false
-      return match.encounter_code !== undefined && encounterSets.includes(match.encounter_code)
-    }
-
-    if (text.length > 0) {
-      const cardNameMatches = text.some((t) => cardName(c).toLowerCase().includes(t.toLowerCase()))
-      const cardCodeMatches = text.some((t) => c.cardCode == `c${t.toLowerCase()}`)
+    if (textLower.length > 0) {
+      const cardNameMatches = textLower.some((term) => meta.nameLower.includes(term))
+      const cardCodeMatches = codeText.some((term) => meta.codeLower === term)
       if (!cardNameMatches && !cardCodeMatches) return false
     }
 
     if (level && c.level !== level) return false
-
-    if (cardTypes.length > 0) {
-      const sanitizedCardTypes = cardTypes.map((ct) => ct.toLowerCase().trim())
-      if (!sanitizedCardTypes.includes(cardType(c).toLowerCase().trim())) return false
-    }
+    if (cardTypeSet && !cardTypeSet.has(meta.typeLower)) return false
 
     return true
   })
@@ -319,7 +424,7 @@ const setFilter = () => {
 
   if (matchCardTypes) {
     queryString = queryString.replace(/t:([^ ]*)/, '')
-    cardTypes = matchCardTypes[1].split('|')
+    cardTypes = matchCardTypes[1].split('|').map((s) => s.toLowerCase().trim())
   }
 
   const matchLevel = queryString.match(/p:([1-9][0-9]*)/)
@@ -333,7 +438,7 @@ const setFilter = () => {
 
   if (matchClasses) {
     queryString = queryString.replace(/f:([^ ]*)/, '')
-    classes = matchClasses[1].split('|')
+    classes = matchClasses[1].split('|').map((s) => s.toLowerCase().trim())
   }
 
   const matchCycle = queryString.match(/y:([1-9][0-9]*)/)
@@ -347,14 +452,14 @@ const setFilter = () => {
 
   if (matchSet) {
     queryString = queryString.replace(/e:([^ ]*)/, '')
-    set = matchSet[1]
+    set = matchSet[1].toLowerCase()
   }
 
   const matchTraits = queryString.match(/k:([^ ]*)/)
 
   if (matchTraits) {
     queryString = queryString.replace(/k:([^ ]*)/, '')
-    traits = matchTraits[1].split('|')
+    traits = matchTraits[1].split('|').map((s) => s.toLowerCase().trim())
   }
 
   const matchEncounterSets = queryString.match(/m:([^ ]*)/)
@@ -421,14 +526,9 @@ const cardType = (card: Arkham.CardDef) => {
   }
 }
 
-const cardSet = (card: Arkham.CardDef) => {
-  const cardCode = parseInt(card.art)
-  return sets.find((s) => cardCode >= s.min && cardCode <= s.max)
-}
+const cardSet = (card: Arkham.CardDef) => findCardSetByArt(card.art)
 
-const cycleSets = (cycle: CardCycle) => {
-  return sets.filter((s) => s.cycle == cycle.cycle)
-}
+const cycleSets = (cycle: CardCycle) => setsByCycle.get(cycle.cycle) ?? []
 
 const CYCLE_ICON_OVERRIDES: Record<number, string> = {
   50: 'core',  // Return to...
@@ -444,13 +544,15 @@ const cycleIconCode = (cycle: CardCycle): string => {
 }
 
 const setCycle = (cycle: CardCycle) => {
-  query.value = filterString({...filter.value, set: null, cycle: cycle.cycle})
-  setFilter()
+  filter.value = {...filter.value, text: [], set: null, cycle: cycle.cycle}
+  query.value = localizedCycleName(cycle)
+  router.push({ name: 'Cards', query: { ...route.query, q: query.value }})
 }
 
 const setSet = (set: CardSet) => {
-  query.value = filterString({...filter.value, cycle: null, set: set.code})
-  setFilter()
+  filter.value = {...filter.value, text: [], cycle: null, set: set.code}
+  query.value = localizedSetName(set)
+  router.push({ name: 'Cards', query: { ...route.query, q: query.value }})
 }
 
 const toggleIncludeEncounter = () => {
@@ -470,27 +572,27 @@ const showSidebar = ref(false)
         <button
           :class="['chapter-tab', { active: activeChapter === 1 }]"
           @click="activeChapter = 1"
-        >Chapter 1</button>
+        >{{ t('cardsView.chapter1') }}</button>
         <button
           :class="['chapter-tab', { active: activeChapter === 2 }]"
           @click="activeChapter = 2"
-        >Chapter 2</button>
+        >{{ t('cardsView.chapter2') }}</button>
       </div>
       <nav class="cycles">
         <ol>
           <li v-for="cycle in displayedCycles" :key="cycle.code">
             <div class="nav-row">
               <i v-if="SET_FONT_CHARS[cycleIconCode(cycle)]" class="set-icon-font">{{ SET_FONT_CHARS[cycleIconCode(cycle)] }}</i>
-              <img v-else-if="cycleIconCode(cycle)" class="set-icon" :src="`/img/arkham/encounter-sets/${cycleIconCode(cycle)}.png`" :alt="cycle.name" />
-              <a href="#" @click.prevent="setCycle(cycle)">{{cycle.name}}</a>
+              <img v-else-if="cycleIconCode(cycle)" class="set-icon" :src="`/img/arkham/encounter-sets/${cycleIconCode(cycle)}.png`" :alt="localizedCycleName(cycle)" />
+              <a href="#" @click.prevent="setCycle(cycle)">{{localizedCycleName(cycle)}}</a>
               <span class="count">{{cycleCountText(cycle)}}</span>
             </div>
             <ol>
               <li v-for="set in cycleSets(cycle)" :key="set.code">
                 <div class="nav-row nav-row--sub">
                   <i v-if="SET_FONT_CHARS[set.code]" class="set-icon-font">{{ SET_FONT_CHARS[set.code] }}</i>
-                  <img v-else class="set-icon" :src="`/img/arkham/encounter-sets/${set.code}.png`" :alt="set.name" />
-                  <a href="#" @click.prevent="setSet(set)">{{set.name}}</a>
+                  <img v-else class="set-icon" :src="`/img/arkham/encounter-sets/${set.code}.png`" :alt="localizedSetName(set)" />
+                  <a href="#" @click.prevent="setSet(set)">{{localizedSetName(set)}}</a>
                   <span class="count">{{setCountText(set)}}</span>
                 </div>
               </li>
@@ -501,25 +603,25 @@ const showSidebar = ref(false)
     </div>
     <div class="results">
       <header>
-        <button class="sidebar-toggle" @click="showSidebar = !showSidebar" title="Browse sets">
+        <button class="sidebar-toggle" @click="showSidebar = !showSidebar" :title="$t('cardsView.browseSets')">
           <font-awesome-icon class="toggle-arrow" icon="chevron-right" />
           <font-awesome-icon icon="book" />
         </button>
         <form @submit.prevent="setFilter">
-          <input v-model="query" placeholder="Search cards..." />
+          <input v-model="query" :placeholder="$t('cardsView.searchCards')" />
           <button type="submit"><font-awesome-icon icon="search" /></button>
         </form>
         <div class="view-controls">
-          <button @click.prevent="view = View.List" :class="{ active: view == View.List }" title="List view"><font-awesome-icon icon="list" /></button>
-          <button @click.prevent="view = View.Image" :class="{ active: view == View.Image }" title="Image view"><font-awesome-icon icon="image" /></button>
+          <button @click.prevent="view = View.List" :class="{ active: view == View.List }" :title="$t('cardsView.listView')"><font-awesome-icon icon="list" /></button>
+          <button @click.prevent="view = View.Image" :class="{ active: view == View.Image }" :title="$t('cardsView.imageView')"><font-awesome-icon icon="image" /></button>
         </div>
         <label class="encounter-toggle">
           <input type="checkbox" @click="toggleIncludeEncounter" :checked="includeEncounter" id="include-encounter" />
-          <span>Include Encounter</span>
+          <span>{{ $t('cardsView.includeEncounter') }}</span>
         </label>
       </header>
-      <CardImageView v-if="view == View.Image" :cards="cards" />
-      <CardListView v-if="view == View.List" :cards="cards" />
+      <CardImageView v-if="view == View.Image" :cards="cards" :show-counts="false" />
+      <CardListView v-if="view == View.List" :cards="cards" :show-counts="false" />
     </div>
   </div>
 </template>
@@ -553,7 +655,7 @@ const showSidebar = ref(false)
     max-height: unset;
     border-right: 1px solid rgba(255,255,255,0.12);
     background: var(--background);
-    z-index: 50;
+    z-index: var(--z-index-50);
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     overflow-y: auto;
@@ -569,7 +671,7 @@ const showSidebar = ref(false)
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.6);
-      z-index: 49;
+      z-index: var(--z-index-49);
     }
   }
 }
@@ -692,7 +794,7 @@ const showSidebar = ref(false)
   .count {
     flex-shrink: 0;
     font-size: 0.72rem;
-    color: #555;
+    color: var(--button);
     white-space: nowrap;
   }
 }
@@ -749,7 +851,7 @@ header {
   background: color-mix(in srgb, var(--background) 92%, transparent);
   border-bottom: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(6px);
-  z-index: 1;
+  z-index: var(--z-index-1);
 
   form {
     display: flex;
@@ -770,7 +872,7 @@ header {
       color: #ddd;
       font-size: 0.88rem;
 
-      &::placeholder { color: #555; }
+      &::placeholder { color: var(--button); }
     }
 
     button {

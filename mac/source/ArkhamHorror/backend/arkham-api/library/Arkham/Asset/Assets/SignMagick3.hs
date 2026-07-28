@@ -26,21 +26,19 @@ instance HasAbilities SignMagick3 where
         a
         1
         ( ExcludeWindowAssetExists
-            ( AssetControlledBy You
-                <> hasAnyTrait [Spell, Ritual]
-                <> AssetWithPerformableAbility AbilityIsActionAbility [ActionCostSetToModifier 0]
-            )
+            $ AssetControlledBy You
+            <> hasAnyTrait [Spell, Ritual]
+            <> AssetWithPerformableAbility AbilityIsActionAbility [ActionCostSetToModifier 0]
         )
         $ triggered
-          (ActivateAbility #after You $ AssetAbility $ hasAnyTrait [Spell, Ritual])
+          (ActivateAbility #after You $ AbilityIsActionAbility <> AssetAbility (hasAnyTrait [Spell, Ritual]))
           (exhaust a)
     ]
 
 toOriginalAsset :: [Window] -> AssetId
 toOriginalAsset [] = error "invalid window"
-toOriginalAsset ((windowType -> Window.ActivateAbility _ _ ability) : xs) = case abilitySource ability of
-  AssetSource aid -> aid
-  _ -> toOriginalAsset xs
+toOriginalAsset ((windowType -> Window.ActivateAbility _ _ ability) : xs) =
+  fromMaybe (toOriginalAsset xs) (abilitySource ability).asset
 toOriginalAsset (_ : xs) = toOriginalAsset xs
 
 instance RunMessage SignMagick3 where

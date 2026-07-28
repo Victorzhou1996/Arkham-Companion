@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.Microscope (microscope, Microscope (..)) where
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Import.Lifted hiding (EnemyDefeated, EnemyEvaded)
+import Arkham.Asset.Import.Lifted hiding (EnemyEvaded)
 import Arkham.Asset.Uses
 import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Helpers.SkillTest (withSkillTest)
@@ -24,12 +24,12 @@ instance HasAbilities Microscope where
     [ restrictedAbility x 1 ControlsThis
         $ triggered
           ( oneOf
-              [ EnemyDefeated #after Anyone ByAny $ EnemyAt YourLocation
+              [ IfEnemyDefeated #after Anyone ByAny $ EnemyAt YourLocation
               , EnemyEvaded #after Anyone $ EnemyAt YourLocation
               ]
           )
           (exhaust x)
-    , restrictedAbility x 2 ControlsThis $ ActionAbility [#investigate] #intellect (ActionCost 2)
+    , restrictedAbility x 2 ControlsThis $ ActionAbility #investigate #intellect (ActionCost 2)
     ]
 
 instance RunMessage Microscope where

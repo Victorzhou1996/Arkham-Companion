@@ -6,20 +6,23 @@ module Arkham.Source where
 
 import Arkham.Campaigns.TheScarletKeys.Key.Id (ScarletKeyId)
 import {-# SOURCE #-} Arkham.Card
+import Arkham.Card.CardType (playerCardTypes)
 import {-# SOURCE #-} Arkham.Card.PlayerCard
 import Arkham.ChaosToken.Types
 import Arkham.Id
 import Arkham.Matcher.Types (
+  AbilityMatcher (..),
   ActMatcher,
   AgendaMatcher,
   AssetMatcher,
   EnemyMatcher,
   LocationMatcher,
+  SourceMatcher (..),
  )
 import Arkham.Prelude
 import Arkham.Tarot
 import Arkham.Trait hiding (ElderThing)
-import Control.Lens (Prism', prism')
+import Arkham.UltimatumsAndBoons.Types
 import Data.Aeson.TH
 import Data.UUID (nil)
 import GHC.OverloadedLabels
@@ -72,16 +75,11 @@ data Source
   | CardCostSource CardId
   | BothSource Source Source
   | TarotSource TarotCard
+  | UltimatumOrBoonSource UltimatumOrBoon
   | BatchSource BatchId
   | ScarletKeySource ScarletKeyId
   | ConcealedCardSource ConcealedCardId
   deriving stock (Show, Eq, Ord, Data, Generic)
-
-_AssetSource :: Prism' Source AssetId
-_AssetSource = prism' AssetSource $ \case
-  AssetSource aid -> Just aid
-  _ -> Nothing
-
 instance HasField "asset" Source (Maybe AssetId) where
   getField = \case
     AssetSource aid -> Just aid
@@ -169,14 +167,57 @@ isIndexedSource :: Sourceable a => a -> Source -> Bool
 isIndexedSource a (IndexedSource _ source) = isSource a source
 isIndexedSource _ _ = False
 
-toProxySource :: Sourceable a => a -> Source -> Source
-toProxySource a source = ProxySource source (toSource a)
-
 proxy :: (Sourceable a, Sourceable b) => a -> b -> Source
 proxy a b = ProxySource (toSource a) (toSource b)
 
 bothSource :: (Sourceable a, Sourceable b) => a -> b -> Source
 bothSource a b = BothSource (toSource a) (toSource b)
+
+isPlayerCardSource :: Source -> Bool
+isPlayerCardSource = \case
+  AbilitySource s _ -> isPlayerCardSource s
+  UseAbilitySource _ s _ -> isPlayerCardSource s
+  PaymentSource s -> isPlayerCardSource s
+  IndexedSource _ s -> isPlayerCardSource s
+  AssetSource _ -> True
+  EventSource _ -> True
+  SkillSource _ -> True
+  InvestigatorSource _ -> True
+  _ -> False
+
+isEncounterCardSource :: Source -> Bool
+isEncounterCardSource = \case
+  AbilitySource s _ -> isEncounterCardSource s
+  UseAbilitySource _ s _ -> isEncounterCardSource s
+  PaymentSource s -> isEncounterCardSource s
+  IndexedSource _ s -> isEncounterCardSource s
+  ProxySource s _ -> isEncounterCardSource s
+  TreacherySource _ -> True
+  EnemySource _ -> True
+  LocationSource _ -> True
+  AgendaSource _ -> True
+  ActSource _ -> True
+  _ -> False
+
+{- | Static check: would this SourceMatcher potentially match a player card source?
+Used for playability checks where we don't have a specific source but need to know
+if player card sources are allowed through.
+-}
+allowsPlayerCardSource :: SourceMatcher -> Bool
+allowsPlayerCardSource = \case
+  SourceIsPlayerCard -> True
+  SourceIsPlayerCardAbility -> True
+  AnySource -> True
+  SourceIsAbility BasicAbility -> True
+  SourceIsAsset _ -> True
+  SourceIsEvent _ -> True
+  SourceWithTrait _ -> True
+  SourceWithCard _ -> True
+  SourceIsType t -> t `elem` playerCardTypes
+  SourceMatchesAny ms -> any allowsPlayerCardSource ms
+  SourceMatches ms -> all allowsPlayerCardSource ms
+  NotSource m -> not (allowsPlayerCardSource m)
+  _ -> False
 
 instance Sourceable Source where
   toSource = id
@@ -243,6 +284,9 @@ instance Sourceable ActMatcher where
 instance Sourceable LocationMatcher where
   toSource = LocationMatcherSource
 
+instance Sourceable EnemyMatcher where
+  toSource = EnemyMatcherSource
+
 toAbilitySource :: Sourceable a => a -> Int -> Source
 toAbilitySource a n = case toSource a of
   AbilitySource b n' -> AbilitySource b n'
@@ -251,6 +295,7 @@ toAbilitySource a n = case toSource a of
 
 isAbilitySource :: Sourceable a => a -> Int -> Source -> Bool
 isAbilitySource a idx (AbilitySource b idx') | idx == idx' = isSource a b
+isAbilitySource a idx (PaymentSource inner) = isAbilitySource a idx inner
 isAbilitySource a idx (UseAbilitySource _ b idx') | idx == idx' = isSource a b
 isAbilitySource _ _ _ = False
 

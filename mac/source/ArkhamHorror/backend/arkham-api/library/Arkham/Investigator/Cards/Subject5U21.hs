@@ -7,6 +7,7 @@ import Arkham.Card
 import Arkham.Draw.Types
 import Arkham.Helpers.Investigator (canHaveDamageHealed, canHaveHorrorHealed)
 import Arkham.Helpers.Modifiers (ModifierType (..), hasModifier)
+import Arkham.I18n
 import Arkham.Investigator.Cards qualified as Cards
 import Arkham.Investigator.Import.Lifted
 import Arkham.Investigator.Runner (pattern PlayThisEvent)
@@ -74,7 +75,7 @@ instance RunMessage Subject5U21 where
 
       focusCards allDevoured do
         chooseOneM iid do
-          labeled "Do not return a devoured card" nothing
+          cardI18n (scope "subject5U21" $ labeled' "doNotReturnDevoured") nothing
           for_ allDevoured \case
             card@(PlayerCard pc) -> for_ (pcOwner pc) \owner ->
               targeting card $ addToHand owner [card]
@@ -93,14 +94,16 @@ instance RunMessage Subject5U21 where
     Devoured iid card | iid == toId attrs -> do
       send $ format attrs <> " devours " <> format card
       selectOne (assetIs Assets.ravenousControlledHunger) >>= \case
-        Nothing -> pure . Subject5U21 $ attrs `with` Meta (card : devoured meta)
+        Nothing -> do
+          obtainCard card
+          pure . Subject5U21 $ attrs `with` Meta (card : devoured meta)
         Just aid -> do
           push $ PlaceUnderneath (toTarget aid) [card]
           pure i
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       devourable <-
         select
-          $ ControlledBy (affectsOthers $ colocatedWith iid)
+          $ ControlledBy (affectsOthersKnown iid $ colocatedWith iid)
           <> basic (not_ (CardWithType StoryType) <> not_ PermanentCard)
       chooseOneM iid do
         for_ devourable \card -> do
@@ -128,7 +131,7 @@ instance RunMessage Subject5U21 where
       let allDevoured = devouredRavenous <> devoured meta
 
       focusCards allDevoured do
-        chooseUpToNM attrs.id 3 "Do not regurgitate any more cards" do
+        cardI18n $ scope "subject5U21" $ chooseUpToNM' attrs.id 3 "doNotRegurgitateAnyMoreCards" do
           for_ allDevoured \case
             card@(PlayerCard pc) -> for_ (pcOwner pc) \owner ->
               targeting card do
@@ -143,9 +146,9 @@ instance RunMessage Subject5U21 where
       when (canHealHorror || canHealDamage) do
         chooseOrRunOneM attrs.id do
           when canHealDamage do
-            labeled "Heal 1 damage" $ healDamage attrs eid 1
+            labeledI "healOneDamage" $ healDamage attrs eid 1
           when canHealHorror do
-            labeled "Heal 1 horror" $ healHorror attrs eid 1
+            labeledI "healOneHorror" $ healHorror attrs eid 1
       pure i
     ForInvestigators _ ResetGame -> do
       attrs' <- liftRunMessage msg attrs

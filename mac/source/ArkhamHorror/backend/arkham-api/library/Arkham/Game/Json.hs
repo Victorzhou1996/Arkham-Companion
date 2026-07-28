@@ -1,11 +1,10 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Arkham.Game.Json where
 
 import Arkham.Game.Base
+import Arkham.Game.Settings (defaultSettings)
 import Arkham.Prelude
-import Data.Aeson.TH
 import Data.Map.Strict qualified as Map
 
 -- bring json instances into scope
@@ -15,7 +14,146 @@ import Arkham.Entities ()
 import Arkham.Investigator ()
 import Arkham.Scenario ()
 
-$(deriveToJSON (defaultOptions {allowOmittedFields = True}) ''Game)
+-- Hand-written (rather than TH-derived) so the runtime-only
+-- gameActionSnapshot field is omitted from the serialized form entirely; the
+-- output is otherwise identical to the previously derived instance and is
+-- mirrored by the hand-written FromJSON below.
+instance ToJSON Game where
+  toJSON g =
+    object
+      [ "gamePhaseHistory" .= gamePhaseHistory g
+      , "gameTurnHistory" .= gameTurnHistory g
+      , "gameRoundHistory" .= gameRoundHistory g
+      , "gameInitialSeed" .= gameInitialSeed g
+      , "gameSettings" .= gameSettings g
+      , "gameSeed" .= gameSeed g
+      , "gameWindowDepth" .= gameWindowDepth g
+      , "gameWindowStack" .= gameWindowStack g
+      , "gameWindowTick" .= gameWindowTick g
+      , "gameWindowTickStack" .= gameWindowTickStack g
+      , "gameEntryTicks" .= gameEntryTicks g
+      , "gameRunWindows" .= gameRunWindows g
+      , "gameDepthLock" .= gameDepthLock g
+      , "gameIgnoreCanModifiers" .= gameIgnoreCanModifiers g
+      , "gameMode" .= gameMode g
+      , "gameEntities" .= gameEntities g
+      , "gameActionRemovedEntities" .= gameActionRemovedEntities g
+      , "gamePlayers" .= gamePlayers g
+      , "gameModifiers" .= gameModifiers g
+      , "gameEncounterDiscardEntities" .= gameEncounterDiscardEntities g
+      , "gameInHandEntities" .= gameInHandEntities g
+      , "gameInDiscardEntities" .= gameInDiscardEntities g
+      , "gameInSearchEntities" .= gameInSearchEntities g
+      , "gamePlayerCount" .= gamePlayerCount g
+      , "gameActiveInvestigatorId" .= gameActiveInvestigatorId g
+      , "gameActivePlayerId" .= gameActivePlayerId g
+      , "gameTurnPlayerInvestigatorId" .= gameTurnPlayerInvestigatorId g
+      , "gameLeadInvestigatorId" .= gameLeadInvestigatorId g
+      , "gamePlayerOrder" .= gamePlayerOrder g
+      , "gamePhase" .= gamePhase g
+      , "gamePhaseStep" .= gamePhaseStep g
+      , "gameSkillTest" .= gameSkillTest g
+      , "gameFocusedCards" .= gameFocusedCards g
+      , "gameHighlightedCards" .= gameHighlightedCards g
+      , "gameFocusedTarotCards" .= gameFocusedTarotCards g
+      , "gameFoundCards" .= gameFoundCards g
+      , "gameFocusedChaosTokens" .= gameFocusedChaosTokens g
+      , "gameActiveCard" .= gameActiveCard g
+      , "gameResolvingCard" .= gameResolvingCard g
+      , "gameActiveAbilities" .= gameActiveAbilities g
+      , "gameRemovedFromPlay" .= gameRemovedFromPlay g
+      , "gameInSetup" .= gameInSetup g
+      , "gameGameState" .= gameGameState g
+      , "gameSkillTestResults" .= gameSkillTestResults g
+      , "gameEnemyMoving" .= gameEnemyMoving g
+      , "gameEnemyEvading" .= gameEnemyEvading g
+      , "gameQuestion" .= gameQuestion g
+      , "gameSimultaneousAsks" .= gameSimultaneousAsks g
+      , "gameActionCanBeUndone" .= gameActionCanBeUndone g
+      , "gameActionDiff" .= gameActionDiff g
+      , "gameInAction" .= gameInAction g
+      , "gameCards" .= gameCards g
+      , "gameCardUses" .= gameCardUses g
+      , "gameActiveCost" .= gameActiveCost g
+      , "gameGitRevision" .= gameGitRevision g
+      , "gameAllowEmptySpaces" .= gameAllowEmptySpaces g
+      , "gamePerformTarotReadings" .= gamePerformTarotReadings g
+      , "gameCurrentBatchId" .= gameCurrentBatchId g
+      , "gameScenarioSteps" .= gameScenarioSteps g
+      , "gameUndoActionStep" .= gameUndoActionStep g
+      , "gameUndoTurnStep" .= gameUndoTurnStep g
+      , "gameUndoPhaseStep" .= gameUndoPhaseStep g
+      , "gameUndoRoundStep" .= gameUndoRoundStep g
+      , "gameAsIfAtIgnored" .= gameAsIfAtIgnored g
+      , "gameLocationOffsets" .= gameLocationOffsets g
+      ]
+  toEncoding g =
+    pairs
+      $ ("gamePhaseHistory" .= gamePhaseHistory g)
+      <> ("gameTurnHistory" .= gameTurnHistory g)
+      <> ("gameRoundHistory" .= gameRoundHistory g)
+      <> ("gameInitialSeed" .= gameInitialSeed g)
+      <> ("gameSettings" .= gameSettings g)
+      <> ("gameSeed" .= gameSeed g)
+      <> ("gameWindowDepth" .= gameWindowDepth g)
+      <> ("gameWindowStack" .= gameWindowStack g)
+      <> ("gameWindowTick" .= gameWindowTick g)
+      <> ("gameWindowTickStack" .= gameWindowTickStack g)
+      <> ("gameEntryTicks" .= gameEntryTicks g)
+      <> ("gameRunWindows" .= gameRunWindows g)
+      <> ("gameDepthLock" .= gameDepthLock g)
+      <> ("gameIgnoreCanModifiers" .= gameIgnoreCanModifiers g)
+      <> ("gameMode" .= gameMode g)
+      <> ("gameEntities" .= gameEntities g)
+      <> ("gameActionRemovedEntities" .= gameActionRemovedEntities g)
+      <> ("gamePlayers" .= gamePlayers g)
+      <> ("gameModifiers" .= gameModifiers g)
+      <> ("gameEncounterDiscardEntities" .= gameEncounterDiscardEntities g)
+      <> ("gameInHandEntities" .= gameInHandEntities g)
+      <> ("gameInDiscardEntities" .= gameInDiscardEntities g)
+      <> ("gameInSearchEntities" .= gameInSearchEntities g)
+      <> ("gamePlayerCount" .= gamePlayerCount g)
+      <> ("gameActiveInvestigatorId" .= gameActiveInvestigatorId g)
+      <> ("gameActivePlayerId" .= gameActivePlayerId g)
+      <> ("gameTurnPlayerInvestigatorId" .= gameTurnPlayerInvestigatorId g)
+      <> ("gameLeadInvestigatorId" .= gameLeadInvestigatorId g)
+      <> ("gamePlayerOrder" .= gamePlayerOrder g)
+      <> ("gamePhase" .= gamePhase g)
+      <> ("gamePhaseStep" .= gamePhaseStep g)
+      <> ("gameSkillTest" .= gameSkillTest g)
+      <> ("gameFocusedCards" .= gameFocusedCards g)
+      <> ("gameHighlightedCards" .= gameHighlightedCards g)
+      <> ("gameFocusedTarotCards" .= gameFocusedTarotCards g)
+      <> ("gameFoundCards" .= gameFoundCards g)
+      <> ("gameFocusedChaosTokens" .= gameFocusedChaosTokens g)
+      <> ("gameActiveCard" .= gameActiveCard g)
+      <> ("gameResolvingCard" .= gameResolvingCard g)
+      <> ("gameActiveAbilities" .= gameActiveAbilities g)
+      <> ("gameRemovedFromPlay" .= gameRemovedFromPlay g)
+      <> ("gameInSetup" .= gameInSetup g)
+      <> ("gameGameState" .= gameGameState g)
+      <> ("gameSkillTestResults" .= gameSkillTestResults g)
+      <> ("gameEnemyMoving" .= gameEnemyMoving g)
+      <> ("gameEnemyEvading" .= gameEnemyEvading g)
+      <> ("gameQuestion" .= gameQuestion g)
+      <> ("gameSimultaneousAsks" .= gameSimultaneousAsks g)
+      <> ("gameActionCanBeUndone" .= gameActionCanBeUndone g)
+      <> ("gameActionDiff" .= gameActionDiff g)
+      <> ("gameInAction" .= gameInAction g)
+      <> ("gameCards" .= gameCards g)
+      <> ("gameCardUses" .= gameCardUses g)
+      <> ("gameActiveCost" .= gameActiveCost g)
+      <> ("gameGitRevision" .= gameGitRevision g)
+      <> ("gameAllowEmptySpaces" .= gameAllowEmptySpaces g)
+      <> ("gamePerformTarotReadings" .= gamePerformTarotReadings g)
+      <> ("gameCurrentBatchId" .= gameCurrentBatchId g)
+      <> ("gameScenarioSteps" .= gameScenarioSteps g)
+      <> ("gameUndoActionStep" .= gameUndoActionStep g)
+      <> ("gameUndoTurnStep" .= gameUndoTurnStep g)
+      <> ("gameUndoPhaseStep" .= gameUndoPhaseStep g)
+      <> ("gameUndoRoundStep" .= gameUndoRoundStep g)
+      <> ("gameAsIfAtIgnored" .= gameAsIfAtIgnored g)
+      <> ("gameLocationOffsets" .= gameLocationOffsets g)
 
 instance FromJSON Game where
   parseJSON = withObject "Game" \o -> do
@@ -23,10 +161,13 @@ instance FromJSON Game where
     gameTurnHistory <- o .:? "gameTurnHistory" .!= mempty
     gameRoundHistory <- o .:? "gameRoundHistory" .!= mempty
     gameInitialSeed <- o .: "gameInitialSeed"
-    gameSettings <- o .: "gameSettings"
+    gameSettings <- o .:? "gameSettings" .!= defaultSettings
     gameSeed <- o .: "gameSeed"
     gameWindowDepth <- o .: "gameWindowDepth"
     gameWindowStack <- o .: "gameWindowStack"
+    gameWindowTick <- o .:? "gameWindowTick" .!= 0
+    gameWindowTickStack <- o .:? "gameWindowTickStack" .!= []
+    gameEntryTicks <- o .:? "gameEntryTicks" .!= mempty
     gameRunWindows <- o .: "gameRunWindows"
     gameDepthLock <- o .: "gameDepthLock"
     gameIgnoreCanModifiers <- o .: "gameIgnoreCanModifiers"
@@ -49,6 +190,7 @@ instance FromJSON Game where
     gamePhaseStep <- o .: "gamePhaseStep"
     gameSkillTest <- o .: "gameSkillTest"
     gameFocusedCards <- o .: "gameFocusedCards" <|> (pure <$> o .: "gameFocusedCards")
+    gameHighlightedCards <- o .:? "gameHighlightedCards" .!= mempty
     gameFocusedTarotCards <- o .: "gameFocusedTarotCards"
     gameFoundCards <- o .: "gameFoundCards"
     gameFocusedChaosTokens <- o .: "gameFocusedChaosTokens"
@@ -62,8 +204,11 @@ instance FromJSON Game where
     gameEnemyMoving <- o .: "gameEnemyMoving"
     gameEnemyEvading <- o .: "gameEnemyEvading"
     gameQuestion <- o .: "gameQuestion"
+    -- Games persisted before the multi-seat barrier have no barriers open.
+    gameSimultaneousAsks <- o .:? "gameSimultaneousAsks" .!= mempty
     gameActionCanBeUndone <- o .: "gameActionCanBeUndone"
     gameActionDiff <- o .: "gameActionDiff"
+    let gameActionSnapshot = Transient Nothing
     gameInAction <- o .: "gameInAction"
     gameCards <- o .: "gameCards"
     gameCardUses <- o .: "gameCardUses" <|> (Map.map (`replicate` gameLeadInvestigatorId) <$> o .: "gameCardUses")
@@ -73,5 +218,11 @@ instance FromJSON Game where
     gamePerformTarotReadings <- o .: "gamePerformTarotReadings"
     gameCurrentBatchId <- o .: "gameCurrentBatchId"
     gameScenarioSteps <- o .:? "gameScenarioSteps" .!= 0
+    gameUndoActionStep <- o .:? "gameUndoActionStep" .!= Nothing
+    gameUndoTurnStep <- o .:? "gameUndoTurnStep" .!= Nothing
+    gameUndoPhaseStep <- o .:? "gameUndoPhaseStep" .!= Nothing
+    gameUndoRoundStep <- o .:? "gameUndoRoundStep" .!= Nothing
+    let gameAsIfAtIgnored = mempty
+    gameLocationOffsets <- o .:? "gameLocationOffsets" .!= mempty
 
     pure Game {..}

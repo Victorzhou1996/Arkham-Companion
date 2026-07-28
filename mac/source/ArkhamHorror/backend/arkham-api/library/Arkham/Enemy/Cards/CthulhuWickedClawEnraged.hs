@@ -1,0 +1,15 @@
+module Arkham.Enemy.Cards.CthulhuWickedClawEnraged (cthulhuWickedClawEnraged) where
+
+import Arkham.Enemy.Cards qualified as Cards
+import Arkham.Enemy.Import.Lifted
+
+newtype CthulhuWickedClawEnraged = CthulhuWickedClawEnraged EnemyAttrs
+  deriving anyclass (IsEnemy, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity, HasAbilities)
+
+cthulhuWickedClawEnraged :: EnemyCard CthulhuWickedClawEnraged
+cthulhuWickedClawEnraged = enemy CthulhuWickedClawEnraged Cards.cthulhuWickedClawEnraged
+
+-- TODO: abilities
+instance RunMessage CthulhuWickedClawEnraged where
+  runMessage msg (CthulhuWickedClawEnraged attrs) = runQueueT $ CthulhuWickedClawEnraged <$> liftRunMessage msg attrs

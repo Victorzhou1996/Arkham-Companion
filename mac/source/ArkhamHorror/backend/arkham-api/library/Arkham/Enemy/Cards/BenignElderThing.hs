@@ -2,7 +2,7 @@ module Arkham.Enemy.Cards.BenignElderThing (benignElderThing) where
 
 import Arkham.Ability
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.SkillTest.Lifted (parley)
 import Arkham.Matcher
 import Arkham.Token
@@ -13,7 +13,7 @@ newtype BenignElderThing = BenignElderThing EnemyAttrs
 
 benignElderThing :: EnemyCard BenignElderThing
 benignElderThing =
-  enemyWith BenignElderThing Cards.benignElderThing (1, Static 1, 1) (1, 1)
+  enemyWith BenignElderThing Cards.benignElderThing
     $ (spawnAtL ?~ SpawnAt EmptyLocation)
     . (tokensL %~ setTokens #doom 1)
 

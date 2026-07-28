@@ -9,9 +9,7 @@ import Arkham.Prelude
 import Arkham.Calculation as X
 import Arkham.Event.Types as X
 import Arkham.Helpers.Effect as X
-import Arkham.Helpers.Event as X
 import Arkham.Helpers.Message as X hiding (
-  EnemyDefeated,
   InvestigatorEliminated,
   PlayCard,
   RevealLocation,
@@ -123,13 +121,10 @@ runEventMessage msg a@EventAttrs {..} = runQueueT $ case msg of
         push $ toDiscard GameSource a
       _ -> pure ()
     pure a
-  ReadyExhausted -> do
-    push (Ready $ toTarget a)
-    pure a
+  ReadyExhausted -> pure $ a & exhaustedL .~ False
   Ready (isTarget a -> True) -> pure $ a & exhaustedL .~ False
-  Exhaust (isTarget a -> True) -> pure $ a & exhaustedL .~ True
-  ExhaustThen (isTarget a -> True) msgs -> do
-    unless eventExhausted $ pushAll msgs
+  Exhaust ea | a `isTarget` ea.target -> do
+    unless eventExhausted $ pushAll ea.thenMsgs
     pure $ a & exhaustedL .~ True
   PayCardCost _ card _ | toCardId a == toCardId card -> do
     pure $ a & beingPaidForL .~ True
@@ -175,6 +170,19 @@ runEventMessage msg a@EventAttrs {..} = runQueueT $ case msg of
           DevourThis {} -> cur
           _ -> n
         _ -> cur
+      afterPlay = foldl' modifyAfterPlay eventAfterPlay mods
+    case afterPlay of
+      DeferDiscard -> pure ()
+      _ -> push $ Do (FinishedEvent eid)
+    pure a
+  Do (FinishedEvent eid) | eid == eventId -> do
+    mods <- liftA2 (<>) (getModifiers eid) (getModifiers $ toCardId $ toCard a)
+    let
+      modifyAfterPlay cur = \case
+        SetAfterPlay n -> case cur of
+          DevourThis {} -> cur
+          _ -> n
+        _ -> cur
 
       afterPlay = foldl' modifyAfterPlay eventAfterPlay mods
 
@@ -184,10 +192,10 @@ runEventMessage msg a@EventAttrs {..} = runQueueT $ case msg of
       then push $ RemoveEvent $ toId a
       else case eventPlacement of
         Limbo -> case afterPlay of
-          PlaceThisBeneath target -> pushAll [after, PlaceUnderneath target [toCard a]]
-          DiscardThis -> pushAll [after, toDiscardBy eventController GameSource a]
+          PlaceThisBeneath target -> pushAll [after, PlaceUnderneath target [toCard a], RemovedFromPlay (toSource a)]
+          DiscardThis -> Lifted.batched \_ -> pushAll [after, toDiscardBy eventController GameSource a]
           ExileThis -> pushAll [after, Exile (toTarget a)]
-          DeferDiscard -> push after
+          DeferDiscard -> pushAll [after, toDiscardBy eventController GameSource a]
           RemoveThisFromGame -> push (RemoveEvent $ toId a)
           AbsoluteRemoveThisFromGame -> push (RemoveEvent $ toId a)
           ShuffleThisBackIntoDeck -> push (ShuffleIntoDeck (Deck.InvestigatorDeck eventController) (toTarget a))
@@ -197,13 +205,13 @@ runEventMessage msg a@EventAttrs {..} = runQueueT $ case msg of
             push $ Devoured iid' c
             push $ RemovedFromPlay (toSource a)
         _ -> case afterPlay of
-          PlaceThisBeneath target -> pushAll [PlaceUnderneath target [toCard a]]
+          PlaceThisBeneath target -> pushAll [PlaceUnderneath target [toCard a], RemovedFromPlay (toSource a)]
           AbsoluteRemoveThisFromGame -> push (RemoveEvent $ toId a)
           DevourThis iid' -> do
             c <- field EventCard a.id
             push $ Devoured iid' c
             push $ RemovedFromPlay (toSource a)
-          _ -> pushAll [after] -- Changed to allow Fast Cards to be played
+          _ -> pushAll [after]
     pure a
   After (Revelation _iid (isSource a -> True)) -> do
     result <- liftRunMessage (FinishedEvent a.id) a
@@ -282,37 +290,41 @@ runEventMessage msg a@EventAttrs {..} = runQueueT $ case msg of
         Lifted.checkAfter $ Window.PlacedToken source target tType n
         when (tType == Doom && a.doom == 0) do
           Lifted.checkAfter $ Window.PlacedDoomCounterOnTargetWithNoDoom source target n
-    if tokenIsUse tType
-      then case eventPrintedUses of
-        NoUses -> do
+    if
+      | tokenIsUse tType -> case eventPrintedUses of
+          NoUses -> do
+            handleWindows
+            pure $ a & tokensL . at tType . non 0 %~ (+ n)
+          Uses useType'' _ | tType == useType'' -> do
+            handleWindows
+            pure $ a & tokensL . at tType . non 0 %~ (+ n)
+          UsesWithLimit useType'' _ pl | tType == useType'' -> do
+            handleWindows
+            l <- calculate pl
+            pure $ a & tokensL . at tType . non 0 %~ min l . (+ n)
+          _ ->
+            error
+              $ "Trying to add the wrong use type, has "
+              <> show eventPrintedUses
+              <> ", but got: "
+              <> show tType
+      | tType == Doom -> do
           handleWindows
-          pure $ a & tokensL . at tType . non 0 %~ (+ n)
-        Uses useType'' _ | tType == useType'' -> do
+          pure $ a & tokensL %~ addTokens Doom n
+      | otherwise -> do
+          pushWhen (tType == Horror) $ checkDefeated source a
           handleWindows
-          pure $ a & tokensL . at tType . non 0 %~ (+ n)
-        UsesWithLimit useType'' _ pl | tType == useType'' -> do
-          handleWindows
-          l <- calculate pl
-          pure $ a & tokensL . at tType . non 0 %~ min l . (+ n)
-        _ ->
-          error
-            $ "Trying to add the wrong use type, has "
-            <> show eventPrintedUses
-            <> ", but got: "
-            <> show tType
-      else do
-        pushWhen (tType == Horror) $ checkDefeated source a
-        handleWindows
-        pure $ a & tokensL %~ addTokens tType n
+          pure $ a & tokensL %~ addTokens tType n
   UseAbility _ ab _ | isSource a ab.source || isProxySource a ab.source -> do
     push $ Do msg
     pure a
   InSearch msg'@(UseAbility _ ab _) | isSource a ab.source || isProxySource a ab.source -> do
     push $ Do msg'
     pure a
-  InDiscard iid msg'@(UseAbility iid' ab _) | iid == iid' && (isSource a ab.source || isProxySource a ab.source) -> do
-    push $ Do msg'
-    pure a
+  -- NOTE: No InDiscard UseAbility handler here. In-discard entities also receive the raw message
+  -- (see RunMessage Game in Game/Runner.hs), so the bare `UseAbility` handler above already fires
+  -- for them. Adding an InDiscard handler would push `Do (UseAbility)` twice and resolve the
+  -- ability (and pay its cost) twice — see issue #4764 (Parallel Wendy's Amulet + Intel Report).
   InHand iid msg'@(UseAbility iid' ab _) | iid == iid' && (isSource a ab.source || isProxySource a ab.source) -> do
     push $ Do msg'
     pure a
@@ -326,4 +338,10 @@ runEventMessage msg a@EventAttrs {..} = runQueueT $ case msg of
       OutOfGame p@(AtLocation lid') | lid' == lid -> pure $ a & placementL .~ p
       OutOfGame p@(AttachedToLocation lid') | lid' == lid -> pure $ a & placementL .~ p
       _ -> pure a
+  UpdateEventMeta eid value | eid == eventId -> do
+    pure $ a & metaL .~ value
+  BeforePlayEvent _ eid acId | eid == eventId -> do
+    -- Default: no pre-play questions; resume the cost pipeline immediately
+    push $ CreatedCost acId
+    pure a
   _ -> pure a

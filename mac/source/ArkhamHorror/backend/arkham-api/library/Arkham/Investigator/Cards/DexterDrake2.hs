@@ -25,17 +25,16 @@ instance HasAbilities DexterDrake2 where
     [ playerLimit PerRound
         $ selfAbility_ a 1
         $ triggered_
-          ( PlayAsset #after You
-              $ oneOf
-                [ AssetWithDifferentTitleFromAtLeastOneCardInHand
-                    You
-                    (PlayableCard (UnpaidCost NoAction) #asset)
-                    AnyAsset
-                , AssetWithDifferentTitleFromAtLeastOneOtherAsset
-                    PlayedAsset
-                    (AssetNonStory <> AssetControlledBy You <> AssetCanLeavePlayByNormalMeans)
-                ]
-          )
+        $ PlayAsset #after You
+        $ oneOf
+          [ AssetWithDifferentTitleFromAtLeastOneCardInHand
+              You
+              (PlayableCard (UnpaidCost NoAction) #asset)
+              AnyAsset
+          , AssetWithDifferentTitleFromAtLeastOneOtherAsset
+              PlayedAsset
+              (AssetNonStory <> AssetControlledBy You <> AssetCanLeavePlayByNormalMeans)
+          ]
     ]
 
 instance HasChaosTokenValue DexterDrake2 where
@@ -50,9 +49,9 @@ instance RunMessage DexterDrake2 where
       assets <-
         select
           $ AssetNonStory
-          <> not_ (AssetWithTitle assetName.title)
           <> assetControlledBy iid
           <> AssetCanLeavePlayByNormalMeans
+          <> not_ (AssetWithId aid)
       cards <-
         select
           $ PlayableCard (UnpaidCost NoAction)

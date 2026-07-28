@@ -1,0 +1,203 @@
+{
+  "toastTitle": "成就已解锁！",
+  "tabTitle": "成就",
+  "pageTitle": "成就",
+  "gameDeleted": "（游戏已删除）",
+  "viewGame": "查看游戏",
+  "settingsToggleTitle": "成就追踪",
+  "settingsToggleDescription": "游玩时追踪本战役的官方成就。解锁记录会保存到你的账号，并显示在战役日志中。",
+  "noneEarnedYet": "尚未解锁成就。",
+  "campaigns": {
+    "50": "重返狂热之夜",
+    "51": "重返敦威治遗产",
+    "52": "重返卡尔克萨之路"
+  },
+  "entries": {
+    "TheZealotsRevenge": {
+      "name": "狂信徒的复仇",
+      "text": "由莉塔·钱德勒的反应能力对食尸鬼祭司造成致命一击。"
+    },
+    "IDontTrustHer": {
+      "name": "我不信任她",
+      "text": "在可以将莉塔·钱德勒加入牌组时，拒绝将她加入。"
+    },
+    "InsuranceDoesntCoverGhouls": {
+      "name": "保险不赔食尸鬼",
+      "text": "在聚集之地中烧毁你的房子。"
+    },
+    "ButDoIHaveTo": {
+      "name": "……但我非得这么做吗？",
+      "text": "在午夜假面中，让每位调查员在前三轮都留在你的房子。"
+    },
+    "ConspiracyOfSilence": {
+      "name": "沉默的阴谋",
+      "text": "在午夜假面中找到并审问全部六名独特异教徒。"
+    },
+    "TourOfArkham": {
+      "name": "阿卡姆观光",
+      "text": "在午夜假面中触发场上所有地点的每局一次能力。"
+    },
+    "DoYouGetItNow": {
+      "name": "现在明白了吗？",
+      "text": "在比利·库珀所在地击败食尸鬼祭司，以触发他的强制能力。"
+    },
+    "PinchHitter": {
+      "name": "代打击球手",
+      "text": "用一根未损坏的棒球棍击败三名食尸鬼敌人。"
+    },
+    "EvenDeathMayDie": {
+      "name": "即便死亡亦会消逝",
+      "text": "在尘世终焉之窖附加于乌默尔多斯时击败它。"
+    },
+    "BreakTheCircle": {
+      "name": "打破仪式",
+      "text": "在乌默尔多斯未生成的情况下完成地底噬魔。"
+    },
+    "TheyreJustMisunderstood": {
+      "name": "它们只是被误解了",
+      "text": "在未击败任何独特异教徒敌人的情况下赢得狂热之夜战役。"
+    },
+    "UmordhothsFavor": {
+      "name": "乌默尔多斯的眷顾",
+      "text": "在未击败任何食尸鬼敌人的情况下赢得狂热之夜战役。"
+    },
+    "ZealotLineInTheSand": {
+      "name": "底线",
+      "text": "启用至少三条终极挑战并赢得狂热之夜战役。"
+    },
+    "ArkhamExpertise": {
+      "name": "阿卡姆专家",
+      "text": "以专家难度赢得狂热之夜战役。"
+    },
+    "WhatIsThisStuffAnyway": {
+      "name": "这东西到底是什么？",
+      "text": "在课外活动中使用炼金混合物击败实验体。"
+    },
+    "NoVoidForYou": {
+      "name": "不准进虚空",
+      "text": "在从未击败猎杀恐魔的情况下完成博物馆之夜。"
+    },
+    "FirstRuleOfArkham": {
+      "name": "阿卡姆第一法则",
+      "text": "在博物馆之夜中烧毁《死灵之书》。"
+    },
+    "AllAboard": {
+      "name": "全员上车",
+      "text": "在没有任何无助乘客离场的情况下完成疯狂列车。"
+    },
+    "TheGangsAllHere": {
+      "name": "人都到齐了",
+      "text": "在幸存者中，让亨利·阿米蒂奇博士、弗朗西斯·摩根博士、沃伦·莱斯教授、泽布伦·沃特利和厄尔·索耶全部活过敦威治遗产。"
+    },
+    "NoBroodLeftBehind": {
+      "name": "一个子嗣也不能少",
+      "text": "在无人知晓中不让任何犹格·索托斯之子逃入荒野。"
+    },
+    "RemindMeNotToPissHerOff": {
+      "name": "提醒我别惹她",
+      "text": "在娜奥米·奥班尼恩受你控制时，击败任一版本的赛斯·毕晓普。"
+    },
+    "Eureka": {
+      "name": "找到了！",
+      "text": "鉴定奇怪溶液。"
+    },
+    "BeyondWhatVeil": {
+      "name": "什么帷幕？",
+      "text": "承受来自越过帷幕的 10 点伤害且未被击败。"
+    },
+    "HereWeGoAgain": {
+      "name": "又来一次",
+      "text": "让亨利·阿米蒂奇博士、弗朗西斯·摩根博士和沃伦·莱斯教授同时在场。"
+    },
+    "BirdHunting": {
+      "name": "猎鸟",
+      "text": "在一个回合中击败三只夜鹰。"
+    },
+    "TheyArentGettingAwayWithThis": {
+      "name": "这事不能就这么算了",
+      "text": "使用“灰堆”皮特赢得敦威治遗产战役，并让杜克被列在“献祭给犹格·索托斯”之下。"
+    },
+    "TabulaRasa": {
+      "name": "一片空白",
+      "text": "在混乱袋中没有石板或远古之物标记的情况下赢得敦威治遗产战役。"
+    },
+    "DunwichLineInTheSand": {
+      "name": "底线",
+      "text": "启用至少三条终极挑战并赢得敦威治遗产战役。"
+    },
+    "DunwichExpertise": {
+      "name": "敦威治专家",
+      "text": "以专家难度赢得敦威治遗产战役。"
+    },
+    "FairWarning": {
+      "name": "公平警告",
+      "text": "在一次谢幕中击败王室使者三次。"
+    },
+    "FirstSteps": {
+      "name": "初次接触",
+      "text": "在最后的王者中，采访康斯坦斯·迪梅因、乔丹·佩里、石丸晴子、塞巴斯蒂安·莫罗和阿什莉·克拉克。"
+    },
+    "CrashingTheParty": {
+      "name": "不速之客",
+      "text": "在最后的王者中击败疯狂版本的黛安娜·迪瓦恩。"
+    },
+    "ForPryingEyes": {
+      "name": "供窥探之眼所见",
+      "text": "在往事回声中将隐藏图书馆加入胜利牌区。"
+    },
+    "TheCuckoosNest": {
+      "name": "疯人院",
+      "text": "在邪秽誓约中，让一名调查员控制丹尼尔·切斯特菲尔德并撤退。"
+    },
+    "TakeALookAtThis": {
+      "name": "看看这个！",
+      "text": "在邪秽誓约中与疯狂宿主谈判。"
+    },
+    "ThePathOfDeath": {
+      "name": "死亡之路",
+      "text": "在苍白面具中使用黑玛瑙扣环找到捷径。"
+    },
+    "GuessingGame": {
+      "name": "猜谜游戏",
+      "text": "在黑星升起中，先将一副密谋牌库推进到最终密谋，再推进另一副密谋牌库的第一张密谋。"
+    },
+    "HasturMadeMeDoIt": {
+      "name": "哈斯塔逼我做的",
+      "text": "在一张附身诡计位于你手牌中时，于黯淡的卡尔克萨击败哈斯塔。"
+    },
+    "SayMyName": {
+      "name": "说出我的名字",
+      "text": "听从丹尼尔的警告后，在同一剧本或其设置期间大声说出“哈斯塔”至少七次。"
+    },
+    "GetBackHere": {
+      "name": "给我回来",
+      "text": "赢得卡尔克萨之路战役，且从未在苍白面具人仍在场时结束剧本。"
+    },
+    "ThePathIsFalse": {
+      "name": "这条道路是虚假的",
+      "text": "以 8 点怀疑赢得卡尔克萨之路战役。"
+    },
+    "ThePathIsReal": {
+      "name": "这条道路是真实的",
+      "text": "以 8 点信服赢得卡尔克萨之路战役。"
+    },
+    "ThePathIsMine": {
+      "name": "这条道路属于我",
+      "text": "在怀疑与信服合计少于 2 点时赢得卡尔克萨之路战役。"
+    },
+    "CarcosaLineInTheSand": {
+      "name": "底线",
+      "text": "启用至少三条终极挑战并赢得卡尔克萨之路战役。"
+    },
+    "CarcosaExpertise": {
+      "name": "卡尔克萨专家",
+      "text": "以专家难度赢得卡尔克萨之路战役。"
+    }
+  },
+  "clearAll": "清除全部",
+  "clearCampaign": "清除本战役",
+  "clearOne": "清除此成就",
+  "clearAllConfirm": "确定清除全部已解锁成就吗？此操作无法撤销。",
+  "clearCampaignConfirm": "确定清除{campaign}的全部已解锁成就吗？此操作无法撤销。",
+  "clearOneConfirm": "确定清除成就“{name}”吗？此操作无法撤销。"
+}

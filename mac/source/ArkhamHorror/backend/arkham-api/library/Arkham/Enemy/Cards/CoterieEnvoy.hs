@@ -4,7 +4,7 @@ import Arkham.Ability
 import Arkham.Campaigns.TheScarletKeys.Concealed.Helpers
 import Arkham.Campaigns.TheScarletKeys.Modifiers (pattern NoExposeAt)
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Helpers.Modifiers (modified_)
 import Arkham.Matcher
@@ -14,7 +14,7 @@ newtype CoterieEnvoy = CoterieEnvoy EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 coterieEnvoy :: EnemyCard CoterieEnvoy
-coterieEnvoy = enemy CoterieEnvoy Cards.coterieEnvoy (2, Static 3, 2) (1, 0)
+coterieEnvoy = enemy CoterieEnvoy Cards.coterieEnvoy
 
 instance HasModifiersFor CoterieEnvoy where
   getModifiersFor (CoterieEnvoy a) = do

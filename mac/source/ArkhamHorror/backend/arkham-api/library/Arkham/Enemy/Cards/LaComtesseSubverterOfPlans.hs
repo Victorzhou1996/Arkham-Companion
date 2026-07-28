@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.LaComtesseSubverterOfPlans (laComtesseSubverterOfPlans
 import Arkham.Ability
 import Arkham.Card
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.Modifiers (ModifierType (..), modified_)
 import Arkham.Matcher
 import Arkham.Message.Lifted.Placement
@@ -14,7 +14,7 @@ newtype LaComtesseSubverterOfPlans = LaComtesseSubverterOfPlans EnemyAttrs
 
 laComtesseSubverterOfPlans :: EnemyCard LaComtesseSubverterOfPlans
 laComtesseSubverterOfPlans =
-  enemy LaComtesseSubverterOfPlans Cards.laComtesseSubverterOfPlans (1, Static 3, 3) (0, 1)
+  enemy LaComtesseSubverterOfPlans Cards.laComtesseSubverterOfPlans
     & setSpawnAt "Balcony"
 
 instance HasModifiersFor LaComtesseSubverterOfPlans where
@@ -28,7 +28,7 @@ instance HasAbilities LaComtesseSubverterOfPlans where
   getAbilities (LaComtesseSubverterOfPlans a) =
     extend
       a
-      [ mkAbility a 1 $ forced $ EnemyDefeated #after You ByAny (be a)
+      [ mkAbility a 1 $ forced $ IfEnemyDefeated #after You ByAny (be a)
       , playerLimit PerPhase $ restricted a 2 (InYourHand <> DuringPhase #upkeep) $ forced $ DiscardedFromHand #after You #any #any
       ]
 

@@ -11,7 +11,7 @@ newtype YourWorstNightmare = YourWorstNightmare EnemyAttrs
 
 yourWorstNightmare :: EnemyCard YourWorstNightmare
 yourWorstNightmare =
-  enemy YourWorstNightmare Cards.yourWorstNightmare (2, Static 3, 2) (0, 2) & setPreyIsOnlyBearer
+  enemy YourWorstNightmare Cards.yourWorstNightmare & setPreyIsOnlyBearer
 
 instance HasModifiersFor YourWorstNightmare where
   getModifiersFor (YourWorstNightmare a) = do
@@ -19,8 +19,8 @@ instance HasModifiersFor YourWorstNightmare where
       modified_ a iid [CannotPerformAction $ EnemyAction #fight $ EnemyWithId a.id]
       modifySelf
         a
-        [ CannotBeDamagedByPlayerSources (SourceOwnedBy $ InvestigatorWithId iid)
-        , CanOnlyBeDefeatedBy (NotSource $ SourceOwnedBy $ InvestigatorWithId iid)
+        [ CannotBeDamagedByPlayerSources (SourceUsedBy $ InvestigatorWithId iid)
+        , CanOnlyBeDefeatedBy (NotSource $ SourceUsedBy $ InvestigatorWithId iid)
         ]
 
 instance RunMessage YourWorstNightmare where

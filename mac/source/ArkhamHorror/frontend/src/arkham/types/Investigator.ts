@@ -23,12 +23,14 @@ type Form
   = { tag: 'RegularForm' }
   | { tag: 'YithianForm' }
   | { tag: 'HomunculusForm' }
+  | { tag: 'ShatteredForm' }
   | { tag: 'TransfiguredForm', contents: string }
 
 export const formDecoder = JsonDecoder.oneOf<Form>([
   JsonDecoder.object({ tag: JsonDecoder.literal('RegularForm') }, 'RegularForm'),
   JsonDecoder.object({ tag: JsonDecoder.literal('YithianForm') }, 'YithianForm'),
   JsonDecoder.object({ tag: JsonDecoder.literal('HomunculusForm') }, 'HomunculusForm'),
+  JsonDecoder.object({ tag: JsonDecoder.literal('ShatteredForm') }, 'ShatteredForm'),
   JsonDecoder.object({ tag: JsonDecoder.literal('TransfiguredForm'), contents: JsonDecoder.string() }, 'TransfiguredForm'),
 ], 'Form');
 
@@ -95,12 +97,20 @@ export type InvestigatorDetails = {
 //   deriving stock (Show, Eq, Generic, Data)
 //   deriving anyclass (ToJSON, FromJSON)
 
+export type AbilityTriggerMode =
+  | 'AbilityOwnerOnly'
+  | 'AbilityAlwaysAsk'
+  | 'AbilityAutoSkip';
+
 type CardSettings = {
   globalSettings: {
     ignoreUnrelatedSkillTestTriggers: boolean;
   };
   perCardSettings: Record<string, {
     cardIgnoreUnrelatedSkillTestTriggers: boolean;
+    cardIgnoreDuringSkillTests?: boolean;
+    cardAttachments?: string[];
+    cardAbilityModes?: Record<string, AbilityTriggerMode>;
   }>;
 }
 
@@ -110,6 +120,13 @@ export const cardSettingsDecoder = JsonDecoder.object<CardSettings>({
   }, 'GlobalSettings'),
   perCardSettings: JsonDecoder.record(JsonDecoder.object({
     cardIgnoreUnrelatedSkillTestTriggers: JsonDecoder.boolean(),
+    cardIgnoreDuringSkillTests: v2Optional(JsonDecoder.boolean()),
+    cardAttachments: v2Optional(JsonDecoder.array<string>(JsonDecoder.string(), 'string[]')),
+    cardAbilityModes: v2Optional(JsonDecoder.record(JsonDecoder.oneOf<AbilityTriggerMode>([
+      JsonDecoder.literal('AbilityOwnerOnly'),
+      JsonDecoder.literal('AbilityAlwaysAsk'),
+      JsonDecoder.literal('AbilityAutoSkip'),
+    ], 'AbilityTriggerMode'), 'Dict<string, AbilityTriggerMode>')),
   }, 'PerCardSettings'), 'Dict<string, PerCardSettings>'),
 }, 'CardSettings');
 

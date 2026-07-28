@@ -2,7 +2,7 @@ module Arkham.Asset.Assets.BoxingGloves3 (boxingGloves3) where
 
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
-import Arkham.Asset.Runner hiding (EnemyDefeated)
+import Arkham.Asset.Runner
 import Arkham.Helpers.Modifiers
 import Arkham.Matcher
 import Arkham.Prelude
@@ -20,7 +20,7 @@ instance HasModifiersFor BoxingGloves3 where
 
 instance HasAbilities BoxingGloves3 where
   getAbilities (BoxingGloves3 a) =
-    [restricted a 1 ControlsThis $ triggered (EnemyDefeated #after You ByAny AnyEnemy) (exhaust a)]
+    [restricted a 1 ControlsThis $ triggered (IfEnemyDefeated #after You ByAny AnyEnemy) (exhaust a)]
 
 instance RunMessage BoxingGloves3 where
   runMessage msg a@(BoxingGloves3 attrs) = case msg of

@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.DanforthBrilliantStudent (danforthBrilliantStudent) wh
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Matcher
 
@@ -12,7 +12,7 @@ newtype DanforthBrilliantStudent = DanforthBrilliantStudent EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 danforthBrilliantStudent :: EnemyCard DanforthBrilliantStudent
-danforthBrilliantStudent = enemy DanforthBrilliantStudent Cards.danforthBrilliantStudent (2, Static 2, 4) (0, 2)
+danforthBrilliantStudent = enemy DanforthBrilliantStudent Cards.danforthBrilliantStudent
 
 instance HasAbilities DanforthBrilliantStudent where
   getAbilities (DanforthBrilliantStudent a) =

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { LottieAnimation } from "lottie-web-vue"
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import processingJSON from "@/assets/processing.json"
 import { ref, provide, watch, computed, onMounted, onUnmounted } from 'vue'
 import * as Arkham from '@/arkham/types/Game'
@@ -16,6 +17,7 @@ export interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 const debug = ref(false)
 provide('debug', debug)
 const ready = ref(false)
@@ -26,7 +28,7 @@ const totalSteps = ref(0)
 const gameOver = computed(() => game.value?.gameState.tag === "IsOver")
 const campaignLog = computed(() => game.value?.campaign?.log)
 const recorded = computed(() => campaignLog.value?.recorded ?? [])
-const recordedSets = computed(() => campaignLog.value?.recordedSets ?? [])
+const recordedSets = computed<[string, unknown[]][]>(() => Object.entries(campaignLog.value?.recordedSets ?? {}))
 const processing = ref(false)
 const play = ref(false)
 
@@ -89,6 +91,7 @@ watch (play, (newPlay) => {
     clearInterval(interval.value)
   }
 })
+onUnmounted(() => clearInterval(interval.value))
 
 </script>
 
@@ -106,6 +109,7 @@ watch (play, (newPlay) => {
       <Campaign
         v-if="game.campaign"
         :game="game"
+        :campaign="game.campaign"
         :gameLog="gameLog"
         :playerId="playerId"
       />
@@ -120,25 +124,25 @@ watch (play, (newPlay) => {
         <CardOverlay />
         <GameLog :game="game" :gameLog="gameLog" />
         <div class="controls">
-          <button v-tooltip="'Restart'" :disabled="processing" @click="restart"><BackspaceIcon size="25" /></button>
-          <button v-tooltip="'Step back'" :disabled="processing" @click="goBack"><BackwardIcon size="25" /></button>
-          <button v-tooltip="'Play'" v-if="!play" @click="play = true"><PlayIcon size="25" /></button>
-          <button v-tooltip="'Stop'" v-else @click="play = false"><StopIcon size="25" /></button>
-          <button v-tooltip="'Step forward'" :disabled="processing" @click="goForward"><ForwardIcon size="25" /></button>
+          <button v-tooltip="t('replay.restart')" :disabled="processing" @click="restart"><BackspaceIcon size="25" /></button>
+          <button v-tooltip="t('replay.stepBack')" :disabled="processing" @click="goBack"><BackwardIcon size="25" /></button>
+          <button v-tooltip="t('replay.play')" v-if="!play" @click="play = true"><PlayIcon size="25" /></button>
+          <button v-tooltip="t('replay.stop')" v-else @click="play = false"><StopIcon size="25" /></button>
+          <button v-tooltip="t('replay.stepForward')" :disabled="processing" @click="goForward"><ForwardIcon size="25" /></button>
         </div>
         <div class="steps">
           <p>{{currentStep}} / {{totalSteps}}</p>
         </div>
       </div>
       <div v-if="gameOver">
-        <p>Game over</p>
+        <p>{{ $t('game.gameOver') }}</p>
 
-        <div v-for="entry in recorded" :key="entry">
+        <div v-for="entry in recorded" :key="entry.tag">
           {{entry}}
         </div>
 
-        <div v-for="(entry, idx) in recordedSets" :key="idx">
-          {{(entry as any[])[0]}}: {{(entry as any[])[1].join(", ")}}
+        <div v-for="[key, entries] in recordedSets" :key="key">
+          {{key}}: {{entries.join(", ")}}
         </div>
       </div>
     </div>
@@ -163,7 +167,7 @@ watch (play, (newPlay) => {
   width: 100%;
   height: 100%;
   display: flex;
-  z-index: 100;
+  z-index: var(--z-index-100);
 
   justify-content: center;
   align-items: center;
@@ -187,7 +191,7 @@ watch (play, (newPlay) => {
 }
 
 .processing {
-  z-index: 1000;
+  z-index: var(--z-index-1000);
   position: absolute;
   top: 45px;
   left: 00px;

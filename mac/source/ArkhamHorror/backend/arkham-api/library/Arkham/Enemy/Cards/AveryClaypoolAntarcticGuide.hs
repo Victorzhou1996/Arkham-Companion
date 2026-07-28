@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.AveryClaypoolAntarcticGuide (averyClaypoolAntarcticGui
 import Arkham.Ability
 import Arkham.Campaigns.EdgeOfTheEarth.Helpers
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Helpers.SkillTest.Lifted (parley)
 import Arkham.Matcher
@@ -14,7 +14,7 @@ newtype AveryClaypoolAntarcticGuide = AveryClaypoolAntarcticGuide EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 averyClaypoolAntarcticGuide :: EnemyCard AveryClaypoolAntarcticGuide
-averyClaypoolAntarcticGuide = enemy AveryClaypoolAntarcticGuide Cards.averyClaypoolAntarcticGuide (1, Static 3, 3) (2, 1)
+averyClaypoolAntarcticGuide = enemy AveryClaypoolAntarcticGuide Cards.averyClaypoolAntarcticGuide
 
 instance HasAbilities AveryClaypoolAntarcticGuide where
   getAbilities (AveryClaypoolAntarcticGuide a) =

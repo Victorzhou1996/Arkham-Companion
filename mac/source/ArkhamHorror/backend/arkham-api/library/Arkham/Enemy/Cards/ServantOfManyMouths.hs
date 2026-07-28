@@ -3,7 +3,7 @@ module Arkham.Enemy.Cards.ServantOfManyMouths (servantOfManyMouths) where
 import Arkham.Ability
 import Arkham.Discover
 import Arkham.Enemy.Cards qualified as Cards
-import Arkham.Enemy.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Enemy.Import.Lifted
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 
@@ -13,7 +13,7 @@ newtype ServantOfManyMouths = ServantOfManyMouths EnemyAttrs
 
 servantOfManyMouths :: EnemyCard ServantOfManyMouths
 servantOfManyMouths =
-  enemy ServantOfManyMouths Cards.servantOfManyMouths (3, Static 2, 1) (2, 0)
+  enemy ServantOfManyMouths Cards.servantOfManyMouths
     & setSpawnAt EmptyLocation
 
 instance HasAbilities ServantOfManyMouths where

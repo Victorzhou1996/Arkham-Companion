@@ -15,6 +15,7 @@ import Arkham.EncounterSet (EncounterSet)
 import Arkham.EncounterSet qualified as EncounterSet
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.ChaosBag
+import Arkham.Helpers.ChaosToken
 import Arkham.Helpers.Cost
 import Arkham.Helpers.Investigator qualified as Helpers
 import Arkham.Helpers.Modifiers
@@ -25,12 +26,12 @@ import Arkham.Helpers.SkillTest
 import Arkham.Helpers.Tarot
 import Arkham.Helpers.Window (checkWindows)
 import Arkham.History
+import Arkham.I18n (countVar, ikey', withI18n)
 import Arkham.Id
 import Arkham.Investigator.Types qualified as Field
 import Arkham.Matcher qualified as Matcher
 import Arkham.Message
 import Arkham.Message.Lifted qualified as Lifted
-import Arkham.Modifier
 import Arkham.Name
 import Arkham.Prelude
 import Arkham.Projection
@@ -40,6 +41,7 @@ import Arkham.Slot
 import Arkham.Tarot
 import Arkham.Tracing
 import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.UltimatumsAndBoons (runUltimatumsAndBoonsMessage)
 import Arkham.Window (duringTurnWindow, mkWhen)
 import Arkham.Window qualified as Window
 import Data.Map.Strict qualified as Map
@@ -292,7 +294,7 @@ instance RunMessage Scenario where
               enabled <- costModifier source investigator (ReduceCostOf (Matcher.CardWithId $ toCardId c) 2)
               pure $ targetLabel c [enabled, PayCardCost investigator c [duringTurnWindow investigator]]
 
-            pure $ Just $ chooseOne player $ Label "Do not play asset" [] : choices
+            pure $ Just $ chooseOne player $ Label "$label.doNotPlayAsset" [] : choices
           pushAll msgs
           pure x
         UseAbility _ (isTarotSource -> True) _ -> do
@@ -375,15 +377,15 @@ instance RunMessage Scenario where
               canHealHorror <- Helpers.canHaveHorrorHealed source iid
               push
                 $ chooseOne player
-                $ Label "Skip" []
+                $ Label "$label.skip" []
                 : [DamageLabel iid [HealDamage (toTarget iid) source 1] | canHealDamage]
                   <> [HorrorLabel iid [HealHorror (toTarget iid) source 1] | canHealHorror]
             Reversed -> do
               push
                 $ chooseOne
                   player
-                  [ Label "Take 1 damage" [assignDamage iid source 1]
-                  , Label "Take 1 horror" [assignHorror iid source 1]
+                  [ Label (withI18n $ countVar 1 $ ikey' "label.takeDamage") [assignDamage iid source 1]
+                  , Label (withI18n $ countVar 1 $ ikey' "label.takeHorror") [assignHorror iid source 1]
                   ]
           pure x
         UseCardAbility
@@ -404,10 +406,10 @@ instance RunMessage Scenario where
               $ chooseOne
                 player
                 [ Label
-                    "Shuffle the bottom 10 cards of your discard back into your Deck"
+                    (withI18n $ countVar (length cards) $ ikey' "label.shuffleBottomOfDiscardBackIntoDeck")
                     $ [IgnoreBatch batchId, ShuffleCardsIntoDeck (Deck.InvestigatorDeck iid) cards]
                     <> maybeToList mDrawing
-                , Label "Do Nothing" []
+                , Label "$label.doNothing" []
                 ]
             pure x
         UseThisAbility _ source@(TarotSource card@(TarotCard Reversed TheMoonXVIII)) 1 -> do
@@ -455,9 +457,9 @@ instance RunMessage Scenario where
 
               pushAll
                 $ [ chooseOne player
-                      $ [Label "Remove a physical trauma" [HealTrauma iid 1 0] | hasPhysical]
-                      <> [Label "Remove a mental trauma" [HealTrauma iid 0 1] | hasMental]
-                      <> [Label "Do not remove trauma" []]
+                      $ [Label "$label.removePhysicalTrauma" [HealTrauma iid 1 0] | hasPhysical]
+                      <> [Label "$label.removeMentalTrauma" [HealTrauma iid 0 1] | hasMental]
+                      <> [Label "$label.doNotRemoveTrauma" []]
                   | (iid, player, hasPhysical, hasMental) <- investigatorsWhoCanHealTrauma
                   ]
             Reversed -> do
@@ -467,8 +469,8 @@ instance RunMessage Scenario where
               pushAll
                 $ [ chooseOne
                       player
-                      [ Label "Suffer physical trauma" [SufferTrauma iid 1 0]
-                      , Label "Suffer mental trauma" [SufferTrauma iid 0 1]
+                      [ Label (withI18n $ countVar 1 $ ikey' "label.sufferPhysicalTrauma") [SufferTrauma iid 1 0]
+                      , Label (withI18n $ countVar 1 $ ikey' "label.sufferMentalTrauma") [SufferTrauma iid 0 1]
                       ]
                   | (iid, player) <- defeatedInvestigatorPlayers
                   ]
@@ -525,7 +527,12 @@ instance RunMessage Scenario where
               pushAll $ addToVictoryMsgs <> [whenEnd, msg]
               pure $ overAttrs (\a -> a & inResolutionL .~ True) x
             else clearQueue >> go
-        _ -> go
+        _ -> do
+          -- Ultimatums/Boons dispatch piggybacks on the scenario the same way
+          -- tarot cards do: they are not entities, so nothing else claims
+          -- their ability uses.
+          runUltimatumsAndBoonsMessage msg
+          go
    where
     go = Scenario <$> runMessage msg s
 
@@ -539,7 +546,7 @@ instance HasChaosTokenValue Scenario where
           CurseToken -> pure $ ChaosTokenValue chaosTokenFace (NegativeModifier 2)
           BlessToken -> pure $ ChaosTokenValue chaosTokenFace (PositiveModifier 2)
           FrostToken -> do
-            revealed <- map (.face) <$> getSkillTestRevealedChaosTokens
+            revealed <- getModifiedChaosTokenFaces =<< getSkillTestRevealedChaosTokens
             pure
               $ ChaosTokenValue chaosTokenFace
               $ if count (== #frost) revealed == 2 then AutoFailModifier else NegativeModifier 1
@@ -573,7 +580,7 @@ allScenarioCards =
     (normalizeCardCode c, scenarioCard (normalizeCardCode c) name ecSet)
 
 duplicatedScenarios :: [CardCode]
-duplicatedScenarios = ["04205a", "04205b", "08501c"]
+duplicatedScenarios = ["04205a", "04205b", "08501c", "10677a", "10679a", "10679b"]
 
 allScenarios :: Map CardCode SomeScenario
 allScenarios =
@@ -654,7 +661,16 @@ allScenarios =
     , ("09694", SomeScenario congressOfTheKeys)
     , ("10501", SomeScenario writtenInRock)
     , ("10502", SomeScenario writtenInRock) -- duplicated for card view
+    , ("10523", SomeScenario hemlockHouse)
+    , ("10549", SomeScenario theSilentHeath)
+    , ("10569", SomeScenario theLostSister)
+    , ("10588", SomeScenario theThingInTheDepths)
     , ("10605", SomeScenario theTwistedHollow)
+    , ("10626", SomeScenario theLongestNight)
+    , ("10651", SomeScenario fateOfTheVale)
+    , ("10677a", SomeScenario preludeDawnOfTheSecondDay)
+    , ("10679a", SomeScenario preludeDawnOfTheFinalDay)
+    , ("10679b", SomeScenario preludeTheFinalEvening)
     , ("10704", SomeScenario preludeWelcomeToHemlockVale)
     , ("50011", SomeScenario returnToTheGathering)
     , ("50025", SomeScenario returnToTheMidnightMasks)
@@ -698,9 +714,36 @@ allScenarios =
     , ("72001", SomeScenario filmFatale)
     , ("81001", SomeScenario curseOfTheRougarou)
     , ("82001", SomeScenario carnevaleOfHorrors)
+    , ("83001", SomeScenario theEternalSlumber)
+    , ("83016", SomeScenario theNightsUsurper)
+    , ("85001", SomeScenario theBlobThatAteEverything)
+    , ("86001", SomeScenario warOfTheOuterGods)
+    , ("87001", SomeScenario machinationsThroughTime)
+    , ("70001", SomeScenario theLabyrinthsOfLunacy)
     , ("84001", SomeScenario murderAtTheExcelsiorHotel)
     , ("88001", SomeScenario fortuneAndFolly)
     , ("88001b", SomeScenario fortuneAndFollyPart2)
+    , ("12105", SomeScenario spreadingFlames)
+    , ("12133", SomeScenario smokeAndMirrors)
+    , ("12168", SomeScenario queenOfAsh)
+    , ("11501", SomeScenario oneLastJob)
+    , ("11517", SomeScenario theWesternWall)
+    , ("11536", SomeScenario theDrownedQuarter)
+    , ("11553", SomeScenario theApiary)
+    , ("11587", SomeScenario theGrandVault)
+    , ("11612", SomeScenario courtOfTheAncients)
+    , ("11639", SomeScenario obsidianCanyons)
+    , ("11673", SomeScenario sepulchreOfTheSleeper)
+    , ("11682", SomeScenario theDoomOfArkhamPartI)
+    , ("11688a", SomeScenario theDoomOfArkhamPartII)
+    , ("90032", SomeScenario byTheBook)
+    , ("90011", SomeScenario allOrNothing)
+    , ("90020", SomeScenario badBlood)
+    , ("90054", SomeScenario laidToRest)
+    , ("90094", SomeScenario enthrallingEncore)
+    , ("90004", SomeScenario readOrDie)
+    , ("90041", SomeScenario redTideRising)
+    , ("90065", SomeScenario relicsOfThePast)
     ]
 
 scenarioEncounterSets :: Map CardCode EncounterSet
@@ -782,7 +825,16 @@ scenarioEncounterSets =
     , ("09694", EncounterSet.CongressOfTheKeys)
     , ("10501", EncounterSet.WrittenInRock)
     , ("10502", EncounterSet.WrittenInRock)
+    , ("10523", EncounterSet.HemlockHouse)
+    , ("10549", EncounterSet.TheSilentHeath)
+    , ("10569", EncounterSet.TheLostSister)
+    , ("10588", EncounterSet.TheThingInTheDepths)
     , ("10605", EncounterSet.TheTwistedHollow)
+    , ("10626", EncounterSet.TheLongestNight)
+    , ("10651", EncounterSet.FateOfTheVale)
+    , ("10677a", EncounterSet.TheVale)
+    , ("10679a", EncounterSet.TheVale)
+    , ("10679b", EncounterSet.TheVale)
     , ("10704", EncounterSet.TheVale)
     , ("50011", EncounterSet.ReturnToTheGathering)
     , ("50025", EncounterSet.ReturnToTheMidnightMasks)
@@ -826,7 +878,34 @@ scenarioEncounterSets =
     , ("72001", EncounterSet.FilmFatale)
     , ("81001", EncounterSet.CurseOfTheRougarou)
     , ("82001", EncounterSet.CarnevaleOfHorrors)
+    , ("83001", EncounterSet.TheEternalSlumber)
+    , ("83016", EncounterSet.TheNightsUsurper)
+    , ("85001", EncounterSet.TheBlobThatAteEverything)
+    , ("86001", EncounterSet.WarOfTheOuterGods)
+    , ("87001", EncounterSet.MachinationsThroughTime)
+    , ("70001", EncounterSet.TheLabyrinthsOfLunacy)
     , ("84001", EncounterSet.MurderAtTheExcelsiorHotel)
     , ("88001", EncounterSet.FortuneAndFolly)
     , ("88001b", EncounterSet.FortuneAndFolly)
+    , ("12105", EncounterSet.SpreadingFlames)
+    , ("12133", EncounterSet.SmokeAndMirrors)
+    , ("12168", EncounterSet.QueenOfAsh)
+    , ("11501", EncounterSet.OneLastJob)
+    , ("11517", EncounterSet.TheWesternWall)
+    , ("11536", EncounterSet.TheDrownedQuarter)
+    , ("11553", EncounterSet.TheApiary)
+    , ("11587", EncounterSet.TheGrandVault)
+    , ("11612", EncounterSet.CourtOfTheAncients)
+    , ("11639", EncounterSet.ObsidianCanyons)
+    , ("11673", EncounterSet.SepulchreOfTheSleeper)
+    , ("11682", EncounterSet.TheDoomOfArkhamPartI)
+    , ("11688a", EncounterSet.TheDoomOfArkhamPartII)
+    , ("90032", EncounterSet.ByTheBook)
+    , ("90011", EncounterSet.AllOrNothing)
+    , ("90020", EncounterSet.BadBlood)
+    , ("90054", EncounterSet.LaidToRest)
+    , ("90094", EncounterSet.EnthrallingEncore)
+    , ("90004", EncounterSet.ReadOrDie)
+    , ("90041", EncounterSet.RedTideRising)
+    , ("90065", EncounterSet.RelicsOfThePast)
     ]

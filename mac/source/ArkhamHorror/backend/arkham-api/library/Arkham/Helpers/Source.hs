@@ -1,9 +1,10 @@
 module Arkham.Helpers.Source where
 
+import Arkham.Campaigns.TheScarletKeys.Key.Matcher
 import Arkham.Card
 import Arkham.Classes.HasGame
-import Arkham.Constants (notPlayerAbilityIndex)
 import Arkham.Classes.Query
+import Arkham.Constants (notPlayerAbilityIndex)
 import Arkham.Field.Import
 import {-# SOURCE #-} Arkham.GameEnv (getCard)
 import Arkham.Helpers.FetchCard
@@ -70,6 +71,7 @@ sourceTraits = \case
   YouSource -> selectJust Matcher.You >>= field InvestigatorTraits
   ScarletKeySource _ -> pure mempty
   ConcealedCardSource _ -> pure mempty
+  UltimatumOrBoonSource _ -> pure mempty
 
 getSourceController :: (HasGame m, Tracing m) => Source -> m (Maybe InvestigatorId)
 getSourceController = \case
@@ -79,7 +81,71 @@ getSourceController = \case
   EventSource eid -> selectEventController eid
   SkillSource sid -> selectSkillController sid
   InvestigatorSource iid -> pure $ Just iid
+  ElderSignEffectSource iid -> pure $ Just iid
   _ -> pure Nothing
+
+{- | Resolve which investigator(s) a source belongs to.
+
+When @creditUser@ is 'False' (the @SourceOwnedBy@ matcher) this is strict card
+ownership: an ability source resolves to the underlying card's controller/owner, so a
+location/encounter ability matches nobody.
+
+When @creditUser@ is 'True' (the @SourceUsedBy@ matcher) the investigator who *used* the
+ability is additionally credited, so effects performed via a location/encounter ability
+count for "you deal/heal/defeat" cards. See issue #4902.
+-}
+checkSourceOwner
+  :: (HasCallStack, HasGame m, Tracing m)
+  => Bool -> Matcher.InvestigatorMatcher -> Source -> m Bool
+checkSourceOwner creditUser whoMatcher = go
+ where
+  go = \case
+    AbilitySource source' n
+      | creditUser -> do
+          iid' <- getActiveInvestigatorId
+          go (UseAbilitySource iid' source' n)
+      | otherwise -> go source'
+    UseAbilitySource iid' source' _
+      | creditUser -> orM [elem iid' <$> select whoMatcher, go source']
+      | otherwise -> go source'
+    AssetSource aid ->
+      selectAssetController aid >>= \case
+        Just iid' -> elem iid' <$> select whoMatcher
+        _ -> pure False
+    EventSource eid -> do
+      selectEventController eid >>= \case
+        Just controllerId -> elem controllerId <$> select whoMatcher
+        Nothing -> do
+          -- event may have been discarded already
+          mOwner <- (toCardOwner =<<) <$> fieldMay EventCard eid
+          case mOwner of
+            Just owner -> elem owner <$> select whoMatcher
+            Nothing -> pure False
+    SkillSource sid -> do
+      selectSkillController sid >>= \case
+        Just controllerId -> elem controllerId <$> select whoMatcher
+        Nothing -> pure False
+    InvestigatorSource iid -> elem iid <$> select whoMatcher
+    ElderSignEffectSource iid -> elem iid <$> select whoMatcher
+    -- A Scarlet Key's effects belong to the investigator who bears/controls it,
+    -- so "card effect you control" (Carolyn Fern + The Last Blossom) resolves to
+    -- that investigator. See issue #4948.
+    ScarletKeySource sid -> do
+      owned <-
+        select $ ScarletKeyOneOf [ScarletKeyWithInvestigator whoMatcher, ScarletKeyWithBearer whoMatcher]
+      pure $ sid `elem` owned
+    CardIdSource cid -> do
+      c <- getCard cid
+      case toCardOwner c of
+        Nothing -> pure False
+        Just iid -> elem iid <$> select whoMatcher
+    CardCostSource cid -> do
+      c <- getCard cid
+      case toCardOwner c of
+        Nothing -> pure False
+        Just iid -> elem iid <$> select whoMatcher
+    PaymentSource s' -> go s'
+    _ -> pure False
 
 sourceMatches :: (HasCallStack, HasGame m, Tracing m) => Source -> Matcher.SourceMatcher -> m Bool
 sourceMatches s = \case
@@ -92,6 +158,17 @@ sourceMatches s = \case
   Matcher.NotSource matcher -> not <$> sourceMatches s matcher
   Matcher.SourceMatchesAny ms -> anyM (sourceMatches s) ms
   Matcher.SourceWithTrait t -> elem t <$> sourceTraits s
+  Matcher.SourceIsAbility ab ->
+    let
+      go = \case
+        AbilitySource s' n -> selectAny $ Matcher.AbilityIs s' n <> ab
+        UseAbilitySource _ s' n -> selectAny $ Matcher.AbilityIs s' n <> ab
+        IndexedSource _ s' -> go s'
+        ProxySource _ s' -> go s'
+        BothSource lSource rSource -> orM [go lSource, go rSource]
+        _ -> pure False
+     in
+      go s
   Matcher.SourceIsEnemyAttack em -> case s of
     EnemyAttackSource eid -> elem eid <$> select em
     _ -> pure False
@@ -134,40 +211,12 @@ sourceMatches s = \case
       isEventSource s
   Matcher.AnySource -> pure True
   Matcher.SourceMatches ms -> allM (sourceMatches s) ms
-  Matcher.SourceOwnedBy whoMatcher ->
-    let
-      checkSource = \case
-        AbilitySource source' n -> do
-          iid' <- getActiveInvestigatorId
-          checkSource (UseAbilitySource iid' source' n)
-        UseAbilitySource iid' source' _ -> orM [elem iid' <$> select whoMatcher, checkSource source']
-        AssetSource aid ->
-          selectAssetController aid >>= \case
-            Just iid' -> elem iid' <$> select whoMatcher
-            _ -> pure False
-        EventSource eid -> do
-          selectEventController eid >>= \case
-            Just controllerId -> elem controllerId <$> select whoMatcher
-            Nothing -> do
-              -- event may have been discarded already
-              mOwner <- (toCardOwner =<<) <$> fieldMay EventCard eid
-              case mOwner of
-                Just owner -> elem owner <$> select whoMatcher
-                Nothing -> pure False
-        SkillSource sid -> do
-          selectSkillController sid >>= \case
-            Just controllerId -> elem controllerId <$> select whoMatcher
-            Nothing -> pure False
-        InvestigatorSource iid -> elem iid <$> select whoMatcher
-        ElderSignEffectSource iid -> elem iid <$> select whoMatcher
-        CardIdSource cid -> do
-          c <- getCard cid
-          case toCardOwner c of
-            Nothing -> pure False
-            Just iid -> elem iid <$> select whoMatcher
-        _ -> pure False
-     in
-      checkSource s
+  -- SourceOwnedBy is strict card ownership: an ability source resolves to the underlying
+  -- card's controller/owner. SourceUsedBy additionally credits the investigator who used the
+  -- ability (the performer), so effects dealt/healed via a location/encounter ability count
+  -- for "you deal/heal/defeat" cards. See issue #4902.
+  Matcher.SourceOwnedBy whoMatcher -> checkSourceOwner False whoMatcher s
+  Matcher.SourceUsedBy whoMatcher -> checkSourceOwner True whoMatcher s
   Matcher.SourceIsCardEffect -> do
     let
       go = \case
@@ -221,6 +270,7 @@ sourceMatches s = \case
         ScarletKeySource {} -> True
         ConcealedCardSource {} -> True
         PaymentSource {} -> False
+        UltimatumOrBoonSource _ -> False
     pure $ go s
   Matcher.SourceIsType t -> member t <$> sourceTypes s
   Matcher.EncounterCardSource ->
@@ -278,17 +328,21 @@ sourceMatches s = \case
   Matcher.SourceIsPlayerCard ->
     let
       check = \case
+        PaymentSource source' -> check source'
         AbilitySource source' _ -> check source'
         UseAbilitySource _ source' _ -> check source'
-        AssetSource _ -> True
-        EventSource _ -> True
-        SkillSource _ -> True
-        InvestigatorSource _ -> True
-        _ -> False
+        AssetSource _ -> pure True
+        EventSource _ -> pure True
+        SkillSource _ -> pure True
+        InvestigatorSource _ -> pure True
+        CardCostSource cid -> not . isEncounterCard <$> getCard cid
+        CardIdSource cid -> not . isEncounterCard <$> getCard cid
+        _ -> pure False
      in
-      pure $ check s
+      check s
   Matcher.SourceIsPlayerCardAbility ->
     case s of
+      PaymentSource s' -> sourceMatches s' Matcher.SourceIsPlayerCardAbility
       AbilitySource s' _ -> sourceMatches s' Matcher.SourceIsPlayerCard
       UseAbilitySource _ s' _ -> sourceMatches s' Matcher.SourceIsPlayerCard
       _ -> pure False

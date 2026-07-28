@@ -5,6 +5,7 @@ import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.Attack
 import Arkham.Helpers.SkillTest.Lifted
+import Arkham.I18n
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Token
@@ -29,21 +30,21 @@ instance HasAbilities FakeCredentials where
 
 instance RunMessage FakeCredentials where
   runMessage msg a@(FakeCredentials (With attrs meta)) = runQueueT $ case msg of
-    UseCardAbility iid (isSource attrs -> True) 1 _ (chosenEnemyPayment -> eid) -> do
+    UseCardAbility iid (isSource attrs -> True) 1 _ (chosenEnemyPayment -> Just eid) -> do
       sid <- getRandom
-      parley sid iid (attrs.ability 1) iid #intellect
+      parley sid iid (attrs.ability 1) eid #intellect
         $ SumCalculation [Fixed 1, AssetTokenCountCalculation attrs.id Suspicion]
-      pure $ FakeCredentials $ With attrs (meta {chosenEnemy = eid})
+      pure $ FakeCredentials $ With attrs (meta {chosenEnemy = Just eid})
     PassedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
       discoverAtYourLocation NotInvestigate iid (attrs.ability 1) 1
       placeTokens (attrs.ability 1) attrs Suspicion 1
       pure a
     FailedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
       chooseOneM iid do
-        labeled "Discard Fake Credentials" $ toDiscardBy iid (attrs.ability 1) attrs
+        (cardI18n $ labeled' "fakeCredentials.discardFakeCredentials") $ toDiscardBy iid (attrs.ability 1) attrs
         for_ (chosenEnemy meta) $ \eid -> do
           whenM (lift $ eid <=~> EnemyCanAttack (InvestigatorWithId iid)) do
-            labeled "The chosen enemy attacks you" do
+            (cardI18n $ labeled' "fakeCredentials.theChosenEnemyAttacksYou") do
               push $ EnemyAttack $ enemyAttack eid (attrs.ability 1) iid
       pure a
     _ -> FakeCredentials . (`with` meta) <$> liftRunMessage msg attrs

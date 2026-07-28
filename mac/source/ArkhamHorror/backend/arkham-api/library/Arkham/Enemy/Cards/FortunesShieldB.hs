@@ -11,14 +11,14 @@ newtype FortunesShieldB = FortunesShieldB EnemyAttrs
   deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
 
 fortunesShieldB :: EnemyCard FortunesShieldB
-fortunesShieldB = enemy FortunesShieldB Cards.fortunesShieldB (2, Static 4, 3) (1, 1)
+fortunesShieldB = enemy FortunesShieldB Cards.fortunesShieldB
 
 instance HasAbilities FortunesShieldB where
   getAbilities (FortunesShieldB a) =
     extend1 a
       $ mkAbility a 1
       $ forced
-      $ EnemyTakeDamage #when AnyDamageEffect (be a) AnyValue (SourceOwnedBy You)
+      $ EnemyTakeDamage #when AnyDamageEffect (be a) AnyValue (SourceUsedBy You)
 
 instance RunMessage FortunesShieldB where
   runMessage msg e@(FortunesShieldB attrs) = runQueueT $ case msg of

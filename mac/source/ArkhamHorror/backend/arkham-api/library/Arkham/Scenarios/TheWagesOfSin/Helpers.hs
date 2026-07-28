@@ -8,7 +8,7 @@ import Arkham.Classes.HasAbilities
 import Arkham.Classes.HasGame
 import Arkham.Classes.Query
 import Arkham.Classes.RunMessage.Internal
-import Arkham.Enemy.Runner hiding (EnemyDefeated)
+import Arkham.Enemy.Runner
 import Arkham.Helpers
 import Arkham.Helpers.GameValue
 import Arkham.Helpers.Modifiers
@@ -24,16 +24,12 @@ import Arkham.Scenario.Deck
 import Arkham.Scenario.Types (Field (..))
 import Arkham.Tracing
 import Arkham.Trait (Trait (Spectral))
-import Control.Lens (non, _1, _2)
+import Control.Lens (non, _1)
 import Control.Monad.Writer.Class
 import Data.Map.Monoidal.Strict (MonoidalMap)
 
 scenarioI18n :: (HasI18n => a) -> a
 scenarioI18n a = campaignI18n $ scope "theWagesOfSin" a
-
-getSpectralDiscards :: (HasGame m, Tracing m) => m [EncounterCard]
-getSpectralDiscards =
-  scenarioFieldMap ScenarioEncounterDecks (view (at SpectralEncounterDeck . non (Deck [], []) . _2))
 
 getSpectralDeck :: (HasGame m, Tracing m) => m (Deck EncounterCard)
 getSpectralDeck =
@@ -77,7 +73,7 @@ hereticAbilities
 hereticAbilities (toAttrs -> a) =
   withBaseAbilities
     a
-    [ restricted a 1 OnSameLocation $ FastAbility' (ClueCost $ Static 1) [#parley]
+    [ restricted a 1 OnSameLocation $ FastAbility' (ClueCost $ Static 1) #parley
     , mkAbility a 2 $ forced $ EnemyDefeated #after Anyone ByAny (be (asId a))
     ]
 
@@ -103,6 +99,24 @@ hereticRunner storyCard msg heretic = runQueueT $ case msg of
     pure heretic
   UseCardAbility iid (isSource attrs -> True) 2 _ _ -> do
     push $ Flip iid (toSource attrs) (toTarget attrs)
+    pure heretic
+  -- Laid to Rest (parallel Jim Culver): Jean Devereux's parley makes Jim *draw*
+  -- the chosen Heretic. A draw is not a defeat, so unlike the Wages of Sin path
+  -- below we do not capture/replay enemy-defeat windows. The Heretic is silently
+  -- removed from the game (detached from The Beyond) and its Unfinished Business
+  -- back side is resolved into the drawing investigator's threat area (the story's
+  -- own ResolveThisStory forces InThreatArea, but we pass it explicitly so the card
+  -- is never momentarily re-attached to The Beyond, which would corrupt its spirit
+  -- count). The source is Jean (not the Heretic itself), which distinguishes this
+  -- from the defeat-driven flip below.
+  Flip iid source (isTarget attrs -> True) | not (isSource attrs source) -> do
+    let card = lookupCard storyCard (toCardId attrs)
+    pushAll
+      [ PlaceEnemy (toId attrs) (OutOfPlay RemovedZone)
+      , ReplaceCard (toCardId attrs) card
+      , StoryMessage $ ReadStoryWithPlacement iid card ResolveIt Nothing (InThreatArea iid)
+      , RemoveEnemy (toId attrs)
+      ]
     pure heretic
   Flip iid _ (isTarget attrs -> True) -> do
     let card = lookupCard storyCard (toCardId attrs)

@@ -49,7 +49,7 @@ data ExtendedCardMatcher
   | CardIsBeneathAsset AssetMatcher
   | CardIsAsset AssetMatcher
   | CardWithCopyInHand Who
-  | CardWithHollowedCopy
+  | CardWithHollowedCopy ExtendedCardMatcher
   | CardIsAttachedToLocation LocationMatcher
   | CardIsAttachedToEncounterCardAt LocationMatcher
   | NotThisCard
@@ -83,6 +83,7 @@ data ExtendedCardMatcher
   | ChosenViaCustomization ExtendedCardMatcher
   | PassesCommitRestrictions ExtendedCardMatcher
   | CardWithSharedTraitToAttackingEnemy
+  | CardWithoutUniqueCopyInPlay
   | CardIdentifiedByScenarioMetaKey Key
   | ActiveCard
   | ResolvingCard
@@ -196,16 +197,22 @@ data CardMatcher
   | CardWithCardCode CardCode
   | CardWithCardCodeExact CardCodeExact
   | CardWithTitle Text
+  | CardWithTitleContaining Text
   | CardWithTrait Trait
   | CardWithId CardId
   | CardWithLevel Int
   | CardWithMaxLevel Int
+  | -- | Matches a card whose printed enemy health (fixed or per-investigator) is
+    -- at most the given value. Cards with no fixed printed health (X, *, or none)
+    -- never match.
+    CardWithMaxPrintedHealth Int
   | CardWithoutKeyword Keyword
   | CardWithKeyword Keyword
   | CardWithConcealed
   | CardWithClass ClassSymbol
   | CardWithAction Action
   | CardWithoutAction
+  | CardIsStoryAsset
   | CardWithSkillIcon SkillIcon
   | CardWithOneOf [CardMatcher]
   | CardMatches [CardMatcher]
@@ -380,6 +387,9 @@ instance IsLabel "investigate" CardMatcher where
 isEnemyCard :: CardMatcher -> CardMatcher
 isEnemyCard = (#enemy <>)
 
+cardMatcher_ :: CardMatcher -> CardMatcher
+cardMatcher_ = id
+
 instance Semigroup CardMatcher where
   AnyCard <> a = a
   a <> AnyCard = a
@@ -446,6 +456,9 @@ instance FromJSON ExtendedCardMatcher where
   parseJSON = withObject "ExtendedCardMatcher" \o -> do
     t :: Text <- o .: "tag"
     case t of
+      "CardWithHollowedCopy" -> do
+        contents <- o .:? "contents" .!= BasicCardMatch AnyCard
+        pure $ CardWithHollowedCopy contents
       "AnyCard" -> pure (BasicCardMatch AnyCard)
       "CardMatches" -> BasicCardMatch . CardMatches <$> o .: "contents"
       "InHandOf" -> do

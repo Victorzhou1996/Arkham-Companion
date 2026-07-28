@@ -3,11 +3,15 @@ import { computed, inject, Ref } from 'vue'
 import { CardContents, type Card } from '@/arkham/types/Card'
 import type { Game } from '@/arkham/types/Game'
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
-import { MessageType} from '@/arkham/types/Message'
+import { MessageType } from '@/arkham/types/Message'
 import { imgsrc } from '@/arkham/helpers'
+import { cardImage } from '@/arkham/cardImages'
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
+import { supportsHandPlayTriggerMode } from '@/arkham/abilityTriggerModeEligibility'
 import * as ArkhamGame from '@/arkham/types/Game'
 import { IsMobile } from '@/arkham/isMobile'
+import { useDbCardStore } from '@/stores/dbCards'
 
 export interface Props {
   game: Game
@@ -18,19 +22,26 @@ export interface Props {
 
 const props = defineProps<Props>()
 
-const { isMobile } = IsMobile();
-const investigator = computed(() => Object.values(props.game.investigators).find((i) => i.playerId === props.playerId))
+const { isMobile } = IsMobile()
+const dbCards = useDbCardStore()
+const investigator = computed(() =>
+  Object.values(props.game.investigators).find((i) => i.playerId === props.playerId),
+)
 const investigatorId = computed(() => investigator.value?.id)
+const ownedByCurrentPlayer = computed(
+  () => props.game.investigators[props.ownerId]?.playerId === props.playerId,
+)
 
 const cardContents = computed<CardContents>(() =>
-  props.card.tag == 'VengeanceCard' ? props.card.contents.contents : props.card.contents)
+  props.card.tag == 'VengeanceCard' ? props.card.contents.contents : props.card.contents,
+)
 
 const id = computed(() => cardContents.value.id)
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 
 const revealed = computed(() => {
   const meta = investigator.value?.meta
-  if (meta && typeof meta === 'object' && "revealedCards" in meta) {
+  if (meta && typeof meta === 'object' && 'revealedCards' in meta) {
     return Object.values(meta.revealedCards).some((v) => (v as string[]).includes(id.value))
   }
 
@@ -48,16 +59,17 @@ const cardAction = computed(() => {
 })
 
 const solo = inject<Ref<boolean>>('solo')
+const showOtherPlayersHands = inject<Ref<boolean>>('showOtherPlayersHands')
 
 function isAbility(v: Message): v is AbilityLabel {
   if (v.tag !== 'AbilityLabel') {
     return false
   }
 
-  const { source } = v.ability;
+  const { source } = v.ability
 
   if (source.sourceTag === 'ProxySource') {
-    if ("contents" in source.source) {
+    if ('contents' in source.source) {
       return source.source.contents === id.value
     }
   } else if (source.tag === 'CardIdSource') {
@@ -68,6 +80,7 @@ function isAbility(v: Message): v is AbilityLabel {
     if (source.contents === id.value) {
       return true
     }
+    if (!source.contents) return false
     const asset = props.game.assets[source.contents]
     if (asset) {
       return asset.cardId === id.value && asset.placement.tag === 'StillInHand'
@@ -80,15 +93,13 @@ function isAbility(v: Message): v is AbilityLabel {
 }
 
 const abilities = computed(() => {
-  return choices
-    .value
-    .reduce<AbilityMessage[]>((acc, v, i) => {
-      if (isAbility(v)) {
-        return [...acc, { contents: v, displayAsAction: false, index: i}];
-      }
+  return choices.value.reduce<AbilityMessage[]>((acc, v, i) => {
+    if (isAbility(v)) {
+      return [...acc, { contents: v, displayAsAction: false, index: i }]
+    }
 
-      return acc;
-    }, []);
+    return acc
+  }, [])
 })
 
 const classObject = computed(() => {
@@ -96,15 +107,18 @@ const classObject = computed(() => {
 })
 
 const cardBack = computed(() => {
-  return imgsrc("player_back.jpg")
+  return imgsrc('player_back.jpg')
 })
 
 const image = computed(() => {
-  const { cardCode, mutated } = cardContents.value;
-  const mutatedSuffix = mutated ? `_${mutated}` : ''
-  return imgsrc(`cards/${cardCode.replace('c', '')}${mutatedSuffix}.avif`);
+  const { cardCode, mutated } = cardContents.value
+  return cardImage(cardCode, mutated ? `_${mutated}` : '')
 })
-
+const supportsPlayTriggerMode = computed(() =>
+  supportsHandPlayTriggerMode(
+    dbCards.getDbCard(cardContents.value.cardCode.replace(/^c/, '')),
+  ),
+)
 
 /*
 const painted = computed(() => {
@@ -224,11 +238,14 @@ function oilPaintEffect(canvas, radius, intensity) {
     <canvas v-show="painted" ref="canvas" class="card" :data-index="id" :data-card-code="cardContents.cardCode" :data-image="image">
     </canvas>
 */
-
 </script>
 
 <template>
-  <div class="card-container" :data-index="id" v-if="solo || (investigatorId == ownerId) || revealed">
+  <div
+    class="card-container"
+    :data-index="id"
+    v-if="solo || showOtherPlayersHands || investigatorId == ownerId || revealed"
+  >
     <AbilityButton
       v-if="isMobile"
       v-for="ability in abilities"
@@ -243,7 +260,8 @@ function oilPaintEffect(canvas, radius, intensity) {
       :class="classObject"
       class="card in-hand"
       :src="image"
-      :data-customizations="JSON.stringify(card.contents.customizations)"
+      :data-card-code="cardContents.cardCode"
+      :data-customizations="JSON.stringify(cardContents.customizations)"
       :data-playability-game-id="cardAction === -1 ? game.id : undefined"
       :data-playability-investigator-id="cardAction === -1 ? investigatorId : undefined"
       :data-playability-card-id="cardAction === -1 ? id : undefined"
@@ -258,8 +276,17 @@ function oilPaintEffect(canvas, radius, intensity) {
       :data-image="image"
       :game="game"
       @click="$emit('choose', ability.index)"
-      />
-
+    />
+    <AbilityTriggerModeToggle
+      v-if="ownedByCurrentPlayer"
+      :game="game"
+      :player-id="playerId"
+      :investigator-id="ownerId"
+      :card-code="cardContents.cardCode"
+      :abilities="abilities"
+      :include-play-mode="supportsPlayTriggerMode"
+      current-abilities-only
+    />
   </div>
   <div class="card-container" v-else>
     <img class="card in-hand" :src="cardBack" />
@@ -271,7 +298,6 @@ function oilPaintEffect(canvas, radius, intensity) {
   width: var(--card-width);
   min-width: var(--card-width);
   border-radius: 6px;
-
 }
 
 .card--can-interact {
@@ -280,6 +306,7 @@ function oilPaintEffect(canvas, radius, intensity) {
 }
 
 .card-container {
+  position: relative;
   display: flex;
   flex-direction: column;
 }

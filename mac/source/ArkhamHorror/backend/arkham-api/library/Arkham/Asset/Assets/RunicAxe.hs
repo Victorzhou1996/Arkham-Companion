@@ -14,8 +14,9 @@ import Arkham.Helpers.Location (getAccessibleLocations, getLocationOf, withLocat
 import Arkham.Helpers.Message qualified as Msg
 import Arkham.Helpers.Modifiers hiding (skillTestModifier)
 import Arkham.Helpers.SkillTest.Target
+import Arkham.I18n
 import Arkham.Location.Types (Field (..))
-import Arkham.Matcher hiding (DiscoverClues, EnemyDefeated)
+import Arkham.Matcher hiding (DiscoverClues)
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Move
 import Arkham.Projection
@@ -133,6 +134,8 @@ instance RunMessage RunicAxe where
                         <=~> (enemyAtLocationWith iid <> oneOf [AloofEnemy <> EnemyIsEngagedWith Anyone, not_ AloofEnemy])
                     )
             , not <$> (coerce eid <=~> locationWithInvestigator iid)
+            , -- concealed cards are always at the investigator's location, so Hunt is never needed for them
+              not <$> selectAny (ConcealedCardWithId (coerce eid))
             ]
         let imbueAgain = if attrs `hasCustomization` Scriptweaver then [Do msg, msg] else [msg]
         if needsHunt && attrs `hasCustomization` InscriptionOfTheHunt
@@ -143,8 +146,9 @@ instance RunMessage RunicAxe where
           else do
             choices <- availableInscriptions iid attrs meta
             chooseOne iid
-              $ Label "Do not spend charges" []
-              : [ Label (tshow i)
+              $ Label "$cards.label.runicAxe.doNotSpendCharges" []
+              : [ Label
+                    (cardI18n $ ikey' $ "label.runicAxe.inscription." <> tshow i)
                     $ [SpendUses (attrs.ability 1) (toTarget attrs) Charge 1, DoStep (fromEnum i) msg]
                     <> imbueAgain
                 | i <- choices
@@ -153,8 +157,10 @@ instance RunMessage RunicAxe where
     Do msg'@(ChoseEnemy _sid iid (isAbilitySource attrs 1 -> True) _) -> do
       choices <- availableInscriptions iid attrs meta
       chooseOne iid
-        $ Label "Do not use additional imbue from Scriptweaver " []
-        : [ Label (tshow i) [DoStep (fromEnum i) msg']
+        $ Label "$cards.label.runicAxe.doNotUseAdditionalImbue" []
+        : [ Label
+              (cardI18n $ ikey' $ "label.runicAxe.inscription." <> tshow i)
+              [DoStep (fromEnum i) msg']
           | i <- choices
           ]
       pure a
@@ -169,24 +175,31 @@ instance RunMessage RunicAxe where
         Hunt -> do
           mLoc <- getLocationOf iid
           isLocation <- coerce eid <=~> Anywhere
+          isConcealed <- selectAny (ConcealedCardWithId (coerce eid))
           if isLocation
             then moveTo (attrs.ability 1) iid (coerce @_ @LocationId eid)
+            -- concealed cards are always local; Hunt's movement/engage logic does not apply
             else
-              getLocationOf eid >>= traverse_ \loc -> do
-                if Just loc /= mLoc
-                  then do
-                    for_ mLoc \loc' -> do
-                      accessibleLocations <- getAccessibleLocations iid (attrs.ability 1)
-                      closestLocationIds <- select $ ClosestPathLocation loc' loc
-                      let locations = filter (`elem` closestLocationIds) accessibleLocations
-                      chooseOneM iid $ targets locations (moveTo (attrs.ability 1) iid)
-                  else do
-                    engaged <- eid <=~> enemyEngagedWith iid
-                    if engaged
-                      then do
-                        locations <- getAccessibleLocations iid (attrs.ability 1)
+              unless isConcealed
+                $ getLocationOf eid
+                >>= traverse_ \loc -> do
+                  if Just loc /= mLoc
+                    then do
+                      for_ mLoc \loc' -> do
+                        accessibleLocations <- getAccessibleLocations iid (attrs.ability 1)
+                        closestLocationIds <- select $ ClosestPathLocation loc' loc
+                        let locations = filter (`elem` closestLocationIds) accessibleLocations
                         chooseOneM iid $ targets locations (moveTo (attrs.ability 1) iid)
-                      else enemyEngageInvestigator eid iid
+                    else do
+                      engaged <- eid <=~> enemyEngagedWith iid
+                      if engaged
+                        then do
+                          locations <- getAccessibleLocations iid (attrs.ability 1)
+                          chooseOneM iid $ targets locations (moveTo (attrs.ability 1) iid)
+                        else do
+                          engageAbility <- selectJust $ #engage <> AbilityOnEnemy (be eid)
+                          withCost iid (decreaseActionCost engageAbility.cost 1)
+                            $ enemyEngageInvestigator eid iid
         Fury -> pure ()
       RunicAxe . (`with` Metadata (inscription : inscriptions meta)) <$> liftRunMessage msg attrs
     PassedThisSkillTestBy iid (isAbilitySource attrs 1 -> True) n -> do
@@ -205,25 +218,29 @@ instance RunMessage RunicAxe where
             case target of
               EnemyTarget eid -> do
                 enemies <- select $ EnemyIsEngagedWith Anyone <> not_ (EnemyWithId eid)
-                for_ enemies \eid' -> push $ EnemyDamage eid' $ Msg.delayDamage $ Msg.attack (attrs.ability 1) furyCount
+                for_ enemies \eid' -> push $ DealDamage (EnemyTarget eid') $ Msg.delayDamage $ Msg.attack (attrs.ability 1) furyCount
                 pushAll $ Msg.checkDefeated (attrs.ability 1) <$> enemies
               _ -> pure ()
 
       pure a
-    EnemyDefeated _ _ (isAbilitySource attrs 1 -> True) _ -> do
+    Defeated (EnemyTarget _) _ (isAbilitySource attrs 1 -> True) _ -> do
       push $ DoStep (count (== Glory) (inscriptions meta)) msg
       attrs' <- liftRunMessage msg attrs
       pure $ RunicAxe $ attrs' `with` Metadata (filter (/= Glory) (inscriptions meta))
-    DoStep n msg'@(EnemyDefeated _ _ (isAbilitySource attrs 1 -> True) _) | n > 0 -> do
+    DoStep n msg'@(Defeated (EnemyTarget _) _ (isAbilitySource attrs 1 -> True) _) | n > 0 -> do
       for_ attrs.controller \iid -> do
         mCanDraw <- Msg.drawCardsIfCan iid (attrs.ability 1) 1
         canHealDamage <- canHaveDamageHealed (attrs.ability 1) iid
         canHealHorror <- canHaveHorrorHealed (attrs.ability 1) iid
         when (isJust mCanDraw || canHealDamage || canHealHorror) do
           chooseOne iid
-            $ [Label "Draw 1 card" [drawing] | drawing <- maybeToList mCanDraw]
-            <> [Label "Heal 1 damage" [HealDamage (toTarget iid) (attrs.ability 1) 1] | canHealDamage]
-            <> [Label "Heal 1 horror" [HealHorror (toTarget iid) (attrs.ability 1) 1] | canHealHorror]
+            $ [Label "$label.cards.runicAxe.draw1Card" [drawing] | drawing <- maybeToList mCanDraw]
+            <> [ Label "$label.cards.runicAxe.heal1Damage" [HealDamage (toTarget iid) (attrs.ability 1) 1]
+               | canHealDamage
+               ]
+            <> [ Label "$label.cards.runicAxe.heal1Horror" [HealHorror (toTarget iid) (attrs.ability 1) 1]
+               | canHealHorror
+               ]
           push $ DoStep (n - 1) msg'
       pure a
     ResolvedAbility ab | ab.source == toSource attrs -> do

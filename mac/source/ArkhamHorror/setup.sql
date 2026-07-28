@@ -68,21 +68,32 @@ CREATE FUNCTION public.enforce_step_order_per_game() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    -- Enforce that the step being inserted follows the chronological order
+    -- Step 0 always starts a chain.
     IF NEW.step = 0 THEN
         RETURN NEW;
     END IF;
 
-    -- Ensure the previous step exists for the same game
-    IF NOT EXISTS (
+    -- Normal case: the immediately preceding step exists.
+    IF EXISTS (
         SELECT 1 FROM arkham_steps
         WHERE arkham_game_id = NEW.arkham_game_id
           AND step = NEW.step - 1
     ) THEN
-        RAISE EXCEPTION 'Cannot insert step % for game % without step %', NEW.step, NEW.arkham_game_id, NEW.step - 1;
+        RETURN NEW;
     END IF;
 
-    RETURN NEW;  -- Allow the insertion to proceed if the previous step exists
+    -- Recovery case: the game has no recorded steps at all (its undo history
+    -- was pruned or never persisted). Allow this insert to start a fresh
+    -- contiguous chain from the game's current step instead of wedging the
+    -- game so no action can ever be taken again.
+    IF NOT EXISTS (
+        SELECT 1 FROM arkham_steps
+        WHERE arkham_game_id = NEW.arkham_game_id
+    ) THEN
+        RETURN NEW;
+    END IF;
+
+    RAISE EXCEPTION 'Cannot insert step % for game % without step %', NEW.step, NEW.arkham_game_id, NEW.step - 1;
 END;
 $$;
 
@@ -286,6 +297,7 @@ CREATE TABLE public.users (
     email character varying NOT NULL,
     password_digest character varying NOT NULL,
     beta boolean DEFAULT false NOT NULL,
+    dev boolean DEFAULT false NOT NULL,
     admin boolean DEFAULT false
 );
 
@@ -350,6 +362,8 @@ ALTER TABLE ONLY public.password_resets ALTER COLUMN user_id SET DEFAULT nextval
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
+ALTER TABLE ONLY public.arkham_steps
+    ADD CONSTRAINT arkham_steps_pkey PRIMARY KEY (id);
 
 --
 -- Name: arkham_decks arkham_decks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
@@ -495,3 +509,75 @@ ALTER TABLE ONLY public.password_resets
 -- PostgreSQL database dump complete
 --
 
+-- Added locally: official arkham_epic migration for fresh offline installs.
+
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS arkham_epic_events (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name text NOT NULL,
+  organizer_user_id bigint REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  scenario_id text,
+  campaign_id text,
+  difficulty text NOT NULL,
+  shared_state jsonb NOT NULL,
+  total_investigators integer NOT NULL,
+  step integer NOT NULL,
+  created_at timestamptz NOT NULL,
+  updated_at timestamptz NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS arkham_epic_groups (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arkham_epic_event_id uuid REFERENCES arkham_epic_events (id) ON DELETE CASCADE NOT NULL,
+  ordinal integer NOT NULL,
+  arkham_game_id uuid REFERENCES arkham_games (id) ON DELETE CASCADE,
+  name text NOT NULL,
+  seat_count integer NOT NULL,
+  UNIQUE (arkham_epic_event_id, ordinal)
+);
+
+CREATE TABLE IF NOT EXISTS arkham_epic_members (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arkham_epic_event_id uuid REFERENCES arkham_epic_events (id) ON DELETE CASCADE NOT NULL,
+  user_id bigint REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  role text NOT NULL,
+  group_ordinal integer,
+  UNIQUE (arkham_epic_event_id, user_id, role)
+);
+
+CREATE TABLE IF NOT EXISTS arkham_epic_steps (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  arkham_epic_event_id uuid REFERENCES arkham_epic_events (id) ON DELETE CASCADE NOT NULL,
+  step integer NOT NULL,
+  arkham_game_id uuid,
+  game_step integer,
+  delta jsonb NOT NULL,
+  created_at timestamptz NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS arkham_epic_groups_event_idx ON arkham_epic_groups (arkham_epic_event_id);
+CREATE INDEX IF NOT EXISTS arkham_epic_groups_game_idx ON arkham_epic_groups (arkham_game_id);
+CREATE INDEX IF NOT EXISTS arkham_epic_members_event_idx ON arkham_epic_members (arkham_epic_event_id);
+CREATE UNIQUE INDEX IF NOT EXISTS arkham_epic_steps_event_step_idx ON arkham_epic_steps (arkham_epic_event_id, step);
+
+COMMIT;
+
+-- Added locally: official arkham_achievements migration for fresh offline installs.
+
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS arkham_achievements (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id bigint REFERENCES users (id) ON DELETE CASCADE NOT NULL,
+  achievement varchar NOT NULL,
+  earned_at timestamptz,
+  arkham_game_id uuid REFERENCES arkham_games (id) ON DELETE SET NULL,
+  progress jsonb NOT NULL,
+  CONSTRAINT unique_user_achievement UNIQUE (user_id, achievement)
+);
+
+CREATE INDEX IF NOT EXISTS idx_arkham_achievements_game
+  ON arkham_achievements (arkham_game_id);
+
+COMMIT;

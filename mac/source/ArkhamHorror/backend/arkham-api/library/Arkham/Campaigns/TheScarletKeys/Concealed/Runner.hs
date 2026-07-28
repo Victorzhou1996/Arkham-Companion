@@ -12,8 +12,8 @@ import Arkham.Classes.Query
 import Arkham.Classes.RunMessage
 import Arkham.Constants
 import Arkham.Fight.Types
-import Arkham.Helpers.Modifiers (getModifiers)
 import Arkham.Helpers.Location (getLocationOf)
+import Arkham.Helpers.Modifiers (getModifiers)
 import Arkham.Helpers.SkillTest.Lifted (beginSkillTestEdit, evade, fight)
 import Arkham.Id
 import Arkham.Location.Types (Field (..))
@@ -45,7 +45,7 @@ instance RunMessage ConcealedCard where
           , concealedCardFlipped = False
           }
     Do (PlaceConcealedCard _iid cardId placement) | c.id == cardId -> do
-      pure $ c { concealedCardPlacement = placement }
+      pure $ c {concealedCardPlacement = placement}
     UseThisAbility iid (isSource c -> True) AbilityAttack -> do
       mlocation <- case c.placement of
         InPosition _ -> getLocationOf iid
@@ -93,17 +93,19 @@ instance RunMessage ConcealedCard where
       pure $ c {concealedCardFlipped = not c.concealedCardFlipped, concealedCardKnown = True}
     DoStep 1 msg'@(Flip iid _ (isTarget c -> True)) -> do
       case concealedToCardDef c of
-        Nothing -> case c.kind of
-          Decoy -> exposedDecoy iid c Nothing
-          DecoyVoidChimeraFellbeak -> exposedDecoy iid c (Just "decoyVoidChimeraFellbeak")
-          DecoyVoidChimeraEarsplitter -> exposedDecoy iid c (Just "decoyVoidChimeraEarsplitter")
-          DecoyVoidChimeraGorefeaster -> exposedDecoy iid c (Just "decoyVoidChimeraGorefeaster")
-          DecoyVoidChimeraFellhound -> exposedDecoy iid c (Just "decoyVoidChimeraFellhound")
-          CityOfRemnantsL -> scenarioSpecific "exposed[CityOfRemnantsL]" (iid, c)
-          CityOfRemnantsM -> scenarioSpecific "exposed[CityOfRemnantsM]" (iid, c)
-          CityOfRemnantsR -> scenarioSpecific "exposed[CityOfRemnantsR]" (iid, c)
-          MimeticNemesis -> scenarioSpecific "exposed[MimeticNemesis]" (iid, c)
-          _ -> pure ()
+        Nothing -> do
+          case c.kind of
+            Decoy -> exposedDecoy iid c Nothing
+            DecoyVoidChimeraFellbeak -> exposedDecoy iid c (Just "decoyVoidChimeraFellbeak")
+            DecoyVoidChimeraEarsplitter -> exposedDecoy iid c (Just "decoyVoidChimeraEarsplitter")
+            DecoyVoidChimeraGorefeaster -> exposedDecoy iid c (Just "decoyVoidChimeraGorefeaster")
+            DecoyVoidChimeraFellhound -> exposedDecoy iid c (Just "decoyVoidChimeraFellhound")
+            CityOfRemnantsL -> scenarioSpecific "exposed[CityOfRemnantsL]" (iid, c)
+            CityOfRemnantsM -> scenarioSpecific "exposed[CityOfRemnantsM]" (iid, c)
+            CityOfRemnantsR -> scenarioSpecific "exposed[CityOfRemnantsR]" (iid, c)
+            MimeticNemesis -> scenarioSpecific "exposed[MimeticNemesis]" (iid, c)
+            _ -> pure ()
+          pure c
         Just def -> do
           enemies <- select $ EnemyWithPlacement InTheShadows <> EnemyWithTitle def.title
           chooseOrRunOneM iid do
@@ -114,7 +116,7 @@ instance RunMessage ConcealedCard where
                   _ -> error "invalid placement for concealed card"
                 doStep 2 msg'
           when (null enemies) $ doStep 2 msg' -- recovery
-      pure $ c {concealedCardPlacement = Unplaced}
+          pure $ c {concealedCardPlacement = Unplaced}
     DoStep 2 (Flip _iid _ (isTarget c -> True)) -> do
       removeFromGame (toTarget c)
       inShadows <- selectAny (EnemyWithPlacement InTheShadows)
@@ -142,13 +144,17 @@ instance RunMessage ConcealedCard where
       let sid = choose.skillTest
       let target = maybe (toTarget c) (ProxyTarget (toTarget c)) choose.target
       let skillType = choose.skillType
-      let
-        difficulty =
-          case choose.difficulty of
-            DefaultChooseFightDifficulty -> case c.placement of
-              AtLocation location -> LocationMaybeFieldCalculation location LocationShroud
-              _ -> error "invalid placement for concealed card"
-            CalculatedChooseFightDifficulty ccfd -> ccfd
+      difficulty <-
+        case choose.difficulty of
+          DefaultChooseFightDifficulty -> do
+            mlocation <- case c.placement of
+              InPosition _ -> getLocationOf iid
+              AtLocation location -> pure $ Just location
+              _ -> pure Nothing
+            case mlocation of
+              Nothing -> error "invalid placement for concealed card"
+              Just location -> pure $ LocationMaybeFieldCalculation location LocationShroud
+          CalculatedChooseFightDifficulty ccfd -> pure ccfd
 
       fight sid iid source target skillType difficulty
       pure c
@@ -156,12 +162,16 @@ instance RunMessage ConcealedCard where
       push $ Flip iid source (toTarget c)
       pure c
     TryEvadeEnemy sid iid eid source mTarget skillType | eid == coerce (unConcealedCardId c.id) -> do
-      case c.placement of
-        AtLocation location -> do
+      mlocation <- case c.placement of
+        InPosition _ -> getLocationOf iid
+        AtLocation location -> pure $ Just location
+        _ -> pure Nothing
+      case mlocation of
+        Nothing -> error "invalid placement for concealed card"
+        Just location -> do
           let target = maybe (toTarget eid) (ProxyTarget (toTarget eid)) mTarget
           let difficulty = LocationMaybeFieldCalculation location LocationShroud
           evade sid iid source target skillType difficulty
-        _ -> error "invalid placement for concealed card"
       pure c
     PassedSkillTest iid (Just Action.Evade) source (Initiator target) _ _ | isEnemyTarget c target -> do
       push $ Flip iid source (toTarget c)

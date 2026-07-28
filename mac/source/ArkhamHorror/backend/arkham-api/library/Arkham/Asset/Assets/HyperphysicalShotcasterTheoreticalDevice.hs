@@ -19,6 +19,7 @@ import Arkham.Helpers.Message qualified as Msg
 import Arkham.Helpers.Modifiers (ModifierType (..), modified_, modifySelf)
 import Arkham.Helpers.SkillTest (getSkillTestTarget)
 import Arkham.Helpers.SkillTest qualified as Msg
+import Arkham.I18n
 import Arkham.Investigate qualified as Investigate
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
@@ -104,7 +105,7 @@ instance HasAbilities HyperphysicalShotcasterTheoreticalDevice where
       _ -> error "Invalid manifest ability"
     manifestCriteria = \case
       Railshooter -> NoRestriction
-      Telescanner -> NoRestriction
+      Telescanner -> exists $ YourLocation <> InvestigatableLocation
       Translocator -> NoRestriction
       Realitycollapser -> NoRestriction
       Matterweaver -> exists (PlayableCardWithNoCost NoAction $ InHandOf ForPlay You <> #asset)
@@ -178,7 +179,7 @@ instance RunMessage HyperphysicalShotcasterTheoreticalDevice where
             if notNull canEvade
               then
                 select
-                  $ affectsOthers
+                  $ affectsOthersKnown iid
                   $ colocatedWith iid
                   <> InvestigatorCanMoveTo (toSource attrs) (ConnectedFrom ForMovement $ locationWithInvestigator iid)
               else pure []
@@ -215,7 +216,7 @@ instance RunMessage HyperphysicalShotcasterTheoreticalDevice where
             if notNull canEvade
               then
                 select
-                  $ affectsOthers
+                  $ affectsOthersKnown iid
                   $ not_ (InvestigatorWithId iid)
                   <> InvestigatorAt (ConnectedFrom ForMovement $ locationWithInvestigator iid)
                   <> InvestigatorCanMoveTo (toSource attrs) (locationWithInvestigator iid)
@@ -224,7 +225,7 @@ instance RunMessage HyperphysicalShotcasterTheoreticalDevice where
           -- If we have a valid target we can move any enemy to us, otherwise we have to move an evadeable enemy
           lid <- getJustLocation iid -- TODO: can we do this?
           chooseOneM iid do
-            when (notNull canEvade) $ labeled "Move nothing (before)" $ doStep 1 msg
+            when (notNull canEvade) $ (cardI18n $ labeled' "hyperphysicalShotcasterTheoreticalDevice.moveNothingBefore") $ doStep 1 msg
             targets canMoveEnemyToUs \enemy -> do
               if notNull canEvade
                 then enemyMoveTo attrs enemy lid
@@ -272,7 +273,7 @@ instance RunMessage HyperphysicalShotcasterTheoreticalDevice where
         [ SkillLabel sType [toMessage $ Evade.withSkillType sType doEvade]
         | sType <- [#willpower, #agility, #intellect, #combat]
         ]
-      push $ DoStep 2 msg'
+      when (n == 1) $ push $ DoStep 2 msg'
       pure a
     DoStep 2 (UseThisAbility iid (isSource attrs -> True) 1) -> do
       canMoveEnemyToUs :: [EnemyId] <-
@@ -289,7 +290,7 @@ instance RunMessage HyperphysicalShotcasterTheoreticalDevice where
 
       canMoveOtherInvestigatorsAway <-
         select
-          $ affectsOthers
+          $ affectsOthersKnown iid
           $ colocatedWith iid
           <> InvestigatorCanMoveTo (toSource attrs) (ConnectedFrom ForMovement $ locationWithInvestigator iid)
 
@@ -300,13 +301,13 @@ instance RunMessage HyperphysicalShotcasterTheoreticalDevice where
 
       canMoveOtherInvestigatorsToYourLocation <-
         select
-          $ affectsOthers
+          $ affectsOthersKnown iid
           $ not_ (InvestigatorWithId iid)
           <> InvestigatorAt (ConnectedFrom ForMovement $ locationWithInvestigator iid)
           <> InvestigatorCanMoveTo (toSource attrs) (locationWithInvestigator iid)
       lid <- getJustLocation iid -- TODO: can we do this?
       chooseOneM iid do
-        labeled "Move nothing (after)" nothing
+        (cardI18n $ labeled' "hyperphysicalShotcasterTheoreticalDevice.moveNothingAfter") nothing
         targets canMoveEnemyToUs \e -> enemyMoveTo attrs e lid
         targets canMoveEnemyAway \e -> enemyMoveToMatch attrs e (connectedFrom $ LocationWithId lid)
         targets canMoveOtherInvestigatorsAway \i -> moveToMatch attrs i (ConnectedFrom ForMovement $ LocationWithId lid)
@@ -334,23 +335,23 @@ instance RunMessage HyperphysicalShotcasterTheoreticalDevice where
       pure a
     UseThisAbility iid (isSource attrs -> True) 2 -> do
       chooseOne iid
-        $ [ Label "Railshooter" [DoStep 0 msg]
+        $ [ Label "$label.cards.hyperphysicalShotcasterTheoreticalDevice.railshooter" [DoStep 0 msg]
           | attrs `hasCustomization` Railshooter
           , manifest meta /= Just Railshooter
           ]
-        <> [ Label "Telescanner" [DoStep 1 msg]
+        <> [ Label "$label.cards.hyperphysicalShotcasterTheoreticalDevice.telescanner" [DoStep 1 msg]
            | attrs `hasCustomization` Telescanner
            , manifest meta /= Just Telescanner
            ]
-        <> [ Label "Translocator" [DoStep 2 msg]
+        <> [ Label "$label.cards.hyperphysicalShotcasterTheoreticalDevice.translocator" [DoStep 2 msg]
            | attrs `hasCustomization` Translocator
            , manifest meta /= Just Translocator
            ]
-        <> [ Label "Realitycollapser" [DoStep 3 msg]
+        <> [ Label "$label.cards.hyperphysicalShotcasterTheoreticalDevice.realitycollapser" [DoStep 3 msg]
            | attrs `hasCustomization` Realitycollapser
            , manifest meta /= Just Realitycollapser
            ]
-        <> [ Label "Matterweaver" [DoStep 4 msg]
+        <> [ Label "$label.cards.hyperphysicalShotcasterTheoreticalDevice.matterweaver" [DoStep 4 msg]
            | attrs `hasCustomization` Matterweaver
            , manifest meta /= Just Matterweaver
            ]

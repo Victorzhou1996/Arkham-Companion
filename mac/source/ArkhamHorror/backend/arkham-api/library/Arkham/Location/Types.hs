@@ -3,15 +3,16 @@
 module Arkham.Location.Types (module Arkham.Location.Types, module X, Field (..)) where
 
 import Arkham.Ability
-import Arkham.Action qualified as Action
 import Arkham.Calculation
 import Arkham.Campaigns.EdgeOfTheEarth.Seal
 import Arkham.Card
+import Arkham.ChaosToken.Types
 import Arkham.Classes.Entity
 import Arkham.Classes.HasAbilities
 import Arkham.Classes.HasModifiersFor
 import Arkham.Classes.RunMessage.Internal
 import Arkham.Direction
+import Arkham.EnemyLocation.Cards (allEnemyLocationCards)
 import Arkham.Field
 import Arkham.GameValue
 import Arkham.Id
@@ -103,9 +104,12 @@ data instance Field Location :: Type -> Type where
   LocationCostToEnterUnrevealed :: Field Location Cost
   LocationKeys :: Field Location (Set ArkhamKey)
   LocationSeals :: Field Location (Set Seal)
+  LocationSealedChaosTokens :: Field Location [ChaosToken]
+  LocationPlacedChaosTokens :: Field Location [ChaosToken]
   LocationInvestigateDifficulty :: Field Location GameCalculation
   LocationConcealedCards :: Field Location [ConcealedCardId]
   LocationGlobalMeta :: Field Location (Map Aeson.Key Value)
+  UnsafeLocationRevealedSymbol :: Field Location LocationSymbol
 
 deriving stock instance Show (Field Location typ)
 deriving stock instance Ord (Field Location typ)
@@ -116,6 +120,8 @@ fieldLens = \case
   LocationTokens -> tokensL
   LocationKeys -> keysL
   LocationSeals -> sealsL
+  LocationSealedChaosTokens -> sealedChaosTokensL
+  LocationPlacedChaosTokens -> placedChaosTokensL
   LocationClues -> tokensL . at Clue . non 0
   LocationRevealClues -> revealCluesL
   LocationResources -> tokensL . at Resource . non 0
@@ -139,6 +145,7 @@ fieldLens = \case
   LocationBrazier -> brazierL
   LocationFloodLevel -> floodLevelL
   LocationBreaches -> breachesL
+  UnsafeLocationRevealedSymbol -> revealedSymbolL
   LocationLabel -> labelL
   LocationTraits -> virtual
   LocationKeywords -> virtual
@@ -208,10 +215,13 @@ instance FromJSON (SomeField Location) where
     "LocationRevealed" -> pure $ SomeField LocationRevealed
     "LocationRevealedConnectedMatchers" -> pure $ SomeField LocationRevealedConnectedMatchers
     "LocationPrintedShroud" -> pure $ SomeField LocationPrintedShroud
+    "UnsafeLocationRevealedSymbol" -> pure $ SomeField UnsafeLocationRevealedSymbol
     "LocationShroud" -> pure $ SomeField LocationShroud
     "LocationTokens" -> pure $ SomeField LocationTokens
     "LocationKeys" -> pure $ SomeField LocationKeys
     "LocationSeals" -> pure $ SomeField LocationSeals
+    "LocationSealedChaosTokens" -> pure $ SomeField LocationSealedChaosTokens
+    "LocationPlacedChaosTokens" -> pure $ SomeField LocationPlacedChaosTokens
     "LocationTraits" -> pure $ SomeField LocationTraits
     "LocationUnrevealedName" -> pure $ SomeField LocationUnrevealedName
     "LocationVengeance" -> pure $ SomeField LocationVengeance
@@ -220,7 +230,7 @@ instance FromJSON (SomeField Location) where
     "LocationPosition" -> pure $ SomeField LocationPosition
     "LocationCostToEnterUnrevealed" -> pure $ SomeField LocationCostToEnterUnrevealed
     "LocationGlobalMeta" -> pure $ SomeField LocationGlobalMeta
-    _ -> error "no such field"
+    _ -> error "no such Location field"
 
 instance Entity LocationAttrs where
   type EntityId LocationAttrs = LocationId
@@ -261,7 +271,7 @@ instance HasCardCode LocationAttrs where
   toCardCode = locationCardCode
 
 instance HasCardDef LocationAttrs where
-  toCardDef a = case lookup (locationCardCode a) (allLocationCards <> allSpecialLocationCards) of
+  toCardDef a = case lookup (locationCardCode a) (allLocationCards <> allSpecialLocationCards <> allEnemyLocationCards) of
     Just def -> def
     Nothing ->
       error $ "missing card def for location " <> show (locationCardCode a)
@@ -325,6 +335,7 @@ locationWith f def shroud' revealClues g =
             , locationKeys = mempty
             , locationSeals = mempty
             , locationSealedChaosTokens = mempty
+            , locationPlacedChaosTokens = mempty
             , locationBrazier = Nothing
             , locationBreaches = Nothing
             , locationFloodLevel = Nothing
@@ -337,17 +348,11 @@ locationWith f def shroud' revealClues g =
 
 locationResignAction :: LocationAttrs -> Ability
 locationResignAction attrs =
-  toLocationAbility attrs (mkAbility attrs 99 $ ActionAbility [Action.Resign] Nothing (ActionCost 1))
+  toLocationAbility attrs (mkAbility attrs 99 $ ActionAbility #resign Nothing (ActionCost 1))
 
 toLocationAbility :: LocationAttrs -> Ability -> Ability
 toLocationAbility attrs =
   abilityCriteriaL <>~ OnLocation (LocationWithId $ toId attrs)
-
-locationAbility :: Ability -> Ability
-locationAbility ability = case abilitySource ability of
-  LocationSource lid -> ability & abilityCriteriaL <>~ OnLocation (LocationWithId lid)
-  _ -> ability
-
 data Location = forall a. IsLocation a => Location a
 
 instance HasField "id" Location LocationId where

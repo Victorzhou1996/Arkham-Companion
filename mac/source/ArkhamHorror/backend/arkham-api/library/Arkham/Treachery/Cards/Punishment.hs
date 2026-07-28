@@ -7,7 +7,7 @@ import Arkham.Matcher
 import Arkham.Source
 import Arkham.Trait (Trait (Witch))
 import Arkham.Treachery.Cards qualified as Cards
-import Arkham.Treachery.Import.Lifted hiding (EnemyDefeated)
+import Arkham.Treachery.Import.Lifted
 
 newtype Punishment = Punishment TreacheryAttrs
   deriving anyclass IsTreachery
@@ -33,7 +33,7 @@ instance HasModifiersFor Punishment where
 
 instance HasAbilities Punishment where
   getAbilities (Punishment a) =
-    [ restricted a 1 (InThreatAreaOf You) $ forced $ EnemyDefeated #after Anyone ByAny AnyEnemy
+    [ restricted a 1 (InThreatAreaOf You) $ forced $ IfEnemyDefeated #after Anyone ByAny AnyEnemy
     , skillTestAbility $ restricted a 2 OnSameLocation actionAbility
     ]
 
