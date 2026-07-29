@@ -25,6 +25,11 @@ import ScarletKey from '@/arkham/components/ScarletKey.vue'
 import Treachery from '@/arkham/components/Treachery.vue'
 import Token from '@/arkham/components/Token.vue'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
+import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
+import {
+  normalizeCardCode,
+  triggerModeAbilitiesForCard,
+} from '@/arkham/abilityTriggerModeEligibility'
 import AiTargetMenu from '@/arkham/components/AiTargetMenu.vue'
 import PoolItem from '@/arkham/components/PoolItem.vue'
 import TokenPool from '@/arkham/components/TokenPool.vue'
@@ -216,6 +221,22 @@ const abilities = computed(() => {
 
     return acc
   }, [])
+})
+
+const dreamGateInvestigatorId = computed(() => {
+  if (normalizeCardCode(props.location.cardCode) !== '06015b') return null
+  return Object.values(props.game.investigators)
+    .find((investigator) => investigator.playerId === props.playerId)?.id ?? null
+})
+
+const dreamGateTriggerModeAbilities = computed(() => {
+  const investigatorId = dreamGateInvestigatorId.value
+  if (investigatorId === null) return []
+  return triggerModeAbilitiesForCard(
+    choices.value,
+    props.location.cardCode,
+    investigatorId,
+  )
 })
 
 const hasObjective = computed(() =>
@@ -652,6 +673,14 @@ const hasAnyLocationVehicleAssets = computed(() =>
               />
             </template>
           </div>
+          <AbilityTriggerModeToggle
+            v-if="dreamGateInvestigatorId !== null"
+            :game="game"
+            :player-id="playerId"
+            :investigator-id="dreamGateInvestigatorId"
+            :card-code="location.cardCode"
+            :abilities="dreamGateTriggerModeAbilities"
+          />
 
           <div v-if="cluesAroundPositions.length > 0" class="clues-around">
             <img

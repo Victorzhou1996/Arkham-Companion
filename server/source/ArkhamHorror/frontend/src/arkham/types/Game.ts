@@ -257,6 +257,23 @@ export function activeQuestionIsPlayerWindow(game: Game, playerId: string): bool
   return false;
 }
 
+// A response window may be encoded directly as WindowChooseOne, or as a
+// PlayerWindowChooseOne without the ordinary End Turn action.
+export function activeQuestionIsResponseWindow(game: Game, playerId: string): boolean {
+  let question: Question | undefined = game.question[playerId];
+
+  while (question) {
+    if (question.tag === 'ChooseOne') {
+      if (question.isWindowResponse === true) return true;
+      if (question.isPlayerWindow !== true) return false;
+      return !question.choices.some((choice) => choice.tag === MessageType.END_TURN_BUTTON);
+    }
+    question = 'question' in question ? question.question : undefined;
+  }
+
+  return false;
+}
+
 // Returns the Source that prompted the player's active question, if any. The
 // engine wraps such questions in `QuestionWithSource` so the frontend can
 // highlight the source entity on the board while the question is pending.

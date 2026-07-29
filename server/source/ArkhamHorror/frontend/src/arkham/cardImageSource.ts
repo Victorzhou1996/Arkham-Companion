@@ -17,13 +17,17 @@ export function cardImageSource(
   companionHost: string,
   cdnHost: string,
   language: string,
+  originalServerFallback = serverFallback,
 ) {
   if (language !== 'zh' || !chineseCardPattern.test(path)) return serverFallback
 
   const filename = path.slice(path.lastIndexOf('/') + 1)
+  const serverSource = absoluteUrl(serverFallback) === absoluteUrl(originalServerFallback)
+    ? serverFallback
+    : withFallback(serverFallback, originalServerFallback)
   const cdnSource = cdnHost
-    ? withFallback(`${cdnHost.replace(/\/+$/, '')}/img/arkham/zh/cards/${filename}`, serverFallback)
-    : serverFallback
+    ? withFallback(`${cdnHost.replace(/\/+$/, '')}/img/arkham/zh/cards/${filename}`, serverSource)
+    : serverSource
 
   if (!companionHost) return cdnSource
 

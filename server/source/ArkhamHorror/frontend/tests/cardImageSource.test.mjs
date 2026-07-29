@@ -14,6 +14,7 @@ async function importTsModule(path) {
 
 const modulePath = resolve('src/arkham/cardImageSource.ts')
 const server = 'https://arkham.example/img/arkham/zh/cards/01001.avif'
+const original = 'https://arkham.example/img/arkham/cards/01001.avif'
 const cdn = 'https://cards.example'
 const companion = 'https://localhost:8688'
 
@@ -21,24 +22,29 @@ test('uses companion, then CDN, then the server for Chinese AVIF cards', async (
   const { cardImageSource } = await importTsModule(modulePath)
   globalThis.window = { location: { origin: 'https://arkham.example' } }
 
-  const result = cardImageSource('cards/01001.avif', server, companion, cdn, 'zh')
+  const result = cardImageSource('cards/01001.avif', server, companion, cdn, 'zh', original)
   const companionUrl = new URL(result)
   const cdnUrl = new URL(companionUrl.searchParams.get('fallback'))
+  const serverUrl = new URL(cdnUrl.searchParams.get('fallback'))
 
   assert.equal(companionUrl.origin, companion)
   assert.equal(companionUrl.pathname, '/img/arkham/zh/cards/01001.avif')
   assert.equal(cdnUrl.origin, cdn)
   assert.equal(cdnUrl.pathname, '/img/arkham/zh/cards/01001.avif')
-  assert.equal(cdnUrl.searchParams.get('fallback'), server)
+  assert.equal(serverUrl.origin, 'https://arkham.example')
+  assert.equal(serverUrl.pathname, '/img/arkham/zh/cards/01001.avif')
+  assert.equal(serverUrl.searchParams.get('fallback'), original)
   delete globalThis.window
 })
 
 test('uses CDN directly when companion is unavailable', async () => {
   const { cardImageSource } = await importTsModule(modulePath)
-  const result = new URL(cardImageSource('cards/01001.avif', server, '', cdn, 'zh'))
+  const result = new URL(cardImageSource('cards/01001.avif', server, '', cdn, 'zh', original))
 
   assert.equal(result.origin, cdn)
-  assert.equal(result.searchParams.get('fallback'), server)
+  const serverResult = new URL(result.searchParams.get('fallback'))
+  assert.equal(serverResult.pathname, '/img/arkham/zh/cards/01001.avif')
+  assert.equal(serverResult.searchParams.get('fallback'), original)
 })
 
 test('keeps server URLs for English and non-card images', async () => {

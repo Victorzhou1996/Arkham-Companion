@@ -131,6 +131,7 @@ const fullScreen = ref(false)
 
 // ── Pan / drag ────────────────────────────────────────────
 const panOffset = ref({ x: 0, y: 0 })
+const touchZoom = ref(1)
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
 const dragStartPan = ref({ x: 0, y: 0 })
@@ -145,7 +146,7 @@ function startDrag(e: MouseEvent) {
 
 function onDrag(e: MouseEvent) {
   if (!isDragging.value || !svgEl.value) return
-  const { w, h } = baseViewBox.value
+  const { w, h } = viewBoxValues.value
   const rect = svgEl.value.getBoundingClientRect()
   const scaleX = w / rect.width
   const scaleY = h / rect.height
@@ -158,7 +159,12 @@ function onDrag(e: MouseEvent) {
 function stopDrag() { isDragging.value = false }
 // select a location
 const selectedLocation = ref<MapLocationId | null>(null)
+let suppressNextSelection = false
 function select(location: MapLocationId) {
+  if (suppressNextSelection) {
+    suppressNextSelection = false
+    return
+  }
   selectedLocation.value = location
 }
 
@@ -206,7 +212,10 @@ const coordinates = computed(() => {
   return null
 })
 
-watch([coordinates, fullScreen], () => { panOffset.value = { x: 0, y: 0 } })
+watch([coordinates, fullScreen], () => {
+  panOffset.value = { x: 0, y: 0 }
+  touchZoom.value = 1
+})
 
 const ZOOM_W = 1200
 const ZOOM_H = 781
@@ -222,11 +231,31 @@ const baseViewBox = computed(() => {
   return { x0, y0, w: ZOOM_W, h: ZOOM_H }
 })
 
-const viewBoxValues = computed(() => {
-  const { x0, y0, w, h } = baseViewBox.value
+const clamp = (value: number, minimum: number, maximum: number) =>
+  Math.max(minimum, Math.min(maximum, value))
+
+function viewDimensions(zoom = touchZoom.value) {
   return {
-    x0: Math.max(0, Math.min(3000 - w, x0 + panOffset.value.x)),
-    y0: Math.max(0, Math.min(1952 - h, y0 + panOffset.value.y)),
+    w: baseViewBox.value.w / zoom,
+    h: baseViewBox.value.h / zoom,
+  }
+}
+
+function defaultViewOrigin(zoom = touchZoom.value) {
+  const { x0, y0, w: baseWidth, h: baseHeight } = baseViewBox.value
+  const { w, h } = viewDimensions(zoom)
+  return {
+    x0: x0 + (baseWidth - w) / 2,
+    y0: y0 + (baseHeight - h) / 2,
+  }
+}
+
+const viewBoxValues = computed(() => {
+  const { w, h } = viewDimensions()
+  const origin = defaultViewOrigin()
+  return {
+    x0: clamp(origin.x0 + panOffset.value.x, 0, 3000 - w),
+    y0: clamp(origin.y0 + panOffset.value.y, 0, 1952 - h),
     w, h,
   }
 })
@@ -235,6 +264,122 @@ const viewBox = computed(() => {
   const { x0, y0, w, h } = viewBoxValues.value
   return `${x0} ${y0} ${w} ${h}`
 })
+
+type TouchPoint = { x: number; y: number }
+type PinchState = {
+  distance: number
+  zoom: number
+  anchor: TouchPoint
+}
+
+let touchStart: TouchPoint | null = null
+let touchStartPan = { x: 0, y: 0 }
+let pinchState: PinchState | null = null
+let touchMoved = false
+
+const touchPoint = (touch: Touch): TouchPoint => ({ x: touch.clientX, y: touch.clientY })
+const midpoint = (a: TouchPoint, b: TouchPoint): TouchPoint => ({
+  x: (a.x + b.x) / 2,
+  y: (a.y + b.y) / 2,
+})
+const distance = (a: TouchPoint, b: TouchPoint) =>
+  Math.hypot(a.x - b.x, a.y - b.y)
+
+function mapPointAtScreen(point: TouchPoint): TouchPoint {
+  if (!svgEl.value) return point
+  const rect = svgEl.value.getBoundingClientRect()
+  const current = viewBoxValues.value
+  return {
+    x: current.x0 + ((point.x - rect.left) / rect.width) * current.w,
+    y: current.y0 + ((point.y - rect.top) / rect.height) * current.h,
+  }
+}
+
+function beginPinch(first: TouchPoint, second: TouchPoint) {
+  const screen = midpoint(first, second)
+  pinchState = {
+    distance: Math.max(1, distance(first, second)),
+    zoom: touchZoom.value,
+    anchor: mapPointAtScreen(screen),
+  }
+  touchStart = null
+  touchMoved = true
+}
+
+function startTouch(event: TouchEvent) {
+  if (event.touches.length >= 2) {
+    beginPinch(touchPoint(event.touches[0]), touchPoint(event.touches[1]))
+    return
+  }
+
+  if (event.touches.length === 1) {
+    touchStart = touchPoint(event.touches[0])
+    touchStartPan = { ...panOffset.value }
+    pinchState = null
+    touchMoved = false
+  }
+}
+
+function moveTouch(event: TouchEvent) {
+  if (!svgEl.value) return
+
+  if (event.touches.length >= 2) {
+    const first = touchPoint(event.touches[0])
+    const second = touchPoint(event.touches[1])
+    if (!pinchState) beginPinch(first, second)
+    if (!pinchState) return
+
+    const nextZoom = clamp(
+      pinchState.zoom * distance(first, second) / pinchState.distance,
+      1,
+      4,
+    )
+    const rect = svgEl.value.getBoundingClientRect()
+    const screen = midpoint(first, second)
+    const { w, h } = viewDimensions(nextZoom)
+    const desiredOrigin = {
+      x0: pinchState.anchor.x - ((screen.x - rect.left) / rect.width) * w,
+      y0: pinchState.anchor.y - ((screen.y - rect.top) / rect.height) * h,
+    }
+    const baseOrigin = defaultViewOrigin(nextZoom)
+
+    touchZoom.value = nextZoom
+    panOffset.value = {
+      x: desiredOrigin.x0 - baseOrigin.x0,
+      y: desiredOrigin.y0 - baseOrigin.y0,
+    }
+    touchMoved = true
+    return
+  }
+
+  if (event.touches.length === 1 && touchStart) {
+    const current = touchPoint(event.touches[0])
+    const rect = svgEl.value.getBoundingClientRect()
+    const { w, h } = viewBoxValues.value
+    const dx = current.x - touchStart.x
+    const dy = current.y - touchStart.y
+    panOffset.value = {
+      x: touchStartPan.x - dx * (w / rect.width),
+      y: touchStartPan.y - dy * (h / rect.height),
+    }
+    if (Math.hypot(dx, dy) > 4) touchMoved = true
+  }
+}
+
+function stopTouch(event: TouchEvent) {
+  if (touchMoved) {
+    suppressNextSelection = true
+    window.setTimeout(() => { suppressNextSelection = false }, 350)
+  }
+
+  if (event.touches.length === 1) {
+    touchStart = touchPoint(event.touches[0])
+    touchStartPan = { ...panOffset.value }
+  } else {
+    touchStart = null
+  }
+  pinchState = null
+}
 
 const worldMap = imgsrc('world-map.jpg')
 
@@ -271,6 +416,10 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', onFullscreenC
     @mousemove="onDrag"
     @mouseup="stopDrag"
     @mouseleave="stopDrag"
+    @touchstart="startTouch"
+    @touchmove.prevent="moveTouch"
+    @touchend="stopTouch"
+    @touchcancel="stopTouch"
   >
     <defs>
       <g id="marker-red">
@@ -800,6 +949,12 @@ svg {
   display: block;
 
   &.dragging { cursor: grabbing; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  svg {
+    touch-action: none;
+  }
 }
 
 .embark-view svg {

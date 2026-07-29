@@ -66,3 +66,46 @@ test('ignores stale saved modes that are no longer valid for a hand card', async
   assert.deepEqual(handTriggerModeIndexes([-1, 1, 2], [2], false), [2])
   assert.deepEqual(handTriggerModeIndexes([-1, 1, 2], [], true), [-1])
 })
+
+test('recognizes customizations that grant Fast play', async () => {
+  const { supportsCustomizedFastPlay, supportsHandPlayTriggerMode } =
+    await importTsModule(modulePath)
+  const customizations = [[2, [2, []]]]
+
+  assert.equal(supportsCustomizedFastPlay('c09100', customizations), true)
+  assert.equal(
+    supportsHandPlayTriggerMode(
+      { type_code: 'event', real_text: 'Attach to your location.' },
+      '09100',
+      customizations,
+    ),
+    true,
+  )
+  assert.equal(supportsCustomizedFastPlay('09100', [[2, [1, []]]]), false)
+})
+
+test('collects proxy and attached abilities by controller and card code', async () => {
+  const { triggerModeAbilitiesForCard } = await importTsModule(modulePath)
+  const choices = [
+    {
+      tag: 'AbilityLabel',
+      investigatorId: 'controller',
+      ability: { cardCode: 'c03232', index: 1 },
+    },
+    {
+      tag: 'AbilityLabel',
+      investigatorId: 'owner',
+      ability: { cardCode: '03232', index: 1 },
+    },
+    {
+      tag: 'AbilityLabel',
+      investigatorId: 'controller',
+      ability: { cardCode: '07161', index: 1 },
+    },
+  ]
+
+  assert.deepEqual(
+    triggerModeAbilitiesForCard(choices, '03232', 'controller').map(({ index }) => index),
+    [0],
+  )
+})

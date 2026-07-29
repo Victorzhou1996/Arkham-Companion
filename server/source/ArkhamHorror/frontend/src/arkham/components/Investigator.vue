@@ -21,6 +21,7 @@ import { cardId, toCardContents } from '@/arkham/types/Card'
 import Token from '@/arkham/components/Token.vue';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
+import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
 import { useMenu } from '@/composable/menu';
 import { useI18n } from 'vue-i18n';
 import useEmitter from '@/composable/useEmitter';
@@ -145,6 +146,14 @@ const abilities = computed(() => {
       return acc;
     }, []);
 })
+
+const triggerModeAbilities = computed(() =>
+  triggerModeAbilitiesForCard(
+    choices.value as Message[],
+    props.investigator.cardCode,
+    props.investigator.id,
+  ),
+)
 
 const endTurnAction = computed(() => {
   return props.choices
@@ -529,7 +538,7 @@ const spadeInjury = computed(() => {
             :player-id="playerId"
             :investigator-id="investigator.id"
             :card-code="investigator.cardCode"
-            :abilities="abilities"
+            :abilities="triggerModeAbilities"
           />
         </div>
       </div>

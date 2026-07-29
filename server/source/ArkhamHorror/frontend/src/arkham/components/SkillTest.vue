@@ -955,10 +955,19 @@ i.iconSkillAgility {
 
 .focused-chaos-tokens {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
   gap: 8px;
   padding: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   background: rgba(0, 0, 0, 0.5);
+
+  :deep(.token-container) {
+    flex: 0 0 auto;
+  }
 }
 
 .token-effects {

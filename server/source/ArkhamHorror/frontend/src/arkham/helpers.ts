@@ -134,6 +134,7 @@ export function imgsrc(src: string) {
         store.companionAssetHost,
         store.cardImageCdnHost,
         language,
+        withUiAssetRevision(fullPath, path),
       )
     }
   }

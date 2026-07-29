@@ -25,6 +25,7 @@ import TokenPool, { type TokenPoolItem } from '@/arkham/components/TokenPool.vue
 import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
+import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
 import AiTargetMenu from '@/arkham/components/AiTargetMenu.vue'
 import Story from '@/arkham/components/Story.vue';
 import Token from '@/arkham/components/Token.vue';
@@ -42,10 +43,12 @@ const props = withDefaults(defineProps<{
 const debugging = ref(false)
 const frame = ref(null)
 const dbCardStore = useDbCardStore()
-const ownedByCurrentPlayer = computed(() =>
-  props.asset.owner !== null
-  && props.game.investigators[props.asset.owner]?.playerId === props.playerId
-)
+const controllerInvestigatorId = computed(() => props.asset.controller ?? props.asset.owner)
+const ownedByCurrentPlayer = computed(() => {
+  const controller = controllerInvestigatorId.value
+  return controller !== null
+    && props.game.investigators[controller]?.playerId === props.playerId
+})
 
 const emits = defineEmits<{
   choose: [value: number]
@@ -210,6 +213,12 @@ const abilities = computed(() => {
 
       return acc;
     }, []);
+})
+
+const triggerModeAbilities = computed(() => {
+  const controller = controllerInvestigatorId.value
+  if (controller === null) return []
+  return triggerModeAbilitiesForCard(choices.value, cardCode.value, controller)
 })
 
 const cardsUnderneath = computed(() => props.asset.cardsUnderneath)
@@ -395,12 +404,12 @@ function startDrag(event: DragEvent) {
             :data-customizations="JSON.stringify(asset.customizations)"
           />
           <AbilityTriggerModeToggle
-            v-if="ownedByCurrentPlayer && asset.owner !== null"
+            v-if="ownedByCurrentPlayer && controllerInvestigatorId !== null"
             :game="game"
             :player-id="playerId"
-            :investigator-id="asset.owner"
+            :investigator-id="controllerInvestigatorId"
             :card-code="cardCode"
-            :abilities="abilities"
+            :abilities="triggerModeAbilities"
             :exhausted="exhausted"
           />
           <div v-if="investigators.length > 0" class="in-vehicle">
