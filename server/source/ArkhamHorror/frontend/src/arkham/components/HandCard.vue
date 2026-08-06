@@ -110,6 +110,7 @@ const triggerModeAbilities = computed(() =>
     choices.value,
     cardContents.value.cardCode,
     props.ownerId,
+    isAbility,
   ),
 )
 

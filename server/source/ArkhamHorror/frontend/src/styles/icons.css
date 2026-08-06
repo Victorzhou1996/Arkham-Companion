@@ -278,3 +278,91 @@
     content: "\e900";
   }
 }
+
+.rune-D {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e903";
+  }
+}
+
+.rune-E {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e904";
+  }
+}
+
+.rune-F {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e905";
+  }
+}
+
+.rune-S {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e912";
+  }
+}
+
+.rune-T {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e913";
+  }
+}
+
+.rune-U {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e914";
+  }
+}
+
+.rune-V {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e915";
+  }
+}
+
+.rune-W {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e916";
+  }
+}
+
+.rune-X {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e917";
+  }
+}
+
+.rune-Y {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e918";
+  }
+}
+
+.rune-Z {
+  &:before {
+    text-transform: none;
+    font-family: "ArkhamSlim";
+    content: "\e919";
+  }
+}

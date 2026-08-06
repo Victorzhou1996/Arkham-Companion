@@ -8,7 +8,7 @@ import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Helpers.Modifiers (ModifierType (..), maybeModified_, modifySelect)
 import Arkham.Helpers.Window (getRevealedLocation)
 import Arkham.Matcher
-import Arkham.Message.Lifted.Placement
+import Arkham.Scenarios.TheTwistedHollow.Helpers (placeValeLanternAtNearestLocation)
 import Arkham.Trait (Trait (Dark, Forest))
 import Arkham.Window (Window (..))
 import Arkham.Window qualified as Window
@@ -57,7 +57,7 @@ instance RunMessage ValeLanternBeaconOfHope where
       pure a
     UseCardAbility iid (isSource attrs -> True) 2 ws _ -> do
       cancelWindowBatch ws
-      withLocationOf iid $ place attrs . AtLocation
+      placeValeLanternAtNearestLocation iid attrs
       flipOverBy iid (attrs.ability 2) attrs
       pure a
     Flip _ _ (isTarget attrs -> True) -> do

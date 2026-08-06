@@ -1,1 +1,0 @@
-import{d as n,a as o,e as r,n as s,t as l,_ as i}from"./index-DAm0BcT8.js";const c=n({__name:"PrimaryButton",props:{label:{},danger:{type:Boolean,default:!1}},emits:["click"],setup(e){return(t,a)=>(o(),r("button",{class:s(["primary-btn",{danger:e.danger}]),onClick:a[0]||(a[0]=m=>t.$emit("click"))},l(e.label),3))}}),d=i(c,[["__scopeId","data-v-75461e8c"]]);export{d as P};

@@ -9,6 +9,7 @@ import { cardArt, cardImage } from '@/arkham/cardImages'
 import { keyToId } from '@/arkham/types/Key'
 import { useGameChoices } from '@/arkham/composables/useGameChoices'
 import { useGameIndexes } from '@/arkham/composables/useGameIndexes'
+import { useCardFlip } from '@/arkham/composables/useCardFlip'
 import DebugLocation from '@/arkham/components/debug/Location.vue'
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message'
 import { actionsToList } from '@/arkham/types/Action'
@@ -39,6 +40,7 @@ import { cardFacedown, Card } from '../types/Card'
 import useHighlighter from '@/composable/useHighlighter'
 import { IsMobile } from '@/arkham/isMobile'
 import { useDbCardStore } from '@/stores/dbCards'
+import { isCthulhuBoardEnemy } from '@/arkham/components/TheDrownedCity/cthulhuBoard'
 
 export interface Props {
   game: Game
@@ -78,6 +80,7 @@ const image = computed(() => {
   if (enemyLocation) return cardImage(cardCode)
   return cardImage(cardCode, revealed ? '' : 'b')
 })
+const { displayedImage, flipping } = useCardFlip(image)
 
 const id = computed(() => props.location.id)
 const aiTarget = computed(() => ({ tag: 'LocationTarget', contents: id.value }))
@@ -267,7 +270,9 @@ const enemies = computed(() => {
     (e) =>
       props.game.enemies[e].placement.tag === 'AtLocation' &&
       props.game.enemies[e].placement.contents !== 'AttachedToAsset' &&
-      props.game.enemies[e].asSelfLocation === null,
+      props.game.enemies[e].asSelfLocation === null &&
+      /* Cthulhu's facets are shown on the Cthulhu Board, not in the enemy row. */
+      !isCthulhuBoardEnemy(props.game.enemies[e].cardCode),
   )
 })
 
@@ -303,6 +308,8 @@ const hasAttachments = computed(() => {
     attachedKeys.value.length > 0
   )
 })
+
+const isTillinghastEsoterica = computed(() => props.location.cardCode === 'c11685')
 
 const encounterCardsUnderneath = computed(() => {
   return props.location.cardsUnderneath.filter((c) => c.tag === 'EncounterCard')
@@ -343,6 +350,21 @@ const blocked = computed(() => {
 })
 
 const modifiers = computed(() => props.location.modifiers)
+
+// Locations can be rotated by the scenario (the Central Chamber turns to face the
+// location beneath it). Same UIModifier the enemy and asset views read.
+const uiRotation = computed<number>(() => {
+  const mods = props.location.modifiers ?? []
+
+  for (let i = mods.length - 1; i >= 0; i--) {
+    const t: any = mods[i]?.type
+    if (t?.tag === 'UIModifier' && t?.contents?.tag === 'Rotated') {
+      return t.contents.contents
+    }
+  }
+
+  return 0
+})
 
 const darkTraitRemoved = computed(() =>
   modifiers.value?.some((m) => m.type.tag === 'RemoveTrait' && m.type.contents === 'Dark') ?? false
@@ -569,10 +591,17 @@ function onDrop(event: DragEvent) {
   }
 }
 
-const cardsUnderneathToShow = computed(() => debug.active ? props.location.cardsUnderneath : playerCardsUnderneath.value)
+const cardsUnderneathToShow = computed(() =>
+  debug.active || isTillinghastEsoterica.value
+    ? props.location.cardsUnderneath
+    : playerCardsUnderneath.value
+)
 const hasFacedownCardsUnderneath = computed(() => props.location.cardsUnderneath.some(cardFacedown))
 const canShowCardsUnderneath = computed(() => {
   if (debug.active) return props.location.cardsUnderneath.length > 0
+  if (isTillinghastEsoterica.value) {
+    return props.location.cardsUnderneath.length > 0 && !hasFacedownCardsUnderneath.value
+  }
   return playerCardsUnderneath.value.length > 0 && !hasFacedownCardsUnderneath.value
 })
 const showCardsUnderneath = () => emits('show', cardsUnderneathToShow, 'Cards Underneath', false, debug.active)
@@ -647,7 +676,12 @@ const hasAnyLocationVehicleAssets = computed(() =>
             <font-awesome-icon :icon="['fa', 'circle-exclamation']" />
           </span>
 
-          <div class="card-frame-inner" :class="{ highlighted, blocked, exhausted: isExhausted }">
+          <div
+            class="card-frame-inner"
+            :class="{ highlighted, blocked, exhausted: isExhausted, 'card--flipping': flipping && !locationStory }"
+            :style="{ '--ui-rotation': `${uiRotation}deg` }"
+            :data-rotation="uiRotation || undefined"
+          >
             <Story
               v-if="locationStory"
               :story="locationStory"
@@ -664,7 +698,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
               <img
                 :data-id="id"
                 class="card card--locations"
-                :src="image"
+                :src="displayedImage"
                 :class="{ 'location--can-interact': canInteract && !hasObjective, 'location--can-interact-cursor': canInteract, 'ai-target-hover': ai.targeting }"
                 draggable="false"
                 @drop="onDrop"
@@ -682,7 +716,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
             :abilities="dreamGateTriggerModeAbilities"
           />
 
-          <div v-if="cluesAroundPositions.length > 0" class="clues-around">
+          <div v-if="!flipping && cluesAroundPositions.length > 0" class="clues-around">
             <img
               v-for="(pos, idx) in cluesAroundPositions"
               :key="idx"
@@ -692,12 +726,12 @@ const hasAnyLocationVehicleAssets = computed(() =>
             />
           </div>
 
-          <div class="clues pool location-pool" v-if="(clues ?? 0) > 0 || floodLevel">
+          <div class="clues pool location-pool" v-if="!flipping && ((clues ?? 0) > 0 || floodLevel)">
             <PoolItem v-if="clues && clues > 0" type="clue" :amount="clues" />
             <img v-if="floodLevel" :src="floodLevel" class="flood-level" />
           </div>
 
-          <div class="pool location-pool" v-if="hasPool">
+          <div class="pool location-pool" v-if="!flipping && hasPool">
             <KeyToken
               v-for="k in keys"
               :key="keyToId(k)"
@@ -715,12 +749,17 @@ const hasAnyLocationVehicleAssets = computed(() =>
               :amount="1"
             />
             <PoolItem
-              v-if="encounterCardsUnderneath.length > 0"
+              v-if="isTillinghastEsoterica && location.cardsUnderneath.length > 0"
+              type="artifact_card"
+              :amount="location.cardsUnderneath.length"
+            />
+            <PoolItem
+              v-if="!isTillinghastEsoterica && encounterCardsUnderneath.length > 0"
               type="card"
               :amount="encounterCardsUnderneath.length"
             />
             <PoolItem
-              v-if="playerCardsUnderneath.length > 0"
+              v-if="!isTillinghastEsoterica && playerCardsUnderneath.length > 0"
               type="player_card"
               :amount="playerCardsUnderneath.length"
             />
@@ -1244,10 +1283,11 @@ const hasAnyLocationVehicleAssets = computed(() =>
   min-width: fit-content;
 
   .card-frame-inner {
+    --ui-rotation: 0deg;
     overflow: hidden;
     position: relative;
     transition: transform 0.2s;
-    transform: scale(1);
+    transform: rotate(var(--ui-rotation));
     line-height: 0;
     box-sizing: border-box;
     box-shadow: var(--card-shadow);
@@ -1258,11 +1298,11 @@ const hasAnyLocationVehicleAssets = computed(() =>
       border-width: 1px;
     }
     &.highlighted {
-      transform: scale(1.1);
+      transform: rotate(var(--ui-rotation)) scale(1.1);
     }
 
     &.exhausted {
-      transform: rotate(90deg) translateX(-10px);
+      transform: rotate(calc(90deg + var(--ui-rotation))) translateX(-10px);
     }
     &.blocked {
       filter: grayscale(0.5) brightness(0.85);

@@ -919,6 +919,7 @@ data Message
   | PutOnBottomOfDeck InvestigatorId DeckSignifier Target
   | Record CampaignLogKey
   | RecordForInvestigator InvestigatorId CampaignLogKey
+  | IncrementRecordCountForInvestigator InvestigatorId CampaignLogKey Int
   | RecordCount CampaignLogKey Int
   | IncrementRecordCount CampaignLogKey Int
   | DecrementRecordCount CampaignLogKey Int
@@ -1004,6 +1005,7 @@ data Message
   | ShuffleDeck DeckSignifier
   | ShuffleIntoDeck DeckSignifier Target
   | ShuffleCardsIntoTopOfDeck DeckSignifier Int [Card]
+  | ShuffleCardsIntoBottomOfDeck DeckSignifier Int [Card]
   | SpendClues Int [InvestigatorId]
   | SpendResources InvestigatorId Int
   | SpendUses Source Target UseType Int

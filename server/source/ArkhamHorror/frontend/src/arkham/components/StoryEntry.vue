@@ -199,6 +199,7 @@ const flippableCard = (cardCode: string) => {
     cost: null,
     otherSide: `${cardCode}b`,
     meta: {},
+    errata: null,
   }
 }
 </script>

@@ -147,6 +147,11 @@ gatherJust encounterSet defs = do
       <$> gatherEncounterSet encounterSet
   attrsL . encounterDeckL %= (Deck cards <>)
 
+gatherJustMatching :: ReverseQueue m => Set.EncounterSet -> CardMatcher -> ScenarioBuilderT m ()
+gatherJustMatching encounterSet matcher = do
+  gather encounterSet
+  removeCards =<< amongGathered (CardFromEncounterSet encounterSet <> not_ matcher)
+
 gatherAndSetAside :: ReverseQueue m => Set.EncounterSet -> ScenarioBuilderT m ()
 gatherAndSetAside encounterSet = do
   cards <- map toCard <$> gatherEncounterSet encounterSet
@@ -170,10 +175,16 @@ placeStory def = do
   removeEvery [def]
   push $ StoryMessage $ PlaceStory card Global
 
+placeStoryCapture :: ReverseQueue m => CardDef -> ScenarioBuilderT m StoryId
+placeStoryCapture def = do
+  placeStory def
+  pure $ StoryId def.cardCode
+
 setAside :: (ReverseQueue m, FindInEncounterDeck a, HasCallStack) => [a] -> ScenarioBuilderT m ()
 setAside = setAsideWith pure
 
-setAsideFacedown :: (ReverseQueue m, FindInEncounterDeck a, HasCallStack) => [a] -> ScenarioBuilderT m ()
+setAsideFacedown
+  :: (ReverseQueue m, FindInEncounterDeck a, HasCallStack) => [a] -> ScenarioBuilderT m ()
 setAsideFacedown = setAsideWith (setFacedown True)
 
 setAsideWith
@@ -199,6 +210,7 @@ setAsideWith f as = do
   cards' <- traverse f cards
   attrsL . setAsideCardsL %= (<> cards')
   attrsL . encounterDecksL . each . _1 %= flip removeEachFromDeck (map toCardDef cards)
+
 -- setAside :: ReverseQueue m => [CardDef] -> ScenarioBuilderT m ()
 -- setAside defs = do
 --   setAsideCards defs

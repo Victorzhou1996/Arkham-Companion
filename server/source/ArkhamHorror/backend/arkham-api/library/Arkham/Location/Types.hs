@@ -468,6 +468,10 @@ symbolLabel
   :: (Entity a, EntityAttrs a ~ LocationAttrs) => CardBuilder LocationId a -> CardBuilder LocationId a
 symbolLabel = fmap (overAttrs (\attrs -> attrs & labelL .~ (T.toLower . tshow $ locationSymbol attrs)))
 
+withXShroud
+  :: (Entity a, EntityAttrs a ~ LocationAttrs) => CardBuilder LocationId a -> CardBuilder LocationId a
+withXShroud = fmap (overAttrs (\attrs -> attrs & shroudL ?~ ValueX))
+
 setLabel
   :: (Entity a, EntityAttrs a ~ LocationAttrs)
   => Text -> CardBuilder LocationId a -> CardBuilder LocationId a
@@ -477,3 +481,8 @@ setConnectsTo
   :: (Entity a, EntityAttrs a ~ LocationAttrs)
   => Set Direction -> CardBuilder LocationId a -> CardBuilder LocationId a
 setConnectsTo connections = fmap (overAttrs (\a -> a {locationConnectsTo = connections}))
+
+setCostToEnterUnrevealed
+  :: (Entity a, EntityAttrs a ~ LocationAttrs)
+  => Cost -> CardBuilder LocationId a -> CardBuilder LocationId a
+setCostToEnterUnrevealed cost = fmap (overAttrs (\a -> a {locationCostToEnterUnrevealed = cost}))

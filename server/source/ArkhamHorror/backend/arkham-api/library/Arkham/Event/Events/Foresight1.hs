@@ -5,9 +5,11 @@ import Arkham.Event.Cards qualified as Cards
 import Arkham.Event.Import.Lifted hiding (cardDrawModifier)
 import {-# SOURCE #-} Arkham.GameEnv (findAllCards)
 import Arkham.Helpers.Modifiers
+import Arkham.I18n (cardNameVar, ikey', withI18n)
 import Arkham.Name
 import Arkham.Window (Window (..))
 import Arkham.Window qualified as Window
+import Data.List.Extra (nubOrdOn)
 
 -- Needs to affect search/draw
 -- If the drawn card is the named card, that investigator may either (choose one):
@@ -21,8 +23,10 @@ newtype Foresight1 = Foresight1 EventAttrs
 foresight1 :: EventCard Foresight1
 foresight1 = event Foresight1 Cards.foresight1
 
-allCardNames :: HasGame m => m [Text]
-allCardNames = nub . sort . map toTitle <$> findAllCards (const True)
+allCardNames :: HasGame m => m [(Text, Text)]
+allCardNames = map toChoice . nubOrdOn toTitle . sortOn toTitle <$> findAllCards (const True)
+ where
+  toChoice card = (withI18n $ cardNameVar card $ ikey' "label.name", toTitle card)
 
 getWindowInvestigator :: HasCallStack => [Window] -> (InvestigatorId, CardDrawId)
 getWindowInvestigator [] = error $ "getWindowInvestigator: empty list\n" <> prettyCallStack callStack
@@ -36,8 +40,8 @@ instance RunMessage Foresight1 where
     InvestigatorPlayEvent iid (is attrs -> True) _ (getWindowInvestigator -> (iid', cid)) _ -> do
       cardNames <- allCardNames
 
-      chooseOneDropDown iid =<< for cardNames \name -> do
+      chooseOneDropDown iid =<< for cardNames \(label, name) -> do
         enabled <- cardDrawModifier cid attrs iid' (Foresight name)
-        pure (name, enabled)
+        pure (label, enabled)
       pure e
     _ -> Foresight1 <$> liftRunMessage msg attrs

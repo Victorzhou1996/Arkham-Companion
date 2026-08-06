@@ -20,7 +20,7 @@ instance HasAbilities CarolynFern2 where
   getAbilities (CarolynFern2 a) =
     [ playerLimit PerRound
         $ withWindowHighlight
-        $ selfAbility a 1 (AbleToDiscoverCluesAt YourLocation)
+        $ selfAbility a 1 (canDiscoverCluesAt YourLocation)
         $ freeReaction
         $ oneOf
           [ AssetHealed #after #horror (#ally <> AssetControlledBy (affectsOthers Anyone)) (SourceOwnedBy You)

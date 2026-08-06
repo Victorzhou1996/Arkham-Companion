@@ -175,6 +175,7 @@ data Cost
   | CostWhenTreacheryElse TreacheryMatcher Cost Cost
   | CostOnlyWhen Criterion Cost
   | CostIfEnemy EnemyMatcher Cost Cost
+  | CostIfLocation LocationMatcher Cost Cost
   | CostIfCustomization Customization Cost Cost
   | CostIfRemembered ScenarioLogKey Cost Cost
   | UpTo GameCalculation Cost
@@ -327,6 +328,11 @@ instance FromJSON Cost where
 
 totalActionCost :: Cost -> Int
 totalActionCost = sumOf (cosmos . _ActionCost)
+
+totalActionPayment :: Payment -> Int
+totalActionPayment payment =
+  sumOf (cosmos . _ActionPayment) payment
+    + length (toListOf (cosmos . _AdditionalActionPayment) payment)
 
 totalResourcePayment :: Payment -> Int
 totalResourcePayment = sumOf (cosmos . _ResourcePayment)

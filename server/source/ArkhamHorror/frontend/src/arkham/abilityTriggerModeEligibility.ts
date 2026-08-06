@@ -1,5 +1,5 @@
 import type { Customization } from '@/arkham/types/Customization'
-import type { AbilityMessage, Message } from '@/arkham/types/Message'
+import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
 
 export type HandCardTriggerMetadata = {
   type_code: string
@@ -44,6 +44,7 @@ export function triggerModeAbilitiesForCard(
   choices: readonly Message[],
   cardCode: string,
   investigatorId: string,
+  matchesInstance: (choice: AbilityLabel) => boolean = () => true,
 ): AbilityMessage[] {
   const normalized = normalizeCardCode(cardCode)
 
@@ -52,6 +53,7 @@ export function triggerModeAbilitiesForCard(
       choice.tag === 'AbilityLabel'
       && choice.investigatorId === investigatorId
       && normalizeCardCode(choice.ability.cardCode) === normalized
+      && matchesInstance(choice)
     ) {
       result.push({ contents: choice, displayAsAction: false, index })
     }

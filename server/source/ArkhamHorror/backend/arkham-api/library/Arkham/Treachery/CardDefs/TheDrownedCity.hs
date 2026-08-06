@@ -90,8 +90,11 @@ alienEggs =
 
 parasiticTransformation :: CardDef
 parasiticTransformation =
-  (treachery "11583" "Parasitic Transformation" TheApiary 4)
-    {cdCardTraits = setFromList [Curse, Hazard]}
+  (weakness "11583" "Parasitic Transformation")
+    { cdCardTraits = setFromList [Curse, Hazard]
+    , cdEncounterSet = Just TheApiary
+    , cdEncounterSetQuantity = Just 4
+    }
 
 -- The Grand Vault
 deadlyMechanisms :: CardDef
@@ -156,6 +159,7 @@ erodedFrieze =
     { cdCardTraits = setFromList [Evidence, Glyph]
     , cdOtherSide = Just "11664b"
     , cdDoubleSided = True
+    , cdRevelation = CannotBeCanceledRevelation
     }
 
 stElmosFire :: CardDef

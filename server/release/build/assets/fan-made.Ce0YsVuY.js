@@ -1,1 +1,0 @@
-import{_ as e}from"./http-client.context.CrnUW5jD.js";import{U as t}from"./page-title.MqSC5ZNX.js";function n(){let n=e(e=>e.addFanMadeProject);return t({mutationKey:[`fan-made`,`add-project`],mutationFn:e=>n(e)})}function r(){let n=e(e=>e.removeFanMadeProject);return t({mutationKey:[`fan-made`,`remove-project`],mutationFn:e=>n(e)})}export{r as n,n as t};

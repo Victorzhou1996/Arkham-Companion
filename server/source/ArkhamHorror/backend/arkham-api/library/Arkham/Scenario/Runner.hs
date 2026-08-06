@@ -628,6 +628,13 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
     let (cards', rest) = draw n scenarioEncounterDeck
     shuffled <- shuffleM (cards <> cards')
     pure $ a & encounterDeckL .~ Deck (shuffled <> unDeck rest)
+  ShuffleCardsIntoBottomOfDeck Deck.EncounterDeck n cards -> do
+    let
+      encounterCards = mapMaybe (preview _EncounterCard) cards
+      deck = filter (`notElem` encounterCards) $ unDeck scenarioEncounterDeck
+      (rest, bottomCards) = splitAt (length deck - n) deck
+    shuffled <- shuffleM (encounterCards <> bottomCards)
+    pure $ filterOutCards cards a & encounterDeckL .~ Deck (rest <> shuffled)
   PutCardOnTopOfDeck _ Deck.EncounterDeck card -> case card of
     EncounterCard ec -> do
       let
@@ -674,6 +681,12 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
     let (cards', rest) = splitAt n $ fromMaybe [] $ view (decksL . at deckKey) a
     shuffled <- shuffle (cards <> cards')
     pure $ a & decksL . at deckKey ?~ shuffled <> rest
+  ShuffleCardsIntoBottomOfDeck (Deck.ScenarioDeckByKey deckKey) n cards -> do
+    let
+      deck = filter (`notElem` cards) $ fromMaybe [] $ view (decksL . at deckKey) a
+      (rest, bottomCards) = splitAt (length deck - n) deck
+    shuffled <- shuffle (cards <> bottomCards)
+    pure $ filterOutCards cards a & decksL . at deckKey ?~ rest <> shuffled
   PutCardOnBottomOfDeck _ (Deck.ScenarioDeckByKey deckKey) card -> do
     let
       deck = fromMaybe [] $ view (decksL . at deckKey) a
@@ -1669,12 +1682,18 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
     push (RequestedEncounterCards target cards)
     pure $ a & encounterDeckL .~ encounterDeck
   DiscardTopOfEncounterDeck iid n source mtarget -> do
+    -- One checkpoint for the whole discard, before any card leaves the deck.
+    -- Responders that change the size of the discard (Ring Library) rewrite the
+    -- queued message below, so the extra cards stay part of this same batch and
+    -- reach whatever handler asked for the discard.
+    checkWhen $ Window.WouldDiscardTopOfEncounterDeck iid source n
     push $ DiscardTopOfEncounterDeckWithDiscardedCards iid n source mtarget []
     pure a
   DiscardTopOfEncounterDeckWithDiscardedCards iid 0 source mtarget cards -> do
     when (null scenarioEncounterDeck && not scenarioInShuffle) do
       checkWhen Window.EncounterDeckRunsOutOfCards
       push ShuffleEncounterDiscardBackIn
+    unless (null cards) $ checkAfter $ Window.DiscardedTopOfEncounterDeckBatch iid source cards
     for_ mtarget $ push . DiscardedTopOfEncounterDeck iid cards source
     pure $ a & inShuffleL .~ null scenarioEncounterDeck
   DiscardTopOfEncounterDeckWithDiscardedCards iid n source mtarget discardedCards -> do
@@ -1984,7 +2003,13 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
           Nothing -> scenarioGrid
           Just oldPos -> clearGrid oldPos scenarioGrid
         grid = insertGrid gloc gridCleared
-    let getAdjacent = selectOne . Matcher.LocationWithLabel . mkLabel . gridLabel . updatePosition pos
+    -- Neighbours are looked up by grid label, and the mover still carries its old
+    -- label at this point: a location sliding one cell over would otherwise find
+    -- itself sitting in the cell it just vacated and record itself as its own
+    -- neighbour (seen with the Great Lift). The cell it left is empty, so drop it.
+    let getAdjacent dir = do
+          mlid <- selectOne $ Matcher.LocationWithLabel $ mkLabel $ gridLabel $ updatePosition pos dir
+          pure $ if mlid == Just lid then Nothing else mlid
     mTopLocation <- getAdjacent GridUp
     mBottomLocation <- getAdjacent GridDown
     mLeftLocation <- getAdjacent GridLeft
