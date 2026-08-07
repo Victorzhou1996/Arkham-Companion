@@ -42,10 +42,15 @@ const props = withDefaults(defineProps<{
 const debugging = ref(false)
 const frame = ref(null)
 const dbCardStore = useDbCardStore()
-const ownedByCurrentPlayer = computed(() =>
-  props.asset.owner !== null
-  && props.game.investigators[props.asset.owner]?.playerId === props.playerId
-)
+const controllerInvestigatorId = computed(() => {
+  const asset = props.asset as Arkham.Asset & { controller?: string | null }
+  return asset.controller ?? asset.owner
+})
+const ownedByCurrentPlayer = computed(() => {
+  const controller = controllerInvestigatorId.value
+  return controller !== null
+    && props.game.investigators[controller]?.playerId === props.playerId
+})
 
 const emits = defineEmits<{
   choose: [value: number]
@@ -395,10 +400,10 @@ function startDrag(event: DragEvent) {
             :data-customizations="JSON.stringify(asset.customizations)"
           />
           <AbilityTriggerModeToggle
-            v-if="ownedByCurrentPlayer && asset.owner !== null"
+            v-if="ownedByCurrentPlayer && controllerInvestigatorId !== null"
             :game="game"
             :player-id="playerId"
-            :investigator-id="asset.owner"
+            :investigator-id="controllerInvestigatorId"
             :card-code="cardCode"
             :abilities="abilities"
             :exhausted="exhausted"
@@ -472,6 +477,7 @@ function startDrag(event: DragEvent) {
         :scarletKey="game.scarletKeys[skId]"
         :game="game"
         :playerId="playerId"
+        :investigator-id="ownedByCurrentPlayer ? controllerInvestigatorId ?? undefined : undefined"
         :key="skId"
         @choose="choose"
         :attached="true"

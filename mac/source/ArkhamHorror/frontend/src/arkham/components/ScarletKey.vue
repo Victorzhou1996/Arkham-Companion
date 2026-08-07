@@ -5,6 +5,7 @@ import * as ArkhamGame from '@/arkham/types/Game'
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message'
 import { cardImage } from '@/arkham/cardImages'
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import * as Arkham from '@/arkham/types/ScarletKey'
 import TokenPool from '@/arkham/components/TokenPool.vue';
 
@@ -12,6 +13,7 @@ export interface Props {
   game: Game
   scarletKey: Arkham.ScarletKey
   playerId: string
+  investigatorId?: string
   atLocation?: boolean
   attached?: boolean
 }
@@ -87,6 +89,14 @@ const abilities = computed(() => {
           :data-crossed-off="crossedOff"
           class="card scarletKey"
           @click="$emit('choose', cardAction)"
+        />
+        <AbilityTriggerModeToggle
+          v-if="investigatorId"
+          :game="game"
+          :player-id="playerId"
+          :investigator-id="investigatorId"
+          :card-code="id"
+          :abilities="abilities"
         />
         <div class="pool">
           <TokenPool :tokens="scarletKey.tokens" />

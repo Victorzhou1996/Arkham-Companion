@@ -642,6 +642,7 @@ function closeHand() {
             :scarletKey="game.scarletKeys[skId]"
             :game="game"
             :playerId="playerId"
+            :investigator-id="investigator.id"
             :key="skId"
             @choose="$emit('choose', $event)"
           />
