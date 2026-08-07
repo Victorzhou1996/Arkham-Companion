@@ -244,7 +244,6 @@ function localDeckMatchesInvestigator(candidate: Deck) {
   const target = targetInvestigatorCode.value
   if (!target) return false
   const status = deckMetaValue(candidate, 'arkham_horror_campaign_status')
-  if (status === 'completed') return false
   const deckGameId = deckMetaValue(candidate, 'arkham_horror_campaign_game_id')
   if (status === 'active' && deckGameId && deckGameId !== props.game.id) return false
   return investigatorCode(candidate.list.investigator_code) === target

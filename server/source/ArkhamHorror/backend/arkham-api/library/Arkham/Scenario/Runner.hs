@@ -45,6 +45,7 @@ import Arkham.Cost (Payment (NoPayment))
 import Arkham.Cost qualified as Cost
 import Arkham.Cost.Status
 import Arkham.Deck qualified as Deck
+import Arkham.Decklist (decklistTrauma)
 import Arkham.DefeatedBy
 import Arkham.Difficulty
 import Arkham.Direction
@@ -262,7 +263,9 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
               else do
                 ws <- traverse (`genPlayerCardWith` setPlayerCardOwner iid) randomWeaknesses
                 pure (ws, [])
-          purchaseTrauma <- initDeckTrauma deck' iid (toTarget a)
+          startingTrauma <- case mDecklist >>= decklistTrauma of
+            Just (physical, mental) -> pure [SetTrauma iid physical mental]
+            Nothing -> initDeckTrauma deck' iid (toTarget a)
           initXp <- initDeckXp deck' iid (toTarget a)
           let deck'' = withDeck (<> weaknesses) deck'
           pid <- getPlayer iid
@@ -277,7 +280,7 @@ runScenarioAttrs msg a@ScenarioAttrs {..} = runQueueT $ case msg of
             [ LoadDeck iid deck''
             , DeferPastSimultaneousAsk pid
                 $ morriganMessages
-                <> purchaseTrauma
+                <> startingTrauma
                 <> toList mEldritchBrand
                 <> [DoStep 1 msg]
                 <> initXp
