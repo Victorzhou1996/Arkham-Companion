@@ -16,6 +16,7 @@ import {
 } from 'vue';
 import { type Game } from '@/arkham/types/Game';
 import { type Scenario } from '@/arkham/types/Scenario';
+import { type Story as StoryAttrs } from '@/arkham/types/Story';
 import { type Enemy } from '@/arkham/types/Enemy';
 import { type ConcealedCard } from '@/arkham/types/ConcealedCard';
 import ConcealedCardView from '@/arkham/components/ConcealedCard.vue';
@@ -52,6 +53,8 @@ import EncounterDeck from '@/arkham/components/EncounterDeck.vue';
 import VictoryDisplay from '@/arkham/components/VictoryDisplay.vue';
 import SkillTest from '@/arkham/components/SkillTest.vue';
 import ScenarioDeck from '@/arkham/components/ScenarioDeck.vue';
+import CthulhuBoard from '@/arkham/components/TheDrownedCity/CthulhuBoard.vue';
+import { isCthulhuBoardEnemy } from '@/arkham/components/TheDrownedCity/cthulhuBoard';
 import ScenarioDebug from '@/arkham/components/ScenarioDebug.vue';
 import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 import Story from '@/arkham/components/Story.vue';
@@ -279,6 +282,20 @@ const locationOffsets = computed<Record<string, { x: number, y: number }>>(() =>
   return offsets
 })
 
+const locationGridOffsets = computed<Record<string, { column: number, row: number }>>(() => {
+  const offsets: Record<string, { column: number, row: number }> = {}
+  for (const loc of Object.values(props.game.locations)) {
+    for (const m of loc.modifiers ?? []) {
+      if (m.type.tag !== 'UIModifier') continue
+      const c = m.type.contents as any
+      if (c && typeof c === 'object' && c.tag === 'GridOffset') {
+        offsets[loc.id] = { column: c.columnOffset, row: c.rowOffset }
+      }
+    }
+  }
+  return offsets
+})
+
 // Padding to extend the scroll area so dragged locations near the edges
 // aren't clipped. Transforms don't expand the parent's layout box, so we
 // measure each moved cell's actual displaced position against the grid's
@@ -292,12 +309,22 @@ async function updateLayoutPadding() {
   if (!grid) return
 
   const current = layoutPadding.value
-  const allOffsets: Record<string, { x: number, y: number }> = {
-    ...locationOffsets.value,
-    ...pendingOffsets.value,
+  const allOffsets: Record<string, { x: number, y: number }> = {}
+  const offsetLocationIds = new Set([
+    ...Object.keys(locationOffsets.value),
+    ...Object.keys(pendingOffsets.value),
+    ...Object.keys(locationGridOffsets.value),
+  ])
+  for (const id of offsetLocationIds) {
+    const userOffset = pendingOffsets.value[id] ?? locationOffsets.value[id] ?? { x: 0, y: 0 }
+    const gridOffset = locationGridOffsets.value[id] ?? { column: 0, row: 0 }
+    allOffsets[id] = {
+      x: userOffset.x + gridOffset.column * (cellDimensions.value.w + 20),
+      y: userOffset.y + gridOffset.row * (cellDimensions.value.h + 20),
+    }
   }
 
-  if (Object.keys(allOffsets).length === 0) {
+  if (offsetLocationIds.size === 0) {
     if (current.left || current.right || current.top || current.bottom) {
       layoutPadding.value = { left: 0, right: 0, top: 0, bottom: 0 }
     }
@@ -348,7 +375,12 @@ function effectiveOffset(locationId: string): { x: number, y: number } {
 // `.location-cell` so Vue's TransitionGroup FLIP can animate the wrapper
 // without clobbering this transform during rotation reshuffles.
 function locationOffsetStyle(location: { id: string }) {
-  const canonical = effectiveOffset(location.id)
+  const userOffset = effectiveOffset(location.id)
+  const gridOffset = locationGridOffsets.value[location.id] ?? { column: 0, row: 0 }
+  const canonical = {
+    x: userOffset.x + gridOffset.column * (cellDimensions.value.w + 20),
+    y: userOffset.y + gridOffset.row * (cellDimensions.value.h + 20),
+  }
   // Apply the user's current rotation so the offset moves with the rotated
   // layout instead of staying in absolute screen space.
   const off = rotateOffset(canonical, rotationSteps.value)
@@ -1138,6 +1170,12 @@ const activePlayerId = computed(() => props.game.activeInvestigatorId)
 const globalStories = computed(() => Object.values(props.game.stories).filter((story) =>
   story.placement.tag === "OtherPlacement" && story.placement.contents === "Global"
 ))
+
+// Keep both faces of a double-sided story mounted as the same physical card.
+// The backend replaces the story entity when it flips, but a stable key lets
+// Story's image watcher play the card-flip animation instead of remounting.
+const globalStoryKey = (story: StoryAttrs) => [story.art, story.flippedArt].sort().join('/')
+
 const globalAssets = computed(() => Object.values(props.game.assets).filter((asset) => 
   asset.placement.tag === "OtherPlacement" && asset.placement.contents === "Global"
 ))
@@ -1168,7 +1206,7 @@ const cosmicEmissaryLayoutSignature = computed(() => {
 })
 watch([cosmicEmissaryLayoutSignature, rotationSteps, locationsZoom], () => nextTick(requestCosmicEmissaryCompact), { flush: 'post' })
 watch(
-  [locationOffsets, pendingOffsets, rotationSteps, locationsZoom, locations, cellDimensions],
+  [locationOffsets, pendingOffsets, locationGridOffsets, rotationSteps, locationsZoom, locations, cellDimensions],
   updateLayoutPadding,
   { flush: 'post', deep: true },
 )
@@ -1228,6 +1266,14 @@ const darknessLevel = computed(() => props.scenario.tokens[TokenType.DarknessLev
 const signOfTheGods = computed(() => props.scenario.counts["SignOfTheGods"])
 const strengthOfTheAbyss = computed(() => props.scenario.counts["StrengthOfTheAbyss"])
 const distortion = computed(() => props.scenario.counts["Distortion"])
+const cthulhuRage = computed(() => props.scenario.counts["CthulhuRage"])
+
+/* The Doom of Arkham Pt II. The three Cthulhu facets are at Cthulhu's location and
+ * engaged with the investigators there, but are displayed on the Cthulhu Board
+ * beside the scenario decks rather than in the location grid or a threat area. */
+const cthulhuBoardEnemies = computed(() =>
+  Object.values(props.game.enemies).filter((e) => isCthulhuBoardEnemy(e.cardCode))
+)
 // Laid to Rest: horror placed on the scenario reference card represents
 // Spiritual Disturbance (defeats everyone at 4). Render it on the scenario card.
 const spiritualDisturbance = computed(() =>
@@ -1911,6 +1957,13 @@ async function addChaosToken(face: any){
             @choose="choose"
           />
         </div>
+        <CthulhuBoard
+          v-if="cthulhuBoardEnemies.length > 0"
+          :game="game"
+          :playerId="playerId"
+          :enemies="cthulhuBoardEnemies"
+          @choose="choose"
+        />
         <ScenarioDeck
           v-for="[,scenarioDeck] in scenarioDecks"
           :key="scenarioDeck[0]"
@@ -2065,7 +2118,7 @@ async function addChaosToken(face: any){
 
         <Story
           v-for="story in globalStories"
-          :key="story.id"
+          :key="globalStoryKey(story)"
           :story="story"
           :game="game"
           :playerId="playerId"
@@ -2120,6 +2173,13 @@ async function addChaosToken(face: any){
                 type="resource"
                 tooltip="Sign of the Gods"
                 :amount="signOfTheGods"
+              />
+              <PoolItem
+                v-if="cthulhuRage"
+                class="cthulhuRage"
+                type="resource"
+                tooltip="Cthulhu's Rage"
+                :amount="cthulhuRage"
               />
               <PoolItem
                 v-if="distortion"
@@ -2265,9 +2325,13 @@ async function addChaosToken(face: any){
         <div class="location-cards-stage">
         <Connections :game="game" :playerId="playerId" :enableCosmicEmissaryAnimation="enableCosmicEmissaryAnimation" />
         <transition-group name="map" tag="div" ref="locationMap" class="location-cards" :css="props.scenario.id !== 'c10651'" :style="locationStyles" @before-leave="beforeLeave">
+          <!-- Keyed by id, not label: a location that changes grid label (the
+               Great Lift sliding between levels) must stay the same element so
+               TransitionGroup FLIP-animates it into its new cell. Keying by
+               label made that read as a leave + enter, so it teleported. -->
           <div
             v-for="location in locations"
-            :key="location.label"
+            :key="location.id"
             class="location-cell"
             :class="{ 'location-cell--can-interact': locationCanInteract(location) }"
             :data-location-id="location.id"
@@ -3097,7 +3161,7 @@ async function addChaosToken(face: any){
     grid-area: 1 / 1;
   }
 
-  .depth, .civilians-slain, .targets, .scraps, .switches, .darkness-level, .strength-of-the-abyss {
+  .depth, .civilians-slain, .targets, .scraps, .switches, .darkness-level, .strength-of-the-abyss, .cthulhuRage {
     align-self: end;
     justify-self: end;
     pointer-events: none;

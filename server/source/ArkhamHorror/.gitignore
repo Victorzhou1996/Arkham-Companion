@@ -92,3 +92,6 @@ tmp/
 .agents/
 .windsurf/
 skills-lock.json
+
+# Manual rebuild outputs (binaries, frontend bundles, logs, and reports)
+build-artifacts/

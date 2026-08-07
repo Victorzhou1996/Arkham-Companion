@@ -21,6 +21,7 @@ data Token
   | DarknessLevel
   | Depletion
   | Depth
+  | Discovery
   | Doom
   | Durability
   | Eclipse
@@ -36,7 +37,9 @@ data Token
   | Lock
   | LostSoul
   | Memory
+  | Mutation
   | Newspaper
+  | Obligation
   | Offering
   | Overgrowth
   | Pillar
@@ -98,6 +101,12 @@ instance IsLabel "charge" Token where
 
 instance IsLabel "secret" Token where
   fromLabel = Secret
+
+instance IsLabel "obligation" Token where
+  fromLabel = Obligation
+
+instance IsLabel "discovery" Token where
+  fromLabel = Discovery
 
 instance IsLabel "clue" Token where
   fromLabel = Clue

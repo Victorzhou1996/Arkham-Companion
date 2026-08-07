@@ -6,6 +6,7 @@ import Arkham.Treachery.CardDefs.Core2026 as X
 import Arkham.Treachery.CardDefs.EdgeOfTheEarth as X
 import Arkham.Treachery.CardDefs.NightOfTheZealot as X
 import Arkham.Treachery.CardDefs.Promo as X
+import Arkham.Treachery.CardDefs.RelicsOfThePast as X
 import Arkham.Treachery.CardDefs.ReturnTo as X
 import Arkham.Treachery.CardDefs.Standalone as X
 import Arkham.Treachery.CardDefs.TheCircleUndone as X
@@ -17,7 +18,6 @@ import Arkham.Treachery.CardDefs.TheForgottenAge as X
 import Arkham.Treachery.CardDefs.TheInnsmouthConspiracy as X
 import Arkham.Treachery.CardDefs.ThePathToCarcosa as X
 import Arkham.Treachery.CardDefs.TheScarletKeys as X
-import Arkham.Treachery.CardDefs.RelicsOfThePast as X
 
 import Arkham.Card.CardCode
 import Arkham.Card.CardDef
@@ -159,6 +159,7 @@ allPlayerTreacheryCards =
       , calledToGuinee
       , hemophobia
       , markOfElokoss
+      , parasiticTransformation
       ]
 
 allEncounterTreacheryCards :: Map CardCode CardDef
@@ -749,7 +750,6 @@ allEncounterTreacheryCards =
       , hungryWalls
       , dangerousCuriosity
       , alienEggs
-      , parasiticTransformation
       , deadlyMechanisms
       , ancientVaultO
       , ancientVaultN

@@ -1,54 +1,48 @@
 # Release Manifest
 
-This Server snapshot was built and verified on 2026-07-28.
+This Server snapshot was built and verified on 2026-08-07.
 
 ## Changes
 
-- Hand-card response mode controls now appear only on Fast events and Fast assets.
-- Stale response mode settings from older builds are ignored when they no longer apply.
-- The narration selection menu stays open until it is explicitly closed or Escape is pressed.
-- Return to The Path to Carcosa now includes all 16 campaign achievements.
-- Fresh database setup includes the current development-mode, epic-event, and achievement schema.
+- Added two prebuilt decks, including their notes and sideboards, to every new
+  account created by either the standard backend or the server sidecar.
+- Completed-campaign decks can now be selected for interlude upgrades.
+- Final physical and mental trauma is stored with the completed deck and restored
+  when that deck is used in a later campaign.
+- Build deck conversion now preserves the deck notes used by the starter decks.
+- Preserved the selected upstream rules updates, current The Drowned City content,
+  Chinese scenario text, response controls, narration, and image fallbacks.
 
 ## Server Artifacts
 
 - `server/release/bin/arkham-api`
   - Platform: Linux x86-64
-  - SHA256: `ef8d55d06d5cc4a484fb94442a66bf05381069cf1169897530f4ab2a459d2361`
-- `server/release/frontend-dist/index.html`
-  - SHA256: `25bad87cca3f2685c75bf3f7d752d0d867dd8dbaa37f973e5661b552603be1b8`
-- `server/release/build/index.html`
-  - SHA256: `e63a4103763c1edf184d80af19e85f8454aac49641448456ec42ab6777b79169`
+  - SHA256: `2acaa003e7b8760e3fc83542952030297873c769cd6d1c3f42921e62cf11d0ae`
+- Server release tar SHA256:
+  `eecf314b523606c8e26c8104cf81c68eb8710d02344292d0ee8c2c5f8b148594`
 
 The live database, user accounts, saves, runtime logs, server secrets, and
 deployment backups are intentionally not included.
 
 ## Verification
 
-- Frontend unit tests: 17 passed, 0 failed.
+- Backend library build: passed (6666 modules).
+- Registration behavior was verified with real temporary accounts on the local
+  and unkai databases; Build deck-conversion tests passed.
+- Frontend unit tests: passed.
 - Frontend TypeScript/Vue type check: passed.
 - Frontend production build: passed.
-- Achievement test suite: 87 passed, 0 failed.
-- Return to The Path to Carcosa achievement tests: 30 passed, 0 failed.
-- Local registration, authentication, achievements API, and visual achievement
-  catalog verification: passed.
-- Unkai public root, health check, hashed main asset, registration,
-  authentication, achievements API, and games API verification: passed.
-- Unkai database counts before and after deployment were unchanged:
-  4 users, 11 games, 31 decks, 3172 steps, and 1 earned achievement record.
+- macOS backend build: passed.
+- Linux x86-64 backend build: passed.
+- Local game, Build route, card images, real new-account registration, and unkai
+  deployment: passed.
 
-## Deployment Backups
-
-- Local:
-  - `/Users/yunke/Documents/VSCode/Arkham/backups/two-batch-predeploy-20260728-112236-local`
-- Unkai:
-  - `/opt/arkham-horror-public-v2/backups/two-batch-predeploy-20260728-112245`
-
-The Online server was not modified.
+The Online server was not modified by this release.
 
 ## Cards
 
-The shared card library contains the current AVIF files under `shared/cards/`.
+The shared card library contains the current AVIF files under `shared/cards/`,
+including the previously missing `01000.avif`.
 The macOS Companion bundle contains its own embedded copy under
 `Contents/Resources/CardImages`.
 

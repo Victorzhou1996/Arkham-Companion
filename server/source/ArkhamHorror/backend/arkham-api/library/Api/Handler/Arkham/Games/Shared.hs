@@ -13,6 +13,7 @@ import Arkham.Act.Types (actSequence)
 import Arkham.Ai.Decision (decideAi, decideAiAssist, isAssistCommitWindow)
 import Arkham.Ai.Helpers (lookupAiPlayer)
 import Arkham.Ai.State (aiEnabled)
+import Arkham.Card.CardCode (CardCode (..))
 import Arkham.Classes.Entity (attr)
 import Arkham.Entities (entitiesActs)
 import Arkham.Epic.Types (SharedEventState, SharedKey (PendingActAdvance, SharedActProgress), actProgressStages, epicEnvDeltaRef, epicEnvSharedRef, setSharedCounter, sharedCounter, sharedCounters, sharedTotalInvestigators, totalInvestigatorsKey)
@@ -27,10 +28,11 @@ import Arkham.Difficulty
 import Arkham.Game
 import Arkham.Game.Diff
 import Arkham.Game.State
+import Arkham.Game.Utils (gameInvestigators)
 import Arkham.GameEnv
 import Arkham.Id
 import Arkham.Investigator (lookupInvestigator)
-import Arkham.Investigator.Types (Investigator)
+import Arkham.Investigator.Types (Investigator, investigatorMentalTrauma, investigatorPhysicalTrauma)
 import Arkham.Message
 import Arkham.Name
 import Arkham.Queue
@@ -449,7 +451,7 @@ updateGame response gameId mRoom = do
   let publishLog = oldLogEntries <> updatedLog
   liftIO $ writeCachedLog mRoom arkhamGameStep publishLog
   when (gameGameState arkhamGameCurrentData == IsOver) $
-    runDB $ completeCampaignDecks gameId
+    runDB $ completeCampaignDecks gameId arkhamGameCurrentData
 
   publishToRoom gameId
     $ GameUpdate
@@ -650,14 +652,23 @@ runMessagesInGroupWhen p msgs gid = do
       $ GameUpdate
       $ PublicGame gid (arkhamGameName g') [] (arkhamGameCurrentData g')
 
-completeCampaignDecks :: ArkhamGameId -> DB ()
-completeCampaignDecks gameId = do
+completeCampaignDecks :: ArkhamGameId -> Game -> DB ()
+completeCampaignDecks gameId game = do
   decks <- select do
     deck <- from $ table @ArkhamDeck
     pure deck
   for_ decks \(Entity deckId deck) ->
     when (isActiveCampaignDeck gameId deck.arkhamDeckList) do
-      let decklist' = setCampaignDeckStatus "completed" deck.arkhamDeckList
+      let decklistWithTrauma = case campaignMetaText "arkham_horror_campaign_investigator" deck.arkhamDeckList of
+            Nothing -> deck.arkhamDeckList
+            Just investigatorCode -> case Map.lookup (InvestigatorId $ CardCode investigatorCode) (gameInvestigators game) of
+              Nothing -> deck.arkhamDeckList
+              Just investigator ->
+                setDecklistTrauma
+                  (attr investigatorPhysicalTrauma investigator)
+                  (attr investigatorMentalTrauma investigator)
+                  deck.arkhamDeckList
+          decklist' = setCampaignDeckStatus "completed" decklistWithTrauma
       P.update deckId [ArkhamDeckList P.=. decklist']
 
 isActiveCampaignDeck :: ArkhamGameId -> ArkhamDBDecklist -> Bool

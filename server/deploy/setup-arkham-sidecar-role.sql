@@ -31,7 +31,7 @@ GRANT SELECT ON TABLE
 TO arkham_sidecar;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE pending_registrations TO arkham_sidecar;
-GRANT INSERT ON TABLE users, password_resets TO arkham_sidecar;
+GRANT INSERT ON TABLE users, password_resets, arkham_decks TO arkham_sidecar;
 GRANT DELETE ON TABLE
   arkham_steps,
   arkham_log_entries,

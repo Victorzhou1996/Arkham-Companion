@@ -1,1 +1,0 @@
-import{d as e}from"./src.DEN_3V-D.js";import{ma as t}from"./http-client.context.CDD_DG3I.js";var n=e();function r(e){let{accept:r,children:i,id:a,multiple:o,onChange:s,...c}=e;return(0,n.jsxs)(t,{...c,as:`label`,"data-testid":`${a}-button`,htmlFor:a,children:[(0,n.jsx)(`input`,{className:`sr-only`,accept:r,id:a,type:`file`,multiple:o,onChange:s}),i]})}export{r as t};

@@ -21,6 +21,7 @@ import Arkham.Classes.Entity
 import Arkham.Classes.GameLogger
 import Arkham.Classes.Query
 import Arkham.Classes.RunMessage
+import Arkham.Decklist (decklistTrauma)
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.GameT
 import Arkham.Helpers
@@ -222,7 +223,9 @@ defaultCampaignRunner msg a = case msg of
     let weaknessMessages =
           if morrigan then [] else map (AddCampaignCardToDeck iid ShuffleIn) randomWeaknesses
     ancients <- hasBoon BoonOfTheAncients
-    purchaseTrauma <- initDeckTrauma deck' iid CampaignTarget
+    startingTrauma <- case mDecklist >>= decklistTrauma of
+      Just (physical, mental) -> pure [SetTrauma iid physical mental]
+      Nothing -> initDeckTrauma deck' iid CampaignTarget
     initXp <- initDeckXp deck' iid CampaignTarget
     pid <- getPlayer iid
 
@@ -240,7 +243,7 @@ defaultCampaignRunner msg a = case msg of
       $ weaknessMessages
       <> [ DeferPastSimultaneousAsk pid
              $ morriganSwaps
-             <> purchaseTrauma
+             <> startingTrauma
              <> toList mEldritchBrand
              <> [DoStep 1 msg]
              <> initXp

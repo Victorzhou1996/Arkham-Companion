@@ -3,9 +3,8 @@ module Arkham.Asset.Assets.ValeLanternExtinguishedLightBoon (valeLanternExtingui
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
-import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Matcher
-import Arkham.Message.Lifted.Placement
+import Arkham.Scenarios.TheTwistedHollow.Helpers (placeValeLanternAtNearestLocation)
 
 newtype ValeLanternExtinguishedLightBoon = ValeLanternExtinguishedLightBoon AssetAttrs
   deriving anyclass (IsAsset, HasModifiersFor)
@@ -28,7 +27,7 @@ instance RunMessage ValeLanternExtinguishedLightBoon where
       pure a
     UseCardAbility iid (isSource attrs -> True) 2 ws _ -> do
       cancelWindowBatch ws
-      withLocationOf iid $ place attrs . AtLocation
+      placeValeLanternAtNearestLocation iid attrs
       pure a
     Flip _ _ (isTarget attrs -> True) -> do
       push $ ReplaceAsset attrs.id Cards.valeLanternBeaconOfHope

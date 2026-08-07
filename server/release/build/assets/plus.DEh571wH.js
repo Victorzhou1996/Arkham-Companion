@@ -1,1 +1,0 @@
-import{h as e}from"./http-client.context.CrnUW5jD.js";var t=e(`minus`,[[`path`,{d:`M5 12h14`,key:`1ays0h`}]]),n=e(`plus`,[[`path`,{d:`M5 12h14`,key:`1ays0h`}],[`path`,{d:`M12 5v14`,key:`s699le`}]]);export{t as n,n as t};

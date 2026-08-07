@@ -860,6 +860,22 @@ function scheduleApplyUpdate(payload: string) {
         continueSkipAll()
       }
     })
+    .catch(async (err) => {
+      // A dropped update used to be an unhandled rejection: the board silently stayed on
+      // the previous state, which looks exactly like "the server ignored me" and invites
+      // the player to submit the same action again (#5256). Re-fetch instead.
+      console.error('Failed to decode game update, refetching', err)
+      await fetchGame(props.gameId, props.spectate)
+        .then(({ game: refetched }) => {
+          const locked = uiLock.value
+          game.value = locked ? { ...refetched, question: {} } : refetched
+          updateGameLog(refetched.log)
+          if (!locked) continueSkipAll()
+        })
+        .catch(() => {
+          socketError.value = true
+        })
+    })
     .finally(() => {
       decoding = false
       if (pendingUpdate) {
@@ -1688,12 +1704,31 @@ const continueUI = () => {
   uiLock.value = false
 }
 
+// Keep a multi-token reveal mounted while its per-token reaction windows advance.
+// Clearing the question here would tear down and recreate the same modal and
+// token components after every skip, replaying all of their reveal animations.
+function shouldPreserveFocusedChaosWindow() {
+  if (!game.value || !playerId.value || game.value.focusedChaosTokens.length === 0) return false
+  const currentQuestion = game.value.question[playerId.value]
+  return currentQuestion?.tag === 'ChooseOne' && currentQuestion.isWindow === true
+}
+
+// Keep focused-card modals mounted between one-at-a-time choices. The server
+// returns a new question after each card, and clearing the old one eagerly makes
+// the modal disappear and reappear between those responses.
+function shouldPreserveFocusedCardChoice() {
+  if (!game.value || !playerId.value || game.value.focusedCards.length === 0) return false
+  return Boolean(game.value.question[playerId.value])
+}
 // Callbacks
 async function choose(idx: number) {
+  if (processing.value) return
   if (idx !== -1 && game.value && !props.spectate) {
     oldQuestion.value = game.value.question
     const questionVersion = game.value.scenarioSteps
-    setGameQuestion({})
+    if (!shouldPreserveFocusedChaosWindow() && !shouldPreserveFocusedCardChoice()) {
+      setGameQuestion({})
+    }
     processing.value = true
     send(
       JSON.stringify({

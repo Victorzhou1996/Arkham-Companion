@@ -9,64 +9,100 @@ export interface UpgradeDeckUploadActions {
   upgrade: () => void | Promise<void>
 }
 
-function normalizeUploadableUpgradeDeck(data: unknown): ArkhamDbDecklist | null {
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) return null
-  const d = data as Record<string, unknown>
-  const nestedList = typeof d.list === 'object' && d.list !== null && !Array.isArray(d.list)
-    ? d.list as Record<string, unknown>
+export type UpgradeDeckUploadResult =
+  | { ok: true }
+  | { ok: false; reason: 'invalidJson' | 'notADecklist' }
+
+function record(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
     : null
-  const source = nestedList ?? d
+}
 
-  if (typeof d.id !== 'string' && typeof d.id !== 'number') return null
-  if (typeof d.name !== 'string') return null
-  if (typeof source.investigator_code !== 'string' || source.investigator_code.length === 0) return null
+function numericSlots(value: unknown): value is Record<string, number> {
+  const slots = record(value)
+  return slots !== null && Object.values(slots).every((count) => typeof count === 'number')
+}
 
-  const slots = source.slots
-  if (typeof slots !== 'object' || slots === null || Array.isArray(slots)) return null
-  if (!Object.values(slots as Record<string, unknown>).every((v) => typeof v === 'number')) return null
+/* Accept both public API decklists and locally saved `{ list: ... }` exports. This also
+ * rejects error responses that fetch() can otherwise mistake for a usable deck. */
+export function isUsableDecklist(data: unknown): boolean {
+  const outer = record(data)
+  if (!outer) return false
+  const source = record(outer.list) ?? outer
 
+  if (typeof source.investigator_code !== 'string' || source.investigator_code.length === 0) return false
+  if (!numericSlots(source.slots)) return false
+
+  const investigatorName = outer.investigator_name ?? outer.investigatorName
+  return investigatorName == null || typeof investigatorName === 'string'
+}
+
+function normalizeUploadedDecklist(data: unknown): ArkhamDbDecklist | null {
+  if (!isUsableDecklist(data)) return null
+
+  const outer = record(data)!
+  const source = record(outer.list) ?? outer
   const sideSlots = source.sideSlots ?? source.side_slots
-  if (sideSlots !== undefined && (typeof sideSlots !== 'object' || sideSlots === null || Array.isArray(sideSlots))) return null
+  if (sideSlots !== undefined && !numericSlots(sideSlots)) return null
 
+  const investigatorCode = source.investigator_code as string
   const normalized: ArkhamDbDecklist = {
-    id: String(d.id),
-    url: typeof d.url === 'string' ? d.url : null,
-    name: d.name,
-    investigator_code: source.investigator_code,
-    investigator_name: typeof d.investigator_name === 'string'
-      ? d.investigator_name
-      : (typeof d.investigatorName === 'string' ? d.investigatorName : source.investigator_code),
-    slots: slots as Record<string, number>,
+    id: outer.id == null ? '' : String(outer.id),
+    url: typeof outer.url === 'string' ? outer.url : null,
+    name: typeof outer.name === 'string' ? outer.name : '',
+    investigator_code: investigatorCode,
+    investigator_name: typeof outer.investigator_name === 'string'
+      ? outer.investigator_name
+      : (typeof outer.investigatorName === 'string' ? outer.investigatorName : investigatorCode),
+    slots: source.slots as Record<string, number>,
   }
 
   if (sideSlots !== undefined) normalized.sideSlots = sideSlots as Record<string, number>
   if (typeof source.taboo_id === 'number' || source.taboo_id === null) normalized.taboo_id = source.taboo_id
-  if (typeof source.meta === 'string' || (typeof source.meta === 'object' && source.meta !== null)) {
+  if (typeof source.meta === 'string' || record(source.meta)) {
     normalized.meta = source.meta as ArkhamDbDecklist['meta']
   }
 
   return normalized
 }
 
+/* Parallel investigators store the selected front in meta. */
+function uploadedInvestigatorCode(deck: ArkhamDbDecklist): string {
+  const meta = (() => {
+    if (deck.meta == null) return null
+    if (typeof deck.meta !== 'string') return deck.meta
+    try {
+      return JSON.parse(deck.meta || '{}') as Record<string, unknown>
+    } catch {
+      return null
+    }
+  })()
+
+  const front = meta?.alternate_front
+  return typeof front === 'string' && front.length > 0 ? front : deck.investigator_code
+}
+
 export function loadUpgradeDeckFromJsonText(
   jsonText: string,
   actions: UpgradeDeckUploadActions,
-): boolean {
+): UpgradeDeckUploadResult {
+  let data: unknown
   try {
-    const data = normalizeUploadableUpgradeDeck(JSON.parse(jsonText) as unknown)
-    if (!data) return false
-
-    const deckUrl = data.url ?? null
-
-    actions.setModel(data)
-    actions.setDeckList(data)
-    actions.setDeckUrl(deckUrl)
-    actions.setDeck(deckUrl)
-    actions.setDeckInvestigator(data.investigator_code)
-    actions.upgrade()
-
-    return true
+    data = JSON.parse(jsonText) as unknown
   } catch {
-    return false
+    return { ok: false, reason: 'invalidJson' }
   }
+
+  const deck = normalizeUploadedDecklist(data)
+  if (!deck) return { ok: false, reason: 'notADecklist' }
+
+  actions.setModel(deck)
+  actions.setDeckList(deck)
+  actions.setDeckUrl(deck.url)
+  actions.setDeck(deck.url)
+  actions.setDeckInvestigator(uploadedInvestigatorCode(deck))
+  actions.upgrade()
+
+  return { ok: true }
 }

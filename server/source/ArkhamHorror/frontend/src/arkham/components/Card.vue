@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { imgsrc } from '@/arkham/helpers';
 import { cardImage } from '@/arkham/cardImages';
 import type { Modifier } from '@/arkham/types/Modifier';
@@ -12,21 +12,41 @@ import { MessageType } from '@/arkham/types/Message';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import PoolItem from '@/arkham/components/PoolItem.vue'
 import { useDebug } from '@/arkham/debug'
+import { useCardStore } from '@/stores/cards'
 
 const props = withDefaults(defineProps<{
   game: Game
   card: Card | CardContents
   revealed?: boolean
   playerId: string
-}>(), { revealed: false })
+  allowAbilityButtons?: boolean
+  allowInteractions?: boolean
+}>(), { revealed: false, allowAbilityButtons: true, allowInteractions: true })
 
 const emit = defineEmits<{
   choose: [value: number]
 }>()
 const debug = useDebug()
+const cardStore = useCardStore()
+
+onMounted(() => {
+  if (!cardStore.loaded) cardStore.fetchCards()
+})
 
 const cardContents = computed<CardContents>(() => {
   return props.card.tag === "CardContents" ? props.card : ( props.card.tag === "VengeanceCard" ? props.card.contents.contents : props.card.contents)
+})
+
+const cardDef = computed(() => cardStore.cards.find((c) => c.cardCode === cardContents.value.cardCode))
+const isPlayerCard = computed(() => {
+  if (props.card.tag === 'CardContents') return true
+  if (props.card.tag === 'VengeanceCard') return props.card.contents.tag === 'PlayerCard'
+  return props.card.tag === 'PlayerCard'
+})
+const backImage = computed(() => {
+  const customBack = cardDef.value?.meta?.customBack
+    ?? (cardDef.value?.cardTraits.includes('Artifact') ? 'back_artifact.jpg' : undefined)
+  return imgsrc(customBack ? `backs/${customBack}` : `${isPlayerCard.value ? 'player_back' : 'encounter_back'}.jpg`)
 })
 
 const isEnemyLocationCard = computed(() => {
@@ -35,16 +55,10 @@ const isEnemyLocationCard = computed(() => {
 })
 
 const image = computed(() => {
-  if (props.card.tag === 'VengeanceCard') {
-    const back = props.card.contents.tag === 'PlayerCard' ? 'player_back' : 'encounter_back'
-    return imgsrc(`${back}.jpg`);
-  }
+  if (props.card.tag === 'VengeanceCard') return backImage.value
 
   const { cardCode, isFlipped, mutated } = cardContents.value
-  if (cardFacedown(props.card) && !props.revealed) {
-    const back = props.card.tag === 'PlayerCard' ? 'player_back' : 'encounter_back'
-    return imgsrc(`${back}.jpg`);
-  }
+  if (cardFacedown(props.card) && !props.revealed) return backImage.value
   // c05178 has 6 pairs of (front,back) variants using extended alphabet
   // suffixes: 05178a/b, 05178c/d, ... 05178k/l. The card code points at
   // the back/Unfinished Business side, so when unflipped render the matching
@@ -75,6 +89,10 @@ const isHighlighted = computed(() => props.game.highlightedCards.includes(id.val
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 
 function canInteract(c: Message): boolean {
+  if (isAbility(c)) {
+    return true
+  }
+
   if (c.tag === MessageType.TARGET_LABEL) {
     if (c.target.tag === 'SkillTarget') {
       if (typeof c.target.contents === 'string' && props.game.skills[c.target.contents].cardId == id.value) {
@@ -96,6 +114,7 @@ function canInteract(c: Message): boolean {
 }
 
 const cardAction = computed(() => {
+  if (!props.allowInteractions) return -1
   return choices.value.findIndex(canInteract)
 })
 
@@ -119,7 +138,7 @@ function isAbility(v: Message): v is AbilityLabel {
   if (source.tag === 'AssetSource' && source.contents) {
     const asset = props.game.assets[source.contents]
     if (asset) {
-      return asset.cardId === id.value && asset.placement.tag === 'StillInHand'
+      return asset.cardId === id.value && (asset.placement.tag === 'StillInHand' || asset.placement.tag === 'StillInDiscard')
     }
   }
 
@@ -127,6 +146,8 @@ function isAbility(v: Message): v is AbilityLabel {
 }
 
 const abilities = computed<AbilityMessage[]>(() => {
+  if (!props.allowAbilityButtons) return []
+
   return choices.value
     .reduce<AbilityMessage[]>((acc, v, i) => {
       if (isAbility(v)) {
@@ -170,12 +191,21 @@ const modifiers = computed(() => {
   }, [])
 })
 
+const investigatorId = computed(() => Object.values(props.game.investigators).find((i) => i.playerId === props.playerId)?.id)
+
+const canDebugCustomize = computed(() => debug.active && !!investigatorId.value && (cardDef.value?.customizations?.length ?? 0) > 0)
+
+function debugCustomize() {
+  if (!investigatorId.value) return
+  debug.send(props.game.id, { tag: 'DebugCustomize', contents: [investigatorId.value, id.value] })
+}
+
 const modifiedPlayingCard = computed(() => {
   const playingCardModifier = modifiers.value.find(m => m.type.tag === 'ScenarioModifierValue' && m.type.contents[0] === 'setPlayingCard')
   if (playingCardModifier && playingCardModifier.type.tag === 'ScenarioModifierValue') {
     const playingCard = playingCardModifier.type.contents[1]
     if (!playingCard) return
-    return imgsrc(`playing-cards/${playingCard.rank}-${playingCard.suit}.png`)
+    return imgsrc(`extra/fortune-and-folly/playing-cards/${playingCard.rank}-${playingCard.suit}.png`)
   }
   return null
 
@@ -207,6 +237,7 @@ function startDrag(event: DragEvent) {
       class="card"
       :src="image"
       :data-customizations="JSON.stringify(cardContents.customizations)"
+      :data-chained="cardContents.chained || undefined"
       :data-pc="modifiedPlayingCard ? modifiedPlayingCard : null"
       :draggable="debug.active"
       @dragstart="startDrag"
@@ -222,6 +253,13 @@ function startDrag(event: DragEvent) {
       <PoolItem v-if="lostSouls" type="resource" :amount="lostSouls" />
       <PoolItem v-if="leylines" type="resource" :amount="leylines" />
     </div>
+    <button
+      v-if="canDebugCustomize"
+      class="debug-customize"
+      type="button"
+      title="Debug customize"
+      @click.stop="debugCustomize"
+    ><font-awesome-icon icon="wrench" /></button>
     <AbilityButton
       v-for="ability in abilities"
       :key="ability.index"
@@ -280,5 +318,28 @@ function startDrag(event: DragEvent) {
   display: flex;
   flex-direction: column;
   position: relative;
+}
+
+.debug-customize {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: var(--z-index-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #111;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.debug-customize:hover {
+  background: #fff;
 }
 </style>

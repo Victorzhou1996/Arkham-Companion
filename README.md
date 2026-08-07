@@ -14,9 +14,18 @@ Arkham Companion is a Chinese-localized distribution of Arkham Horror: The Card 
 
 The default branch is `Companion`. The `Mac` and `Server` branches are complete snapshots for their respective environments.
 
-Current Server snapshot: **2026-07-30**. It expands response controls, restores
-the multi-row token selector, adds local/CDN/server image fallbacks, and adds
-mobile pinch zoom and pan to the Scarlet Keys world map.
+Current Server snapshot: **2026-08-07**. It includes the selected upstream
+rules updates, current The Drowned City development content, searchable Chinese
+Foresight choices, restored scenario translations, completed-campaign deck
+upgrades and trauma inheritance, two starter decks for new accounts, and the
+current manual rebuild workflow.
+
+发布与跨平台打包请先阅读 [新版本产物流程](docs/NEW-RELEASE-ARTIFACT-WORKFLOW.md)
+和 [2026-08-07 Server 发布说明](server/release/RELEASE-20260807.md)。
+
+For releases and cross-platform packaging, start with the
+[release artifact workflow](docs/NEW-RELEASE-ARTIFACT-WORKFLOW.md) and the
+[2026-08-07 Server release notes](server/release/RELEASE-20260807.md).
 
 ## 主要特性 / Main Features
 

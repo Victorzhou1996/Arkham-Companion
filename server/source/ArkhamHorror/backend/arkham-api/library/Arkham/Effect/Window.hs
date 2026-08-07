@@ -2,13 +2,13 @@
 
 module Arkham.Effect.Window (module Arkham.Effect.Window) where
 
-import Arkham.ScenarioLogKey
 import Arkham.Ability.Types
 import Arkham.Card.Id
 import Arkham.Id
 import Arkham.Matcher.SkillTest
 import Arkham.Phase
 import Arkham.Prelude
+import Arkham.ScenarioLogKey
 import Data.Aeson.TH
 import Data.UUID qualified as UUID
 import GHC.OverloadedLabels
@@ -27,6 +27,22 @@ data EffectWindow
   | EffectActWindow
   | EffectSetupWindow
   | EffectScenarioSetupWindow ScenarioId
+  | {- | Carries a setup modifier to the *next* scenario. Tagged with the scenario
+    it was created in; inert while that scenario is current, active (as a setup
+    modifier) once a different scenario is current, and dismissed at the end of
+    that scenario's first round (so first-turn action penalties still apply).
+    -}
+    EffectNextSetupWindow ScenarioId
+  | -- | Lasts until the agenda deck first advances.
+    EffectFirstAgendaWindow
+  | {- | Wraps another window and carries it to the *next* scenario. Tagged with the
+    scenario it was created in: it emits nothing while still wrapped, and the first
+    Setup in a /different/ scenario unwraps it to the inner window, which then
+    behaves exactly as it would have in the scenario it was created in. Unwrapping
+    is also what stops it carrying forward a second time, since the inner window is
+    not itself carried across a scenario boundary.
+    -}
+    EffectForNextScenario ScenarioId EffectWindow
   | EffectTurnWindow InvestigatorId
   | EffectEndOfNextTurnWindow InvestigatorId
   | EffectNextTurnWindow InvestigatorId
@@ -87,10 +103,11 @@ instance IsLabel "skillTestMatching" (SkillTestMatcher -> EffectWindow) where
 firstWindow :: [EffectWindow] -> EffectWindow
 firstWindow = FirstEffectWindow
 
--- | Decision for whether and how a 'FirstEffectWindow' should emit modifiers.
--- The most specific gating window in the list determines the gate; an inner
--- 'EffectNextSkillTestWindow' suppresses emission entirely until 'replaceNextSkillTest'
--- rewrites it into 'EffectSkillTestWindow'.
+{- | Decision for whether and how a 'FirstEffectWindow' should emit modifiers.
+The most specific gating window in the list determines the gate; an inner
+'EffectNextSkillTestWindow' suppresses emission entirely until 'replaceNextSkillTest'
+rewrites it into 'EffectSkillTestWindow'.
+-}
 data FirstEffectWindowGate
   = FirstWindowSuppress
   | FirstWindowSkillTest SkillTestId

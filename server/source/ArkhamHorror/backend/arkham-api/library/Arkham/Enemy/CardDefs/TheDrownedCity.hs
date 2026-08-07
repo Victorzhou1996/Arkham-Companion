@@ -87,6 +87,8 @@ huntingParasite =
       , cdHealth = health 1
       , cdCardTraits = setFromList [Monster, Stowaway]
       , cdKeywords = setFromList [Keyword.Aloof, Keyword.Hunter]
+      , cdEncounterSet = Just TheWesternWall
+      , cdEncounterSetQuantity = Just 1
       }
 
 -- The Drowned Quarter
@@ -262,6 +264,7 @@ primevalTerror =
     , cdEvade = evade 2
     , cdHealth = health 2
     , cdCardTraits = setFromList [Monster]
+    , cdKeywords = singleton $ Keyword.Patrol $ LocationWithTrait Summit <> EmptyLocation
     }
 
 starVampire :: CardDef
@@ -276,10 +279,14 @@ starVampire =
     , cdVictoryPoints = Just 1
     }
 
--- Sepulchre of the Sleeper
+{- | Sepulchre of the Sleeper. Printed on the back of agenda 1a, "Beneath the City",
+so the Sleeper only wakes when that agenda advances and is never gathered into the
+encounter deck.
+-}
 cthulhuDeadAndDreaming :: CardDef
 cthulhuDeadAndDreaming =
   unique
+    $ doubleSided "11674"
     $ (enemy "11674b" ("Cthulhu" <:> "Dead and Dreaming") SepulchreOfTheSleeper 1)
       { cdHealthDamage = healthDamage 3
       , cdSanityDamage = sanityDamage 3
@@ -315,7 +322,7 @@ cthulhuAncientEvil =
       , cdEvade = evadeStar
       , cdHealth = healthStar
       , cdCardTraits = setFromList [AncientOne, Elite]
-      , cdKeywords = setFromList [Keyword.Massive]
+      , cdKeywords = setFromList [Keyword.Massive, Keyword.Patrol CanHaveFloodLevelIncreased]
       }
 
 cthulhuHoaryWings :: CardDef
@@ -410,7 +417,11 @@ stowawayDrone =
     , cdEvade = evade 2
     , cdHealth = health 1
     , cdCardTraits = setFromList [Monster, Stowaway]
-    , cdKeywords = setFromList [Keyword.Aloof]
+    , cdKeywords =
+        setFromList
+          [ Keyword.Aloof
+          , Keyword.Patrol $ LocationWithEnemy (not_ ThatEnemy <> EnemyWithoutDoom)
+          ]
     }
 
 -- Pilgrims

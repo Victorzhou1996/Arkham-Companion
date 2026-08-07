@@ -109,3 +109,39 @@ test('collects proxy and attached abilities by controller and card code', async 
     [0],
   )
 })
+
+test('keeps same-code hand and in-play trigger modes on their own instances', async () => {
+  const { triggerModeAbilitiesForCard } = await importTsModule(modulePath)
+  const choices = [
+    {
+      tag: 'AbilityLabel',
+      investigatorId: 'owner',
+      ability: {
+        cardCode: '09100',
+        index: -1,
+        source: { tag: 'EventSource', contents: 'hand-copy' },
+      },
+    },
+    {
+      tag: 'AbilityLabel',
+      investigatorId: 'owner',
+      ability: {
+        cardCode: '09100',
+        index: 1,
+        source: { tag: 'EventSource', contents: 'in-play-copy' },
+      },
+    },
+  ]
+
+  const handAbilities = triggerModeAbilitiesForCard(
+    choices,
+    '09100',
+    'owner',
+    (choice) => choice.ability.source.contents === 'hand-copy',
+  )
+
+  assert.deepEqual(
+    handAbilities.map(({ contents }) => contents.ability.index),
+    [-1],
+  )
+})

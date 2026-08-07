@@ -11,11 +11,14 @@ import Arkham.PlayerCard
 import Arkham.Prelude hiding (optional, try, (<|>))
 import Arkham.Taboo.Types
 import Data.Aeson
+import Data.Aeson qualified as Aeson
 import Data.Aeson.Key (fromText, toText)
 import Data.Aeson.KeyMap qualified as KeyMap
+import Data.ByteString.Lazy qualified as BL
 import Data.IntMap qualified as IntMap
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
+import Data.Text.Encoding qualified as TE
 import GHC.Records
 import Text.Parsec
 import Text.Read (read)
@@ -58,6 +61,37 @@ loadDecklist decklist =
     <*> pure (fromTabooId $ taboo_id decklist)
     <*> pure (url decklist)
     <*> pure (decklistAttachments decklist)
+
+decklistTrauma :: ArkhamDBDecklist -> Maybe (Int, Int)
+decklistTrauma decklist = do
+  raw <- meta decklist
+  Object values <- decode $ BL.fromStrict $ TE.encodeUtf8 raw
+  physical <- metaInt "arkham_horror_physical_trauma" values
+  mental <- metaInt "arkham_horror_mental_trauma" values
+  pure (max 0 physical, max 0 mental)
+ where
+  metaInt key values = do
+    value <- KeyMap.lookup (fromText key) values
+    case fromJSON value of
+      Aeson.Success n -> Just n
+      Aeson.Error _ -> Nothing
+
+setDecklistTrauma :: Int -> Int -> ArkhamDBDecklist -> ArkhamDBDecklist
+setDecklistTrauma physical mental decklist =
+  decklist
+    { meta =
+        Just
+          $ TE.decodeUtf8
+          $ BL.toStrict
+          $ encode
+          $ Object
+          $ KeyMap.insert "arkham_horror_mental_trauma" (toJSON $ max 0 mental)
+          $ KeyMap.insert "arkham_horror_physical_trauma" (toJSON $ max 0 physical)
+          $ fromMaybe mempty do
+            raw <- meta decklist
+            Object values <- decode $ BL.fromStrict $ TE.encodeUtf8 raw
+            pure values
+    }
 
 loadDecklistCards
   :: CardGen m => (ArkhamDBDecklist -> Map CardCode Int) -> ArkhamDBDecklist -> m [PlayerCard]

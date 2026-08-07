@@ -4393,7 +4393,7 @@
     将本地点的每位调查员和每个敌人移动到月兽之城。
     将本卡牌从游戏中移除。",,,,,,
 6215,月兽之城,,月面. 城市,"X为所有调查员之中最高的警报等级。
-    <b>强制</b> - 当一轮结束时：位于月兽之城每位调查员检定[agility](2)。检定失败的每位调查员必须将自己的警报等级提高1级。",,月兽之城,,月面. 城市,,"“前方逐渐升起了一片嶙峋的海岸，上面有着高低参差的群山，卡特看到了一座城市，那里有着令人不安的灰色高塔。它们倾斜而弯曲，林立丛聚，每座塔上都没有窗户，这让即将被关押的囚徒感到十分不安……” 
+    <b>强制</b> - 当一轮结束时：位于月兽之城每位调查员检定[agility](2)。检定失败的每位调查员必须将自己的警报等级提高1级。",,月兽之城,,月面. 城市,,"“前方逐渐升起了一片嶙峋的海岸，上面有着高低参差的群山，卡特看到了一座城市，那里有着令人不安的灰色高塔。它们倾斜而弯曲，林立丛聚，每座塔上都没有窗户，这让即将被关押的囚徒感到十分不安……”
 <cite>H.P.洛夫克拉夫特，《梦寻秘境卡达斯》</cite>",
 6216,漆黑深坑,,月面,"[action]：检定[intellect](5)以躲在坑里。如果你检定成功，你的警报等级下降1级。(每场游戏仅限1次成功。)
     <b>强制</b> - 当你回合结束时，如果你位于漆黑深坑，并且你在本回合发现了其上的至少1个线索：检定[willpower](3)。如果你检定失败，你的警报等级提高1级。",,漆黑深坑,,月面,,"“船逐渐向月球的边缘驶去，卡特很快就明白目的地正是月球总是背向地球的那一面，它无比神秘，除了入梦者斯尼瑞斯·寇，从来没有人类见过。”
@@ -4411,7 +4411,7 @@
     [action]：检定[willpower](2)或[combat](2)来游过月核的黑水湖。你检定成功且每超过难度1点，移除黑暗月核的1个深度标记。",,黑暗月核,,洞穴,通往月球核心的道路漫长而曲折。月下洞穴 <i>(暗面)</i>上有线索时，你不能进入黑暗月核。,当你越来越接近月球的黑暗核心，厚厚的黑色淤泥开始阻碍你前进……,
 6221,月下洞穴,亮面,洞穴,<b>强制</b> - 你调查月下洞穴时技能检定失败后：其隐藏值-2，直到你回合结束。,,月下洞穴,亮面,洞穴,,"“群山之上的神庙遗迹矗立在特定的位置，使得它们只能用来供奉邪神，或者德不配位之神……”
 <cite>H.P.洛夫克拉夫特，《梦寻秘境卡达斯》</cite>",
-6222,月之亮面,,月面. 遗迹,<b>强制</b> - 你调查月下洞穴时技能检定失败后：其隐藏值-2，直到你回合结束。,"“……而在那些破碎立柱呈现的对称性中，似乎也隐含着某些不希望被人解明的深层黑暗含义。” 
+6222,月之亮面,,月面. 遗迹,<b>强制</b> - 你调查月下洞穴时技能检定失败后：其隐藏值-2，直到你回合结束。,"“……而在那些破碎立柱呈现的对称性中，似乎也隐含着某些不希望被人解明的深层黑暗含义。”
 <cite>H.P.洛夫克拉夫特，《梦寻秘境卡达斯》</cite>",月之亮面,,月面. 遗迹,通往月球表面的道路漫长而曲折。月下洞穴<i>(亮面)</i>上有线索时，你不能进入月之亮面。,,
 6223,白船,,船舶,"你的警报等级至少为5时，你不能进入白船。
     <b>强制</b> - 白船揭示后：将放在一边的船长剧情支援放置入场，位于白船。",,白船,,船舶,这艘神秘帆船的船长不允许你登船，除非追赶你的月兽均已撤退。你的警报等级至少为5时，你不能进入白船。,"“……它总是平稳而无声地滑行着，远远就能看到它的船帆，还有那规律地摆动着的奇怪长桨。”
@@ -4519,7 +4519,7 @@
     <b>强制</b> - 在你离开撒克山峰时：你必须检定[agility](2)以安全地爬下山峰。如果你检定失败，受到1点伤害。",,,,,,,
 06260b,山谷住民,,,"查找遭遇牌库和遭遇弃牌堆，找出一张狩猎中的夜魇并将其以横置状态生成在潘斯山谷。
     位于撒克山峰的每位调查员可以抽取2张卡牌。
-    选择场上任意一个敌人，在其上放置2个线索。 
+    选择场上任意一个敌人，在其上放置2个线索。
     将本卡牌翻面。",你爬上危险的峰顶，观察下方。从这个位置，山谷里居住的各种生物的一举一动都被你看在眼内。黑色的有翼生物在山峰周围翱翔，它们没有表情的空白面庞对你怒目而视。在山谷上方的悬崖之上，食尸鬼们的一双双眼睛带着病态的好奇心，注视着你的进展。悬崖底下的一堆骸骨和碎石正是地下搅动和挖掘的巨大生物居住的地方。在你的左手边，雾蒙蒙的山谷绵延数英里，一直延伸到一堵巨大的石墙前。墙壁另一面的遥远处，你只能勉强看到黑暗中一座城市的轮廓。难以理解的低语声和嘲笑声钻进你的耳朵。你不敢细想。,,,,,,
 6261,潘斯山谷,,山谷,"掩藏。
     潘斯山谷上有线索时，位于潘斯山谷的调查员不能打出卡牌，也不能投入卡牌到技能检定。",,,,,,,
@@ -4895,17 +4895,17 @@
 07062b,愤怒暴民,,类人. 精英,"猎手。庞大。反击。
     愤怒暴民得到+4[per_investigator]生命值。
     愤怒暴民不能进行趁乱攻击。",,,,,,,
-7063,马什精炼厂,,印斯茅斯,[action][action]：抽取4张卡牌。(每场游戏仅限一次)。,"“不过，那家精炼厂倒是笔买卖。那里的老板，老马什，肯定富甲一方。” 
-<cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,印斯茅斯,,"“他发现马什精炼厂有些奇怪——这是一座位于马奴赛特河下游瀑布旁的老厂子。他所说的大体和我听到的差不多。账本残破不全，一笔清楚的明细都没有。你得知道，马什到底是从哪搞来精炼的金子，可一直都是个未解之谜。” 
+7063,马什精炼厂,,印斯茅斯,[action][action]：抽取4张卡牌。(每场游戏仅限一次)。,"“不过，那家精炼厂倒是笔买卖。那里的老板，老马什，肯定富甲一方。”
+<cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,印斯茅斯,,"“他发现马什精炼厂有些奇怪——这是一座位于马奴赛特河下游瀑布旁的老厂子。他所说的大体和我听到的差不多。账本残破不全，一笔清楚的明细都没有。你得知道，马什到底是从哪搞来精炼的金子，可一直都是个未解之谜。”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",
 7064,吉尔曼旅社,,印斯茅斯,[action]：治愈2点伤害，或2点恐惧，或1点伤害和1点恐惧。(每场游戏仅限一次)。,“吉尔曼旅社边上有几扇窗子闪着微光，我觉得自己听到里面有混乱的声音。” <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>,,,印斯茅斯,,"“没错，印斯茅斯是有家旅店——叫吉尔曼旅社——但我不觉得会好到哪里去。我可不会推荐你去那儿住。”
  <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",
 7065,印斯茅斯广场,,印斯茅斯. 中心,"[action]：<b>撤退</b>。你决定蛰伏一段时间。
-    [free]花费2资源：<b>移动</b>。移动到一个连接的[[印斯茅斯]]地点。","“不消说，这就是印斯茅斯村中心。” 
-<cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,印斯茅斯. 中心,,"“鹅卵石广场的一侧是笔直的河道，另一端则是斜顶砖房围成的半圆，这些房子大约都是十九世纪的。几条街道通往东南、南方和西南。路灯又少又小，都是低功率的白炽灯，简直致郁……” 
+    [free]花费2资源：<b>移动</b>。移动到一个连接的[[印斯茅斯]]地点。","“不消说，这就是印斯茅斯村中心。”
+<cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,印斯茅斯. 中心,,"“鹅卵石广场的一侧是笔直的河道，另一端则是斜顶砖房围成的半圆，这些房子大约都是十九世纪的。几条街道通往东南、南方和西南。路灯又少又小，都是低功率的白炽灯，简直致郁……”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",
-7066,印斯茅斯港口,,印斯茅斯,<b>强制</b> - 在你成功调查印斯茅斯港口且超过难度至少3点后：查看迹象牌堆顶的卡牌。然后，混洗迹象牌库。(团队每轮仅限一次。),"“……你要是上那儿捕鱼，就能瞧瞧他们是怎么赶跑你的！” 
-<cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,印斯茅斯,,"“海港早就堆满了淤沙，外面堵着一段旧时的防波堤。我能辨认出堤上有几个小小的身影，是几个坐着的渔民。堤的尽头则是一座古时灯塔的地基。堤坝内部伸出一段沙地，我看见其上有几间破旧的小屋，停靠的渔船，还有七零八落的虾笼。” 
+7066,印斯茅斯港口,,印斯茅斯,<b>强制</b> - 在你成功调查印斯茅斯港口且超过难度至少3点后：查看迹象牌堆顶的卡牌。然后，混洗迹象牌库。(团队每轮仅限一次。),"“……你要是上那儿捕鱼，就能瞧瞧他们是怎么赶跑你的！”
+<cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,印斯茅斯,,"“海港早就堆满了淤沙，外面堵着一段旧时的防波堤。我能辨认出堤上有几个小小的身影，是几个坐着的渔民。堤的尽头则是一座古时灯塔的地基。堤坝内部伸出一段沙地，我看见其上有几间破旧的小屋，停靠的渔船，还有七零八落的虾笼。”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",
 7067,国立第一杂货铺,,印斯茅斯,[action]：查找你牌库顶的6张卡牌，找出1张[[道具]]卡牌并将其加入你的手牌。混洗你的牌库。(每场游戏仅限一次)。,,,,印斯茅斯,,“出于某些原因，我选择第一站先去连锁杂货店打听消息。那里的员工不太可能是印斯茅斯本地人。” <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>,
 7068,鱼街旧桥,,印斯茅斯,[action][action]：获得4资源。(每场游戏仅限一次)。,"“根据村子的草图来看，鱼街旧桥已经塌了。”
@@ -4913,16 +4913,16 @@
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",
 7069,小利透书店,,印斯茅斯,<b>强制</b> - 你调查小利透书店时，在你技能检定失败后：将遭遇牌库顶的卡牌混洗入迹象牌库。,,,,印斯茅斯,,小利透书店的温暖在沉闷的村子里别处都寻不着，这里是一片书架的迷宫，每一层的书都多到溢出来。,
 7070,达贡密教,,印斯茅斯. 窝点,"<b>显现</b> - 将达贡密教放置入场。
-    <b>强制</b> - 达贡密教上最后的线索被发现后：将迹象牌堆顶的卡牌从游戏中移除(不要查看)。","“这里先前是共济会礼堂，而今却交给了一个堕落的教派。” 
+    <b>强制</b> - 达贡密教上最后的线索被发现后：将迹象牌堆顶的卡牌从游戏中移除(不要查看)。","“这里先前是共济会礼堂，而今却交给了一个堕落的教派。”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,,,,
 7071,锯骨巷,,印斯茅斯. 窝点,"<b>显现</b> - 将锯骨巷放置入场。
-    每个锯骨巷的[[类人]]敌人得到+2攻击和-2躲避。“","“在这附近走动时最好别太显眼……” 
+    每个锯骨巷的[[类人]]敌人得到+2攻击和-2躲避。“","“在这附近走动时最好别太显眼……”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,,,,
 7072,朝岸贫民窟,,印斯茅斯. 窝点,"<b>显现</b> - 将朝岸贫民窟放置入场。
     朝岸贫民窟上每有一个毁灭标记，其得到隐藏值-2。
     <b>强制</b> - 你调查朝岸贫民窟时技能检定失败后：在其上放置1个毁灭标记。",,,,,,,
 7073,水街老屋,,印斯茅斯. 窝点,"<b>显现</b>- 将水街老屋放置入场。
-    <b>强制</b> - 你成功调查水街老屋且超过难度至少3点后：抽取遭遇牌库顶的卡牌，或将该卡牌混洗入迹象牌库。","“除了零零散散的渔夫，我在这儿一个人都看不到……” 
+    <b>强制</b> - 你成功调查水街老屋且超过难度至少3点后：抽取遭遇牌库顶的卡牌，或将该卡牌混洗入迹象牌库。","“除了零零散散的渔夫，我在这儿一个人都看不到……”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",,,,,,
 7074,印斯茅斯监狱,,印斯茅斯. 窝点,"<b>显现</b> - 将印斯茅斯监狱放置入场。
     <b>强制</b> - 在你于印斯茅斯监狱击败一个敌人时：不弃掉该敌人，改为将其混洗入迹象牌库。",,,,,,,
@@ -5116,7 +5116,7 @@
     你表示抗议，但船长是对的。天气这么坏，摩尔船长就要控制不住船了。更糟的是，要不了几个小时，潮水就会吞没整个沿海一带，你也没什么好调查的了。你沮丧地朝船长点了点头。现在只能如此。",
 7167,谜之礁石,,,"[[伊哈·恩斯雷]]地点的钥匙只能通过其地点的[free]能力获取。
     <b>目标</b> - 尽可能多地从[[伊哈·恩斯雷]]地点找到并获取下列钥匙(紫色、白色和黑色)。如果你控制全部3把这些钥匙，推进。",在这片受诅的礁石某处，达贡密教想要隐藏什么大事……但究竟是什么呢？,发现秘密,,,<b>(→结局1)</b>,你觉得自己已经找到足够多的密教活动的证据，回到了海岸上。你还是宁可在干燥的地面调查。,
-7168,急涡水域,,海洋,[action]如果你在渔船上：<b>撤退</b>。渔船上的每位调查员撤退。将渔船从游戏中移除。每位撤退的调查员将其每个紫色、黑色或白色钥匙放在当前场景上。其他每位调查员被抛下，自力更生。,,,,海洋,急涡水域以完全淹没入场<i>(即使其未揭示)</i>。,"“尽管此时正值涨潮，我却还是能在沓远的海面上瞥见一条黑色长线，只略高过水面，潜藏着一种怪异的危险气息。” 
+7168,急涡水域,,海洋,[action]如果你在渔船上：<b>撤退</b>。渔船上的每位调查员撤退。将渔船从游戏中移除。每位撤退的调查员将其每个紫色、黑色或白色钥匙放在当前场景上。其他每位调查员被抛下，自力更生。,,,,海洋,急涡水域以完全淹没入场<i>(即使其未揭示)</i>。,"“尽管此时正值涨潮，我却还是能在沓远的海面上瞥见一条黑色长线，只略高过水面，潜藏着一种怪异的危险气息。”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",
 7169,孤岛,,海洋. 岛礁,<b>强制</b> - 孤岛揭示后：将随机2张放在一边的潮水通道放置入场，各与孤岛相邻(但这两张卡牌彼此不相邻)。,,魔鬼礁石,,海洋. 岛礁,,"“……我望着的时候，不禁想到自己过去二十四个小时里听到的所有可怕传说——这片参差的岩石原来是一个真正的入口，它通往的领域满是深不可测的恐怖和不可思议的反常。”
 <cite>H. P. 洛夫克拉夫特，《印斯茅斯之影》</cite>",
@@ -7355,7 +7355,7 @@ X等于你所在地点的高度(至少为1)。
     - 如果调查员控制了席米恩·阿特伍德，<b>(→结局1)</b>。
     - 如果调查员控制了莉亚·阿特伍德，<b>(→结局2)</b>。
     - 如果席米恩·阿特伍德放在一边，或仍在场且不由调查员控制，<b>(→结局3)</b>。
-    - 如果莉亚·阿特伍德放在一边，或仍在场且不由调查员控制，<b>(→结局4)</b>。 
+    - 如果莉亚·阿特伍德放在一边，或仍在场且不由调查员控制，<b>(→结局4)</b>。
     - 如果均非上述情况，<b>(→结局5)</b>。",你按下刹车，轨道上火花四溅，矿车速度变缓，最终停了下来。,
 10507,矿车,可靠但残破,裁具. 推车,"<b>强制</b> - 当敌军阶段结束时：移动矿车一次。如果矿车脱轨，每位调查员被击败并承受1点肉体创伤。
     [reaction]在矿车移动时，花费1道岔：取消该移动，或移动额外一次。(团队每阶段仅限两次。)",,,,,,,
@@ -10305,7 +10305,7 @@ Each investigator in this group is killed. <b>(→R1)</b>",,
 <blockquote><i>You breath a sigh of relief as the water drains harmlessly.</i></blockquote>
 Investigators at the same location spend 2[per_investigator] clues, as a group. Resolve <b>Act 2 Setup.</b><hr/><b>If investigators at the same location do not possess 2[per_investigator] clues:</b>
 <blockquote><i>The water level continues to rise. It fills the tank and then your lungs. You struggle in futility against the glass. Freedom is so close, and yet so far.</i></blockquote>
-Each investigator loses each of his or her clues. 
+Each investigator loses each of his or her clues.
 The investigator in the Chamber of Rain is killed.
 Resolve <b>Act 2 Setup.</b>",,
 70009,The Levers (Group C),,,"<b>Timed</b> - Do not advance this act until you are instructed. Before the agenda advances, one investigator must activate the [action] ability on the Chamber of Regret. <i>(Beware— If you pull the wrong lever, you will be killed.)</i>","“Only one of you can make the choice,” your note reads. “Choose the correct lever, or die.” An iron gate nearby opens with a deafening crash and reveals a small room that contains three unmarked levers.",Which Lever?,,,"<b>If an investigator activated the [action] ability on the Chamber of Regret, that investigator examines the Chamber of Secrets in Group A's play area to see if its flavor text matches the lever that was pulled.</b>
@@ -10385,7 +10385,7 @@ The word you see is the same word inscribed upon the wall of the Chamber of Secr
 [action]: Take control of any number of tokens, cards, or notes on/underneath this card.
 [reaction] At the end of the round: You send all of the tokens and cards gathered here through the ventilation shaft. Flip this card over and follow the instructions on the other side.",You find a ventilation shaft through which you can fit one or more important items…,Deep Within the Labyrinth…,,,"Take the cards, tokens, and notes on or underneath this card and place them on or underneath another group's copy of The Vent.
 Flip this card back over.","The objects tumble down through the shaft, making loud banging noises behind the walls and underneath the floor. Hopefully another group can find them…",
-70036,The Dilemma,,Act 2.,"<b>Revelation</b> - Put The Dilemma into play, next to the act deck. 
+70036,The Dilemma,,Act 2.,"<b>Revelation</b> - Put The Dilemma into play, next to the act deck.
 The current act gains: “[reaction] At the end of the round: Desperate, you are willing to sacrifice yourself for the benefit of the other groups. Flip The Dilemma over and follow the instructions on the other side.”","Glowing words appear on your group’s note as though written by an unseen entity. It reads: “Worry not. I shall give your friends a chance to escape. All you have to do is perish at their expense, and they will be given the means to escape. Just write ‘I choose death’ on this note here, and the deed will be done.”",Deep Within the Labyrinth…,,,"You must choose and discard all but X cards from your hand, and remove all but X resources from your resource pool. X is the amount of doom on the current agenda.<hr/><b>Read the following to each group aloud:</b>
 <blockquote><i>The words and letters on the note shift and change to form a strange diagram.</i></blockquote>
 The lead investigator of Group A takes control of the set-aside Rot Diagram.
@@ -11590,7 +11590,7 @@ X为你弃牌堆中其余的意外的发现张数。
 <b>Revelation</b> - Put Yaztaroth into play in your threat area.
 You cannot put assests into play.
 [action] [action]: Discard Yaztaroth.",,,,,,,
-60327,神射手,,才能,"[reaction]在你使用[[枪械]]支援卡的攻击能力时，消耗神射手：选择以下一项或两项： - 
+60327,神射手,,才能,"[reaction]在你使用[[枪械]]支援卡的攻击能力时，消耗神射手：选择以下一项或两项： -
 - 这次攻击不使用[combat]，改为使用[agility]。你的[combat]修正值改为修正你的[agility]。
 - 对于本次攻击中受到攻击的敌人，不使用其攻击值，改为使用其躲避值。",,,,,,,
 60213,惠顿·格林,珍本猎手,盟友. 米斯卡塔尼克,"只要你有控制[[书籍]]或[[遗物]]支援卡，你获得+1[intellect]。

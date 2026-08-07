@@ -19,8 +19,8 @@ import Arkham.Effect.Types (Field (..))
 import Arkham.Enemy.Types (Field (EnemyAttacking))
 import Arkham.Event.Types qualified as Field
 import {-# SOURCE #-} Arkham.Game (abilityMatches)
-import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Game.Settings (settingsStrictAsIfAt)
+import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.Act (actMatches)
 import {-# SOURCE #-} Arkham.Helpers.Action (actionMatches)
 import Arkham.Helpers.Card (cardListMatches, extendedCardMatch)
@@ -40,6 +40,10 @@ import {-# SOURCE #-} Arkham.Helpers.SkillTest (skillTestMatches, skillTestValue
 import Arkham.Helpers.SkillType (skillTypeMatches)
 import Arkham.Helpers.Source (sourceMatches)
 import Arkham.Helpers.Target (targetListMatches, targetMatches)
+import Arkham.Helpers.Window.Card as X
+import Arkham.Helpers.Window.Clue as X
+import Arkham.Helpers.Window.Damage as X
+import Arkham.Helpers.Window.Enemy as X
 import Arkham.Id
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
@@ -63,10 +67,6 @@ import Arkham.Window qualified as Window
 import Control.Lens (over, transform)
 import Control.Monad.Trans.Class
 import Data.Data.Lens (biplate)
-import Arkham.Helpers.Window.Card as X
-import Arkham.Helpers.Window.Enemy as X
-import Arkham.Helpers.Window.Damage as X
-import Arkham.Helpers.Window.Clue as X
 
 checkWindow :: HasGame m => Window -> m Message
 checkWindow = checkWindows . pure
@@ -878,6 +878,22 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             , sourceMatches source' sourceMatcher
             ]
         _ -> noMatch
+    Matcher.WouldDiscardTopOfEncounterDeck timing whoMatcher sourceMatcher ->
+      guardTiming timing $ \case
+        Window.WouldDiscardTopOfEncounterDeck who source' _ ->
+          andM
+            [ matchWho iid who whoMatcher
+            , sourceMatches source' sourceMatcher
+            ]
+        _ -> noMatch
+    Matcher.DiscardedTopOfEncounterDeckBatch timing whoMatcher sourceMatcher ->
+      guardTiming timing $ \case
+        Window.DiscardedTopOfEncounterDeckBatch who source' _ ->
+          andM
+            [ matchWho iid who whoMatcher
+            , sourceMatches source' sourceMatcher
+            ]
+        _ -> noMatch
     Matcher.Discarded timing mWhoMatcher sourceMatcher cardMatcher ->
       guardTiming timing $ \case
         Window.Discarded mWho source' card ->
@@ -1052,6 +1068,35 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             , gameValueMatches n valueMatcher
             ]
         _ -> noMatch
+    Matcher.PlacedCounterOnInvestigator
+      timing
+      investigatorMatcher
+      sourceMatcher
+      counterMatcher
+      valueMatcher ->
+        guardTiming timing $ \case
+          Window.PlacedHorror source' (InvestigatorTarget iid') n
+            | counterMatcher == Matcher.HorrorCounter -> do
+                andM
+                  [ iid' <=~> investigatorMatcher
+                  , sourceMatches source' sourceMatcher
+                  , gameValueMatches n valueMatcher
+                  ]
+          Window.PlacedDamage source' (InvestigatorTarget iid') n
+            | counterMatcher == Matcher.DamageCounter -> do
+                andM
+                  [ iid' <=~> investigatorMatcher
+                  , sourceMatches source' sourceMatcher
+                  , gameValueMatches n valueMatcher
+                  ]
+          Window.PlacedDoom source' (InvestigatorTarget iid') n
+            | counterMatcher == Matcher.DoomCounter -> do
+                andM
+                  [ iid' <=~> investigatorMatcher
+                  , sourceMatches source' sourceMatcher
+                  , gameValueMatches n valueMatcher
+                  ]
+          _ -> noMatch
     Matcher.PlacedCounterOnLocation timing whereMatcher sourceMatcher counterMatcher valueMatcher ->
       guardTiming timing $ \case
         Window.PlacedClues source' (LocationTarget locationId) n | counterMatcher == Matcher.ClueCounter -> do
@@ -1067,6 +1112,12 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             , gameValueMatches n valueMatcher
             ]
         Window.PlacedDamage source' (LocationTarget locationId) n | counterMatcher == Matcher.DamageCounter -> do
+          andM
+            [ locationMatches iid source window' locationId whereMatcher
+            , sourceMatches source' sourceMatcher
+            , gameValueMatches n valueMatcher
+            ]
+        Window.PlacedDoom source' (LocationTarget locationId) n | counterMatcher == Matcher.DoomCounter -> do
           andM
             [ locationMatches iid source window' locationId whereMatcher
             , sourceMatches source' sourceMatcher
@@ -1112,6 +1163,12 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
             , gameValueMatches n valueMatcher
             ]
         Window.PlacedDamage source' (AssetTarget assetId) n | counterMatcher == Matcher.DamageCounter -> do
+          andM
+            [ assetId <=~> assetMatcher
+            , sourceMatches source' sourceMatcher
+            , gameValueMatches n valueMatcher
+            ]
+        Window.PlacedDoom source' (AssetTarget assetId) n | counterMatcher == Matcher.DoomCounter -> do
           andM
             [ assetId <=~> assetMatcher
             , sourceMatches source' sourceMatcher
@@ -1807,10 +1864,19 @@ windowMatches iid rawSource window'@(windowTiming &&& windowType -> (timing', wT
       _ -> noMatch
     Matcher.FastPlayerWindow -> guardTiming #when (pure . (== Window.FastPlayerWindow))
     Matcher.DealtDamageOrHorror timing sourceMatcher whoMatcher -> guardTiming timing $ \case
-      -- NB. an ally (asset) you control taking damage/horror is not "you" being dealt
-      -- damage/horror; use AssetDealtDamageOrHorror for that. See issue #4910.
-      Window.WouldTakeDamageOrHorror source' (InvestigatorTarget iid') _ _ ->
-        andM [matchWho iid iid' whoMatcher, sourceMatches source' sourceMatcher]
+      -- The combined would-take window is only emitted at #when timing. At #after,
+      -- match the aggregate take windows so damage/horror assigned to assets still
+      -- counts as having been dealt to the investigator (FAQ 2.12). Both windows are
+      -- checked in one batch, so dealing both damage and horror triggers only once.
+      Window.WouldTakeDamageOrHorror source' (InvestigatorTarget iid') _ _
+        | timing == #when ->
+            andM [matchWho iid iid' whoMatcher, sourceMatches source' sourceMatcher]
+      Window.TakeDamage source' _ (InvestigatorTarget iid') _
+        | timing == #after ->
+            andM [matchWho iid iid' whoMatcher, sourceMatches source' sourceMatcher]
+      Window.TakeHorror source' (InvestigatorTarget iid') _
+        | timing == #after ->
+            andM [matchWho iid iid' whoMatcher, sourceMatches source' sourceMatcher]
       _ -> noMatch
     Matcher.DealtDamage timing sourceMatcher whoMatcher -> guardTiming timing $ \case
       Window.DealtDamage source' _ (InvestigatorTarget iid') _ ->

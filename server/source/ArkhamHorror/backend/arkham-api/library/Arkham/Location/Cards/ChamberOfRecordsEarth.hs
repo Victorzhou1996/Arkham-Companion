@@ -1,11 +1,9 @@
 module Arkham.Location.Cards.ChamberOfRecordsEarth (chamberOfRecordsEarth) where
 
 import Arkham.Ability
-import Arkham.Campaigns.TheDrownedCity.Import
 import Arkham.Location.Cards qualified as Cards
 import Arkham.Location.Import.Lifted
 import Arkham.Matcher
-import Arkham.Message.Lifted.Log (record)
 import Arkham.Scenarios.TheGrandVault.Helpers
 
 newtype ChamberOfRecordsEarth = ChamberOfRecordsEarth LocationAttrs
@@ -17,8 +15,9 @@ chamberOfRecordsEarth = location ChamberOfRecordsEarth Cards.chamberOfRecordsEar
 
 instance HasAbilities ChamberOfRecordsEarth where
   getAbilities (ChamberOfRecordsEarth a) =
-    extendRevealed a
-      [ restricted a 1 Here actionAbility
+    extendRevealed
+      a
+      [ restricted a 1 (Here <> thisExists a (not_ activatedLocation)) actionAbility
       , mkAbility a 2 $ freeReaction $ DiscoveringLastClue #after You (be a)
       ]
 
@@ -29,7 +28,6 @@ instance RunMessage ChamberOfRecordsEarth where
       pure l
     UseThisAbility _ (isSource attrs -> True) 2 -> do
       -- You discover this glyph (rune_m). Record "Earth" under rune_m; translated.
-      record TheInvestigatorsDiscoveredAnAlienLanguage
       campaignSpecific "translateGlyph" ("rune_m" :: Text, "Earth" :: Text)
       pure l
     _ -> ChamberOfRecordsEarth <$> liftRunMessage msg attrs
