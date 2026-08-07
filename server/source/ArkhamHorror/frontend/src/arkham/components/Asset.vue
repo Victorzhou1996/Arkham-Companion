@@ -498,6 +498,7 @@ function startDrag(event: DragEvent) {
         :scarletKey="game.scarletKeys[skId]"
         :game="game"
         :playerId="playerId"
+        :investigator-id="ownedByCurrentPlayer ? controllerInvestigatorId ?? undefined : undefined"
         :key="skId"
         @choose="choose"
         :attached="true"
