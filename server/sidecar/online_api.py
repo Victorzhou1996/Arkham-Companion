@@ -161,7 +161,7 @@ def _starter_deck(
 STARTER_DECKS = (
     _starter_deck(
         deck_id="qewhl3Do4yFlzop",
-        name="间谍 运转至上 古神级",
+        name="预组卡组 间谍（请看卡组笔记）",
         investigator_code="07003",
         investigator_name="Trish Scarborough",
         slots="""
@@ -177,7 +177,7 @@ STARTER_DECKS = (
     ),
     _starter_deck(
         deck_id="DYKly6vcYWthFOi",
-        name="马克，运转至上 古神级",
+        name="预组卡组 马克（请看卡组笔记）",
         investigator_code="03001",
         investigator_name="Mark Harrigan",
         slots="""

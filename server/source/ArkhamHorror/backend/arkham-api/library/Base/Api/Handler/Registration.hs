@@ -110,7 +110,7 @@ trishStarterDeck =
     , taboo_id = Just 10
     , url = Just "https://arkham.build/deck/view/qewhl3Do4yFlzop"
     , decklist_id = Just "qewhl3Do4yFlzop"
-    , decklist_name = Just "间谍 运转至上 古神级"
+    , decklist_name = Just "预组卡组 间谍（请看卡组笔记）"
     }
 
 markStarterDeck :: ArkhamDBDecklist
@@ -166,7 +166,7 @@ markStarterDeck =
     , taboo_id = Just 10
     , url = Just "https://arkham.build/deck/view/DYKly6vcYWthFOi"
     , decklist_id = Just "DYKly6vcYWthFOi"
-    , decklist_name = Just "马克，运转至上 古神级"
+    , decklist_name = Just "预组卡组 马克（请看卡组笔记）"
     }
 
 starterDeckMeta :: Aeson.Object -> Text -> Maybe Text
