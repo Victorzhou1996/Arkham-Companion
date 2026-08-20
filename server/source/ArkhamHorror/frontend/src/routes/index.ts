@@ -18,6 +18,12 @@ export default [
     meta: { requiresAuth: true, title: "Arkham Horror: Settings" },
   },
   {
+    path: '/local-management',
+    name: 'LocalManagement',
+    component: () => import('@/views/LocalManagement.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Local Management" },
+  },
+  {
     path: '/about',
     name: 'About',
     component: () => import('@/views/About.vue'),

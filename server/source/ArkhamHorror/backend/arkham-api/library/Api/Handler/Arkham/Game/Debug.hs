@@ -114,16 +114,17 @@ remapInvestigatorUUID gameId iCode newPlayerId = do
 
 getApiV1ArkhamGameExportR :: ArkhamGameId -> Handler ArkhamExport
 getApiV1ArkhamGameExportR gameId = do
-  _ <- getRequestUserId
+  authorizeGameExport gameId
   generateExport gameId 30
 
 getApiV1ArkhamGameScenarioExportR :: ArkhamGameId -> Handler ArkhamExport
 getApiV1ArkhamGameScenarioExportR gameId = do
-  _ <- getRequestUserId
+  authorizeGameExport gameId
   generateScenarioExport gameId
 
 getApiV1ArkhamGameFullExportR :: ArkhamGameId -> Handler TypedContent
 getApiV1ArkhamGameFullExportR gameId = do
+  authorizeGameExport gameId
   gzip <- (== Just "true") <$> lookupGetParam "gzip"
   if gzip
     then do
@@ -134,6 +135,11 @@ getApiV1ArkhamGameFullExportR gameId = do
       addHeader "Content-Disposition" $ "attachment; filename=arkham-full-export-" <> toPathPiece gameId <> ".json"
       respondSource "application/json" $
         generateFullExportSource gameId .| awaitForever \chunk -> sendChunkBS chunk >> sendFlush
+
+authorizeGameExport :: ArkhamGameId -> Handler ()
+authorizeGameExport gameId = do
+  Entity userId user <- getRequestUser
+  unless (userAdmin user) $ void $ runDB $ getBy404 (UniquePlayer userId gameId)
 
 postApiV1ArkhamGamesFixR :: Handler ()
 postApiV1ArkhamGamesFixR = do

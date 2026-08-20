@@ -1,5 +1,7 @@
 # Arkham Horror LCG: Offline Build System
 
+> The integrated Build distribution in `server/release/build` is prebuilt upstream. Local-only, non-minified additions such as `local-bulk-tools.js` live beside that distribution and are loaded by its `index.html`; preserve those files when refreshing the Build assets.
+
 ## Background
 
 [Arkham Horror LCG](https://github.com/halogenandtoast/ArkhamHorror) is a web-based implementation of the Arkham Horror LCG card game.

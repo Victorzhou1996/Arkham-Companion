@@ -274,9 +274,7 @@ instance Yesod App where
             _ <- getAdminUser
             pure Authorized
           ApiV1ArkhamGameP _ game -> case game of
-            ApiV1ArkhamGameFullExportR -> do
-              _ <- getAdminUser
-              pure Authorized
+            ApiV1ArkhamGameFullExportR -> pure Authorized
             ApiV1ArkhamGameReloadR -> do
               _ <- getAdminUser
               pure Authorized

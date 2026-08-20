@@ -44,6 +44,7 @@ async function logout() {
             <font-awesome-icon icon="angle-down" class="dropdown-icon" :class="{ open: expanded }" />
           </button>
           <div v-if="expanded" class="user-dropdown">
+            <router-link @click="expanded = false" to="/local-management">{{$t('nav.localManagement')}}</router-link>
             <router-link @click="expanded = false" to="/settings">{{$t('settings')}}</router-link>
             <a href="#" @click="logout">{{ $t('logOut') }}</a>
           </div>
@@ -56,6 +57,7 @@ async function logout() {
     </OnClickOutside>
 
     <div v-if="mobileOpen" class="mobile-menu" @click="mobileOpen = false">
+      <router-link to="/local-management">{{$t('nav.localManagement')}}</router-link>
       <router-link to="/decks">{{$t('nav.myDecks')}}</router-link>
       <a :href="buildHref">Build</a>
       <router-link to="/achievements">{{$t('nav.achievements')}}</router-link>
