@@ -54,6 +54,35 @@
 
     "recommendedOptions": "推荐选项",
 
+    "undoMode": {
+      "title": "回溯模式",
+      "standard": {
+        "name": "标准",
+        "description": "仅保留当前剧本内的回溯；进入幕间后无法返回上一关。"
+      },
+      "full": {
+        "name": "完整",
+        "description": "沿用原始存档逻辑，保留全部回溯记录。"
+      },
+      "light": {
+        "name": "轻量",
+        "description": "仅保留最近 30 步。"
+      },
+      "hardcore": {
+        "name": "硬核",
+        "description": "只允许回溯最近 1 步；抽牌、抽遭遇卡或抽取混乱标记后不可回溯。"
+      },
+      "expert": {
+        "name": "专家",
+        "description": "完全禁止回溯，并隐藏调试功能。"
+      },
+      "confirmTitle": "确认结束本次冒险",
+      "confirmBody": "进入幕间后将清除本剧本及更早的回溯记录，之后无法返回上一步。确认继续吗？",
+      "review": "返回检查",
+      "confirm": "结束冒险并进入幕间",
+      "waitingForLead": "等待队长调查员继续。"
+    },
+
     "recommendedOption": {
       "PlayersDoNotControlStoryAssetClues": {
         "title": "玩家无法控制剧情线索",

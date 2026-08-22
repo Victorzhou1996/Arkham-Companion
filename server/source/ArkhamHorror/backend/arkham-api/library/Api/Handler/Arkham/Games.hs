@@ -30,11 +30,13 @@ import Arkham.Difficulty
 import Arkham.Game
 import Arkham.Game.Settings (
   AsIfRuling,
+  UndoMode (..),
   asIfRulingFromStrictAsIfAt,
   defaultAsIfRulingForCampaign,
   settingsAchievementsEnabled,
   settingsAsIfRuling,
   settingsUltimatumsAndBoons,
+  settingsUndoMode,
  )
 import Arkham.UltimatumsAndBoons.Types (UltimatumOrBoon)
 import Arkham.GameEnv (getCard)
@@ -163,6 +165,7 @@ data CreateGamePost = CreateGamePost
   , aiPlayers :: [Maybe AiSlotConfig]
   , achievementsEnabled :: Bool
   , ultimatumsAndBoons :: Set UltimatumOrBoon
+  , undoMode :: UndoMode
   }
   deriving stock (Show, Generic)
 
@@ -185,6 +188,7 @@ instance FromJSON CreateGamePost where
     aiPlayers <- o .:? "aiPlayers" .!= []
     achievementsEnabled <- o .:? "achievementsEnabled" .!= True
     ultimatumsAndBoons <- o .:? "ultimatumsAndBoons" .!= mempty
+    undoMode <- o .:? "undoMode" .!= FullUndo
     pure CreateGamePost {..}
 
 -- | New Game
@@ -214,6 +218,7 @@ postApiV1ArkhamGamesR = do
               { settingsAsIfRuling = asIfRulingValue
               , settingsAchievementsEnabled = achievementsEnabled
               , settingsUltimatumsAndBoons = ultimatumsAndBoons
+              , settingsUndoMode = undoMode
               }
         }
     ag = ArkhamGame campaignName game 0 multiplayerVariant now now
@@ -257,7 +262,7 @@ postApiV1ArkhamGamesR = do
     let ag' = ag {arkhamGameCurrentData = updatedGame}
 
     replace gameId ag'
-    insert_ $ ArkhamStep gameId (Choice mempty updatedQueue) 0 (ActionDiff [])
+    insert_ $ ArkhamStep gameId (Choice mempty updatedQueue False) 0 (ActionDiff [])
     pure $ toPublicGame (Entity gameId ag') mempty
 
 putApiV1ArkhamGameR :: ArkhamGameId -> Handler ()

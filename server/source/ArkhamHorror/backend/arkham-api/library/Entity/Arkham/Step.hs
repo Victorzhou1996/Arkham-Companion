@@ -25,9 +25,24 @@ import Orphans ()
 data Choice = Choice
   { choicePatchDown :: Patch
   , choiceMessages :: [Message]
+  , choiceHasRandomOutcome :: Bool
   }
   deriving stock (Show, Generic)
-  deriving anyclass (ToJSON, FromJSON)
+
+instance ToJSON Choice where
+  toJSON Choice {..} =
+    object
+      [ "choicePatchDown" .= choicePatchDown
+      , "choiceMessages" .= choiceMessages
+      , "choiceHasRandomOutcome" .= choiceHasRandomOutcome
+      ]
+
+instance FromJSON Choice where
+  parseJSON = withObject "Choice" \o ->
+    Choice
+      <$> o .: "choicePatchDown"
+      <*> o .: "choiceMessages"
+      <*> o .:? "choiceHasRandomOutcome" .!= False
 
 instance PersistFieldSql Choice where
   sqlType _ = SqlString

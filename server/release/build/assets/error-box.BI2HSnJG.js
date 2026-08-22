@@ -1,0 +1,1 @@
+import{d as e}from"./src.DEN_3V-D.js";import{no as t}from"./http-client.context.SXK8v4RP.js";var n={error:`_error_1pdk5_1`},r=e();function i({children:e,className:i,...a}){return(0,r.jsx)(`output`,{...a,className:t(n.error,i),children:e})}export{i as t};

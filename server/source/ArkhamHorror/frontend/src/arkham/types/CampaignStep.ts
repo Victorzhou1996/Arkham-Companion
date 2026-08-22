@@ -196,11 +196,13 @@ export const checkpointStepDecoder = JsonDecoder.object<CheckpointStep>(
 
 export type UpgradeDeckStep = {
   tag: 'UpgradeDeckStep';
+  contents: CampaignStep;
 }
 
-export const upgradeStepDecoder = JsonDecoder.object<UpgradeDeckStep>(
+export const upgradeStepDecoder: JsonDecoder.Decoder<UpgradeDeckStep> = JsonDecoder.object<UpgradeDeckStep>(
   {
     tag: JsonDecoder.literal('UpgradeDeckStep'),
+    contents: JsonDecoder.lazy<CampaignStep>(() => campaignStepDecoder),
   },
   'UpgradeDeckStep',
 );
@@ -224,7 +226,7 @@ export const continueCampaignStepDecoder: JsonDecoder.Decoder<ContinueCampaignSt
   'ContinueCampaignStep',
 );
 
-export const campaignStepDecoder = JsonDecoder.oneOf<CampaignStep>(
+export const campaignStepDecoder: JsonDecoder.Decoder<CampaignStep> = JsonDecoder.oneOf<CampaignStep>(
   [
     prologueStepDecoder,
     resupplyPointStepDecoder,

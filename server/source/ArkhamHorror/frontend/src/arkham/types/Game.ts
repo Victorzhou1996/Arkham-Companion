@@ -1,6 +1,6 @@
 import * as JsonDecoder from 'ts.data.json';
 import { v2Optional, withDefault } from '@/arkham/parser';
-import { AiFocus } from '@/arkham/types/NewGame';
+import { AiFocus, UndoMode } from '@/arkham/types/NewGame';
 import { Investigator, InvestigatorDetails, investigatorDecoder, investigatorDetailsDecoder } from '@/arkham/types/Investigator';
 import { Modifier, modifierDecoder } from '@/arkham/types/Modifier';
 import { ConcealedCard, concealedCardDecoder } from '@/arkham/types/ConcealedCard';
@@ -48,6 +48,7 @@ type GameSettings = {
   settingsAsIfRuling: AsIfRuling
   settingsStrictAsIfAt: boolean
   settingsAchievementsEnabled: boolean
+  settingsUndoMode: UndoMode
   settingsUltimatumsAndBoons: string[]
   settingsUltimatumsAndBoonsEnabled: boolean
   // Ultimatum of Ultimatums' per-game random roll (a tag like "BoonOfHermes");
@@ -83,6 +84,13 @@ const gameSettingsDecoder = JsonDecoder.object<GameSettings>({
   ], 'AsIfRuling'),
   settingsStrictAsIfAt: JsonDecoder.boolean(),
   settingsAchievementsEnabled: withDefault(true, JsonDecoder.boolean()),
+  settingsUndoMode: withDefault<UndoMode>('full', JsonDecoder.oneOf<UndoMode>([
+    JsonDecoder.literal('standard'),
+    JsonDecoder.literal('full'),
+    JsonDecoder.literal('light'),
+    JsonDecoder.literal('hardcore'),
+    JsonDecoder.literal('expert'),
+  ], 'UndoMode')),
   settingsUltimatumsAndBoons: withDefault<string[]>([], JsonDecoder.array(JsonDecoder.string(), 'string[]')),
   settingsUltimatumsAndBoonsEnabled: withDefault(true, JsonDecoder.boolean()),
   settingsRolledUltimatumOrBoon: withDefault<string | null>(null, JsonDecoder.string()),
@@ -444,6 +452,7 @@ export const gameDecoder: JsonDecoder.Decoder<Game> = JsonDecoder.object(
     settingsAsIfRuling: 'chapter1',
     settingsStrictAsIfAt: false,
     settingsAchievementsEnabled: true,
+    settingsUndoMode: 'full',
     settingsUltimatumsAndBoons: [],
     settingsUltimatumsAndBoonsEnabled: true,
     settingsRolledUltimatumOrBoon: null,

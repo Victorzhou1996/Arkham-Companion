@@ -228,7 +228,7 @@ putApiV1ArkhamGameDecksR gameId = do
                   insert_
                     $ ArkhamStep
                       gameId
-                      (Choice diffDown updatedQueue)
+                      (Choice diffDown updatedQueue False)
                       (arkhamGameStep + 1)
                       (ActionDiff $ view actionDiffL ge)
 
@@ -358,20 +358,27 @@ fromPostData userId CreateDeckPost {..} = do
     , arkhamDeckList = deckList
     }
 
-arkhamBuildDecklistUrl :: Text -> Maybe Text
-arkhamBuildDecklistUrl url = do
-  rest <-
-    asum
-      $ map
-        (`T.stripPrefix` url)
-        [ "https://arkham.build/decklist/view/"
-        , "https://arkham.build/decklist/"
-        , "http://arkham.build/decklist/view/"
-        , "http://arkham.build/decklist/"
-        ]
-  let decklistId = T.takeWhile (/= '?') $ T.takeWhile (/= '/') rest
-  guard $ not $ T.null decklistId
-  pure $ "https://api.arkham.build/v1/public/arkhamdb/decklist/" <> decklistId
+arkhamBuildImportUrl :: Text -> Maybe Text
+arkhamBuildImportUrl url =
+  asum
+    [ toApiUrl "decklist" "arkhamdb/decklist"
+    , toApiUrl "deck" "share"
+    , toApiUrl "share" "share"
+    ]
+ where
+  toApiUrl path apiPath = do
+    rest <-
+      asum
+        $ map
+          (`T.stripPrefix` url)
+          [ "https://arkham.build/" <> path <> "/view/"
+          , "https://arkham.build/" <> path <> "/"
+          , "http://arkham.build/" <> path <> "/view/"
+          , "http://arkham.build/" <> path <> "/"
+          ]
+    let deckId = T.takeWhile (/= '?') $ T.takeWhile (/= '/') rest
+    guard $ not $ T.null deckId
+    pure $ "https://api.arkham.build/v1/public/" <> apiPath <> "/" <> deckId
 
 decodeDeckList :: BL.ByteString -> Either String ArkhamDBDecklist
 decodeDeckList bytes = case eitherDecode bytes of
@@ -381,7 +388,7 @@ decodeDeckList bytes = case eitherDecode bytes of
     maybe (Left "No decklist found") Right (listToMaybe decklists)
 
 getDeckList :: MonadIO m => Text -> m (Either String ArkhamDBDecklist)
-getDeckList url = liftIO case arkhamBuildDecklistUrl url of
+getDeckList url = liftIO case arkhamBuildImportUrl url of
   Just fetchUrl -> do
     request <- parseRequest $ T.unpack fetchUrl
     manager <- newManager tlsManagerSettings

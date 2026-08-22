@@ -1,0 +1,1 @@
+import{g as e,o as t,p as n}from"./src.DEN_3V-D.js";import{_ as r}from"./http-client.context.SXK8v4RP.js";var i=e(n(),1);function a(e){let[n,a]=t(),o=r(e=>e.ui.navigationHistory),s=r(e=>e.pruneHistory);return(0,i.useCallback)(()=>{if(e)a(e);else{for(let e=o.length-1;e>=0;e--){let t=o[e];if(!t.startsWith(n)){s(e),a(t);return}}a(`/`)}},[a,o,e,n,s])}export{a as t};

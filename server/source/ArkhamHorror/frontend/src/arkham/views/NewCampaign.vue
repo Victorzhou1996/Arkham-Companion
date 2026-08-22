@@ -13,6 +13,7 @@ import type {
   MultiplayerVariant,
   CampaignType,
   AiSlotConfig,
+  UndoMode,
 } from '@/arkham/types/NewGame'
 
 import { ACHIEVEMENT_CAMPAIGN_IDS } from '@/arkham/achievements'
@@ -74,6 +75,7 @@ const aiPlayers = ref<(AiSlotConfig | null)[]>([])
 const fullCampaignOptionKey = ref<string | null>(null)
 const recommendedOptionState = ref<Record<string, boolean>>({})
 const achievementsEnabled = ref(true)
+const undoMode = ref<UndoMode>('standard')
 
 // Ultimatums and Boons variant tags selected in GameOptions (e.g. "BoonOfHades").
 const ultimatumsAndBoons = ref<string[]>([])
@@ -390,6 +392,7 @@ async function start() {
         aiPlayersForCreate,
         achievementsForCreate(campaignId),
         ultimatumsAndBoons.value,
+        undoMode.value,
       )
       router.push(`/games/${game.id}`)
     }
@@ -412,6 +415,7 @@ async function start() {
         aiPlayersForCreate,
         achievementsForCreate(campaignId),
         ultimatumsAndBoons.value,
+        undoMode.value,
       )
       router.push(`/games/${game.id}`)
     }
@@ -454,6 +458,7 @@ async function start() {
         v-model:fullCampaignOptionKey="fullCampaignOptionKey"
         v-model:recommendedOptionState="recommendedOptionState"
         v-model:achievementsEnabled="achievementsEnabled"
+        v-model:undoMode="undoMode"
         v-model:ultimatumsAndBoons="ultimatumsAndBoons"
         v-model:epicMode="epicMode"
         v-model:epicGroupCount="epicGroupCount"

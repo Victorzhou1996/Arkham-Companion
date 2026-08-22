@@ -1,1 +1,0 @@
-import{d as e}from"./src.DEN_3V-D.js";import{eo as t}from"./http-client.context.Bkg53Led.js";var n={plane:`_plane_1a3cl_1`,none:`_none_1a3cl_7`,sm:`_sm_1a3cl_11`},r=e();function i(e){let{as:i,children:a,className:o,size:s,...c}=e;return(0,r.jsx)(i??`div`,{...c,className:t(n.plane,o,s&&n[s]),children:a})}export{i as t};

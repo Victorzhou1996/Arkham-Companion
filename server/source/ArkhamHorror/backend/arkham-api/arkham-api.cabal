@@ -5786,6 +5786,7 @@ library
       Arkham.Story.Cards.ToTheDreamlands
       Arkham.Story.Cards.TriumphAndSubjugation
       Arkham.Story.Cards.UnattainableDesires
+      Arkham.Story.Cards.UnderseaParasite
       Arkham.Story.Cards.UneasyAlliance
       Arkham.Story.Cards.UnfinishedBusiness_B
       Arkham.Story.Cards.UnfinishedBusiness_D
@@ -5796,7 +5797,6 @@ library
       Arkham.Story.Cards.UniversityHalls
       Arkham.Story.Cards.UnlikelyInjuries
       Arkham.Story.Cards.UnspeakableAbomination
-      Arkham.Story.Cards.UnderseaParasite
       Arkham.Story.Cards.UsurpTheNight
       Arkham.Story.Cards.ValentinosFate
       Arkham.Story.Cards.WaresOfBaharna
@@ -6842,6 +6842,7 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       Api.Handler.Arkham.DecksSpec
+      Api.Handler.Arkham.Games.SharedSpec
       Arkham.Achievements.ReturnToNightOfTheZealotSpec
       Arkham.Achievements.ReturnToTheDunwichLegacySpec
       Arkham.Achievements.ReturnToThePathToCarcosaSpec
@@ -6849,7 +6850,6 @@ test-suite spec
       Arkham.Act.Cards.BlackwatersBaneEpicMultiplayerSpec
       Arkham.Act.Cards.ExposeTheAnomalyEpicMultiplayerSpec
       Arkham.Act.Cards.FalseStepV2Spec
-      Arkham.ActionSpec
       Arkham.Agenda.Cards.EmptyStreetsSpec
       Arkham.Agenda.Cards.RestrictedAccessSpec
       Arkham.Agenda.Cards.ShadowsDeepenSpec
@@ -7185,6 +7185,7 @@ test-suite spec
     , arkham-api
     , async
     , base
+    , bytestring
     , containers
     , exceptions
     , hs-opentelemetry-api

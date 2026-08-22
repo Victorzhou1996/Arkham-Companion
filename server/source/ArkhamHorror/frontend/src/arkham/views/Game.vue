@@ -260,7 +260,19 @@ const onlineMode = import.meta.env.VITE_ONLINE_MODE === 'true'
 const archived = ref(false)
 const archiveChecking = ref(onlineMode)
 const archiving = ref(false)
-const canUseUndo = computed(() => !onlineMode || (!archiveChecking.value && !archived.value))
+const isExpertMode = computed(() => game.value?.settings.settingsUndoMode === 'expert')
+const canUseDebug = computed(() => !isExpertMode.value)
+const canUseUndo = computed(
+  () => !isExpertMode.value && (!onlineMode || (!archiveChecking.value && !archived.value)),
+)
+
+watch(
+  canUseDebug,
+  (allowed) => {
+    if (!allowed) debug.active = false
+  },
+  { immediate: true },
+)
 
 // "Ready to play": the group has reached the first investigation phase of an
 // active, started scenario. Cleanest signal we have off the existing game state.
@@ -1326,11 +1338,13 @@ const actionMap = computed<Map<string, () => void>>(() => {
 })
 
 const canUndoScenario = computed(() => {
+  if (!canUseUndo.value) return false
   if (!game.value) return false
   return game.value.scenarioSteps > 1
 })
 
 const canUndoBoundary = (boundary: number | null): boolean => {
+  if (!canUseUndo.value) return false
   if (!game.value) return false
   if (boundary === null) return false
   return game.value.scenarioSteps > boundary
@@ -1478,17 +1492,17 @@ const handleKeyPress = (event: KeyboardEvent) => {
   }
 
   if (event.key === 'u') {
-    undo()
+    if (canUseUndo.value) undo()
     return
   }
 
   if (event.key === 'U') {
-    armUndoChord()
+    if (canUseUndo.value) armUndoChord()
     return
   }
 
   if (event.key === 'D') {
-    debug.toggle()
+    if (canUseDebug.value) debug.toggle()
     return
   }
 
@@ -1611,6 +1625,7 @@ const toggleSidebar = function () {
 // Undo
 const undoLock = ref(false)
 async function undo() {
+  if (!canUseUndo.value) return
   processing.value = true
   const oldQuestion = game.value?.question
   if (game.value) setGameQuestion({})
@@ -2041,7 +2056,7 @@ onUnmounted(() => {
             </div>
           </section>
 
-          <section class="shortcuts-section">
+          <section v-if="canUseUndo" class="shortcuts-section">
             <h3 class="section-title">{{ $t('game.shortcutSection.undo') }}</h3>
             <div class="shortcut-list">
               <div class="shortcut-row">
@@ -2088,7 +2103,7 @@ onUnmounted(() => {
                 <div class="shortcut-name">{{ $t('gameBar.shortcutShowOrHideShortcuts') }}</div>
                 <div class="shortcut-keys"><kbd>?</kbd></div>
               </div>
-              <div class="shortcut-row">
+              <div v-if="canUseDebug" class="shortcut-row">
                 <div class="shortcut-name">{{ $t('gameBar.shortcutToggleDebug') }}</div>
                 <div class="shortcut-keys"><kbd>D</kbd></div>
               </div>
@@ -2178,7 +2193,7 @@ onUnmounted(() => {
           </template>
         </Menu>
       </div>
-      <div>
+      <div v-if="canUseDebug">
         <Menu>
           <BeakerIcon aria-hidden="true" />
           {{ $t('gameBar.debug') }}

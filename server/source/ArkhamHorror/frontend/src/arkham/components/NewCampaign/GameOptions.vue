@@ -11,6 +11,7 @@ import type {
   CampaignType,
   AiFocus,
   AiSlotConfig,
+  UndoMode,
 } from '@/arkham/types/NewGame'
 import { aiFocuses } from '@/arkham/types/NewGame'
 import { ACHIEVEMENT_CAMPAIGN_IDS } from '@/arkham/achievements'
@@ -58,6 +59,7 @@ const fullCampaignOptionKey = defineModel<string | null>('fullCampaignOptionKey'
 })
 const sideStoryMode = defineModel<string>('sideStoryMode', { required: true })
 const achievementsEnabled = defineModel<boolean>('achievementsEnabled', { required: true })
+const undoMode = defineModel<UndoMode>('undoMode', { required: true })
 
 // "Epic Multiplayer" side-story flow. Only surfaced for side stories whose data
 // carries `epicMultiplayer: true` (src/arkham/data/side-stories.json).
@@ -766,6 +768,22 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
         <div class="achievements-desc">{{ $t('achievements.settingsToggleDescription') }}</div>
       </div>
 
+      <div class="card">
+        <div class="card-title">{{ $t('create.undoMode.title') }}</div>
+        <div class="undo-mode-options">
+          <label
+            v-for="mode in (['standard', 'full', 'light', 'hardcore', 'expert'] as UndoMode[])"
+            :key="mode"
+            class="undo-mode-option"
+            :class="{ selected: undoMode === mode }"
+          >
+            <input type="radio" v-model="undoMode" :value="mode" />
+            <span class="undo-mode-name">{{ $t(`create.undoMode.${mode}.name`) }}</span>
+            <span class="undo-mode-description">{{ $t(`create.undoMode.${mode}.description`) }}</span>
+          </label>
+        </div>
+      </div>
+
       <div class="card rules-card">
         <button type="button" class="rules-toggle" @click="rulesExpanded = !rulesExpanded">
           <span class="card-title" style="margin-bottom: 0">{{
@@ -1106,6 +1124,39 @@ input[type='radio'] {
 
 .segmented label:last-of-type {
   border-right: none;
+}
+
+.undo-mode-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.undo-mode-option {
+  display: grid;
+  gap: 4px;
+  min-height: 82px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+}
+
+.undo-mode-option.selected {
+  border-color: rgba(154, 196, 78, 0.85);
+  background: rgba(110, 134, 64, 0.28);
+}
+
+.undo-mode-name {
+  color: #fff;
+  font-weight: 700;
+}
+
+.undo-mode-description {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .segmented label:hover {

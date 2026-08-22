@@ -102,6 +102,7 @@ const storyQuestionOverride = computed(() =>
       :game="game"
       :scenario="game.scenario ?? undefined"
       :canUpgradeDecks="continueCampaign.canUpgradeDecks"
+      :playerId="playerId"
       :step="continueCampaign.nextStep"
       :chooseSideStory="continueCampaign.chooseSideStory"
       :canChooseSideStory="continueCampaign.canChooseSideStory"
