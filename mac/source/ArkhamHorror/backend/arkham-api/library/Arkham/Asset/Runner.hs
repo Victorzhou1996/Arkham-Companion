@@ -41,7 +41,9 @@ import Arkham.Helpers.Window (
   windows,
   wouldWindows,
  )
-import Arkham.Investigator.Types (Field (InvestigatorRemainingHealth, InvestigatorRemainingSanity))
+import Arkham.Investigator.Types (
+  Field (InvestigatorLocation, InvestigatorRemainingHealth, InvestigatorRemainingSanity),
+ )
 import Arkham.Matcher (
   AssetMatcher (AnyAsset, AssetAttachedToAsset, AssetCanBeDamagedBySource, AssetWithId),
   EventMatcher (EventAttachedToAsset),
@@ -64,9 +66,10 @@ import Data.Map.Strict qualified as Map
 
 defeated :: (HasGame m, Tracing m) => AssetAttrs -> Source -> m (Maybe DefeatedBy)
 defeated AssetAttrs {assetId, assetAssignedHealthDamage, assetAssignedSanityDamage} source = do
+  canBeDefeated <- withoutModifier assetId CannotBeDefeated
   remainingHealth <- field AssetRemainingHealth assetId
   remainingSanity <- field AssetRemainingSanity assetId
-  pure $ case (remainingHealth, remainingSanity) of
+  pure $ guard canBeDefeated *> case (remainingHealth, remainingSanity) of
     (Just a, Just b)
       | a - assetAssignedHealthDamage <= 0 && b - assetAssignedSanityDamage <= 0 ->
           Just (DefeatedByDamageAndHorror source)
@@ -318,7 +321,11 @@ instance RunMessage AssetAttrs where
         NotifySelfOfNoUses -> push $ SpentAllUses (toTarget a)
       pure $ a & tokensL .~ mempty
     RemoveTokens _ target tType n | isTarget a target -> do
-      when (tType == Clue && assetClues a - n <= 0) do
+      -- Only a clue that was actually there can be the *last* clue removed. Without the
+      -- `> 0` guard every clue-less asset fires this window on `RemoveAllClues`, so a single
+      -- InvestigatorDiscardAllClues broadcast costs one full CheckWindows pass per asset in
+      -- play (#5301). Mirrors the ClearTokens branch above and Location/Runner's guard.
+      when (tType == Clue && assetClues a > 0 && assetClues a - n <= 0) do
         pushAll $ windows [Window.LastClueRemovedFromAsset (toId a)]
       when (tokenIsUse tType) do
         case assetPrintedUses of
@@ -481,16 +488,30 @@ instance RunMessage AssetAttrs where
       pure a
     InvestigatorEliminated iid -> do
       let
-        shouldRemoveFromGame = case assetPlacement of
+        belongsToEliminated = case assetPlacement of
           InPlayArea iid' -> iid == iid'
           InThreatArea iid' -> iid == iid'
           AttachedToInvestigator iid' -> iid == iid'
-          _ -> a.controller == Just iid && not (assetIsStory a)
-      pushWhen shouldRemoveFromGame $ RemoveFromGame (toTarget a)
+          _ -> a.controller == Just iid
+        isStory = assetIsStory a
 
-      let shouldDiscard = a.controller == Just iid && assetIsStory a
-      pushWhen shouldDiscard $ Discard Nothing GameSource (toTarget a)
-      pure a
+      -- Story assets are discarded (which fires the would-leave-play windows, so
+      -- replacement effects can cancel the batch); everything else is removed from
+      -- the game. These must stay mutually exclusive: a RemoveFromGame queued
+      -- behind a cancelled Discard removes the asset anyway (Vale Lantern, #5252).
+      pushWhen (belongsToEliminated && not isStory) $ RemoveFromGame (toTarget a)
+      pushWhen (belongsToEliminated && isStory) $ Discard Nothing GameSource (toTarget a)
+
+      -- Assets are run before investigators in the entity pass, so the eliminated
+      -- investigator is still at their location here. Anchor the asset to it so
+      -- "place it at the nearest location" replacements still have a location once
+      -- the investigator has been unplaced. Same approach as Enemy.Runner uses for
+      -- enemies in an eliminated investigator's threat area.
+      if belongsToEliminated && isStory
+        then do
+          mlid <- join <$> fieldMay InvestigatorLocation iid
+          pure $ maybe a (\lid -> a & placementL .~ AtLocation lid) mlid
+        else pure a
     AddUses source aid useType' n | aid == assetId -> runMessage (PlaceTokens source (toTarget a) useType' n) a
     SpendUses source target useType' n | isTarget a target -> do
       mods <- getModifiers a
@@ -592,19 +613,23 @@ instance RunMessage AssetAttrs where
       pushAll [RemoveFromPlay $ toSource a, ObtainCard a.cardId]
       pure a
     Discard mInvestigator source target | a `isTarget` target -> do
-      removeFromGame <-
-        if (toCardDef a).doubleSided
-          then pure True
-          else a `hasModifier` RemoveFromGameInsteadOfDiscard
-      afterWindows <- checkAfter $ Window.Discarded mInvestigator source (toCard a)
-      let discardMsg = if removeFromGame then RemoveFromGame (toTarget a) else Discarded (toTarget a) source (toCard a)
-      (batchId, windowMessages) <- wouldWindows $ Window.WouldBeDiscarded (toTarget a)
-      push
-        $ Would batchId
-        $ windowMessages
-        <> map (DiscardedCard . toCardId) a.cardsUnderneath
-        <> [RemoveFromPlay $ toSource a, discardMsg, afterWindows]
-      pure a
+      cannotLeavePlay <- a `hasModifier` CannotLeavePlay
+      if cannotLeavePlay
+        then pure a
+        else do
+          removeFromGame <-
+            if (toCardDef a).doubleSided
+              then pure True
+              else a `hasModifier` RemoveFromGameInsteadOfDiscard
+          afterWindows <- checkAfter $ Window.Discarded mInvestigator source (toCard a)
+          let discardMsg = if removeFromGame then RemoveFromGame (toTarget a) else Discarded (toTarget a) source (toCard a)
+          (batchId, windowMessages) <- wouldWindows $ Window.WouldBeDiscarded (toTarget a)
+          push
+            $ Would batchId
+            $ windowMessages
+            <> map (DiscardedCard . toCardId) a.cardsUnderneath
+            <> [RemoveFromPlay $ toSource a, discardMsg, afterWindows]
+          pure a
     Exile target | a `isTarget` target -> do
       pushAll [RemoveFromPlay $ toSource a, Exiled target (toCard a)]
       pure $ a & exiledL .~ True

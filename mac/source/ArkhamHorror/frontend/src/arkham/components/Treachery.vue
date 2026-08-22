@@ -8,6 +8,7 @@ import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Messa
 import TokenPool from '@/arkham/components/TokenPool.vue';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
+import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
 import Token from '@/arkham/components/Token.vue';
 import * as Arkham from '@/arkham/types/Treachery';
 
@@ -75,6 +76,12 @@ const abilities = computed(() => {
     }, []);
 })
 
+const triggerModeAbilities = computed(() => {
+  const owner = ownerInvestigatorId.value
+  if (owner === null) return []
+  return triggerModeAbilitiesForCard(choices.value, props.treachery.cardCode, owner)
+})
+
 const tokenOverrides = { Damage: { type: 'damage' } }
 const cardAction = computed(() => choices.value.findIndex(canInteract))
 </script>
@@ -111,7 +118,7 @@ const cardAction = computed(() => choices.value.findIndex(canInteract))
       :player-id="playerId"
       :investigator-id="ownerInvestigatorId"
       :card-code="treachery.cardCode"
-      :abilities="abilities"
+      :abilities="triggerModeAbilities"
       :exhausted="isExhausted"
     />
     <div class="pool">

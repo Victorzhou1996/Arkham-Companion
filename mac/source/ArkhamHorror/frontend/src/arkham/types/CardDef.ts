@@ -15,6 +15,8 @@ type SkillIcon
   | { tag: "WildIcon" }
   | { tag: "WildMinusIcon" }
 
+export type CustomizationDef = [string, number]
+
 export type CardDef = {
   cardCode: string;
   doubleSided: boolean;
@@ -29,7 +31,9 @@ export type CardDef = {
   cost: CardCost | null;
   otherSide: string | null;
   meta: Record<string, any>;
+  errata: string | null;
   encounterSet?: any;
+  customizations?: CustomizationDef[];
 }
 
 const cardCostDecoder = JsonDecoder.oneOf<CardCost>([
@@ -66,8 +70,10 @@ export const cardDefDecoder = JsonDecoder.object<CardDef>(
     skills: withDefault([], JsonDecoder.array<SkillIcon>(skillIconDecoder, 'SkillIcon[]')),
     name: nameDecoder,
     cost: withDefault(null, cardCostDecoder),
-    meta: JsonDecoder.succeed().map((v: any) => v ?? {}),
+    meta: withDefault<Record<string, any>>({}, JsonDecoder.record(JsonDecoder.succeed(), 'CardDef.meta')),
+    errata: withDefault(null, JsonDecoder.string()),
     encounterSet: v2Optional(JsonDecoder.succeed()),
+    customizations: withDefault<CustomizationDef[]>([], JsonDecoder.array(JsonDecoder.tuple([JsonDecoder.string(), JsonDecoder.number()], 'CustomizationDef'), 'CustomizationDef[]')),
   },
   'CardDef',
 );

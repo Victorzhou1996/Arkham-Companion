@@ -12,6 +12,7 @@
 **/*.dump-hi
 **/*.hie
 **/dist-newstyle
+**/build-artifacts
 **/public/img
 backend/foo
 backend/tags

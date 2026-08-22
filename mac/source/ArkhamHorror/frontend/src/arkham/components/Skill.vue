@@ -7,6 +7,7 @@ import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/typ
 import { imgsrc } from '@/arkham/helpers';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
+import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
 import * as Arkham from '@/arkham/types/Skill';
 
 export interface Props {
@@ -72,6 +73,10 @@ const abilities = computed(() => {
     }, []);
 })
 
+const triggerModeAbilities = computed(() =>
+  triggerModeAbilitiesForCard(choices.value, cardCode.value, props.skill.owner),
+)
+
 const hasPool = computed(() => {
   const { sealedChaosTokens } = props.skill;
 
@@ -107,7 +112,7 @@ const choose = (index: number) => emits('choose', index)
       :player-id="playerId"
       :investigator-id="skill.owner"
       :card-code="cardCode"
-      :abilities="abilities"
+      :abilities="triggerModeAbilities"
     />
   </div>
 </template>

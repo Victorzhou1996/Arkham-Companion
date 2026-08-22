@@ -65,6 +65,12 @@ instance HasModifiersFor WindowModifierEffect where
             selectOne TheScenario >>= traverse_ \currentScenarioId ->
               when (scenarioId == currentScenarioId) do
                 tell $ MonoidalMap $ singletonMap target $ map setActiveDuringSetup modifiers
+          Just (EffectNextSetupWindow createdInScenarioId) -> do
+            selectOne TheScenario >>= traverse_ \currentScenarioId ->
+              when (createdInScenarioId /= currentScenarioId) do
+                tell $ MonoidalMap $ singletonMap target $ map setActiveDuringSetup modifiers
+          -- Inert until the next scenario's Setup unwraps it to the inner window.
+          Just (EffectForNextScenario {}) -> pure ()
           Just (EffectSkillTestMatchingWindow stmatch) -> do
             ms <- getSkillTest
             for_ ms \s -> do

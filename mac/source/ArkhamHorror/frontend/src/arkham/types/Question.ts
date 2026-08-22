@@ -102,6 +102,10 @@ export type ChooseOne = {
   // window). We normalize the tag to `ChooseOne` for rendering, but preserve this flag
   // so consumers can tell a genuine play window from an unrelated single-choice prompt.
   isPlayerWindow?: boolean;
+  // True for the backend's response-window question. This is kept separately from
+  // `isPlayerWindow`, since ordinary action windows use PlayerWindowChooseOne too.
+  isWindowResponse?: boolean;
+  isWindow?: boolean;
 }
 
 // The backend represents this as a nest list, but we flatten it and pass the flattened index
@@ -507,6 +511,8 @@ export const chooseOneDecoder = JsonDecoder.object<{ tag: QuestionType, choices:
   tag: QuestionType.CHOOSE_ONE,
   choices,
   isPlayerWindow: tag === QuestionType.PLAYER_WINDOW_CHOOSE_ONE,
+  isWindowResponse: tag === QuestionType.WINDOW_CHOOSE_ONE,
+  isWindow: tag === QuestionType.WINDOW_CHOOSE_ONE,
 }));
 
 export const chooseOneFromEachDecoder = JsonDecoder.object<ChooseOneFromEach>(

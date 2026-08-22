@@ -26,6 +26,31 @@ instance FromJSON AsIfRuling where
     "Chapter2AsIfRuling" -> pure Chapter2AsIfRuling
     other -> fail $ "unknown AsIfRuling: " <> unpack other
 
+data UndoMode
+  = StandardUndo
+  | FullUndo
+  | LightUndo
+  | HardcoreUndo
+  | ExpertUndo
+  deriving stock (Eq, Ord, Show, Generic, Data)
+
+instance ToJSON UndoMode where
+  toJSON = String . \case
+    StandardUndo -> "standard"
+    FullUndo -> "full"
+    LightUndo -> "light"
+    HardcoreUndo -> "hardcore"
+    ExpertUndo -> "expert"
+
+instance FromJSON UndoMode where
+  parseJSON = withText "UndoMode" \case
+    "standard" -> pure StandardUndo
+    "full" -> pure FullUndo
+    "light" -> pure LightUndo
+    "hardcore" -> pure HardcoreUndo
+    "expert" -> pure ExpertUndo
+    other -> fail $ "unknown UndoMode: " <> unpack other
+
 data Settings = Settings
   { settingsAbilitiesCannotReactToThemselves :: Bool -- Grotesque Statue FAQ (September 2023)
   , settingsAsIfRuling :: AsIfRuling
@@ -47,6 +72,7 @@ data Settings = Settings
   , settingsScreamedAllies :: Set CardCode
   -- ^ Ultimatum of The Scream: allies removed from the game for the rest of
   -- the campaign.
+  , settingsUndoMode :: UndoMode
   }
   deriving stock (Eq, Show, Generic, Data)
 
@@ -82,6 +108,7 @@ defaultSettings =
     , settingsUltimatumsAndBoonsEnabled = True
     , settingsRolledUltimatumOrBoon = Nothing
     , settingsScreamedAllies = mempty
+    , settingsUndoMode = FullUndo
     }
 
 instance ToJSON Settings where
@@ -95,6 +122,7 @@ instance ToJSON Settings where
     , "settingsUltimatumsAndBoonsEnabled" .= settingsUltimatumsAndBoonsEnabled settings
     , "settingsRolledUltimatumOrBoon" .= settingsRolledUltimatumOrBoon settings
     , "settingsScreamedAllies" .= settingsScreamedAllies settings
+    , "settingsUndoMode" .= settingsUndoMode settings
     ]
 
 instance FromJSON Settings where
@@ -110,6 +138,7 @@ instance FromJSON Settings where
     ultimatumsAndBoonsEnabled <- o .:? "settingsUltimatumsAndBoonsEnabled" .!= True
     rolledUltimatumOrBoon <- o .:? "settingsRolledUltimatumOrBoon" .!= Nothing
     screamedAllies <- o .:? "settingsScreamedAllies" .!= mempty
+    undoMode <- o .:? "settingsUndoMode" .!= FullUndo
     pure
       Settings
         { settingsAbilitiesCannotReactToThemselves = abilitiesCannotReactToThemselves
@@ -120,4 +149,5 @@ instance FromJSON Settings where
         , settingsUltimatumsAndBoonsEnabled = ultimatumsAndBoonsEnabled
         , settingsRolledUltimatumOrBoon = rolledUltimatumOrBoon
         , settingsScreamedAllies = screamedAllies
+        , settingsUndoMode = undoMode
         }

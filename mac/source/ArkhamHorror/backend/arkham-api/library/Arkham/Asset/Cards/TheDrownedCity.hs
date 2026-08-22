@@ -277,6 +277,7 @@ obscure2 =
     , cdLimits = [LimitPerInvestigator 1]
     , cdKeywords = setFromList [seal $ chaosToken_ #"0"]
     , cdLevel = Just 2
+    , cdSlots = [#arcane]
     }
 
 robertCastaigneStillHasYourBack4 :: CardDef
@@ -693,7 +694,9 @@ noPlaceLikeHome :: CardDef
 noPlaceLikeHome =
   permanent
     $ (storyAsset_ "11753a" ("No Place Like Home" <:> "Lost and Uncertain") Tasks)
-      {cdCardTraits = setFromList [Task, Incomplete]}
+      { cdCardTraits = setFromList [Task, Incomplete]
+      , cdUses = uses Discovery 8
+      }
 
 goodMoney :: CardDef
 goodMoney =
@@ -917,6 +920,7 @@ johnRaymondLegrasse :: CardDef
 johnRaymondLegrasse =
   (storyAsset "11687" ("John Raymond Legrasse" <:> "Hunting for Answers") 4 TheDoomOfArkhamPartI)
     { cdCardTraits = setFromList [Ally, Detective]
+    , cdSkills = [#combat, #intellect, #wild]
     , cdSlots = [#ally]
     , cdUnique = True
     }

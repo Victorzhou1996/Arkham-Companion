@@ -254,6 +254,7 @@ type UIModifierType =
   | { tag: 'OverlayCheckmark', top: number, left: number }
   | { tag: 'Rotated', contents: number}
   | { tag: 'Positioned', x: number, y: number }
+  | { tag: 'GridOffset', columnOffset: number, rowOffset: number }
 
 export type UIModifier = {
   tag: "UIModifier"
@@ -451,6 +452,11 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
           x: JsonDecoder.number(),
           y: JsonDecoder.number()
         }, 'Positioned'),
+        JsonDecoder.object({
+          tag: JsonDecoder.literal('GridOffset'),
+          columnOffset: JsonDecoder.number(),
+          rowOffset: JsonDecoder.number()
+        }, 'GridOffset'),
       ], 'UIModifierType')
     }, 'UIModifier'),
   JsonDecoder.object({

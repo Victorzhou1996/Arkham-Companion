@@ -13,6 +13,7 @@ import Arkham.Act.Types (actSequence)
 import Arkham.Ai.Decision (decideAi, decideAiAssist, isAssistCommitWindow)
 import Arkham.Ai.Helpers (lookupAiPlayer)
 import Arkham.Ai.State (aiEnabled)
+import Arkham.Card.CardCode (CardCode (..))
 import Arkham.Classes.Entity (attr)
 import Arkham.Entities (entitiesActs)
 import Arkham.Epic.Types (SharedEventState, SharedKey (PendingActAdvance, SharedActProgress), actProgressStages, epicEnvDeltaRef, epicEnvSharedRef, setSharedCounter, sharedCounter, sharedCounters, sharedTotalInvestigators, totalInvestigatorsKey)
@@ -26,11 +27,13 @@ import Arkham.Decklist
 import Arkham.Difficulty
 import Arkham.Game
 import Arkham.Game.Diff
+import Arkham.Game.Settings (UndoMode (..), settingsUndoMode)
 import Arkham.Game.State
+import Arkham.Game.Utils (gameInvestigators)
 import Arkham.GameEnv
 import Arkham.Id
 import Arkham.Investigator (lookupInvestigator)
-import Arkham.Investigator.Types (Investigator)
+import Arkham.Investigator.Types (Investigator, investigatorMentalTrauma, investigatorPhysicalTrauma)
 import Arkham.Message
 import Arkham.Name
 import Arkham.Queue
@@ -67,6 +70,39 @@ import UnliftIO.Async (async, cancel)
 import UnliftIO.Exception hiding (Handler)
 import UnliftIO.Timeout (timeout)
 import Yesod.WebSockets
+
+isRandomOutcomeMessage :: Message -> Bool
+isRandomOutcomeMessage msg = case msg of
+  DrewCards {} -> True
+  InvestigatorDrewEncounterCard {} -> True
+  InvestigatorDrewEncounterCardFrom {} -> True
+  InvestigatorDrawEnemy {} -> True
+  DrawChaosToken {} -> True
+  RevealChaosToken {} -> True
+  SilentRevealChaosToken {} -> True
+  RequestedChaosTokens _ _ (_ : _) -> True
+  _ -> case messageType msg of
+    Just DrawChaosTokenMessage -> True
+    Just RevealChaosTokenMessage -> True
+    Just DrawEncounterCardMessage -> True
+    Just DrawEnemyMessage -> True
+    _ -> False
+
+isFinalizeScenarioAnswer :: Answer -> Bool
+isFinalizeScenarioAnswer = \case
+  CampaignStepAnswerFor _ True _ -> True
+  _ -> False
+
+retainedStepFloor :: UndoMode -> Bool -> Bool -> Int -> Maybe Int
+retainedStepFloor mode isCheckpoint hasRandomOutcome newStep = case mode of
+  StandardUndo | isCheckpoint -> Just newStep
+  StandardUndo -> Nothing
+  FullUndo -> Nothing
+  LightUndo -> Just $ max 0 (newStep - 30)
+  HardcoreUndo
+    | hasRandomOutcome -> Just newStep
+    | otherwise -> Just $ max 0 (newStep - 1)
+  ExpertUndo -> Just newStep
 
 gameStream :: ArkhamGameId -> WebSocketsT Handler ()
 gameStream gameId = catchingConnectionException do
@@ -368,19 +404,23 @@ updateGame response gameId mRoom = do
         -- Above-the-table achievements: collect EarnAchievement messages via
         -- the (otherwise unused) runMessages message logger; persisted below.
         achievementsRef <- newIORef []
+        randomOutcomeRef <- newIORef False
         let
-          collectAchievements = \case
-            EarnAchievement a -> modifyIORef' achievementsRef (a :)
-            _ -> pure ()
+          collectStepMetadata msg = do
+            when (isRandomOutcomeMessage msg) $ writeIORef randomOutcomeRef True
+            case msg of
+              EarnAchievement a -> modifyIORef' achievementsRef (a :)
+              _ -> pure ()
         mResult <- liftIO $ timeout runMessagesTimeoutMicros do
           runGameApp (GameApp gameRef queueRef genRef (handleMessageLog logRef broadcast) tracer mEpicEnv) do
-            runMessages (gameIdToText gameId) (Just collectAchievements)
+            runMessages (gameIdToText gameId) (Just collectStepMetadata)
         case mResult of
           Just () -> pure ()
           Nothing -> liftIO $ throwIO $ RunMessagesTimeout gameId runMessagesTimeoutMicros
 
         ge <- readIORef gameRef
         let diffDown = diff ge arkhamGameCurrentData
+        hasRandomOutcome <- readIORef randomOutcomeRef
 
         updatedQueue <- readIORef $ queueToRef queueRef
         -- handleMessageLog conses for O(1) inserts; reverse here to restore order.
@@ -388,11 +428,17 @@ updateGame response gameId mRoom = do
 
         now <- liftIO getCurrentTime
         deleteWhere [ArkhamStepArkhamGameId P.==. gameId, ArkhamStepStep P.>. arkhamGameStep]
+        let
+          newStep = arkhamGameStep + 1
+          undoMode = settingsUndoMode ge.gameSettings
+          isCheckpoint = undoMode == StandardUndo && isFinalizeScenarioAnswer response
+          storedPatch = if isCheckpoint then mempty else diffDown
+          storedRandomOutcome = not isCheckpoint && hasRandomOutcome
         let g' =
               ArkhamGame
                 arkhamGameName
                 ge
-                (arkhamGameStep + 1)
+                newStep
                 arkhamGameMultiplayerVariant
                 arkhamGameCreatedAt
                 now
@@ -400,14 +446,19 @@ updateGame response gameId mRoom = do
         insertMany_ $ map (newLogEntry gameId arkhamGameStep now) updatedLog
         void
           $ upsertBy
-            (UniqueStep gameId (arkhamGameStep + 1))
+            (UniqueStep gameId newStep)
             ( ArkhamStep gameId
-                (Choice diffDown updatedQueue)
-                (arkhamGameStep + 1)
+                (Choice storedPatch updatedQueue storedRandomOutcome)
+                newStep
                 (ActionDiff $ view actionDiffL ge)
             )
-            [ ArkhamStepChoice =. Choice diffDown updatedQueue
+            [ ArkhamStepChoice =. Choice storedPatch updatedQueue storedRandomOutcome
             , ArkhamStepActionDiff =. ActionDiff (view actionDiffL ge)
+            ]
+        for_ (retainedStepFloor undoMode isCheckpoint hasRandomOutcome newStep) \floorStep ->
+          deleteWhere
+            [ ArkhamStepArkhamGameId P.==. gameId
+            , ArkhamStepStep P.<. floorStep
             ]
 
         -- Epic Multiplayer: drain any shared-counter deltas emitted this action
@@ -449,7 +500,7 @@ updateGame response gameId mRoom = do
   let publishLog = oldLogEntries <> updatedLog
   liftIO $ writeCachedLog mRoom arkhamGameStep publishLog
   when (gameGameState arkhamGameCurrentData == IsOver) $
-    runDB $ completeCampaignDecks gameId
+    runDB $ completeCampaignDecks gameId arkhamGameCurrentData
 
   publishToRoom gameId
     $ GameUpdate
@@ -640,7 +691,7 @@ runMessagesInGroupWhen p msgs gid = do
         insert_
           $ ArkhamStep
             gid
-            (Choice mempty (producedQueue <> currentQueue))
+            (Choice mempty (producedQueue <> currentQueue) False)
             (arkhamGameStep + 1)
             (ActionDiff $ view actionDiffL updatedGame)
         pure (Just game')
@@ -650,14 +701,23 @@ runMessagesInGroupWhen p msgs gid = do
       $ GameUpdate
       $ PublicGame gid (arkhamGameName g') [] (arkhamGameCurrentData g')
 
-completeCampaignDecks :: ArkhamGameId -> DB ()
-completeCampaignDecks gameId = do
+completeCampaignDecks :: ArkhamGameId -> Game -> DB ()
+completeCampaignDecks gameId game = do
   decks <- select do
     deck <- from $ table @ArkhamDeck
     pure deck
   for_ decks \(Entity deckId deck) ->
     when (isActiveCampaignDeck gameId deck.arkhamDeckList) do
-      let decklist' = setCampaignDeckStatus "completed" deck.arkhamDeckList
+      let decklistWithTrauma = case campaignMetaText "arkham_horror_campaign_investigator" deck.arkhamDeckList of
+            Nothing -> deck.arkhamDeckList
+            Just investigatorCode -> case Map.lookup (InvestigatorId $ CardCode investigatorCode) (gameInvestigators game) of
+              Nothing -> deck.arkhamDeckList
+              Just investigator ->
+                setDecklistTrauma
+                  (attr investigatorPhysicalTrauma investigator)
+                  (attr investigatorMentalTrauma investigator)
+                  deck.arkhamDeckList
+          decklist' = setCampaignDeckStatus "completed" decklistWithTrauma
       P.update deckId [ArkhamDeckList P.=. decklist']
 
 isActiveCampaignDeck :: ArkhamGameId -> ArkhamDBDecklist -> Bool

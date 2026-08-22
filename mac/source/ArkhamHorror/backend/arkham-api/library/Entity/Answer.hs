@@ -65,6 +65,7 @@ data Answer
       , amount :: Int
       }
   | CampaignStepAnswer CS.CampaignStep
+  | CampaignStepAnswerFor PlayerId Bool CS.CampaignStep
   deriving stock (Show, Generic)
   deriving anyclass FromJSON
 
@@ -314,6 +315,7 @@ answerPlayer = \case
   PickDestinyAnswer _ -> Nothing
   ExchangeAmountsAnswer {} -> Nothing
   CampaignStepAnswer _ -> Nothing
+  CampaignStepAnswerFor pid _ _ -> Just pid
 
 playerInvestigator :: Entities -> PlayerId -> InvestigatorId
 playerInvestigator Entities {..} pid = case find ((== pid) . attr investigatorPlayerId) (toList entitiesInvestigators) of
@@ -327,6 +329,30 @@ handled = pure . Handled
 
 unhandled :: Applicative m => Text -> m Reply
 unhandled = pure . Unhandled
+
+unwrapQuestion :: Question Message -> Question Message
+unwrapQuestion = \case
+  QuestionLabel _ _ q -> unwrapQuestion q
+  PayCostQuestion _ q -> unwrapQuestion q
+  QuestionWithSource _ _ q -> unwrapQuestion q
+  q -> q
+
+handleCampaignStepAnswer :: GameMode -> CS.CampaignStep -> IO Reply
+handleCampaignStepAnswer gameMode k = case gameMode of
+  This c -> case c.step of
+    CS.ContinueCampaignStep {} -> handled [NextCampaignStep (Just k)]
+    CS.StandaloneScenarioStep _ (CS.ContinueCampaignStep {}) -> handled [NextCampaignStep (Just k)]
+    _ -> handled []
+  These c s -> case s.step of
+    Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
+    Just (CS.ScenarioStepWithOptions {}) -> handled [ScenarioCampaignStep k.normalize]
+    _ -> case c.step of
+      CS.ContinueCampaignStep {} -> handled [NextCampaignStep (Just k)]
+      CS.StandaloneScenarioStep _ (CS.ContinueCampaignStep {}) -> handled [NextCampaignStep (Just k)]
+      _ -> handled []
+  That s -> case s.step of
+    Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
+    _ -> handled []
 
 {- | The messages that start this seat's deck-setup sub-flow.
 
@@ -415,28 +441,12 @@ handleAnswerPure game@Game {..} playerId = \case
       Just (PickScenarioSpecific {}) -> handled $ ScenarioSpecific k v : reAskOthers game playerId
       _ -> unhandled "Wrong question type"
   CampaignStepAnswer k -> do
-    let
-      unwrap = \case
-        QuestionLabel _ _ q' -> unwrap q'
-        PayCostQuestion _ q' -> unwrap q'
-        QuestionWithSource _ _ q' -> unwrap q'
-        q' -> q'
-    case unwrap <$> Map.lookup playerId gameQuestion of
-      Just ContinueCampaign -> case gameMode of
-        This c -> case c.step of
-          CS.ContinueCampaignStep {} -> handled [NextCampaignStep (Just k)]
-          CS.StandaloneScenarioStep _ (CS.ContinueCampaignStep {}) -> handled [NextCampaignStep (Just k)]
-          _ -> handled []
-        These c s -> case s.step of
-          Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
-          Just (CS.ScenarioStepWithOptions {}) -> handled [ScenarioCampaignStep k.normalize]
-          _ -> case c.step of
-            CS.ContinueCampaignStep {} -> handled [NextCampaignStep (Just k)]
-            CS.StandaloneScenarioStep _ (CS.ContinueCampaignStep {}) -> handled [NextCampaignStep (Just k)]
-            _ -> handled []
-        That s -> case s.step of
-          Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
-          _ -> handled []
+    case unwrapQuestion <$> Map.lookup playerId gameQuestion of
+      Just ContinueCampaign -> handleCampaignStepAnswer gameMode k
+      _ -> unhandled "Wrong question type"
+  CampaignStepAnswerFor pid _ k -> do
+    case unwrapQuestion <$> Map.lookup pid gameQuestion of
+      Just ContinueCampaign -> handleCampaignStepAnswer gameMode k
       _ -> unhandled "Wrong question type"
   PickDestinyAnswer choices -> do
     handled [SetDestiny $ Map.fromList $ map (\(DestinyDrawing scope card) -> (scope, card)) choices]

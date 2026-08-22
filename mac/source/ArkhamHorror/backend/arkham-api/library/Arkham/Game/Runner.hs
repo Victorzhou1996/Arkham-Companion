@@ -929,6 +929,11 @@ runGameMessage msg g = case msg of
       $ g
       & (focusedCardsL %~ map (filter (`notElem` cards)))
       & (foundCardsL . each %~ filter (`notElem` cards))
+  ShuffleCardsIntoBottomOfDeck _ _ cards ->
+    pure
+      $ g
+      & (focusedCardsL %~ map (filter (`notElem` cards)))
+      & (foundCardsL . each %~ filter (`notElem` cards))
   FocusChaosTokens tokens -> pure $ g & focusedChaosTokensL <>~ tokens
   SealChaosToken token -> pure $ g & focusedChaosTokensL %~ filter (/= token)
   Msg.RevealChaosToken SkillTestSource {} _ token -> pure $ g & focusedChaosTokensL %~ filter (/= token)
@@ -2894,7 +2899,14 @@ runGameMessage msg g = case msg of
   StoryMessage (PlaceStory card placement) -> do
     let storyId = StoryId $ toCardCode card
     let story' = overAttrs (Story.placementL .~ placement) (createStory card Nothing storyId)
-    pure $ g & entitiesL . storiesL . at storyId ?~ story'
+    pure
+      $ g
+      & entitiesL
+      . storiesL
+      . at storyId
+      ?~ story'
+      & entryTicksL
+      %~ insertMap card.id (gameWindowTick g)
   StoryMessage (ResolveStory _ _ sid) -> do
     card <- field StoryCard sid
     pure $ g & focusedCardsL %~ map (filter (/= card))
@@ -3248,6 +3260,15 @@ runGameMessage msg g = case msg of
             )
             (cdLimits $ toCardDef card)
       PlayerEnemyType -> do
+        -- Revelation player enemies never pass through DrewPlayerEnemy, so send the
+        -- "drew enemy" display here or the weakness lands in the threat area silently.
+        investigator <- getInvestigator iid
+        withI18n $ cardNameVar card $ investigatorNameVar investigator do
+          if Keyword.Peril `elem` cdKeywords (toCardDef card)
+            then do
+              pid <- getPlayer iid
+              sendEnemyOnly pid (ikey' "drew") (toJSON $ toCard card)
+            else sendEnemy (ikey' "drew") (toJSON $ toCard card)
         enemyId <- getRandom
         let enemy = createEnemy card enemyId
         -- Asset is assumed to have a revelation ability if drawn from encounter deck

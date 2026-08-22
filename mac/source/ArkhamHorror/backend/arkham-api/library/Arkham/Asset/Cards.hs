@@ -1075,6 +1075,15 @@ allPlayerAssetCards =
       , zoeysCrossAdvanced
       , drHenryArmitage_SpreadingFlames
       , collector
+      , --- The Drowned City
+        rubyStandish
+      , andyVanNortwick
+      , johnRaymondLegrasse
+      , --- Mi-Go Incursion
+        universalSolvent
+      , petOozeling
+      , miGoWeapon
+      , ltWilsonStewart
       ]
 
 -- with encounter backs
@@ -1210,7 +1219,6 @@ allEncounterAssetCards =
       , skyRelic
       , obsidianClaw
       , obsidianClawPower
-      , johnRaymondLegrasse
       , horrorInClay
       ]
 

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { displayTabooList } from '@/arkham/taboo';
 import { ref, computed, inject, onMounted, watch } from 'vue';
-import { fetchDeck, fetchDeckList, fetchDecks, newDeck, upgradeDeck } from '@/arkham/api';
+import { fetchDeck, fetchDecks, newDeck, upgradeDeck } from '@/arkham/api';
 import { imgsrc, localizeArkhamDBBaseUrl, processArkhamBuildDeck } from '@/arkham/helpers';
 import { ArkhamDbDecklist, Deck, deckMetaValue } from '@/arkham/types/Deck';
 import { Game } from '@/arkham/types/Game';
@@ -12,8 +12,8 @@ import Prompt from '@/components/Prompt.vue';
 import XpBreakdown from '@/arkham/components/XpBreakdown.vue';
 import type { XpBreakdownStep } from '@/arkham/types/Xp';
 import Question from '@/arkham/components/Question.vue';
-import { loadUpgradeDeckFromJsonText } from '@/arkham/upgradeDeckUpload';
-import { deckRestrictionError } from '@/arkham/deckRestrictions';
+import { isUsableDecklist, loadUpgradeDeckFromJsonText } from '@/arkham/upgradeDeckUpload';
+import { deckRestrictionError, normalizeCardCode } from '@/arkham/deckRestrictions';
 import { randomId } from '@/arkham/randomId';
 import { useI18n } from 'vue-i18n';
 
@@ -52,6 +52,7 @@ const questionLabel = computed(() => {
 })
 const model = defineModel()
 const fetching = ref(false)
+const submitError = ref<string | null>(null)
 const emit = defineEmits<{ choose: [value: number] }>()
 const choose = (idx: number) => emit('choose', idx)
 const waiting = ref(false)
@@ -243,7 +244,6 @@ function localDeckMatchesInvestigator(candidate: Deck) {
   const target = targetInvestigatorCode.value
   if (!target) return false
   const status = deckMetaValue(candidate, 'arkham_horror_campaign_status')
-  if (status === 'completed') return false
   const deckGameId = deckMetaValue(candidate, 'arkham_horror_campaign_game_id')
   if (status === 'active' && deckGameId && deckGameId !== props.game.id) return false
   return investigatorCode(candidate.list.investigator_code) === target
@@ -409,107 +409,130 @@ async function applySelectedLocalDeck() {
 
 onMounted(loadLocalDecks)
 
-async function syncUpgrade() {
-  if(error.value) return
-  if (!investigator.value?.deckUrl) return;
-  let nextUrl: string | null = investigator.value.deckUrl;
-  if (nextUrl) {
-    const localDeckId = localDeckIdFromUrl(nextUrl)
-    if (localDeckId) {
-      fetching.value = true
-      loadError.value = null
-      try {
-        const localDeck = await fetchDeck(localDeckId)
-        const content = deckToDecklist(localDeck)
-        model.value = content
-        deckList.value = content
-        deck.value = content.url
-        deckUrl.value = content.url
-        deckInvestigator.value = investigatorCode(content.investigator_code)
-        await upgrade()
-      } catch {
-        loadError.value = t('upgrade.localDeckReadFailed')
-      } finally {
-        fetching.value = false
-      }
-      return
-    }
-
-    const arkhamDbApiRegex = /https:\/\/(?:[a-zA-Z0-9-]+\.)?arkhamdb\.com\/api\/public\/deck\/([^/]+)/;
-    const matches = nextUrl.match(arkhamDbApiRegex);
-
-    if (matches) {
-      let content: ArkhamDbDecklist | null = null;
-      fetching.value = true;
-
-      do {
-        try {
-          const response = await fetch(nextUrl);
-          const data = (await response.json()) as ArkhamDbDecklist & { next_deck: string | number | null };
-          content = { ...data, url: nextUrl };
-
-          if (data.next_deck != null) {
-            nextUrl = `${localizeArkhamDBBaseUrl()}/api/public/deck/${data.next_deck}`;
-          } else {
-            nextUrl = null;
-          }
-        } catch {
-          nextUrl = null;
-        }
-      } while (nextUrl);
-
-      if (content && content.url) {
-        model.value = content;
-        deckList.value = content;
-        deck.value = content.url;
-        deckUrl.value = content.url;
-        deckInvestigator.value = investigatorCode(content.investigator_code)
-        await upgrade();
-      }
-      fetching.value = false
-    }
-
-    if(!nextUrl) return
-    const arkhamBuildApiRegex = /https:\/\/api.arkham\.build\/v1\/public\/share\/([^/]+)/
-    const abmatches = nextUrl.match(arkhamBuildApiRegex)
-    if (abmatches) {
-      let content: ArkhamDbDecklist | null = null;
-      fetching.value = true;
-
-      do {
-        try {
-          const response = await fetch(nextUrl);
-          const data = (await response.json()) as ArkhamDbDecklist & { next_deck: string | number | null };
-          content = processArkhamBuildDeck(data, nextUrl);
-
-          if (data.next_deck != null) {
-            nextUrl = `https://api.arkham.build/v1/public/share/${data.next_deck}`;
-          } else {
-            nextUrl = null;
-          }
-        } catch {
-          nextUrl = null;
-        }
-      } while (nextUrl);
-
-      if (content && content.url) {
-        model.value = content;
-        deckList.value = content;
-        deck.value = content.url;
-        deckUrl.value = content.url;
-        deckInvestigator.value = investigatorCode(content.investigator_code)
-        await upgrade();
-      }
-      fetching.value = false
-    }
-  }
+function submitErrorMessage(e: unknown, fallback: string): string {
+  const message = (e as { response?: { data?: { errorMsg?: string } } })?.response?.data?.errorMsg
+  return message ?? fallback
 }
 
+type ChainDeck = ArkhamDbDecklist & { next_deck?: string | number | null }
+
+const arkhamBuildShareUrl = (id: string | number) => `https://api.arkham.build/v1/public/share/${id}`
+const arkhamDbDeckUrl = (id: string | number) => `${localizeArkhamDBBaseUrl()}/api/public/deck/${id}`
+
+async function fetchDeckAt(url: string, isArkhamBuild: boolean): Promise<ChainDeck | null> {
+  const source = isArkhamBuild ? 'arkham.build' : 'ArkhamDB'
+  let response: Response
+  try {
+    response = await fetch(url)
+  } catch {
+    submitError.value = t('upgrade.fetchFailed', { deckSource: source })
+    return null
+  }
+
+  let body: unknown = null
+  try {
+    body = await response.json()
+  } catch {
+    // The status-specific error below is more useful than a JSON parser error.
+  }
+
+  if (!response.ok) {
+    const message = (body as { message?: string } | null)?.message
+    if (isArkhamBuild && response.status === 404) {
+      submitError.value = t('upgrade.arkhamBuildShareNotFound')
+    } else if (message) {
+      submitError.value = t('upgrade.fetchRejected', { deckSource: source, message })
+    } else {
+      submitError.value = t('upgrade.fetchFailed', { deckSource: source })
+    }
+    return null
+  }
+
+  const processed = isArkhamBuild
+    ? processArkhamBuildDeck(body as ArkhamDbDecklist, url)
+    : { ...(body as ArkhamDbDecklist), url }
+  if (!isUsableDecklist(processed)) {
+    submitError.value = t('upgrade.fetchUnusable', { deckSource: source })
+    return null
+  }
+  return processed as ChainDeck
+}
+
+async function followUpgradeChain(
+  startUrl: string,
+  urlFor: (id: string | number) => string,
+  isArkhamBuild: boolean,
+): Promise<ChainDeck | null> {
+  let url: string | null = startUrl
+  let last: ChainDeck | null = null
+  const seen = new Set<string>()
+
+  while (url) {
+    if (seen.has(url)) break
+    seen.add(url)
+    const fetched = await fetchDeckAt(url, isArkhamBuild)
+    if (!fetched) return null
+    last = fetched
+    url = fetched.next_deck != null ? urlFor(fetched.next_deck) : null
+  }
+  return last
+}
+
+async function syncUpgrade() {
+  if(error.value) return
+  const startUrl = investigator.value?.deckUrl
+  if (!startUrl) return
+  submitError.value = null
+  loadError.value = null
+
+  const localDeckId = localDeckIdFromUrl(startUrl)
+  if (localDeckId) {
+    fetching.value = true
+    try {
+      const localDeck = await fetchDeck(localDeckId)
+      const content = deckToDecklist(localDeck)
+      model.value = content
+      deckList.value = content
+      deck.value = content.url
+      deckUrl.value = content.url
+      deckInvestigator.value = investigatorCode(content.investigator_code)
+      await upgrade()
+    } catch {
+      loadError.value = t('upgrade.localDeckReadFailed')
+    } finally {
+      fetching.value = false
+    }
+    return
+  }
+
+  const isArkhamDb = /https:\/\/(?:[a-zA-Z0-9-]+\.)?arkhamdb\.com\/api\/public\/deck\/([^/]+)/.test(startUrl)
+  const isArkhamBuild = /https:\/\/api\.arkham\.build\/v1\/public\/share\/([^/]+)/.test(startUrl)
+  if (!isArkhamDb && !isArkhamBuild) return
+
+  fetching.value = true
+  try {
+    const content = await followUpgradeChain(
+      startUrl,
+      isArkhamBuild ? arkhamBuildShareUrl : arkhamDbDeckUrl,
+      isArkhamBuild,
+    )
+    if (!content?.url) return
+    model.value = content
+    deckList.value = content
+    deck.value = content.url
+    deckUrl.value = content.url
+    deckInvestigator.value = investigatorCode(content.investigator_code)
+    await upgrade()
+  } finally {
+    fetching.value = false
+  }
+}
 async function loadDeck() {
   if (!deck.value) return null
   model.value = null
   deckList.value = null
   loadError.value = null
+  submitError.value = null
 
   const localDeckId = localDeckIdFromUrl(deck.value)
   if (localDeckId) {
@@ -527,44 +550,29 @@ async function loadDeck() {
     }
   }
 
+  let sourceUrl: string
+  let isArkhamBuild = false
   let matches
   if ((matches = deck.value.match(arkhamBuildShareRegex)) || (matches = deck.value.match(arkhamBuildDecklistRegex))) {
     const isDecklist = deck.value.match(arkhamBuildDecklistRegex)
-    const sourceUrl = `https://api.arkham.build/v1/public/share/${matches[1]}${isDecklist ? '?type=decklist' : ''}`
-    deckUrl.value = sourceUrl
-    try {
-      const response = await fetch(sourceUrl)
-      if (!response.ok) throw new Error('Could not find arkham.build deck')
-      const data = (await response.json()) as ArkhamDbDecklist
-      const processed = processArkhamBuildDeck(data, sourceUrl)
-      if (Object.keys(processed.slots).length === 0) throw new Error('Empty arkham.build deck')
-      model.value = processed
-      deckList.value = processed
-      deckInvestigator.value = investigatorCode(processed.investigator_code)
-      return processed
-    } catch {
-      loadError.value = t('upgrade.arkhamBuildReadFailed')
-      return null
-    }
+    sourceUrl = `https://api.arkham.build/v1/public/share/${matches[1]}${isDecklist ? '?type=decklist' : ''}`
+    isArkhamBuild = true
+  } else {
+    sourceUrl = arkhamDbApiUrl(deck.value) ?? deck.value
   }
 
-  const sourceUrl = arkhamDbApiUrl(deck.value) ?? deck.value
   deckUrl.value = sourceUrl
-  try {
-    const data = await fetchDeckList(sourceUrl)
-    if (!data) return null
-    const processed: ArkhamDbDecklist = { ...data, url: data.url ?? sourceUrl }
-    model.value = processed
-    deckList.value = processed
-    deckUrl.value = processed.url
-    deckInvestigator.value = investigatorCode(processed.investigator_code)
-    return processed
-  } catch {
-    loadError.value = t('upgrade.deckReadFailed')
+  const processed = await fetchDeckAt(sourceUrl, isArkhamBuild)
+  if (!processed) {
+    deckUrl.value = null
     return null
   }
+  model.value = processed
+  deckList.value = processed
+  deckUrl.value = processed.url
+  deckInvestigator.value = investigatorCode(processed.investigator_code)
+  return processed
 }
-
 function pasteDeck(evt: ClipboardEvent) {
   if (evt.clipboardData) {
     deck.value = evt.clipboardData.getData('text');
@@ -579,8 +587,9 @@ function loadDeckFromFile(e: Event) {
   const reader = new FileReader()
   reader.onloadend = (e1: ProgressEvent<FileReader>) => {
     if (!e1?.target?.result) return
-    loadError.value = null
-    const loaded = loadUpgradeDeckFromJsonText(e1.target.result.toString(), {
+    submitError.value = null
+    // A rejected file used to do nothing at all, which read as "the upload is broken".
+    const result = loadUpgradeDeckFromJsonText(e1.target.result.toString(), {
       setModel: (data) => { model.value = data },
       setDeckList: (data) => { deckList.value = data },
       setDeckUrl: (url) => { deckUrl.value = url },
@@ -588,21 +597,112 @@ function loadDeckFromFile(e: Event) {
       setDeckInvestigator: (investigatorCode) => { deckInvestigator.value = investigatorCode },
       upgrade,
     })
-    if (!loaded) loadError.value = t('upgrade.invalidDeckJson')
+    if (!result.ok) {
+      submitError.value = result.reason === 'invalidJson'
+        ? t('upgrade.uploadInvalidJson')
+        : t('upgrade.uploadNotADecklist')
+    }
   }
   reader.readAsText(file)
   ;(e.target as HTMLInputElement).value = ''
 }
 
-async function upgrade() {
+/* The cards this decklist would ADD to the campaign deck -- the same notion of an upgrade the
+ * engine uses (UpgradeDeck's deckDiff). Empty means the pull changed nothing. */
+function campaignDeck() {
+  const iid = originalInvestigatorId.value
+  return (iid ? props.game.campaign?.decks[iid] : undefined) ?? []
+}
+
+function addedCardCodes(list: ArkhamDbDecklist | null): string[] {
+  if (!list?.slots) return []
+
+  const owned = new Map<string, number>()
+  for (const card of campaignDeck()) {
+    const code = normalizeCardCode(card.cardCode)
+    owned.set(code, (owned.get(code) ?? 0) + 1)
+  }
+
+  return Object.entries(list.slots).flatMap(([rawCode, count]) => {
+    const code = normalizeCardCode(rawCode)
+    if (code === '01000') return []
+    return count > (owned.get(code) ?? 0) ? [code] : []
+  })
+}
+
+function customizationCheckmarks(value: string): Map<number, number> {
+  const result = new Map<number, number>()
+  for (const entry of value.split(',')) {
+    const [rawIndex, rawCount] = entry.split('|')
+    const index = Number(rawIndex)
+    const count = Number(rawCount)
+    if (Number.isInteger(index) && Number.isInteger(count) && count > 0) result.set(index, count)
+  }
+  return result
+}
+
+function hasCustomizationXpChanges(list: ArkhamDbDecklist): boolean {
+  let meta: Record<string, unknown>
+  try {
+    meta = typeof list.meta === 'string' ? JSON.parse(list.meta) : (list.meta ?? {})
+  } catch {
+    return false
+  }
+
+  const current = new Map<string, Map<number, number>>()
+  for (const card of campaignDeck()) {
+    if (!card.customizations) continue
+    current.set(normalizeCardCode(card.cardCode), new Map(
+      card.customizations
+        .filter(([, [count]]) => count > 0)
+        .map(([index, [count]]) => [index, count]),
+    ))
+  }
+
+  const incoming = new Map<string, Map<number, number>>()
+  for (const [key, value] of Object.entries(meta)) {
+    if (!key.startsWith('cus_') || typeof value !== 'string') continue
+    incoming.set(normalizeCardCode(key.slice(4)), customizationCheckmarks(value))
+  }
+
+  const codes = new Set([...current.keys(), ...incoming.keys()])
+  return [...codes].some((code) => {
+    const before = current.get(code) ?? new Map<number, number>()
+    const after = incoming.get(code) ?? new Map<number, number>()
+    const indexes = new Set([...before.keys(), ...after.keys()])
+    return [...indexes].some((index) => before.get(index) !== after.get(index))
+  })
+}
+
+/* arkham.build (and ArkhamDB) create the upgraded version the moment you click Upgrade,
+ * BEFORE any XP is spent, so pulling too early applies a deck with no changes and closes the
+ * upgrade window for good -- the whole of #5257. Confirm instead of silently consuming it.
+ * Only when XP is actually unspent and neither cards nor customization XP changed. */
+const pendingNoChangeUpgrade = ref(false)
+const unspentXp = computed(() => xp.value ?? 0)
+
+function wouldChangeNothing(): boolean {
+  if (!deckList.value) return false
+  return unspentXp.value > 0
+    && addedCardCodes(deckList.value).length === 0
+    && !hasCustomizationXpChanges(deckList.value)
+}
+
+async function upgrade(force = false) {
   if (deck.value && !deckList.value) {
     const loadedDeck = await loadDeck()
     if (!loadedDeck) return
   }
   if(error.value) return
+  if (!force && wouldChangeNothing()) {
+    fetching.value = false
+    pendingNoChangeUpgrade.value = true
+    return
+  }
   if ((deckUrl.value || deckList.value) && originalInvestigatorId.value) {
     fetching.value = true
     loadError.value = null
+    submitError.value = null
     try {
       const nextDeckList = deckList.value
       await upgradeDeck(
@@ -617,8 +717,8 @@ async function upgrade() {
       deckUrl.value = null
       deck.value = null
       deckList.value = null
-    } catch {
-      loadError.value = t('upgrade.upgradeFailed')
+    } catch (e) {
+      submitError.value = submitErrorMessage(e, t('upgrade.upgradeFailed'))
       waiting.value = false
     } finally {
       fetching.value = false
@@ -628,12 +728,16 @@ async function upgrade() {
 
 async function skip() {
   if (!investigatorId.value) { return }
-  upgradeDeck(props.game.id, investigatorId.value).then(() => {
-    if(!solo) {
-      waiting.value = true
-    }
+  submitError.value = null
+  try {
+    await upgradeDeck(props.game.id, investigatorId.value)
+    if(!solo) waiting.value = true
     skipping.value = false
-  });
+  } catch (e) {
+    skipping.value = false
+    waiting.value = false
+    submitError.value = submitErrorMessage(e, t('upgrade.upgradeFailed'))
+  }
 }
 
 const allGameInvestigators = computed(() => ({
@@ -683,6 +787,7 @@ const tabooList = function (investigator: Investigator) {
           <div class="content">
             <p class="killed-prompt">{{ $t('upgrade.killed') }}</p>
             <p v-if="error" class="error">{{ error }}</p>
+            <p v-if="submitError" class="error">{{ submitError }}</p>
             <div class="input-row">
               <input
                 type="url"
@@ -691,7 +796,7 @@ const tabooList = function (investigator: Investigator) {
                 @paste.prevent="pasteDeck($event)"
                 v-bind:placeholder="$t('upgrade.deckUrlPlaceholder')"
               />
-              <button class="primary" :class="{disable: error != null || deckInvestigator == null}" :disabled="error != null" @click.prevent="upgrade">{{ $t('upgrade.newInvestigator') }}</button>
+              <button class="primary" :class="{disable: error != null || deckInvestigator == null}" :disabled="error != null" @click.prevent="upgrade()">{{ $t('upgrade.newInvestigator') }}</button>
             </div>
             <label class="file-upload">
               <span class="file-upload-text">{{ $t('upgrade.orUploadJson') }}</span>
@@ -704,6 +809,7 @@ const tabooList = function (investigator: Investigator) {
           <div class="content">
             <p v-if="error" class="error">{{ error }}</p>
             <p v-if="loadError" class="error">{{ loadError }}</p>
+            <p v-if="submitError" class="error">{{ submitError }}</p>
             <template v-if="fetching">
               <p class="info">{{ $t('upgrade.fetching', {deckSource: deckSource}) }}</p>
             </template>
@@ -751,7 +857,7 @@ const tabooList = function (investigator: Investigator) {
                   @paste.prevent="pasteDeck($event)"
                   v-bind:placeholder="$t('upgrade.deckUrlPlaceholder')"
                 />
-                <button class="primary" @click.prevent="upgrade">{{ originalInvestigatorId && killedInvestigators.includes(originalInvestigatorId) ? $t('upgrade.newInvestigator') : $t('upgrade.Upgrade') }}</button>
+                <button class="primary" @click.prevent="upgrade()">{{ originalInvestigatorId && killedInvestigators.includes(originalInvestigatorId) ? $t('upgrade.newInvestigator') : $t('upgrade.Upgrade') }}</button>
               </div>
               <label class="file-upload">
                 <span class="file-upload-text">{{ $t('upgrade.orUploadJson') }}</span>
@@ -781,6 +887,13 @@ const tabooList = function (investigator: Investigator) {
     v-bind:prompt= "$t('upgrade.skippingPrompt')"
     :yes="skip"
     :no="() => skipping = false"
+  />
+
+  <Prompt
+    v-if="pendingNoChangeUpgrade"
+    v-bind:prompt="$t('upgrade.noChangesPrompt', { xp: unspentXp })"
+    :yes="() => { pendingNoChangeUpgrade = false; upgrade(true) }"
+    :no="() => { pendingNoChangeUpgrade = false }"
   />
 </template>
 

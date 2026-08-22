@@ -2,6 +2,7 @@ export type GameMode = 'Campaign' | 'SideStory'
 export type MultiplayerVariant = 'WithFriends' | 'Solo'
 export type CampaignType = 'FullCampaign' | 'PartialCampaign' | 'Standalone' | 'Option1' | 'Option2'
 export type CampaignOption = { tag: string, contents?: string }
+export type UndoMode = 'standard' | 'full' | 'light' | 'hardcore' | 'expert'
 
 // The six AI strategic focuses (lowercase wire keys; see Arkham.Ai.Focus). `auto`
 // is a UI-only sentinel meaning "no override" and is never sent to the backend.

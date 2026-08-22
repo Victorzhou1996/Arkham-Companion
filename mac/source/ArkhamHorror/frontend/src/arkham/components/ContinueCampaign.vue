@@ -26,6 +26,7 @@ const props = defineProps<{
   chooseSideStory: boolean
   canChooseSideStory: boolean
   step: CampaignStep
+  playerId: string
 }>()
 
 const { t, te } = useI18n()
@@ -35,6 +36,8 @@ const { currentUser } = storeToRefs(store)
 const send = inject<(msg: string) => void>('send', () => {})
 const addSideStory = ref(false)
 const hasSent = ref(false)
+const confirmFinalize = ref(false)
+const pendingStep = ref<CampaignStep | null>(null)
 const alpha = ref(false)
 const devBuild = isDevBuild()
 const isBetaUser = computed(() => !!currentUser.value?.beta)
@@ -208,6 +211,49 @@ const canUpgrade = computed(() => {
   )
 })
 
+const unwrapQuestionTag = (question: any): string | null => {
+  if (!question) return null
+  if (['QuestionLabel', 'PayCostQuestion', 'QuestionWithSource'].includes(question.tag)) {
+    return unwrapQuestionTag(question.question)
+  }
+  return question.tag ?? null
+}
+
+const canAnswer = computed(() =>
+  unwrapQuestionTag(props.game.question[props.playerId]) === 'ContinueCampaign'
+)
+
+const requiresScenarioCheckpoint = computed(() =>
+  props.game.settings.settingsUndoMode === 'standard' &&
+  (props.scenario != null || canUpgrade.value)
+)
+
+function sendCampaignStep(step: CampaignStep, finalize = false) {
+  sendOnce({ tag: 'CampaignStepAnswerFor', contents: [props.playerId, finalize, step] })
+}
+
+function requestCampaignStep(step: CampaignStep) {
+  if (requiresScenarioCheckpoint.value) {
+    pendingStep.value = step
+    confirmFinalize.value = true
+    return
+  }
+  sendCampaignStep(step)
+}
+
+function finalizeScenario() {
+  if (!pendingStep.value) return
+  const step = pendingStep.value
+  pendingStep.value = null
+  confirmFinalize.value = false
+  sendCampaignStep(step, true)
+}
+
+function cancelFinalize() {
+  pendingStep.value = null
+  confirmFinalize.value = false
+}
+
 const isScenario = computed(() => {
   // We do not yet handle the standalone step
   // return ["ScenarioStep", "StandaloneScenarioStep", "ScenarioStepWithOptions"].includes(props.step.tag)
@@ -270,12 +316,11 @@ const standalones = computed(() => {
 
 async function loadSideStory(sideStoryId: string) {
   addSideStory.value = false
-  sendOnce({
-    tag: 'CampaignStepAnswer',
-    contents: {
+  requestCampaignStep({
       tag: 'ContinueCampaignStep',
       contents: {
         canUpgradeDecks: true,
+        chooseSideStory: false,
         canChooseSideStory: false,
         nextStep: {
           tag: 'StandaloneScenarioStep',
@@ -286,29 +331,28 @@ async function loadSideStory(sideStoryId: string) {
               contents: {
                 nextStep: props.step,
                 canUpgradeDecks: props.canUpgradeDecks,
+                chooseSideStory: false,
                 canChooseSideStory: false,
               },
             },
           ],
         },
       },
-    },
   })
 }
 
 async function upgradeDecks() {
-  sendOnce({
-    tag: 'CampaignStepAnswer',
-    contents: {
+  requestCampaignStep({
       tag: 'UpgradeDeckStep',
       contents: {
         tag: 'ContinueCampaignStep',
         contents: {
           canUpgradeDecks: true,
+          chooseSideStory: false,
+          canChooseSideStory: false,
           nextStep: props.step,
         },
       },
-    },
   })
 }
 
@@ -318,16 +362,15 @@ async function startStep() {
   ) {
     if (isScenario.value && leadInvestigatorId.value !== null) {
       // inform the server of the lead investigator
-      sendOnce({
-        tag: 'CampaignStepAnswer',
-        contents: extendWithOptions(props.step as Parameters<typeof extendWithOptions>[0], {
+      requestCampaignStep(
+        extendWithOptions(props.step as Parameters<typeof extendWithOptions>[0], {
           scenarioOptionsLeadInvestigator: leadInvestigatorId.value,
         }),
-      })
+      )
       return
     }
   }
-  sendOnce({ tag: 'CampaignStepAnswer', contents: props.step })
+  requestCampaignStep(props.step)
 }
 
 const leadInvestigatorId = ref<string | null>(null)
@@ -392,19 +435,20 @@ const setIcon = computed(() => {
           <h3>{{ kind }}</h3>
           <h2>{{ name }}</h2>
         </div>
-        <div class="actions">
-          <button @click="startStep" :disable="hasSent">{{ t('continue') }}</button>
-          <button v-if="canUpgrade" @click="upgradeDecks" :disable="hasSent">
+        <div v-if="canAnswer" class="actions">
+          <button @click="startStep" :disabled="hasSent">{{ t('continue') }}</button>
+          <button v-if="canUpgrade" @click="upgradeDecks" :disabled="hasSent">
             {{ t('upgradeDecks') }}
           </button>
           <button
             v-if="canChooseSideStory && standalones.length > 0"
             @click="addSideStory = true"
-            :disable="hasSent"
+            :disabled="hasSent"
           >
             + {{ t('addSideScenario') }}
           </button>
         </div>
+        <p v-else class="waiting-message">{{ t('create.undoMode.waitingForLead') }}</p>
       </div>
       <div v-if="setIcon" class="next-step-icon"><img :src="setIcon" /></div>
     </div>
@@ -441,6 +485,17 @@ const setIcon = computed(() => {
         </InvestigatorRow>
       </div>
     </template>
+  </div>
+
+  <div v-if="confirmFinalize" class="confirm-backdrop" role="presentation" @click.self="cancelFinalize">
+    <section class="confirm-dialog" role="dialog" aria-modal="true" :aria-label="t('create.undoMode.confirmTitle')">
+      <h2>{{ t('create.undoMode.confirmTitle') }}</h2>
+      <p>{{ t('create.undoMode.confirmBody') }}</p>
+      <div class="confirm-actions">
+        <button type="button" @click="cancelFinalize">{{ t('create.undoMode.review') }}</button>
+        <button type="button" class="confirm-primary" @click="finalizeScenario">{{ t('create.undoMode.confirm') }}</button>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -498,6 +553,50 @@ const setIcon = computed(() => {
       }
     }
   }
+}
+
+.waiting-message {
+  margin-top: auto;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-modal);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.confirm-dialog {
+  width: min(520px, 100%);
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--background);
+  color: #fff;
+
+  h2 {
+    margin: 0 0 10px;
+    font-family: Teutonic, sans-serif;
+  }
+
+  p {
+    line-height: 1.6;
+  }
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.confirm-primary {
+  background: var(--button-1);
 }
 
 .next-step-icon {

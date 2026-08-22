@@ -6,14 +6,23 @@ export interface Props {
   type: string
   amount?: number
   tooltip?: string
+  image?: string
 }
 const props = defineProps<Props>()
 
 const emit = defineEmits<{ choose: [] }>()
 
-const image = computed(() => {
-  return imgsrc(`${props.type}.png`)
-})
+const tokenImages: Record<string, string> = {
+  clue: 'clue.png',
+  doom: 'doom.png',
+  resource: 'resource.png',
+  sanity: 'horror.png',
+  card: 'encounter_back.jpg',
+  player_card: 'player_back.jpg',
+  artifact_card: 'backs/back_artifact.jpg',
+}
+
+const image = computed(() => props.image ?? imgsrc(tokenImages[props.type] ?? `${props.type}.png`))
 
 function retryImage(event: Event) {
   const element = event.currentTarget as HTMLImageElement
@@ -135,6 +144,36 @@ function imageLoaded(event: Event) {
       drop-shadow(-1px 0 0 var(--select))
       drop-shadow(0 1px 0 var(--select))
       drop-shadow(0 -1px 0 var(--select));
+    animation: token-attention-pulse 0.9s ease-in-out infinite alternate;
+  }
+}
+
+/* Pending damage/horror assignments block the turn, so their tokens tick
+   between the base outline and a brighter, slightly enlarged glow. */
+@keyframes token-attention-pulse {
+  from {
+    filter:
+      drop-shadow(1px 0 0 var(--select))
+      drop-shadow(-1px 0 0 var(--select))
+      drop-shadow(0 1px 0 var(--select))
+      drop-shadow(0 -1px 0 var(--select));
+    transform: scale(1);
+  }
+  to {
+    filter:
+      drop-shadow(1px 0 0 var(--select))
+      drop-shadow(-1px 0 0 var(--select))
+      drop-shadow(0 1px 0 var(--select))
+      drop-shadow(0 -1px 0 var(--select))
+      drop-shadow(0 0 5px var(--select))
+      brightness(1.35);
+    transform: scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .health--can-interact img, .sanity--can-interact img {
+    animation: none;
   }
 }
 </style>

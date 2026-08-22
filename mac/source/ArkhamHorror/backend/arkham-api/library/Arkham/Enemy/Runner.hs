@@ -230,11 +230,27 @@ isSwarm attrs = case enemyPlacement attrs of
   AsSwarm {} -> True
   _ -> False
 
+{- | How to take an enemy out of the game entirely. An enemy that is still in play
+has to leave play first, so that leave-play windows fire and anything attached to
+it gets cleaned up; one that is already out of play (victory display, removed
+zone) is just dropped.
+-}
+removeFromGameMessage :: EnemyAttrs -> Message
+removeFromGameMessage a
+  | isInPlayPlacement a.placement = RemoveFromPlay (toSource a)
+  | otherwise = RemoveEnemy a.id
+
 getCanReady :: HasGame m => EnemyAttrs -> m Bool
 getCanReady a = do
   mods <- getModifiers a
   phase <- getPhase
   pure $ CannotReady `notElem` mods && (DoesNotReadyDuringUpkeep `notElem` mods || phase /= #upkeep)
+
+getCannotAttackNow :: HasGame m => [ModifierType] -> m Bool
+getCannotAttackNow mods
+  | CannotAttack `elem` mods = pure True
+  | CannotAttackDuringEnemyPhase `elem` mods = (== #enemy) <$> getPhase
+  | otherwise = pure False
 
 getCanEngage :: (HasGame m, Tracing m) => EnemyAttrs -> m Bool
 getCanEngage a = do
@@ -594,8 +610,22 @@ instance RunMessage EnemyAttrs where
               (\(iid', eid') -> checkWindows [mkWhen (Window.EnemyEntersYourLocation iid' eid' lid)])
               [(iid', eid') | iid' <- iidsHere, eid' <- entries]
           pushAll (whenWindows <> yourLocationWhens <> [After msg])
+          -- An enemy that is being *moved* out of a threat area leaves it. The
+          -- placement rewrite has to land here rather than in `Do (EnemyMove)`,
+          -- because `EnemyEntered` pushes `After msg` to the front of the queue
+          -- and `After (EnemyEntered)` runs `EnemyCheckEngagement` — which bails
+          -- on a still-engaged enemy, so the enemy would end up at the
+          -- destination silently unengaged (Redeem a Former Colleague pulling an
+          -- engaged Edwin Bennet to another investigator). Issue #5292.
+          --
+          -- Spawns are exempt: they deliberately engage *before* `EnemyEntered`
+          -- so their after-enters windows see the threat area (Doppelgänger
+          -- 11058). A no-op move to the location the enemy already occupies
+          -- never reaches here — `EnemyMove` filters those out (#5277) — so
+          -- engagement-preserving self-moves (Knight of the Inner Circle) are
+          -- unaffected.
           case a.placement of
-            InThreatArea {} -> pure a
+            InThreatArea {} | isJust enemySpawnDetails -> pure a
             _ -> pure $ a & placementL .~ AtLocation lid
     After (EnemyEntered eid lid) | eid == enemyId -> do
       case enemyPlacement of
@@ -751,7 +781,14 @@ instance RunMessage EnemyAttrs where
         push $ EnemyMove eid' lid
         pure a
       _ -> do
-        willMove <- canEnterLocation eid lid
+        enemyLocation <- field EnemyLocation enemyId
+        -- Moving an enemy to the location it already occupies is not movement:
+        -- it must not fire leave/enter/moves windows. Dogs of War's The Beast in
+        -- a Cowl of Crimson cancels its own defeat and moves itself back to the
+        -- Catacombs of Kom el Shoqafa; when it is defeated *at* the Catacombs
+        -- that no-op move used to trigger "after an enemy enters your location"
+        -- effects such as Pursued. (Issue #5277)
+        willMove <- if enemyLocation == Just lid then pure False else canEnterLocation eid lid
         if willMove
           then do
             batchId <- getRandom
@@ -772,7 +809,6 @@ instance RunMessage EnemyAttrs where
               let source = fromMaybe (toSource eid) a.movement.source
               let (whens, _, _) = batchedTimings batchId (Window.EnemyWouldMove eid source from lid)
               lift $ checkWindows [whens]
-            enemyLocation <- field EnemyLocation enemyId
             let leaveWindows = join $ map (\oldId -> windows [Window.EnemyLeaves eid oldId]) (maybeToList enemyLocation)
             afterWindow <- checkAfter $ Window.EnemyMoves eid lid
             pushBatched batchId
@@ -1064,7 +1100,8 @@ instance RunMessage EnemyAttrs where
       pure a
     ForInvestigator iid EnemiesAttack | not enemyExhausted && not enemyDefeated -> do
       mods <- getModifiers enemyId
-      unless (CannotAttack `elem` mods) do
+      cannotAttack <- getCannotAttackNow mods
+      unless cannotAttack do
         let mOverride = getFirst $ mconcat [First (Just override) | EnemyAttacksOverride override <- mods]
         iids <-
           select (fromMaybe enemyAttacks mOverride) >>= filterM \iid' -> do
@@ -1099,7 +1136,8 @@ instance RunMessage EnemyAttrs where
       pure a
     Do EnemiesAttack | not enemyExhausted && not enemyDefeated -> do
       mods <- getModifiers (EnemyTarget enemyId)
-      unless (CannotAttack `elem` mods) do
+      cannotAttack <- getCannotAttackNow mods
+      unless cannotAttack do
         let mOverride = getFirst $ mconcat [First (Just override) | EnemyAttacksOverride override <- mods]
         iids <-
           select (fromMaybe enemyAttacks mOverride) >>= filterM \iid' -> do
@@ -2276,11 +2314,15 @@ instance RunMessage EnemyAttrs where
     AssignDamage target | isTarget a target -> do
       pushAll $ map (`checkDefeated` a) (keys enemyAssignedDamage)
       pure a
+    -- Removing from the game is still leaving play, so an in-play enemy has to go
+    -- through RemoveFromPlay (like RemoveFromGame does) rather than a bare
+    -- RemoveEnemy. A bare RemoveEnemy skips the leave-play windows entirely, which
+    -- stranded attached cards such as Rod of Carnamagos' Rots, #5309.
     RemoveAllCopiesOfCardFromGame _ cCode | cCode == toCardCode a -> do
-      push $ RemoveEnemy (toId a)
+      push $ removeFromGameMessage a
       pure a
     RemoveAllCopiesOfEncounterCardFromGame cardMatcher | toCard a `cardMatch` cardMatcher -> do
-      push $ RemoveEnemy (toId a)
+      push $ removeFromGameMessage a
       pure a
     SendMessage (isTarget a -> True) msg' -> liftRunMessage msg' a
     RemoveAllAttachments source target -> do

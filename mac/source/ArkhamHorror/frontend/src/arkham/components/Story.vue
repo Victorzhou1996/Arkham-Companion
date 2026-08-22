@@ -26,7 +26,8 @@ const emit = defineEmits<{
 
 const image = computed(() => {
   const { art, flippedArt, flipped } = props.story
-  return cardImage(flipped ? flippedArt : art)
+  const currentArt = flipped ? flippedArt : art
+  return cardImage(currentArt === '07062' ? '07062a' : currentArt)
 })
 
 const id = computed(() => props.story.id)

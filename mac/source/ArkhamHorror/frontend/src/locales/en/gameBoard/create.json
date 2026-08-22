@@ -91,6 +91,35 @@
 
     "recommendedOptions": "Recommended Options",
 
+    "undoMode": {
+      "title": "Undo mode",
+      "standard": {
+        "name": "Standard",
+        "description": "Undo within the current scenario. Earlier history is cleared when entering the interlude."
+      },
+      "full": {
+        "name": "Full",
+        "description": "Use the original save behavior and keep the complete undo history."
+      },
+      "light": {
+        "name": "Light",
+        "description": "Keep only the latest 30 steps."
+      },
+      "hardcore": {
+        "name": "Hardcore",
+        "description": "Only the latest step can be undone, and never after drawing a card, encounter card, or chaos token."
+      },
+      "expert": {
+        "name": "Expert",
+        "description": "Undo is completely disabled and debug mode is hidden."
+      },
+      "confirmTitle": "Finish this scenario",
+      "confirmBody": "Continuing enters the interlude and removes undo history from this scenario and all earlier steps. You cannot return to the previous step afterward.",
+      "review": "Go back",
+      "confirm": "Finish and enter interlude",
+      "waitingForLead": "Waiting for the lead investigator to continue."
+    },
+
     "recommendedOption": {
       "PlayersDoNotControlStoryAssetClues": {
         "title": "Players Do Not Control Story Asset Clues",

@@ -16,6 +16,7 @@ export type Asset = {
   cardCode: string;
   cardId: string;
   owner: string | null;
+  controller: string | null;
   health: number | null;
   sanity: number | null;
   assignedHealthDamage: number;
@@ -49,6 +50,7 @@ export const assetDecoder = JsonDecoder.object<Asset>({
   cardCode: JsonDecoder.string(),
   cardId: JsonDecoder.string(),
   owner: JsonDecoder.nullable(JsonDecoder.string()),
+  controller: JsonDecoder.nullable(JsonDecoder.string()),
   health: JsonDecoder.nullable(JsonDecoder.number()),
   tokens: tokensDecoder,
   sanity: JsonDecoder.nullable(JsonDecoder.number()),

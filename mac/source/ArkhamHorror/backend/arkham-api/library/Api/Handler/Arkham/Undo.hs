@@ -14,6 +14,7 @@ import Api.Handler.Arkham.Games.Shared (publishToRoom)
 import Arkham.Card.CardCode
 import Arkham.Game
 import Arkham.Game.Diff
+import Arkham.Game.Settings (Settings (settingsUndoMode), UndoMode (..))
 import Arkham.Id
 import Control.Lens (view)
 import Control.Monad.Except
@@ -70,6 +71,15 @@ getMaybeIntField field (Object obj) =
     _ -> Nothing
 getMaybeIntField _ _ = Nothing
 
+getUndoMode :: Json.Value -> UndoMode
+getUndoMode (Object obj) =
+  fromMaybe FullUndo do
+    settingsValue <- KM.lookup "gameSettings" obj
+    case fromJSON @Settings settingsValue of
+      Success settings -> Just settings.settingsUndoMode
+      Error _ -> Nothing
+getUndoMode _ = FullUndo
+
 {- | Single-step undo. Optimized to avoid the expensive Game<->Value round-trip:
 fetches game state as raw JSON (ArkhamGameRaw), applies the patch at the Value
 level, then deserializes to Game exactly once for the return value.
@@ -92,6 +102,10 @@ stepBack isDebug userId gameId = do
           for_ mEvent \(eventEntity, _) ->
             void $ revertEpicDeltasForGameStep (entityKey eventEntity) gameId n
     Entity stepId step <- maybeToExceptM (jsonError "Missing step") $ getBy (UniqueStep gameId n)
+    let undoMode = getUndoMode rawGame.currentData
+    when (undoMode == ExpertUndo) $ throwError $ jsonError "Undo is disabled for this game"
+    when (undoMode == HardcoreUndo && choiceHasRandomOutcome step.choice) $
+      throwError $ jsonError "The latest step contains a random outcome and cannot be undone"
     -- never delete the initial step as it can not be redone
     -- NOTE: actually we never want to step back if the patchOperations are empty, the first condition is therefor redundant
     when (step.step <= 0) $ throwError $ jsonErrorContents step "Can't undo the first step"
@@ -304,6 +318,10 @@ stepBackToScenarioStep
 stepBackToScenarioStep userId gameId rawGame targetStep = runExceptT do
   let currentSteps = getScenarioSteps rawGame.currentData
       n = currentSteps - targetStep
+      undoMode = getUndoMode rawGame.currentData
+  when (undoMode == ExpertUndo) $ throwError $ jsonError "Undo is disabled for this game"
+  when (undoMode == HardcoreUndo) $ throwError $ jsonError "Hardcore mode only allows a single-step undo"
+  when (undoMode == LightUndo && n > 30) $ throwError $ jsonError "Light mode only keeps the latest 30 steps"
   when (n <= 0) $ throwError "Nothing to undo"
   Entity pid arkhamPlayer <- lift $ getBy404 (UniquePlayer userId gameId)
   let toStep = max 0 (arkhamGameRawStep rawGame - n)
@@ -314,6 +332,9 @@ stepBackToScenarioStep userId gameId rawGame targetStep = runExceptT do
     limit (fromIntegral n)
     where_ $ steps.step !=. val 0
     pure steps
+
+  when (length steps /= n) $
+    throwError $ jsonError "The requested undo point is no longer available"
 
   lift do
     -- Range delete by (game_id, step) instead of materializing every step's

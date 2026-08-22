@@ -1,1 +1,0 @@
-import{z as a}from"./index-8PEt4xSg.js";function f(){const{t:u}=a();function n(r){let e=r,t="";do t=String.fromCharCode(65+e%26)+t,e=Math.floor(e/26)-1;while(e>=0);return t}function o(r){return u("event.group",{ordinal:n(r)})}function i(r){const e=r.name?.trim();return!e||/^Group \d+$/i.test(e)?o(r.ordinal):e}return{groupLabel:i,groupLetter:n,defaultGroupLabel:o}}export{f as u};

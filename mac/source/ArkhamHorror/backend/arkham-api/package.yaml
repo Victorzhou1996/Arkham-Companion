@@ -192,6 +192,7 @@ tests:
       - aeson
       - aeson-diff
       - async
+      - bytestring
       - exceptions
       - hspec
       - hspec-expectations-lifted

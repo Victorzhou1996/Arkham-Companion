@@ -22,6 +22,7 @@ import Arkham.Matcher.Scenario
 import Arkham.Modifier
 import Arkham.Window (Window)
 import Arkham.Window qualified as Window
+
 isTakeDamage :: EffectAttrs -> Window -> Bool
 isTakeDamage attrs window = case attrs.target of
   EnemyTarget eid -> go eid
@@ -67,6 +68,27 @@ instance RunMessage EffectAttrs where
     EndTurn iid | isEndOfWindow a (EffectTurnWindow iid) -> do
       a <$ push (DisableEffect effectId)
     EndRound | isEndOfWindow a EffectRoundWindow -> do
+      a <$ push (DisableEffect effectId)
+    EndRound -> do
+      -- A next-scenario setup modifier stays active through the target scenario's
+      -- first round (so first-turn action penalties apply), then is dismissed. We
+      -- key on "not the scenario it was created in" so it survives the creating
+      -- scenario untouched and only expires once carried forward.
+      case effectWindow of
+        Just (EffectNextSetupWindow createdInScenarioId) ->
+          selectOne TheScenario >>= traverse_ \currentScenarioId ->
+            pushWhen (createdInScenarioId /= currentScenarioId) (DisableEffect effectId)
+        _ -> pure ()
+      pure a
+    Setup -> do
+      -- A carried modifier unwraps as soon as a *different* scenario sets up; from
+      -- then on the inner window governs it, exactly as if it had been created here.
+      case effectWindow of
+        Just (EffectForNextScenario createdInScenarioId inner) -> do
+          mCurrent <- selectOne TheScenario
+          pure $ if mCurrent /= Just createdInScenarioId then a {effectWindow = Just inner} else a
+        _ -> pure a
+    AdvanceAgendaDeck {} | isEndOfWindow a EffectFirstAgendaWindow -> do
       a <$ push (DisableEffect effectId)
     FinishedEvent _ | isEndOfWindow a EffectEventWindow -> do
       a <$ push (DisableEffect effectId)

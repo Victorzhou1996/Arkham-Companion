@@ -6,8 +6,6 @@ install-ghc: false
 resolver: nightly-2025-12-30
 compiler: ghc-9.12.2
 notify-if-nix-on-path: false
-build:
-  jobs: 16
 
 ghc-options:
   "$targets":       -j +RTS -A128M -n4m -RTS

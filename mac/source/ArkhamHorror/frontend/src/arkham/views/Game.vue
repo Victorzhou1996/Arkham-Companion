@@ -260,7 +260,19 @@ const onlineMode = import.meta.env.VITE_ONLINE_MODE === 'true'
 const archived = ref(false)
 const archiveChecking = ref(onlineMode)
 const archiving = ref(false)
-const canUseUndo = computed(() => !onlineMode || (!archiveChecking.value && !archived.value))
+const isExpertMode = computed(() => game.value?.settings.settingsUndoMode === 'expert')
+const canUseDebug = computed(() => !isExpertMode.value)
+const canUseUndo = computed(
+  () => !isExpertMode.value && (!onlineMode || (!archiveChecking.value && !archived.value)),
+)
+
+watch(
+  canUseDebug,
+  (allowed) => {
+    if (!allowed) debug.active = false
+  },
+  { immediate: true },
+)
 
 // "Ready to play": the group has reached the first investigation phase of an
 // active, started scenario. Cleanest signal we have off the existing game state.
@@ -860,6 +872,22 @@ function scheduleApplyUpdate(payload: string) {
         continueSkipAll()
       }
     })
+    .catch(async (err) => {
+      // A dropped update used to be an unhandled rejection: the board silently stayed on
+      // the previous state, which looks exactly like "the server ignored me" and invites
+      // the player to submit the same action again (#5256). Re-fetch instead.
+      console.error('Failed to decode game update, refetching', err)
+      await fetchGame(props.gameId, props.spectate)
+        .then(({ game: refetched }) => {
+          const locked = uiLock.value
+          game.value = locked ? { ...refetched, question: {} } : refetched
+          updateGameLog(refetched.log)
+          if (!locked) continueSkipAll()
+        })
+        .catch(() => {
+          socketError.value = true
+        })
+    })
     .finally(() => {
       decoding = false
       if (pendingUpdate) {
@@ -1310,11 +1338,13 @@ const actionMap = computed<Map<string, () => void>>(() => {
 })
 
 const canUndoScenario = computed(() => {
+  if (!canUseUndo.value) return false
   if (!game.value) return false
   return game.value.scenarioSteps > 1
 })
 
 const canUndoBoundary = (boundary: number | null): boolean => {
+  if (!canUseUndo.value) return false
   if (!game.value) return false
   if (boundary === null) return false
   return game.value.scenarioSteps > boundary
@@ -1462,17 +1492,17 @@ const handleKeyPress = (event: KeyboardEvent) => {
   }
 
   if (event.key === 'u') {
-    undo()
+    if (canUseUndo.value) undo()
     return
   }
 
   if (event.key === 'U') {
-    armUndoChord()
+    if (canUseUndo.value) armUndoChord()
     return
   }
 
   if (event.key === 'D') {
-    debug.toggle()
+    if (canUseDebug.value) debug.toggle()
     return
   }
 
@@ -1595,6 +1625,7 @@ const toggleSidebar = function () {
 // Undo
 const undoLock = ref(false)
 async function undo() {
+  if (!canUseUndo.value) return
   processing.value = true
   const oldQuestion = game.value?.question
   if (game.value) setGameQuestion({})
@@ -1688,12 +1719,31 @@ const continueUI = () => {
   uiLock.value = false
 }
 
+// Keep a multi-token reveal mounted while its per-token reaction windows advance.
+// Clearing the question here would tear down and recreate the same modal and
+// token components after every skip, replaying all of their reveal animations.
+function shouldPreserveFocusedChaosWindow() {
+  if (!game.value || !playerId.value || game.value.focusedChaosTokens.length === 0) return false
+  const currentQuestion = game.value.question[playerId.value]
+  return currentQuestion?.tag === 'ChooseOne' && currentQuestion.isWindow === true
+}
+
+// Keep focused-card modals mounted between one-at-a-time choices. The server
+// returns a new question after each card, and clearing the old one eagerly makes
+// the modal disappear and reappear between those responses.
+function shouldPreserveFocusedCardChoice() {
+  if (!game.value || !playerId.value || game.value.focusedCards.length === 0) return false
+  return Boolean(game.value.question[playerId.value])
+}
 // Callbacks
 async function choose(idx: number) {
+  if (processing.value) return
   if (idx !== -1 && game.value && !props.spectate) {
     oldQuestion.value = game.value.question
     const questionVersion = game.value.scenarioSteps
-    setGameQuestion({})
+    if (!shouldPreserveFocusedChaosWindow() && !shouldPreserveFocusedCardChoice()) {
+      setGameQuestion({})
+    }
     processing.value = true
     send(
       JSON.stringify({
@@ -2006,7 +2056,7 @@ onUnmounted(() => {
             </div>
           </section>
 
-          <section class="shortcuts-section">
+          <section v-if="canUseUndo" class="shortcuts-section">
             <h3 class="section-title">{{ $t('game.shortcutSection.undo') }}</h3>
             <div class="shortcut-list">
               <div class="shortcut-row">
@@ -2053,7 +2103,7 @@ onUnmounted(() => {
                 <div class="shortcut-name">{{ $t('gameBar.shortcutShowOrHideShortcuts') }}</div>
                 <div class="shortcut-keys"><kbd>?</kbd></div>
               </div>
-              <div class="shortcut-row">
+              <div v-if="canUseDebug" class="shortcut-row">
                 <div class="shortcut-name">{{ $t('gameBar.shortcutToggleDebug') }}</div>
                 <div class="shortcut-keys"><kbd>D</kbd></div>
               </div>
@@ -2143,7 +2193,7 @@ onUnmounted(() => {
           </template>
         </Menu>
       </div>
-      <div>
+      <div v-if="canUseDebug">
         <Menu>
           <BeakerIcon aria-hidden="true" />
           {{ $t('gameBar.debug') }}

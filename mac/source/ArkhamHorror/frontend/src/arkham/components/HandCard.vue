@@ -8,7 +8,10 @@ import { imgsrc } from '@/arkham/helpers'
 import { cardImage } from '@/arkham/cardImages'
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
-import { supportsHandPlayTriggerMode } from '@/arkham/abilityTriggerModeEligibility'
+import {
+  supportsHandPlayTriggerMode,
+  triggerModeAbilitiesForCard,
+} from '@/arkham/abilityTriggerModeEligibility'
 import * as ArkhamGame from '@/arkham/types/Game'
 import { IsMobile } from '@/arkham/isMobile'
 import { useDbCardStore } from '@/stores/dbCards'
@@ -102,6 +105,15 @@ const abilities = computed(() => {
   }, [])
 })
 
+const triggerModeAbilities = computed(() =>
+  triggerModeAbilitiesForCard(
+    choices.value,
+    cardContents.value.cardCode,
+    props.ownerId,
+    isAbility,
+  ),
+)
+
 const classObject = computed(() => {
   return { 'card--can-interact': cardAction.value !== -1 }
 })
@@ -117,6 +129,10 @@ const image = computed(() => {
 const supportsPlayTriggerMode = computed(() =>
   supportsHandPlayTriggerMode(
     dbCards.getDbCard(cardContents.value.cardCode.replace(/^c/, '')),
+    cardContents.value.cardCode,
+    cardContents.value.customizations,
+    cardAction.value !== -1
+      && ArkhamGame.activeQuestionIsResponseWindow(props.game, props.playerId),
   ),
 )
 
@@ -283,7 +299,7 @@ function oilPaintEffect(canvas, radius, intensity) {
       :player-id="playerId"
       :investigator-id="ownerId"
       :card-code="cardContents.cardCode"
-      :abilities="abilities"
+      :abilities="triggerModeAbilities"
       :include-play-mode="supportsPlayTriggerMode"
       current-abilities-only
     />

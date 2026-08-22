@@ -93,6 +93,32 @@ watch(
 )
 const focusedChaosTokens = computed(() => props.game.focusedChaosTokens)
 
+// A multi-token reveal opens a separate reaction window for each token. Read the
+// token from that window rather than relying on focused-token order: all revealed
+// tokens can already be focused while an earlier token's window is resolving.
+const scrutinizedChaosTokenId = computed(() => {
+  if (question.value?.tag !== 'ChooseOne' || !question.value.isWindow) return null
+
+  for (const choice of choices.value) {
+    if (choice.tag !== MessageType.ABILITY_LABEL) continue
+
+    for (const window of choice.windows) {
+      if (window.windowType.tag !== 'RevealChaosToken') continue
+      const contents = window.windowType.contents
+      if (!Array.isArray(contents)) continue
+      const token = contents[1]
+      if (!token || typeof token !== 'object') continue
+
+      if ('chaosTokenId' in token && typeof token.chaosTokenId === 'string') {
+        return token.chaosTokenId
+      }
+      if ('id' in token && typeof token.id === 'string') return token.id
+    }
+  }
+
+  return null
+})
+
 type SearchedCardGroup = {
   key: string
   zone: string
@@ -186,11 +212,47 @@ function focusedCardSourceLabel(cardId: string): string | null {
   }
 }
 
+// CardLabel choices already render their cards as the primary, clickable options.
+// Do not repeat those same focused cards in the generic "Cards" summary below.
+// Use counts rather than a Set because multiple copies can share a card code.
+const focusedCardsForGroups = computed(() => {
+  const cardLabelCounts = new Map<string, number>()
+  for (const choice of choices.value) {
+    if (choice.tag !== MessageType.CARD_LABEL) continue
+    cardLabelCounts.set(choice.cardCode, (cardLabelCounts.get(choice.cardCode) ?? 0) + 1)
+  }
+
+  return focusedCards.value.filter((card) => {
+    const cardCode = toCardContents(card).cardCode
+    const remaining = cardLabelCounts.get(cardCode) ?? 0
+    if (remaining === 0) return true
+    cardLabelCounts.set(cardCode, remaining - 1)
+    return false
+  })
+})
+
+const isSummitDeckView = computed(() =>
+  question.value?.tag === QuestionType.QUESTION_LABEL
+    && question.value.label.includes('searchTheSpires.')
+)
+
 const focusedCardGroups = computed<SearchedCardGroup[]>(() => {
-  if (focusedCards.value.length === 0) return []
+  if (focusedCardsForGroups.value.length === 0) return []
+
+  // Summit order matters. Keep every revealed card in the exact draw order and
+  // render them as one set instead of splitting the location and encounter-card
+  // orientations into separate visual rows.
+  if (isSummitDeckView.value) {
+    return [{
+      key: 'focused-summit-deck',
+      zone: 'SummitDeck',
+      label: t('cards'),
+      cards: focusedCardsForGroups.value,
+    }]
+  }
 
   const grouped = new Map<string, ArkhamCard[]>()
-  for (const card of focusedCards.value) {
+  for (const card of focusedCardsForGroups.value) {
     const label = focusedCardSourceLabel(toCardContents(card).id) ?? t('cards')
     grouped.set(label, [...(grouped.get(label) ?? []), card])
   }
@@ -209,6 +271,9 @@ const visibleCardIds = computed(() => new Set([
   ...searchedCards.value.flatMap((group) => group.cards.map((card) => toCardContents(card).id)),
   ...(props.game.scenario?.victoryDisplay ?? []).map((card) => toCardContents(card).id),
   ...Object.values(props.game.assets).flatMap((asset) => asset.cardsUnderneath.map((card) => toCardContents(card).id)),
+  // Committed cards are rendered (and clickable) by CommittedSkills, so a
+  // CardIdTarget on one must not also fall through to a generic Continue button.
+  ...(props.game.skillTest?.committedCards ?? []).map((card) => toCardContents(card).id),
 ]))
 
 function abilityLabelHandledElsewhere(choice: Message) {
@@ -398,7 +463,7 @@ const traumaIconStyle = (text: string) => {
 
 const hasInnerContent = computed(() => {
   return questionImage.value
-    || (focusedCards.value.length > 0 && choices.value.length > 0)
+    || (focusedCardGroups.value.length > 0 && choices.value.length > 0)
     || (searchedCards.value.length > 0 && choices.value.length > 0)
     || paymentAmountsLabel.value
     || amountsLabel.value
@@ -540,7 +605,8 @@ const flippableCard = (cardCode: string) => {
     skills: [],
     cost: null,
     otherSide: `${cardCode}b`,
-    meta: {}
+    meta: {},
+    errata: null
   }
 }
 
@@ -656,10 +722,18 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
         <img :src="questionImage" class="card" />
       </div>
 
-      <Token v-for="(focusedToken, index) in focusedChaosTokens" :key="index" :token="focusedToken" :playerId="playerId" :game="game" @choose="choose" />
+      <Token
+        v-for="focusedToken in focusedChaosTokens"
+        :key="focusedToken.id"
+        :token="focusedToken"
+        :playerId="playerId"
+        :game="game"
+        :scrutinized="focusedToken.id === scrutinizedChaosTokenId"
+        @choose="choose"
+      />
     </div>
 
-    <div v-if="showChoices" class="choices">
+    <div v-if="showChoices && (hasInnerContent || questionChoices.length > 0)" class="choices">
       <div v-if="hasInnerContent" class="question-label">
         <div class="question-image" v-if="questionImage">
           <img :src="questionImage" class="card" />
@@ -680,6 +754,7 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
                       :card="card"
                       :game="game"
                       :playerId="playerId"
+                      :revealed="isSummitDeckView"
                       @choose="$emit('choose', $event)"
                     />
                   </div>
@@ -1263,6 +1338,15 @@ h2 {
   flex-wrap: wrap;
 }
 
+.focused-cards .group-cards {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.focused-cards .searched-card {
+  flex: 0 0 auto;
+}
+
 .question-label:has(.amount-modal),
 .question-content:has(.amount-modal) {
   width: 100%;
@@ -1620,8 +1704,31 @@ h2 {
     isolation: isolate;
     position: relative;
     .intro-text-body {
+      margin-block: 30px;
+      padding-block: 0;
       max-height: 60vh;
       overflow-y: auto;
+      scrollbar-color: rgba(25, 33, 79, 0.65) transparent;
+      scrollbar-width: thin;
+
+      &::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: rgba(25, 33, 79, 0.65);
+        background-clip: content-box;
+        border: 2px solid transparent;
+        border-radius: 999px;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(25, 33, 79, 0.8);
+      }
     }
     &::after {
       border: 20px solid #D4CCC3;
