@@ -1,17 +1,19 @@
 # Release Manifest
 
-This repository snapshot was assembled from the tested Unkai deployment on 2026-07-23.
+This Mac snapshot was packaged and verified on 2026-08-23.
 
-## Server
+## Mac local runtime
 
-- `server/release/bin/arkham-api`
-  - SHA256: `184e8b64c633465a9933472222eb441ab7223fa1ca44481d9f9eff40b013f211`
-- `server/release/frontend-dist/index.html`
-  - SHA256: `a69d5830676585fc4f02f6ea37ca0d8776596971fe70eb18a2ffc450c69a6f30`
-- `server/release/build/index.html`
-  - SHA256: `ccfd6eed2bbc303065a00c973d872ee4432dca6f9e82124c7a74fdd717af391a`
+- `mac/release/ArkhamHorror-macos-arm64/bin/arkham-api`
+  - SHA256: `269df7e94b9572d19d13293edf1539f7de5d9e522d3a0a44d52190307589b856`
+- `mac/release/ArkhamHorror-macos-arm64/frontend/dist/index.html`
+  - SHA256: `3a802a980d9ad353e0aba19846500fea89fda6709158a8560b2cf39c265c8270`
+- `mac/release/ArkhamHorror-macos-arm64/build/index.html`
+  - SHA256: `20a6adf1ce7ec50f47163e3fcf691812064563c1425d1f496c463f7c3c44c2c4`
+- Packaged DMG
+  - SHA256: `549be5bf293f80c02bd516d67397aedecee1a464533ad89a099756884effb5c8`
 
-The live database, user accounts, saves, runtime logs, server secrets, and deployment backups are intentionally not included.
+Player databases, saves, runtime logs, secrets, and deployment backups are intentionally not included.
 
 ## Cards
 
