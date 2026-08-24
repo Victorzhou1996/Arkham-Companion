@@ -1,6 +1,6 @@
 # Release Manifest
 
-This Server snapshot was built and verified on 2026-08-07.
+This Server snapshot was packaged and verified on 2026-08-23.
 
 ## Changes
 
@@ -17,9 +17,9 @@ This Server snapshot was built and verified on 2026-08-07.
 
 - `server/release/bin/arkham-api`
   - Platform: Linux x86-64
-  - SHA256: `2acaa003e7b8760e3fc83542952030297873c769cd6d1c3f42921e62cf11d0ae`
+  - SHA256: `725eb4cecca1da54f36cfcdf72d4b068701bcd1eb4178353bbe66d94fe75e9fe`
 - Server release tar SHA256:
-  `eecf314b523606c8e26c8104cf81c68eb8710d02344292d0ee8c2c5f8b148594`
+  `0e2fbc37984cc3d7c818c72346528e5ebb86f08fd94bae60e1d9341ba44f04fe`
 
 The live database, user accounts, saves, runtime logs, server secrets, and
 deployment backups are intentionally not included.
