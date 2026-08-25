@@ -1,0 +1,132 @@
+{
+  "intro": {
+    "title": "西部高墙",
+    "checkCampaignLog": "检查你的剧本记录。",
+    "headedWest": "如果探险队向西行进，前往_西部高墙1_。",
+    "headedEast": "如果探险队向东行进，跳至_西部高墙2_。",
+    "westernWall1": "_西部高墙1_：随着你向西行进，眼前的情况愈发清晰：脚下这片海滩其实是一道远古环形高墙的顶部。在数英寻之下，墙壁如刀削般直落海床上的圆形广场。只要稍加筹划，你便能借助旧日废墟中一个个残存的气穴，安全下降到海床。若足够小心，或许真能活着抵达海底。",
+    "westernWall2": "_西部高墙2_：拉莱耶继续升起，远古城市不稳的地基随之震颤。层层坍塌的砖石与暴露的走廊构成了一条通往海面的险路。为了安全上升，你必须借助一个个残存的气穴，攀过远古高墙陡峭的墙面。你深知减压病的危险，不能直接浮上水面。若足够小心，或许真能活着抵达海面。",
+    "resolveDoNoHarm": "如果有调查员拥有“不伤害他人”任务，他们在右侧结算各自的故事。",
+    "proceedToWesternSetup": "前往_设置（v.I）—西部探险队_。",
+    "proceedToEasternSetup": "前往_设置（v.II）—东部探险队_。",
+    "doNoHarm": {
+      "title": "任务：不伤害他人",
+      "instructions": "_仅当你拥有“不伤害他人”任务时阅读：_",
+      "body": "准备翻越高墙时，你发现黑沙上趴着一个人。他披着破烂的拼布斗篷。你暂且不去想他是怎么来到这里的，上前探了探他的脉搏。他还活着，但伤势很重。脖子、手臂和胸口的圆形吸盘伤痕中渗出黄色脓液。你尽力为他包扎伤口，又用嗅盐将他唤醒。他的眼睛微微睁开，嘶哑地吐出一个词：“母亲。”你看向其他人。这个人显然需要帮助。",
+      "choose": "你必须作出决定（选择一项）：",
+      "bringAlong": "“带上他。我们还能救他。”完成本场冒险的设置后，在密谋上放置1个毁灭。在剧本记录中记录_探险队帮助了朝圣者_。",
+      "leaveBehind": "“把他留下。”下一场冒险中揭示起始地点时，不要在该地点上放置线索。在剧本记录中记录_探险队抛下了朝圣者_。"
+    },
+    "label": {
+      "doNoHarm": {
+        "bringAlong": "“带上他。我们还能救他。”",
+        "leaveBehind": "“把他留下。”"
+      }
+    }
+  },
+  "setup": {
+    "west": {
+      "title": "设置（v.I）—西部探险队",
+      "setLocationsAside": "将Obsidian Foundations、Drowned Shanty、Sunken Stairway、Shattered Ruins {'{'}runeV{'}'}和Undersea Vault {'{'}runeZ{'}'}放在一边，位于场外。",
+      "placeUpperWalkways": "将其余五个Walkway地点与放在一边的Drowned Shanty、Sunken Stairway和Shattered Ruins {'{'}runeV{'}'}一起洗混。将其中六个以未揭示面朝上的方式，在Western Wall下方第2–4层放置入场。",
+      "buildActDeck": "使用场景1a——“Descend into the Abyss”组成场景牌组。将另一张场景移出游戏。",
+      "placeBottomWalkways": "将剩余两个Walkway地点与放在一边的Obsidian Foundations一起洗混，使你不知道各自是哪一张，然后将它们以未揭示面朝上的方式，在第5层放置入场。"
+    },
+    "east": {
+      "title": "设置（v.II）—西部探险队",
+      "setLocationsAside": "将Western Wall、Drowned Shanty、Sunken Stairway、Shattered Ruins {'{'}runeV{'}'}和Undersea Vault {'{'}runeZ{'}'}放在一边，位于场外。",
+      "placeUpperWalkways": "将其余五个Walkway地点与放在一边的Drowned Shanty、Sunken Stairway和Shattered Ruins {'{'}runeV{'}'}一起洗混。将其中六个以未揭示面朝上的方式，在Obsidian Foundations下方第2–4层放置入场。",
+      "buildActDeck": "使用场景1a——“Ascend the Wall”组成场景牌组。将另一张场景移出游戏。",
+      "placeBottomWalkways": "将剩余两个Walkway地点与放在一边的Western Wall一起洗混，使你不知道各自是哪一张，然后将它们以未揭示面朝上的方式，在第5层放置入场。"
+    },
+    "gatherSets": "找出下列遭遇组的所有卡牌：_西部高墙_、_宇宙遗产_、_深潜者_、_洪水_、_拉莱耶_、_星之眷族_、_无可逃脱者_、_海底生物_和_克苏鲁代理人_。这些遭遇组的图标为：<section class='encounter-sets'><img src='{setImgPath}/the-western-wall.png' /><img src='{setImgPath}/cosmic-legacy.png' /><img src='{setImgPath}/tdc_deep-ones.png' /><img src='{setImgPath}/flood.png' /><img src='{setImgPath}/rlyeh.png' /><img src='{setImgPath}/star-spawn.png' /><img src='{setImgPath}/the-inescapable.png' /><img src='{setImgPath}/undersea-creatures.png' /><img src='{setImgPath}/agents-of-cthulhu.png' /></section>",
+    "gatherLocations": "找出_西部高墙_遭遇组中的每个地点。",
+    "placeWesternWall": "如图所示，将Western Wall放置入场，置于第1层。",
+    "placeObsidianFoundations": "如图所示，将Obsidian Foundations放置入场，置于第1层。",
+    "removeWalkways": "找出其他每个Walkway地点，随机将其中两个移出游戏。",
+    "beginAtWesternWall": "每位调查员从Western Wall开始游戏。",
+    "beginAtObsidianFoundations": "每位调查员从Obsidian Foundations开始游戏。",
+    "setCardsAside": "将Inescapable敌人、Hunting Parasite弱点和双面的Seafloor Frieze {'{'}runeW{'}'}诡计放在一边，位于场外。",
+    "setAsideCoralStarSpawn": "在_星之眷族_遭遇组中查找Coral Star Spawn敌人并将其放在一边，位于场外。将_星之眷族_遭遇组中的其他每张卡牌移出游戏。",
+    "chooseExpeditionAsset": "按玩家顺序，每位玩家可以选择_探险队_遭遇组中的1张_物品_支援，由其操控并从入场状态开始游戏。该遭遇组的图标为：<section class='encounter-sets'><img src='{setImgPath}/tdc_expedition.png' /></section>",
+    "addFloodTokens": "将淹没标记加入标记池。",
+    "floodLevelsTwoToFive": "提升第2–5层每个地点的淹没等级。",
+    "fullyFloodLevelsFourAndFive": "提升第4层和第5层的淹没等级，直至其完全淹没。",
+    "buildEncounterDeck": "将剩余遭遇卡洗混，组成遭遇牌组。",
+    "readyToBegin": "现在可以开始游戏。"
+  },
+  "label": {
+    "chooseExpeditionAssetQuestion": "选择探险队遭遇组中的一张物品支援，由你操控并从入场状态开始游戏。",
+    "noExpeditionAsset": "不拿取探险队支援。"
+  },
+  "sunkenStairway": {
+    "label": {
+      "above": "将Undersea Vault放在Sunken Stairway上方一排。",
+      "below": "将Undersea Vault放在Sunken Stairway下方一排。"
+    }
+  },
+  "rules": {
+    "locationAdjacency": {
+      "title": "西部高墙中的地点相邻关系",
+      "body": "<p class='basic'>本场冒险中，地点按固定格式排列为5层。</p><ul><li>每个地点的位置都有一个1–5的层级，从第1层的Western Wall开始，向下延伸至第5层最底部的地点。</li><li>任何提及地点层级的卡牌效果，均指地点放置图示中所示的编号行。</li><li>本场冒险中，每个地点均与其上一排及下一排的每个地点相连。同一排的地点互不相连。</li></ul>"
+    }
+  },
+  "specialRules": [
+    {
+      "title": "@:theDrownedCity.theWesternWall.rules.locationAdjacency.title",
+      "body": "@:theDrownedCity.theWesternWall.rules.locationAdjacency.body"
+    }
+  ],
+  "tokens": {
+    "easyStandard": {
+      "skull": "-X。X为你所在地点的等级。",
+      "cultist": "-3。若你失败且所在地点完全淹没，承受1点伤害。",
+      "tablet": "-3。若你失败，提高你所在地点的淹没等级。",
+      "elderThing": "-3（若你所在地点完全淹没，改为-5）。"
+    },
+    "hardExpert": {
+      "skull": "-X。X比你所在地点的等级多2。",
+      "cultist": "-5。若你所在地点完全淹没，承受1点伤害。",
+      "tablet": "-5。若可以，提高你所在地点的淹没等级。",
+      "elderThing": "-5（若你所在地点完全淹没，改为自动失败）。"
+    }
+  },
+  "resolutions": {
+    "xp": { "bonus": "用于探险队继续前进" },
+    "label": {
+      "resolution3": {
+        "drownedQuarter": "前往_淹没城区_。",
+        "apiary": "前往_育蜂场_。"
+      }
+    },
+    "resolution1": {
+      "title": "结局1",
+      "body": "<p>_结局1_：海床的景色如梦如幻，千变万化，处处是不祥的植物和梦魇一样的动物。深水海草丛中平静地游过一条只应存在于史前的突变灯笼鱼。另一只长着发光的眼睛和一嘴尖牙的深海生物径直向你冲来，但在撞上阻挡海水的能量场前最后一刻掉头离去了。</p><ul><li>在剧本记录中的拉莱耶地图上划掉“西部高墙”。</li><li>如果有调查员拥有“不伤害他人”任务，他们在本页结算各自的故事。</li><li>每位调查员获得经验，数值等同于胜利区中每张卡牌的胜利X数值之和。</li><li>跳至_结局3_。</li></ul>"
+    },
+    "resolution2": {
+      "title": "结局2",
+      "body": "<p>_结局2_：古城一阵颤抖，震得你站立不住。你撑着倒下的柱子站直，露比咒骂了一句。拉莱耶这座城还在升起。终于，震颤止住了。露比站在你旁边，看着浑圆的黑水湾。“去他妈的。”她骂道，“我还跟安迪打赌我们能先回去呢。不过如果我假装摔断了腿，他那样的软心肠应该不会把赢的钱拿走，你说呢？”你叹了口气，带头回卡珊德拉号，让露比留在后面包扎右腿。能回来真是太好了。</p><ul><li>在剧本记录中的拉莱耶地图上划掉“西部高墙”。</li><li>如果有调查员拥有*不伤害他人*任务，他们在本页结算各自的故事。</li><li>每位调查员获得经验，数值等同于胜利区中每张卡牌的胜利X数值之和。</li><li>前往_沉睡者墓穴_。</li></ul>"
+    },
+    "noResolution": {
+      "title": "未达成结局",
+      "body": "<p>_若未达成结局（每位调查员均被击败）_：在其他探险队成员的帮助下，你蹒跚着前往目的地，不时躲入残破废墟中的气穴。高墙外漆黑的海洋中，梦魇般的轮廓来回掠过。生活在拉莱耶地基内外的生物扭曲而怪异；你有种感觉，很快还会在自己的噩梦中见到它们。</p><ul><li>在剧本记录中的拉莱耶地图上划掉“西部高墙”。</li><li>如果有调查员拥有“不伤害他人”任务，他们在本页结算各自的故事。</li><li>每位调查员获得经验，数值等同于胜利区中每张卡牌的胜利X数值之和。</li><li>检查你的剧本记录。<ul><li>如果探险队向西行进，跳至_结局3_。</li><li>如果探险队向东行进，前往_沉睡者墓穴_。</li></ul></li></ul>"
+    },
+    "doNoHarmResolution": {
+      "title": "任务：不伤害他人",
+      "instructions": "_仅当你拥有“不伤害他人”任务时阅读：_",
+      "checkCampaignLog": "检查你的剧本记录。",
+      "helpedThePilgrim": "如果探险队帮助了朝圣者，前往任务1。",
+      "otherwise": "否则，跳至任务2。",
+      "task1": "_任务1_：那人的状况迅速恶化。危险旅程临近终点时，他已开始咳出腐臭的黄色浓痰。就在你们走出险路时，他突然惨叫着弯下腰，疯狂抓挠自己的胸口和脸。脖子与肩膀周围的皮肤冒出小孔，继而像腐烂的水果般裂开，无数扭动的蠕虫状寄生虫喷涌而出。每条虫子的口中都长满细小的锯齿，滴落着与受害者体内涌出的一样恶臭黄胆汁。那人剩下的躯体如邪恶傀儡般缓缓起身，将一只鲜血淋漓的手伸向你。一条胶质般的虫子从他的手臂钻出，颤抖着，仿佛在品尝空气。",
+      "task1HuntingParasite": "找出放在一边的Hunting Parasite弱点，将其永久加入你的牌组。此卡牌不计入调查员牌组张数。",
+      "task1Progress": "你已尽力帮助受害者。标记剧本记录中“不伤害他人”下的2点进度。",
+      "task2": "_任务2_：即使已经越过高墙，你还是无法停止想起被自己抛下的那个人。他哀求的眼神和嘶哑的咳嗽将永远纠缠你的梦境。你本可以救他吗？或者至少能让他有尊严地死去？",
+      "task2Trauma": "你抛下了需要帮助的人。承受1点精神创伤。",
+      "task2Progress": "擦除剧本记录中“不伤害他人”下的1点进度。"
+    },
+    "resolution3": {
+      "title": "结局3",
+      "body": "<p>_结局3_：一座古老穹顶在海床上闪着诱人的微光。正当你惊叹于眼前的奇景时，一块黑曜石从上方松脱，坠向海床上的穹顶。穹顶没有碎裂，而是柔韧地泛起涟漪，让巨石伴着雷鸣般的撞击声穿透而过。中央的某种装置投射出一道屏障，既能排斥海水，又能让固体通过。</p><p>不管穹顶内藏着什么奇异科技，蒂林哈斯特大概都会感兴趣。不过，你也可以继续深入拉莱耶：高墙底部有一扇圆门，与穹顶一同笼罩在闪烁的力场下，正召唤你进入城内。</p><ul><li>调查员必须作出决定（选择一项）：<ul><li>若要揭开海床穹顶的秘密，前往_淹没城区_。</li><li>若要继续深入拉莱耶地下，前往_育蜂场_。</li></ul></li></ul>"
+    }
+  }
+}

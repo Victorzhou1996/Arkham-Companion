@@ -95,6 +95,7 @@ import Arkham.Message.Lifted (
   batched,
   capture,
   do_,
+  evasionResult,
   obtainCard,
   placeKey,
   removeEnemy,
@@ -180,6 +181,9 @@ filterOutEnemyMessages eid ask'@(Ask pid q) = case q of
     x -> Just (Ask pid $ ChooseOneAtATime x)
   ChooseOneAtATimeWithAuto k msgs -> case mapMaybe (filterOutEnemyUiMessages eid) msgs of
     [] -> Nothing
+    -- Filtering can strip the question down to a single option, at which point the
+    -- auto ("resolve the rest") choice would just duplicate it.
+    [x] -> Just (Ask pid $ ChooseOneAtATime [x])
     x -> Just (Ask pid $ ChooseOneAtATimeWithAuto k x)
   ChooseUpgradeDeck -> Just (Ask pid ChooseUpgradeDeck)
   ChooseDeck -> Just ask'
@@ -246,6 +250,10 @@ getCanReady a = do
   phase <- getPhase
   pure $ CannotReady `notElem` mods && (DoesNotReadyDuringUpkeep `notElem` mods || phase /= #upkeep)
 
+{- | Whether an enemy is currently barred from attacking. 'CannotAttack' is
+unconditional; 'CannotAttackDuringEnemyPhase' only bites in the enemy phase,
+since @Do EnemiesAttack@ is also pushed by card effects outside of it.
+-}
 getCannotAttackNow :: HasGame m => [ModifierType] -> m Bool
 getCannotAttackNow mods
   | CannotAttack `elem` mods = pure True
@@ -2387,7 +2395,7 @@ instance RunMessage EnemyAttrs where
       -- generic DoBatch handler
       liftRunMessage (Do msg') a
     ForTarget (isTarget a -> True) msg' -> liftRunMessage msg' a
-    UseAbility _ ab _ | isSource a ab.source || isProxySource a ab.source || isIndexedSource a ab.source -> do
+    UseAbility _ ab _ | isSource a ab.source || isProxySource a ab.source || isIndexed a ab.source -> do
       push $ Do msg
       pure a
     InSearch msg'@(UseAbility _ ab _) | isSource a ab.source || isProxySource a ab.source -> do

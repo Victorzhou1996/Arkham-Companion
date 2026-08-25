@@ -9,6 +9,14 @@ These files are the Windows/WSL package-specific layer used by the portable loca
 
 The authenticated in-browser `/local-management` page deliberately exposes only current-user operations and read-only status. It must not call these system-level maintenance commands.
 
+## 2026-08-25 source snapshot
+
+Use `../source/ArkhamHorror` as the backend and frontend source for the next
+Windows package. The ready-to-serve game frontend is already available under
+`../release/frontend-dist`; rebuild the backend from source so the Windows package
+also contains the current rule and content updates. Keep this Windows override
+directory when assembling the package.
+
 ## Windows Codex: add the save-history viewer
 
 The Linux viewer in `../linux/save_history_viewer.py` is platform-neutral and can be reused by the Windows package. This is a manager-only, read-only feature and does not require a Haskell rebuild.

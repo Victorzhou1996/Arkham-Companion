@@ -14,7 +14,8 @@ import theInnsmouthConspiracy from '@/locales/zh/theInnsmouthConspiracy'
 import edgeOfTheEarth from '@/locales/zh/edgeOfTheEarth'
 import theScarletKeys from '@/locales/zh/theScarletKeys'
 import theFeastOfHemlockVale from '@/locales/zh/theFeastOfHemlockVale'
-import brethrenOfAsh from '@/locales/en/brethrenOfAsh'
+import theDrownedCity from '@/locales/zh/theDrownedCity'
+import brethrenOfAsh from '@/locales/zh/brethrenOfAsh'
 import standalone from '@/locales/zh/standalone'
 import gameBoard from '@/locales/zh/gameBoard/gameBoard'
 import xp from '@/locales/zh/xp.json'
@@ -39,6 +40,7 @@ export default
   edgeOfTheEarth, 
   theScarletKeys, 
   theFeastOfHemlockVale,
+  theDrownedCity,
   brethrenOfAsh, 
   standalone
 }

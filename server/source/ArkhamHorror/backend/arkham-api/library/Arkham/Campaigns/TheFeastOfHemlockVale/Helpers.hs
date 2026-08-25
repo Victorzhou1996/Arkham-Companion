@@ -5,12 +5,11 @@ module Arkham.Campaigns.TheFeastOfHemlockVale.Helpers where
 
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Asset
-import Arkham.Campaign.Types (Field (CampaignChaosBag))
 import Arkham.CampaignLogKey
 import Arkham.CampaignStep
 import Arkham.Campaigns.TheFeastOfHemlockVale.Key
 import Arkham.Card
-import Arkham.ChaosToken.Types (ChaosTokenFace (..), isSymbolChaosToken)
+import Arkham.ChaosToken.Types (ChaosTokenFace (..))
 import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue (push)
 import Arkham.Classes.Query
@@ -23,12 +22,13 @@ import Arkham.Helpers.Investigator (getStartingHandSize, getStartingResources)
 import Arkham.Helpers.Log
 import Arkham.Helpers.Message.Discard.Lifted (chooseAndDiscardCards)
 import Arkham.Helpers.Modifiers (getModifiers)
+import Arkham.Helpers.Scenario (scenarioFieldMaybe)
 import Arkham.I18n
 import Arkham.Id
 import Arkham.Investigator.Types qualified as Investigator
 import Arkham.Location.Base
 import Arkham.Matcher
-import Arkham.Message (Message (NextCampaignStep), pattern SetCampaignChaosBag)
+import Arkham.Message (Message (NextCampaignStep, ScenarioCountSet))
 import Arkham.Message.Lifted hiding (continue)
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log (decrementRecordCount, incrementRecordCount, recordCount)
@@ -38,6 +38,8 @@ import Arkham.Projection
 import Arkham.Scenario.Import.Lifted (gather, placeStory)
 import Arkham.Scenario.Options
 import Arkham.Scenario.Setup (ScenarioBuilderT)
+import Arkham.Scenario.Types (Field (ScenarioCounts))
+import Arkham.ScenarioLogKey (ScenarioCountKey (HemlockStandaloneDay, HemlockStandaloneNight))
 import Arkham.Source
 import Arkham.Story.Cards qualified as Stories
 import Arkham.Target
@@ -152,11 +154,70 @@ instance FromJSON TheFeastOfHemlockValeMeta where
     chosenCodexEntries <- o .:? "chosenCodexEntries" .!= []
     pure TheFeastOfHemlockValeMeta {..}
 
+{- | The campaign meta, or a standalone stand-in for it.
+
+Standalone mode has no @Campaign@ entity, so 'getCampaignMeta' would throw. There
+the day and time live in the scenario's count map, written by
+'setupStandaloneDayAndTime' during @PreScenarioSetup@.
+
+They are deliberately NOT stored as scenario modifiers: several Hemlock enemies
+read the day from inside 'HasModifiersFor' (CorpseLichen, GraspingTendril,
+BroodQueenDyingMother, both Crustacean Hybrids, Poisonblossom), so reading a
+modifier here would re-enter modifier collection and loop.
+-}
+getHemlockMeta :: (Tracing m, HasGame m) => m TheFeastOfHemlockValeMeta
+getHemlockMeta =
+  getCampaignMetaMaybe >>= \case
+    Just meta -> pure meta
+    Nothing -> do
+      counts <- fromMaybe mempty <$> scenarioFieldMaybe ScenarioCounts
+      let readCount k = fromMaybe 0 $ lookup k counts
+      let day = case readCount HemlockStandaloneDay of
+            2 -> Day2
+            3 -> Day3
+            _ -> Day1
+      let time = if readCount HemlockStandaloneNight == 1 then Night else Day
+      pure $ TheFeastOfHemlockValeMeta day time []
+
 getCampaignTime :: (Tracing m, HasGame m) => m Time
-getCampaignTime = withCampaignMeta @TheFeastOfHemlockValeMeta (.time)
+getCampaignTime = (.time) <$> getHemlockMeta
 
 getCampaignDay :: (Tracing m, HasGame m) => m Day
-getCampaignDay = withCampaignMeta @TheFeastOfHemlockValeMeta (.day)
+getCampaignDay = (.day) <$> getHemlockMeta
+
+{- | Standalone mode has no campaign to carry the day and time, so each scenario
+establishes its own during @PreScenarioSetup@ — before anything reads it.
+
+Scenarios that sit at a fixed point in the campaign (the three evening scenarios)
+pass that point. The survey scenarios pass 'Nothing' and get the guide's "shuffle
+each Time Marker and draw 1 at random, then flip a coin to determine whether it is
+Day or Night".
+-}
+setupStandaloneDayAndTime :: ReverseQueue m => Maybe (Day, Time) -> m ()
+setupStandaloneDayAndTime mFixed = do
+  (day, time) <- case mFixed of
+    Just fixed -> pure fixed
+    Nothing -> (,) <$> sample (Day1 :| [Day2, Day3]) <*> sample2 Day Night
+  push $ ScenarioCountSet HemlockStandaloneDay (dayNumber day)
+  push $ ScenarioCountSet HemlockStandaloneNight (if time == Night then 1 else 0)
+
+-- | Every Hemlock Vale Standalone Mode bag opens with the same numeric spread.
+hemlockStandaloneNumbers :: [ChaosTokenFace]
+hemlockStandaloneNumbers = [#"+1", #"0", #"0", #"-1", #"-1", #"-2", #"-2", #"-3", #"-3", #"-5"]
+
+{- | The Standalone Mode chaos bag shared by the survey scenarios: Hemlock House,
+Written in Rock, The Silent Heath, The Lost Sister, and The Thing in the Depths.
+Each of their Standalone Mode entries prints the same list, plus 1 @Tablet@ and 1
+@ElderThing@ on day 2 and 2 of each on day 3.
+-}
+hemlockStandaloneBag :: Day -> [ChaosTokenFace]
+hemlockStandaloneBag day =
+  hemlockStandaloneNumbers
+    <> [Skull, Skull, Tablet, ElderThing, ElderSign, AutoFail]
+    <> case day of
+      Day1 -> []
+      Day2 -> [Tablet, ElderThing]
+      Day3 -> [Tablet, Tablet, ElderThing, ElderThing]
 
 getTimeFor :: (Targetable a, Tracing m, HasGame m) => a -> m Time
 getTimeFor a = do
@@ -397,32 +458,13 @@ you are unable to replace a token, repeat this process until a total of 2
 chaos tokens have been replaced.)
 -}
 replaceFatigueChaosTokens :: ReverseQueue m => m ()
-replaceFatigueChaosTokens = do
-  bag <- campaignField CampaignChaosBag
-  (newBag, replaced) <- go (2 :: Int) bag bag []
-  unless (null replaced) $ campaignI18n $ scope "fatigue" $ storyBuild do
-    -- Render each replaced token as a self-contained morph: the frontend shows
-    -- the original face and then flips it in place to the lowered face. Because
-    -- the whole animation lives in a single story entry (one component mount),
-    -- it is immune to the game-state re-render that happens between prompts.
-    setTitle "title"
-    p "body"
-    for_ replaced (uncurry chaosTokenMorph)
-  push $ SetCampaignChaosBag newBag
- where
-  -- @bag@ is the running campaign chaos bag we are mutating; @pool@ is the set
-  -- of tokens we have not yet drawn this process (symbol tokens are simply
-  -- returned, so we only ever draw from the non-symbol tokens left in the pool).
-  -- @acc@ collects each (original, lowered) replacement, newest first.
-  go 0 bag _ acc = pure (bag, reverse acc)
-  go n bag pool acc = case nonEmpty (filter (not . isSymbolChaosToken) pool) of
-    Nothing -> pure (bag, reverse acc)
-    Just nonSymbols -> do
-      face <- sample nonSymbols
-      let pool' = deleteFirstMatch (== face) pool
-      case lowerChaosTokenValue face of
-        Just lowered -> go (n - 1) (replaceFirstMatch face lowered bag) pool' ((face, lowered) : acc)
-        Nothing -> go n bag pool' acc
-  replaceFirstMatch :: ChaosTokenFace -> ChaosTokenFace -> [ChaosTokenFace] -> [ChaosTokenFace]
-  replaceFirstMatch _ _ [] = []
-  replaceFirstMatch x x' (y : ys) = if x == y then x' : ys else y : replaceFirstMatch x x' ys
+replaceFatigueChaosTokens =
+  replaceCampaignChaosTokens 2 lowerChaosTokenValue \replaced ->
+    campaignI18n $ scope "fatigue" $ storyBuild do
+      -- Render each replaced token as a self-contained morph: the frontend shows
+      -- the original face and then flips it in place to the lowered face. Because
+      -- the whole animation lives in a single story entry (one component mount),
+      -- it is immune to the game-state re-render that happens between prompts.
+      setTitle "title"
+      p "body"
+      for_ replaced (uncurry chaosTokenMorph)

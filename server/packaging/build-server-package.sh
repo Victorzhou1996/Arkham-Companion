@@ -19,7 +19,7 @@ rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/sidecar/" "$STAGING_DIR/sidecar
 rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/deploy/" "$STAGING_DIR/deploy/"
 rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/linux/" "$STAGING_DIR/linux/"
 
-cp "$ROOT_DIR/server/RELEASE-20260824.md" "$STAGING_DIR/PACKAGE-README.md"
+cp "$ROOT_DIR/server/RELEASE-20260825.md" "$STAGING_DIR/PACKAGE-README.md"
 
 (
   cd "$STAGING_DIR"

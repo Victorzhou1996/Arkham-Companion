@@ -1918,6 +1918,7 @@ abilityMatches a@Ability {..} = \case
           `notElem` [AbilityAttack, AbilityInvestigate, AbilityEvade, AbilityEngage, AbilityMove]
       , abilitySource `sourceMatches` M.EncounterCardSource
       ]
+  AbilityOnCard _ | abilityBasic -> pure False
   AbilityOnCard cardMatcher -> sourceMatches abilitySource (M.SourceWithCard cardMatcher)
   AbilityOnExtendedCard extendedCardMatcher -> do
     ecards <- select extendedCardMatcher
@@ -2011,7 +2012,10 @@ getAbilitiesMatching matcher = guardYourLocation $ \_ -> do
           ( \a -> a.index `notElem` [AbilityAttack, AbilityInvestigate, AbilityEvade, AbilityEngage, AbilityMove]
           )
         & filterM (\a -> a.source `sourceMatches` M.EncounterCardSource)
-    AbilityOnCard cardMatcher -> filterM (\a -> a.source `sourceMatches` M.SourceWithCard cardMatcher) as
+    AbilityOnCard cardMatcher ->
+      as
+        & filter (not . abilityBasic)
+        & filterM \a -> a.source `sourceMatches` M.SourceWithCard cardMatcher
     AbilityOnExtendedCard extendedCardMatcher -> do
       ecards <- select extendedCardMatcher
       as & filterM \a -> a.source `sourceMatches` M.SourceWithCard (mapOneOf (CardWithId . toCardId) ecards)
@@ -5042,6 +5046,7 @@ instance Projection Investigator where
           Just skillTest -> findWithDefault [] (toId i) (skillTestCommittedCards skillTest)
       InvestigatorDefeated -> pure investigatorDefeated
       InvestigatorResigned -> pure investigatorResigned
+      InvestigatorIsEliminated -> pure investigatorEliminated
       InvestigatorXp -> pure investigatorXp
       InvestigatorSupplies -> pure investigatorSupplies
 
@@ -6154,6 +6159,7 @@ instance Projection Story where
       StoryFlipped -> pure storyFlipped
       StoryOtherSide -> pure storyOtherSide
       StoryCardsUnderneath -> pure storyCardsUnderneath
+      StorySealedChaosTokens -> pure storySealedChaosTokens
 
 instance Projection Treachery where
   getAttrs tid = toAttrs <$> getTreachery tid
