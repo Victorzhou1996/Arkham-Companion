@@ -2034,6 +2034,7 @@ library
       Arkham.Campaign.Campaigns
       Arkham.Campaign.Campaigns.BrethrenOfAsh
       Arkham.Campaign.Campaigns.EdgeOfTheEarth
+      Arkham.Campaign.Campaigns.EdgeOfTheEarth.Achievements
       Arkham.Campaign.Campaigns.GuardiansOfTheAbyss
       Arkham.Campaign.Campaigns.NightOfTheZealot
       Arkham.Campaign.Campaigns.NightOfTheZealot.Achievements
@@ -2044,16 +2045,23 @@ library
       Arkham.Campaign.Campaigns.ReturnToThePathToCarcosa
       Arkham.Campaign.Campaigns.StandaloneCampaign
       Arkham.Campaign.Campaigns.TheCircleUndone
+      Arkham.Campaign.Campaigns.TheCircleUndone.Achievements
       Arkham.Campaign.Campaigns.TheDreamEaters
+      Arkham.Campaign.Campaigns.TheDreamEaters.Achievements
       Arkham.Campaign.Campaigns.TheDrownedCity
+      Arkham.Campaign.Campaigns.TheDrownedCity.Achievements
       Arkham.Campaign.Campaigns.TheDunwichLegacy
       Arkham.Campaign.Campaigns.TheDunwichLegacy.Achievements
       Arkham.Campaign.Campaigns.TheFeastOfHemlockVale
+      Arkham.Campaign.Campaigns.TheFeastOfHemlockVale.Achievements
       Arkham.Campaign.Campaigns.TheForgottenAge
+      Arkham.Campaign.Campaigns.TheForgottenAge.Achievements
       Arkham.Campaign.Campaigns.TheInnsmouthConspiracy
+      Arkham.Campaign.Campaigns.TheInnsmouthConspiracy.Achievements
       Arkham.Campaign.Campaigns.ThePathToCarcosa
       Arkham.Campaign.Campaigns.ThePathToCarcosa.Achievements
       Arkham.Campaign.Campaigns.TheScarletKeys
+      Arkham.Campaign.Campaigns.TheScarletKeys.Achievements
       Arkham.Campaign.Import.Lifted
       Arkham.Campaign.Option
       Arkham.Campaign.Runner
@@ -2095,6 +2103,8 @@ library
       Arkham.Campaigns.TheDrownedCity.CampaignSteps
       Arkham.Campaigns.TheDrownedCity.ChaosBag
       Arkham.Campaigns.TheDrownedCity.Effects.StruggleForAir
+      Arkham.Campaigns.TheDrownedCity.Effects.WalkInFaithDoubts
+      Arkham.Campaigns.TheDrownedCity.Effects.WalkInFaithResolve
       Arkham.Campaigns.TheDrownedCity.Helpers
       Arkham.Campaigns.TheDrownedCity.Import
       Arkham.Campaigns.TheDrownedCity.Key
@@ -4073,11 +4083,11 @@ library
       Arkham.Location.Cards.Dormitories_MiskatonicUniversity
       Arkham.Location.Cards.DownstairsDoorwayDen
       Arkham.Location.Cards.DownstairsDoorwayParlor
-      Arkham.Location.Cards.Downtown
       Arkham.Location.Cards.DowntownArkhamAsylum
       Arkham.Location.Cards.DowntownArkhamSanatorium
       Arkham.Location.Cards.DowntownFirstBankOfArkham
       Arkham.Location.Cards.DowntownFirstBankOfArkham_Arkham
+      Arkham.Location.Cards.DowntownRuined
       Arkham.Location.Cards.DreamersRest
       Arkham.Location.Cards.DreamGatePointlessReality
       Arkham.Location.Cards.DreamGateWondrousJourney
@@ -4099,7 +4109,7 @@ library
       Arkham.Location.Cards.Easttown
       Arkham.Location.Cards.Easttown_Arkham
       Arkham.Location.Cards.EasttownArkhamPoliceStation
-      Arkham.Location.Cards.EasttownTheDrownedCity
+      Arkham.Location.Cards.EasttownRuined
       Arkham.Location.Cards.EerieGlade
       Arkham.Location.Cards.ElderChamber
       Arkham.Location.Cards.EldritchGate
@@ -4416,7 +4426,7 @@ library
       Arkham.Location.Cards.MiskatonicUniversityPast
       Arkham.Location.Cards.MiskatonicUniversityPresent
       Arkham.Location.Cards.MiskatonicUniversityQuietCampus
-      Arkham.Location.Cards.MiskatonicUniversityTheDrownedCity
+      Arkham.Location.Cards.MiskatonicUniversityRuined
       Arkham.Location.Cards.MistFilledCaverns
       Arkham.Location.Cards.MistPylon_174
       Arkham.Location.Cards.MistPylon_175
@@ -4464,7 +4474,7 @@ library
       Arkham.Location.Cards.NileRiver
       Arkham.Location.Cards.Northside
       Arkham.Location.Cards.Northside_Arkham
-      Arkham.Location.Cards.NorthsideTheDrownedCity
+      Arkham.Location.Cards.NorthsideRuined
       Arkham.Location.Cards.NorthsideTrainStation
       Arkham.Location.Cards.NorthTower_287
       Arkham.Location.Cards.NorthTower_288
@@ -4626,7 +4636,7 @@ library
       Arkham.Location.Cards.Rivertown_292
       Arkham.Location.Cards.Rivertown_293
       Arkham.Location.Cards.RivertownAbandonedWarehouse
-      Arkham.Location.Cards.RivertownTheDrownedCity
+      Arkham.Location.Cards.RivertownRuined
       Arkham.Location.Cards.RiverviewTheatre
       Arkham.Location.Cards.RlyehStreets
       Arkham.Location.Cards.RockyCrags
@@ -4727,12 +4737,12 @@ library
       Arkham.Location.Cards.SnowGraves
       Arkham.Location.Cards.SouthChurch_298
       Arkham.Location.Cards.SouthChurch_299
-      Arkham.Location.Cards.Southside
       Arkham.Location.Cards.Southside_294
       Arkham.Location.Cards.Southside_295
       Arkham.Location.Cards.Southside_Arkham
       Arkham.Location.Cards.SouthsideHistoricalSociety
       Arkham.Location.Cards.SouthsideMasBoardingHouse
+      Arkham.Location.Cards.SouthsideRuined
       Arkham.Location.Cards.SpaceSet
       Arkham.Location.Cards.SpawningGrounds
       Arkham.Location.Cards.StaffAccessHallway
@@ -4746,7 +4756,7 @@ library
       Arkham.Location.Cards.StepsOfYhagharl
       Arkham.Location.Cards.StepsOfYoth
       Arkham.Location.Cards.StMarysHospital
-      Arkham.Location.Cards.StMarysHospitalTheDrownedCity
+      Arkham.Location.Cards.StMarysHospitalRuined
       Arkham.Location.Cards.StoneAltar
       Arkham.Location.Cards.StoneArchways
       Arkham.Location.Cards.StoneBridge
@@ -6843,9 +6853,17 @@ test-suite spec
   other-modules:
       Api.Handler.Arkham.DecksSpec
       Api.Handler.Arkham.Games.SharedSpec
+      Arkham.Achievements.EdgeOfTheEarthSpec
       Arkham.Achievements.ReturnToNightOfTheZealotSpec
+      Arkham.Achievements.ReturnToTheCircleUndoneSpec
       Arkham.Achievements.ReturnToTheDunwichLegacySpec
+      Arkham.Achievements.ReturnToTheForgottenAgeSpec
       Arkham.Achievements.ReturnToThePathToCarcosaSpec
+      Arkham.Achievements.TheDreamEatersSpec
+      Arkham.Achievements.TheDrownedCitySpec
+      Arkham.Achievements.TheFeastOfHemlockValeSpec
+      Arkham.Achievements.TheInnsmouthConspiracySpec
+      Arkham.Achievements.TheScarletKeysSpec
       Arkham.Act.Cards.AFamiliarPatternSpec
       Arkham.Act.Cards.BlackwatersBaneEpicMultiplayerSpec
       Arkham.Act.Cards.ExposeTheAnomalyEpicMultiplayerSpec
@@ -6878,6 +6896,7 @@ test-suite spec
       Arkham.Asset.Assets.DigDeep2Spec
       Arkham.Asset.Assets.DigDeepSpec
       Arkham.Asset.Assets.DiscOfItzamna2Spec
+      Arkham.Asset.Assets.DreamsOfDestructionSpec
       Arkham.Asset.Assets.DrHenryArmitage_SpreadingFlamesSpec
       Arkham.Asset.Assets.DrMilanChristopherSpec
       Arkham.Asset.Assets.DukeSpec
@@ -6894,6 +6913,7 @@ test-suite spec
       Arkham.Asset.Assets.FortyFiveAutomaticSpec
       Arkham.Asset.Assets.FortyOneDerringerSpec
       Arkham.Asset.Assets.GateBoxSpec
+      Arkham.Asset.Assets.GoodMoneySpec
       Arkham.Asset.Assets.GrotesqueStatue2Spec
       Arkham.Asset.Assets.GrotesqueStatue4Spec
       Arkham.Asset.Assets.GuardDogSpec
@@ -6927,7 +6947,9 @@ test-suite spec
       Arkham.Asset.Assets.PhysicalTraining2Spec
       Arkham.Asset.Assets.PhysicalTrainingSpec
       Arkham.Asset.Assets.PickpocketingSpec
+      Arkham.Asset.Assets.PlumbTheDepthsSpec
       Arkham.Asset.Assets.PoliceBadge2Spec
+      Arkham.Asset.Assets.ProveYourWorthSpec
       Arkham.Asset.Assets.QuickStudy2Spec
       Arkham.Asset.Assets.RabbitsFootSpec
       Arkham.Asset.Assets.ResearchLibrarianSpec
@@ -6949,16 +6971,20 @@ test-suite spec
       Arkham.Asset.Assets.TheMuscleUnpracticedSpec
       Arkham.Asset.Assets.TheNecronomiconSpec
       Arkham.Asset.Assets.ThirtyFiveWinchesterSpec
+      Arkham.Asset.Assets.ToeTheLineSpec
       Arkham.Asset.Assets.Tonys38LongColtSpec
       Arkham.Asset.Assets.TrueMagickReworkingReality5Spec
       Arkham.Asset.Assets.ValeLanternExtinguishedLightSpec
+      Arkham.Asset.Assets.WalkInFaithSpec
       Arkham.Asset.Assets.WendysAmuletSpec
       Arkham.Asset.Assets.ZoeysCrossSpec
       Arkham.Asset.RunnerSpec
       Arkham.Campaign.NightOfTheZealot.ScenariosSpec
       Arkham.Campaign.TheCircleUndone.ScenariosSpec
+      Arkham.Campaign.TheDrownedCity.TasksSpec
       Arkham.Campaign.TheDunwichLegacy.ScenariosSpec
       Arkham.Campaign.ThePathToCarcosa.ScenariosSpec
+      Arkham.Campaign.TheScarletKeys.ConcealedSpec
       Arkham.Campaign.UsedAbilitiesSpec
       Arkham.CardSettingsSpec
       Arkham.DecklistSpec
@@ -7062,11 +7088,13 @@ test-suite spec
       Arkham.Location.Cards.DreamGatePointlessRealitySpec
       Arkham.Location.Cards.DreamGateWondrousJourneySpec
       Arkham.Location.Cards.EnchantedWoodsVillageOfZoogsSpec
+      Arkham.Location.Cards.UndergroundRiverSpec
       Arkham.Matcher.CoveredByAnyInPlayEnemySpec
       Arkham.Matcher.LegacyJSONSpec
       Arkham.Matcher.NearestLocationToMostSpec
       Arkham.Scenario.Scenarios.DealingsInTheDarkSpec
       Arkham.Scenario.Scenarios.FateOfTheValeSpec
+      Arkham.Scenario.Scenarios.HemlockValeStandaloneSpec
       Arkham.Scenario.SpecHelpers
       Arkham.Scenario.TheMidwinterGalaSpec
       Arkham.Skill.Cards.DeductionSpec

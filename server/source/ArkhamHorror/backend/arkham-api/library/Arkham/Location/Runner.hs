@@ -37,7 +37,11 @@ import Arkham.Direction
 import Arkham.Discover
 import Arkham.Enemy.Types (Field (..))
 import Arkham.Exception
-import Arkham.Helpers.Discover (resolveDiscoverCluesAt, resolveSuccessfulInvestigation)
+import Arkham.Helpers.Discover (
+  resolveDiscoverCluesAt,
+  resolveSuccessfulInvestigation,
+  withExposeInsteadOfInvestigating,
+ )
 import Arkham.Helpers.GameValue (getGameValue)
 import Arkham.Helpers.Modifiers
 import Arkham.Helpers.Window (checkAfter, checkWhen, checkWindows, windows, wouldDoEach)
@@ -164,28 +168,32 @@ instance RunMessage LocationAttrs where
         $ Investigate.resolveInvestigate a (LocationMaybeFieldCalculation a.id LocationShroud) investigation
       pure a
     PassedSkillTest iid (Just Action.Investigate) source (Initiator target) _ n | isTarget a target -> do
+      option <-
+        withExposeInsteadOfInvestigating
+          iid
+          locationId
+          [ UpdateHistory iid (HistoryItem HistorySuccessfulInvestigations 1)
+          , Successful (Action.Investigate, toTarget a) iid source (toTarget a) n
+          ]
       push
         $ SkillTestResultOption
           ( SkillTestOption
-              { option =
-                  Label
-                    ("Discover Clue at " <> display (toName a))
-                    [ UpdateHistory iid (HistoryItem HistorySuccessfulInvestigations 1)
-                    , Successful (Action.Investigate, toTarget a) iid source (toTarget a) n
-                    ]
+              { option = Label ("Discover Clue at " <> display (toName a)) option
               , kind = OriginalOptionKind
               , criteria = Nothing
               }
           )
       pure a
     PassedSkillTest iid (Just Action.Investigate) source (InitiatorProxy target actual) _ n | isTarget a target -> do
+      option <-
+        withExposeInsteadOfInvestigating
+          iid
+          locationId
+          [Successful (Action.Investigate, toTarget a) iid source actual n]
       push
         $ SkillTestResultOption
           ( SkillTestOption
-              { option =
-                  Label
-                    ("Discover Clue at " <> display (toName a))
-                    [Successful (Action.Investigate, toTarget a) iid source actual n]
+              { option = Label ("Discover Clue at " <> display (toName a)) option
               , kind = OriginalOptionKind
               , criteria = Nothing
               }
@@ -370,9 +378,13 @@ instance RunMessage LocationAttrs where
         else pure $ a & tokensL %~ subtractTokens tType n
     PlacedLocation _ _ lid | lid == locationId -> do
       let
-        doPlace =
-          selectOne ActiveInvestigator >>= traverse_ \active -> do
-            pushM $ checkAfter $ Window.PutLocationIntoPlay active lid
+        -- PlacedLocation carries no investigator: locations are put into play by
+        -- acts, agendas and other scenario cards, and the players advance those as
+        -- a group, so each investigator counts as having put it into play. Crediting
+        -- the active investigator instead fired "after you put a location into play"
+        -- for exactly one of them, and for nobody at all whenever that select came
+        -- back empty.
+        doPlace = pushM $ checkAfter $ Window.PutLocationIntoPlayByGroup lid
       pushM $ checkAfter $ Window.LocationEntersPlay lid
       if locationRevealed
         then do
@@ -397,8 +409,13 @@ instance RunMessage LocationAttrs where
           doPlace
           pure a
     RevealLocation miid lid | lid == locationId && not locationRevealed -> do
-      revealer <- maybe getLead pure miid
-      whenWindowMsg <- checkWindows [mkWindow Timing.When (Window.UnrevealedRevealLocation revealer lid)]
+      -- Same group attribution as the reveal windows below: setup and act/agenda
+      -- reveals arrive with no investigator, so every investigator is the revealer.
+      whenWindowMsg <-
+        checkWindows
+          [ mkWindow Timing.When
+              $ maybe (Window.UnrevealedRevealLocationByGroup lid) (`Window.UnrevealedRevealLocation` lid) miid
+          ]
       pushAll [whenWindowMsg, Do msg]
       pure a
     Do (RevealLocation miid lid) | lid == locationId && not locationRevealed -> do
@@ -409,11 +426,26 @@ instance RunMessage LocationAttrs where
             | otherwise = FullyFlooded
       locationClueCount <- getModifiedRevealClueCountWithMods mods a
       revealer <- maybe getLead pure miid
-      mFromLid <- join <$> fieldMay InvestigatorPreviousLocation revealer
-      whenWindowMsg <- checkWindows [mkWindow Timing.When (Window.RevealLocation revealer lid)]
+      -- `from` marks a "moved into and reveals": only populate it when the
+      -- revealer is actually at the location being revealed (they just moved in).
+      -- Remote reveals (e.g. Dr. Rosa Marquez) leave it Nothing so cards like
+      -- Vale Lantern don't fire on non-movement reveals.
+      revealerHere <- (== Just lid) <$> field InvestigatorLocation revealer
+      mFromLid <-
+        if revealerHere
+          then join <$> fieldMay InvestigatorPreviousLocation revealer
+          else pure Nothing
+      -- A reveal with no investigator behind it came from an act, agenda or other
+      -- scenario card. Those are advanced by the players as a group, so each of them
+      -- counts as the revealer; falling back to the lead fired "after you reveal a
+      -- location" for the lead alone. 'RevealLocationForcedAbilities' keeps the
+      -- single revealer either way -- its mFromLid means "moved in and revealed",
+      -- which is about one investigator's movement.
+      let revealWindow t = mkWindow t $ maybe (Window.RevealLocationByGroup lid) (`Window.RevealLocation` lid) miid
+      whenWindowMsg <- checkWindows [revealWindow Timing.When]
       revealForcedMsg <-
         checkWindows [mkWindow Timing.When (Window.RevealLocationForcedAbilities revealer lid mFromLid)]
-      afterWindowMsg <- checkWindows [mkWindow Timing.After (Window.RevealLocation revealer lid)]
+      afterWindowMsg <- checkWindows [revealWindow Timing.After]
       let currentClues = countTokens Clue locationTokens
 
       pushAll
@@ -464,7 +496,10 @@ instance RunMessage LocationAttrs where
       when (currentFloodLevel /= newFloodLevel) do
         before <-
           checkWhen (Window.FloodLevelChanged lid (fromMaybe Unflooded locationFloodLevel) newFloodLevel)
-        pushAll [before, Do msg]
+        -- Must defer the *clamped* level: `Do msg` would carry the original level
+        -- and write it unclamped, letting effects like The Water Rises fully flood
+        -- a location that cannot be fully flooded (e.g. Underground River).
+        pushAll [before, Do (SetFloodLevel lid newFloodLevel)]
       pure a
     Do (SetFloodLevel lid level) | lid == locationId -> do
       after <- checkAfter (Window.FloodLevelChanged lid (fromMaybe Unflooded locationFloodLevel) level)

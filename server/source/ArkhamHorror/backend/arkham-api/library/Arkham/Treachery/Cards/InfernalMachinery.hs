@@ -2,8 +2,8 @@ module Arkham.Treachery.Cards.InfernalMachinery (infernalMachinery) where
 
 import Arkham.Ability
 import Arkham.Helpers.Modifiers (ModifierType (..), modified_)
-import Arkham.Helpers.SkillTest.Lifted
 import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
 import Arkham.Placement
 import Arkham.Trait (Trait (Artifact, Glyph))
 import Arkham.Treachery.Cards qualified as Cards
@@ -36,7 +36,7 @@ instance RunMessage InfernalMachinery where
       pure t
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       sid <- getRandom
-      combinationSkillTest sid iid (attrs.ability 1) iid [#intellect, #agility] (Fixed 4)
+      chooseBeginSkillTest sid iid (attrs.ability 1) iid [#intellect, #agility] (Fixed 4)
       pure t
     PassedThisSkillTest iid (isAbilitySource attrs 1 -> True) -> do
       toDiscardBy iid (attrs.ability 1) attrs

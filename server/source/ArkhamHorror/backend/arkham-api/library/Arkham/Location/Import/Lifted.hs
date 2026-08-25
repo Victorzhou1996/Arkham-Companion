@@ -246,6 +246,7 @@ import Arkham.Location.Runner as X (
   getLeadPlayer,
   getLocationMetaDefault,
   getSetAsideCard,
+  getSetAsideCardMaybe,
   globalMetaL,
   investigateSkillL,
   is,

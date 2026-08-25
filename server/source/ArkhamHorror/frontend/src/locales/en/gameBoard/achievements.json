@@ -8,9 +8,17 @@
   "settingsToggleDescription": "Track this campaign's official achievements as you play. Unlocks are recorded to your account and shown in the campaign log.",
   "noneEarnedYet": "No achievements earned yet.",
   "campaigns": {
+    "06": "The Dream-Eaters",
+    "07": "The Innsmouth Conspiracy",
+    "08": "Edge of the Earth",
+    "09": "The Scarlet Keys",
+    "10": "The Feast of Hemlock Vale",
+    "11": "The Drowned City",
     "50": "Return to the Night of the Zealot",
     "51": "Return to the Dunwich Legacy",
-    "52": "Return to The Path to Carcosa"
+    "52": "Return to The Path to Carcosa",
+    "53": "Return to The Forgotten Age",
+    "54": "Return to The Circle Undone"
   },
   "entries": {
     "TheZealotsRevenge": {
@@ -87,7 +95,14 @@
     },
     "TheGangsAllHere": {
       "name": "The Gang's All Here",
-      "text": "In The Survivors, have Dr. Henry Armitage, Dr. Francis Morgan, Professor Warren Rice, Zebulon Whateley, and Earl Sawyer all survive The Dunwich Legacy."
+      "text": "In The Survivors, have the following characters survive The Dunwich Legacy:",
+      "items": {
+        "DrHenryArmitage": "Dr. Henry Armitage",
+        "ZebulonWhateley": "Zebulon Whateley",
+        "DrFrancisMorgan": "Dr. Francis Morgan",
+        "EarlSawyer": "Earl Sawyer",
+        "ProfessorWarrenRice": "Professor Warren Rice"
+      }
     },
     "NoBroodLeftBehind": {
       "name": "No Brood Left Behind",
@@ -135,7 +150,14 @@
     },
     "FirstSteps": {
       "name": "First Steps",
-      "text": "Interview Constance Dumaine, Jordan Perry, Ishimaru Haruko, Sebastien Moreau, and Ashleigh Clarke in The Last King."
+      "text": "Interview the following VIPs in The Last King:",
+      "items": {
+        "ConstanceDumaine": "Constance Dumaine",
+        "SebastienMoreau": "Sebastien Moreau",
+        "JordanPerry": "Jordan Perry",
+        "AshleighClarke": "Ashleigh Clarke",
+        "IshimaruHaruko": "Ishimaru Haruko"
+      }
     },
     "CrashingTheParty": {
       "name": "Crashing the Party",
@@ -192,6 +214,734 @@
     "CarcosaExpertise": {
       "name": "Carcosa Expertise",
       "text": "Win The Path to Carcosa campaign on Expert difficulty."
+    },
+    "WhyDidItHaveToBeSnakes": {
+      "name": "Why Did It Have to Be Snakes?",
+      "text": "Defeat twenty Serpent enemies across The Forgotten Age campaign."
+    },
+    "WatchThemUnravel": {
+      "name": "Watch Them Unravel",
+      "text": "Complete all four act decks during a single playthrough of Threads of Fate."
+    },
+    "HopeForHumanity": {
+      "name": "Hope for Humanity",
+      "text": "Restore Ichtaca's faith in humanity in The Boundary Beyond."
+    },
+    "Scenario5What": {
+      "name": "Scenario 5-What?",
+      "text": "Skip Heart of the Elders, Part 1."
+    },
+    "BeyondPerfection": {
+      "name": "Beyond Perfection",
+      "text": "Complete all eight tasks on act 2 of The City of Archives during a single playthrough."
+    },
+    "IRememberEverything": {
+      "name": "I Remember Everything!",
+      "text": "Restore Alejandro's memories in The City of Archives."
+    },
+    "Patricide": {
+      "name": "Patricide",
+      "text": "Defeat Yig in The Depths of Yoth."
+    },
+    "HesGotAPoint": {
+      "name": "He's Got a Point",
+      "text": "Side with Alejandro in Shattered Aeons."
+    },
+    "ValusiaSoundsGreat": {
+      "name": "Valusia Sounds Great",
+      "text": "Side with Ichtaca in Shattered Aeons."
+    },
+    "IveBuiltUpAnImmunity": {
+      "name": "I've Built Up An Immunity",
+      "text": "Win The Forgotten Age campaign without ever becoming poisoned."
+    },
+    "WeHaveAnUnderstanding": {
+      "name": "We Have an Understanding",
+      "text": "Win The Forgotten Age campaign without ever dealing any damage to the Harbinger of Valusia."
+    },
+    "WhoNeedsAnyOfThisJunk": {
+      "name": "Who Needs Any of This Junk?",
+      "text": "Win The Forgotten Age campaign without purchasing any supplies."
+    },
+    "DontTreadOnMe": {
+      "name": "Don't Tread on Me",
+      "text": "Win The Forgotten Age campaign with no tally marks recorded under Yig's Fury in your Campaign Log."
+    },
+    "BaneOfYig": {
+      "name": "Bane of Yig",
+      "text": "Win The Forgotten Age campaign with 25 or more tally marks recorded under Yig's Fury in your Campaign Log."
+    },
+    "IfICouldTurnBackTime": {
+      "name": "If I Could Turn Back Time",
+      "text": "Forge your own path, unlock Scenario IX, and win The Forgotten Age campaign."
+    },
+    "YothExpertise": {
+      "name": "Yoth Expertise",
+      "text": "Win The Forgotten Age campaign on Expert difficulty."
+    },
+    "WhoYouGonnaCall": {
+      "name": "Who You Gonna Call?",
+      "text": "Defeat 13 Geist or Spectral enemies across the campaign. Enemies who are not discarded or added to the victory display do not count."
+    },
+    "SaviorOfHumanity": {
+      "name": "Savior of Humanity",
+      "text": "Rescue every Silver Twilight enemy who appears in At Death's Doorstep."
+    },
+    "TenOutOfTenWouldReadAgain": {
+      "name": "10/10 Would Read Again",
+      "text": "Using The Black Book, take a total of 10 horror with its ability throughout the campaign."
+    },
+    "CarlShmarl": {
+      "name": "Carl Shmarl",
+      "text": "Become part of the Silver Twilight Lodge's Inner Circle, then betray them in Union and Disillusion."
+    },
+    "TheThreefoldRule": {
+      "name": "The Threefold Rule",
+      "text": "Join forces with Erynn and turn on her coven in Union and Disillusion."
+    },
+    "NewWorldOrder": {
+      "name": "New World Order",
+      "text": "Help the Silver Twilight Lodge win The Circle Undone campaign."
+    },
+    "ImmortalitySoundsNice": {
+      "name": "Immortality Sounds Nice",
+      "text": "Help Anette's Coven win The Circle Undone campaign."
+    },
+    "MoreLikeExcursion": {
+      "name": "More Like Excursion",
+      "text": "Complete In the Clutches of Chaos without a single incursion occurring."
+    },
+    "MemberThese": {
+      "name": "'Member These?",
+      "text": "Discover the following Mementos:",
+      "items": {
+        "MesmerizingFlute": "Mesmerizing Flute",
+        "KeziahsFormulae": "Keziah's Formulae",
+        "RitualComponents": "Ritual Components",
+        "WornCrucifix": "Worn Crucifix",
+        "ScrapOfTornShadow": "Scrap of Torn Shadow",
+        "WispOfSpectralMist": "Wisp of Spectral Mist",
+        "StrangeIncantation": "Strange Incantation",
+        "CornHuskDoll": "Corn Husk Doll",
+        "GilmansJournal": "Gilman's Journal",
+        "BloodyTreeCarvings": "Bloody Tree Carvings"
+      }
+    },
+    "CaseClosed": {
+      "name": "Case Closed",
+      "text": "Save each of the following characters from a terrible fate:",
+      "items": {
+        "ValentinoRivas": "Valentino Rivas",
+        "GavriellaMizrah": "Gavriella Mizrah",
+        "PennyWhite": "Penny White",
+        "JeromeDavids": "Jerome Davids"
+      }
+    },
+    "MusicOfTheOuterGods": {
+      "name": "Music of the Outer Gods",
+      "text": "Accept your fate and win The Circle Undone campaign by joining the Pipers of Azathoth."
+    },
+    "WeaverOfShadowAndMist": {
+      "name": "Weaver of Shadow and Mist",
+      "text": "Reject your fate and win The Circle Undone campaign by crafting a spell to contain Azathoth."
+    },
+    "FinePrint": {
+      "name": "Fine Print",
+      "text": "Win The Circle Undone campaign by signing your name in The Black Book of Azathoth."
+    },
+    "SpeakTheWordsAloud": {
+      "name": "duolA sdroW eht kaepS",
+      "text": "Win The Circle Undone campaign by discovering and reversing an ancient incantation."
+    },
+    "CircleExpertise": {
+      "name": "Circle Expertise",
+      "text": "Win The Circle Undone campaign on Expert difficulty."
+    },
+    "OneFirstLastJob": {
+      "name": "One First Last Job",
+      "text": "Complete The Drowned City campaign once on any difficulty."
+    },
+    "SeasonTwo": {
+      "name": "Season Two",
+      "text": "Play through the campaign on hard or expert mode using 4 investigators from 4 different previous campaigns. Cannot currently be earned: this requires Epic Campaign Mode, which is not yet implemented."
+    },
+    "CliffDiver": {
+      "name": "Cliff Diver",
+      "text": "Complete the campaign without ever bringing a diving suit along."
+    },
+    "ThisIsACoup": {
+      "name": "This is a Coup",
+      "text": "Defeat both Naomi O’Bannion and Sadie Sheldon in One Last Job using only the act 3a parley ability."
+    },
+    "ThoroughSearch": {
+      "name": "Thorough Search",
+      "text": "End The Western Wall with every location revealed."
+    },
+    "TidalFlipMinigame": {
+      "name": "Tidal Flip Minigame",
+      "text": "Complete The Drowned Quarter with each location revealed and not flooded."
+    },
+    "NoAcolyteLeftBehind": {
+      "name": "No Acolyte Left Behind",
+      "text": "Rescue 5 cultists in The Apiary."
+    },
+    "KillTheAdds": {
+      "name": "Kill the Adds",
+      "text": "Defeat Mother in The Apiary using only her Forced effect."
+    },
+    "InTheDeepEnd": {
+      "name": "In The Deep End",
+      "text": "Escape The Grand Vault with the Tidal Tablet after every location has been fully flooded."
+    },
+    "SorryDidntSeeYouThere": {
+      "name": "Sorry, Didn’t See You There",
+      "text": "Beat Court of the Ancients without moving the Great Lift after the Colossal Tyrant spawns."
+    },
+    "SkyRider": {
+      "name": "Sky Rider",
+      "text": "End your turn in open sky at least 5 times during a single game of Obsidian Canyons."
+    },
+    "SkipToTheEnd": {
+      "name": "Skip to the End",
+      "text": "Defeat Cthulhu in Sepulchre of the Sleeper."
+    },
+    "AlienSchoolDropout": {
+      "name": "Alien School Dropout",
+      "text": "Complete the campaign without translating a single alien glyph."
+    },
+    "AlienSchoolGraduate": {
+      "name": "Alien School Graduate",
+      "text": "Translate all 26 alien glyphs during a single playthrough of The Drowned City campaign."
+    },
+    "EmptyHanded": {
+      "name": "Empty Handed",
+      "text": "Return from R’lyeh without having collected any Artifact story assets."
+    },
+    "WhyWontYouStayDead": {
+      "name": "WHY. WON’T. YOU. STAY. DEAD?!",
+      "text": "Add The Inescapable to the victory display at least 20 times during a single campaign."
+    },
+    "DrownedCityLineInTheSand": {
+      "name": "Line in the Sand",
+      "text": "Win The Drowned City campaign with at least three Ultimatums active."
+    },
+    "RlyehExpertise": {
+      "name": "R’lyeh Expertise",
+      "text": "Win The Drowned City campaign on Expert difficulty."
+    },
+    "WithYourPowersCombined": {
+      "name": "With Your Powers Combined…",
+      "text": "Finish The Drowned City campaign having earned the following artifacts:",
+      "items": {
+        "BarrierNode": "Barrier Node",
+        "GrislyMask": "Grisly “Mask”",
+        "ObsidianClaw": "Obsidian Claw",
+        "TidalTablet": "Tidal Tablet",
+        "ShardOfYchlecht": "Shard of Y’ch’lecht",
+        "HorrorInClay": "Horror in Clay"
+      }
+    },
+    "Obligations": {
+      "name": "Obligations",
+      "text": "Finish The Drowned City campaign with the following tasks completed:",
+      "items": {
+        "WalkInFaith": "Walk in Faith",
+        "DreamsOfDestruction": "Dreams of Destruction",
+        "ToeTheLine": "Toe the Line",
+        "DoNoHarm": "Do No Harm",
+        "GoodMoney": "Good Money",
+        "NoPlaceLikeHome": "No Place Like Home",
+        "ProveYourWorth": "Prove Your Worth",
+        "PlumbTheDepths": "Plumb the Depths"
+      }
+    },
+    "DoYouAlwaysFollowOrders": {
+      "name": "Do You Always Follow Orders?",
+      "text": "Do not stray from the path in Beyond the Gates of Sleep."
+    },
+    "AwwButTheyreSoCute": {
+      "name": "Aww, But They’re So Cute",
+      "text": "Do not defeat a single Zoog enemy in Beyond the Gates of Sleep."
+    },
+    "LosingMyReligion": {
+      "name": "Losing My Religion",
+      "text": "In a single playthrough, find and uncover all 10 Signs of the Gods in The Search for Kadath."
+    },
+    "FantasyFlightGamesDoesNotCondoneAccomplishingThisAchievement": {
+      "name": "Fantasy Flight Games (®) Does Not Condone Accomplishing This Achievement",
+      "text": "Break the law of Ulthar in The Search for Kadath."
+    },
+    "TacticalEspionageAction": {
+      "name": "Tactical Espionage Action",
+      "text": "Complete Dark Side of the Moon with each investigator’s alarm level at zero."
+    },
+    "MoonLizardsIDontBelieveTheyExist": {
+      "name": "Moon Lizards? I Don’t Believe They Exist",
+      "text": "Defeat the Moon Lizard in Dark Side of the Moon."
+    },
+    "BarkhamHorrorEnthusiast": {
+      "name": "Barkham Horror Enthusiast",
+      "text": "Defeat 1 or more Cats from Saturn using a fight ability on either a cat ally or a dog ally."
+    },
+    "OnlyWayToBeSure": {
+      "name": "Only Way To Be Sure",
+      "text": "Reduce the High Priest Not to Be Described to 1 remaining health, then shove it down a well anyway in Where the Gods Dwell."
+    },
+    "GiveThemSomethingToTalkAbout": {
+      "name": "Give Them Something To Talk About",
+      "text": "In a single round, add every hidden form of Nyarlathotep to the victory display in Where the Gods Dwell."
+    },
+    "ThisIsntEvenMyFinalForm": {
+      "name": "This Isn’t Even My Final Form!",
+      "text": "Expose and then defeat Nyarlathotep’s True Shape in Where the Gods Dwell."
+    },
+    "DontTellAnyoneBut": {
+      "name": "Don’t Tell Anyone, But…",
+      "text": "Using the ability on The Great Hall, give 6 different hidden cards to another investigator in Where the Gods Dwell."
+    },
+    "DreamQuestLineInTheSand": {
+      "name": "Line in the Sand",
+      "text": "Win The Dream-Quest campaign with at least three Ultimatums active."
+    },
+    "DreamlandsExpertise": {
+      "name": "Dreamlands Expertise",
+      "text": "Win The Dream-Quest campaign on Expert difficulty."
+    },
+    "BewareTheBlackCat": {
+      "name": "Beware The Black Cat",
+      "text": "Complete The Dream-Eaters campaign with okay, fine, have it your way then recorded in your Campaign Log."
+    },
+    "ReunitedAndItFeelsSoGood": {
+      "name": "Reunited and it Feels So Good",
+      "text": "Win The Dream-Eaters as an interconnected 8-part campaign, and have both groups reunite during the epilogue."
+    },
+    "EveryonesAFeministUntilThereIsASpiderAround": {
+      "name": "Everyone’s a Feminist Until There Is a Spider Around",
+      "text": "Defeat twenty Spider enemies. (Swarm cards do not count.)"
+    },
+    "TheCarterMethod": {
+      "name": "The Carter Method",
+      "text": "Let every location get infested, then seal all of them in Waking Nightmare."
+    },
+    "TheDoctorIsIn": {
+      "name": "The Doctor is In",
+      "text": "Take Dr. Shivani Maheswaran with you and do not let her take any amount of damage or horror in Waking Nightmare."
+    },
+    "DejaVu": {
+      "name": "Déjà Vu",
+      "text": "Resolve every free triggered ability on every location in A Thousand Shapes of Horror (not counting the Mysterious Stairs during act 2)."
+    },
+    "TheCasaLomaManeuver": {
+      "name": "The Casa Loma Maneuver",
+      "text": "Escape the endless stairs with The Unnamable at the topmost staircase in A Thousand Shapes of Horror."
+    },
+    "IRememberThisPlace": {
+      "name": "I Remember This Place",
+      "text": "Find a way out of the Underworld in Point of No Return."
+    },
+    "BadAdvice": {
+      "name": "Bad Advice",
+      "text": "Flip over every location at least once in Point of No Return."
+    },
+    "MarchOfTheGhouls": {
+      "name": "March of the Ghouls",
+      "text": "Have 4 Ghoul enemies attached to Richard Upton Pickman in Point of No Return."
+    },
+    "TheIshimuraFlex": {
+      "name": "The Ishimura Flex",
+      "text": "In a single round, defeat all 4 Legs of Atlach-Nacha in Weaver of the Cosmos."
+    },
+    "YouSpinMeRightRound": {
+      "name": "You Spin Me Right ’Round",
+      "text": "Ensure that Atlach-Nacha spins a full 360 degrees in a single phase in Weaver of the Cosmos."
+    },
+    "MasterOfUnlocking": {
+      "name": "Master of Unlocking",
+      "text": "Use The Silver Key to cancel a total of at least 10 horror throughout the course of a single scenario."
+    },
+    "WebOfDreamsLineInTheSand": {
+      "name": "Line in the Sand",
+      "text": "Win The Web of Dreams campaign with at least three Ultimatums active."
+    },
+    "UnderworldExpertise": {
+      "name": "Underworld Expertise",
+      "text": "Win The Web of Dreams campaign on Expert difficulty."
+    },
+    "WouldYouJustDieAlready": {
+      "name": "Would You Just Die Already",
+      "text": "Defeat The Amalgam 5 or more times in The Pit of Despair."
+    },
+    "ElementaryDearDawson": {
+      "name": "Elementary, Dear Dawson",
+      "text": "Guess both the correct Suspect and Hideout in The Vanishing of Elina Harper."
+    },
+    "AintNothinGonnaBreakMyStride": {
+      "name": "Ain't Nothin Gonna Break My Stride",
+      "text": "Destroy every barrier in In Too Deep."
+    },
+    "SpeedingTicket": {
+      "name": "Speeding Ticket",
+      "text": "Reach Falcon Point Approach without voluntarily stopping any vehicles, getting out of any vehicles, or entering a copy of Long Way Around in Horror in High Gear."
+    },
+    "YoureLockedInHereWithMe": {
+      "name": "You're Locked In Here With Me",
+      "text": "Complete A Light in the Fog without any investigators getting captured."
+    },
+    "FishOutOfWater": {
+      "name": "Fish Out of Water",
+      "text": "Complete Into the Maelstrom with each investigator still wearing their Diving Suits."
+    },
+    "DontWakeDaddy": {
+      "name": "Don't Wake Daddy",
+      "text": "Complete both The Lair of Dagon and Into the Maelstrom without waking Dagon or Hydra."
+    },
+    "GoneFishing": {
+      "name": "Gone Fishing",
+      "text": "Defeat 20 Deep One enemies."
+    },
+    "FullBuild": {
+      "name": "Full Build",
+      "text": "Equip the Waveworn Idol, Awakened Mantle and Headdress of Y'ha-nthlei at the same time."
+    },
+    "YouWakeUpInARoom": {
+      "name": "“You Wake Up In A Room...”",
+      "text": "Recover each of the following memories throughout The Innsmouth Conspiracy campaign:",
+      "items": {
+        "AMeetingWithThomasDawson": "A meeting with Thomas Dawson.",
+        "ABattleWithAHorrifyingDevil": "A battle with a horrifying devil.",
+        "ADecisionToStickTogether": "A decision to stick together.",
+        "AnEncounterWithASecretCult": "An encounter with a secret cult.",
+        "ADealWithJoeSargent": "A deal with Joe Sargent.",
+        "AFollowedLead": "A followed lead.",
+        "AnIntervention": "An intervention.",
+        "AJailbreak": "A jailbreak.",
+        "DiscoveryOfAStrangeIdol": "Discovery of a strange idol.",
+        "DiscoveryOfAnUnholyMantle": "Discovery of an unholy mantle.",
+        "DiscoveryOfAMysticalRelic": "Discovery of a mystical relic.",
+        "AConversationWithMrMoore": "A conversation with Mr. Moore.",
+        "TheLifecycleOfADeepOne": "The lifecycle of a “Deep One.”",
+        "AStingingBetrayal": "A stinging betrayal.",
+        "TheHorribleTruth": "The horrible truth."
+      }
+    },
+    "BiggerFishToFry": {
+      "name": "Bigger Fish to Fry",
+      "text": "Complete The Innsmouth Conspiracy campaign without defeating a single Deep One enemy."
+    },
+    "InnsmouthLineInTheSand": {
+      "name": "Line in the Sand",
+      "text": "Win The Innsmouth Conspiracy campaign with at least three Ultimatums active."
+    },
+    "InnsmouthExpertise": {
+      "name": "Innsmouth Expertise",
+      "text": "Win The Innsmouth Conspiracy campaign on Expert difficulty."
+    },
+    "SafeBet": {
+      "name": "Safe Bet",
+      "text": "Camp at a location with a shelter value of 8 in Ice and Death, Part I."
+    },
+    "LookAtAllThisStuff": {
+      "name": "Look at All This Stuff!",
+      "text": "Recover all seven supplies in Ice and Death, and carry all of them to The Summit in To the Forbidden Peaks."
+    },
+    "InYourHead": {
+      "name": "In Your Head",
+      "text": "Finish Fatal Mirage with nine story cards in the victory display."
+    },
+    "ChaosChaos": {
+      "name": "Chaos Chaos",
+      "text": "Collect and spend a total of ten or more keys in City of the Elder Things."
+    },
+    "KnockKnock": {
+      "name": "Knock, Knock",
+      "text": "Collect, activate, and place all five seals in The Heart of Madness, Part I."
+    },
+    "MadWithPower": {
+      "name": "Mad With Power",
+      "text": "Simultaneously exhaust fifteen copies of The Nameless Madness in The Heart of Madness, Part II."
+    },
+    "ConstructAdditionalPylons": {
+      "name": "Construct Additional Pylons",
+      "text": "Collapse all five Mist-Pylons and escape with your life in The Heart of Madness, Part II."
+    },
+    "TheSoundOfMadness": {
+      "name": "The Sound of Madness",
+      "text": "Draw ten copies of “Tekeli-li!” during a single game."
+    },
+    "SorryImAllOutOfDogPuns": {
+      "name": "Sorry, I’m All Out of Dog Puns",
+      "text": "Have Anyu and four or more other assets with “Dog” in their title in play at the same time."
+    },
+    "KindOfAHatOnAHat": {
+      "name": "Kind of a Hat on a Hat",
+      "text": "Play a Wooden Sledge from a Backpack, then immediately use its ability to attach a Backpack to it."
+    },
+    "ThisWasYourIdea": {
+      "name": "This Was Your Idea",
+      "text": "Use Professor William Dyer’s ability to heal at least 4 horror from Danforth during a single scenario."
+    },
+    "NoRespectForTheDead": {
+      "name": "No Respect For the Dead",
+      "text": "Control at least five assets from the Memorials of the Lost encounter set at the same time."
+    },
+    "WukWukBoom": {
+      "name": "Wuk Wuk Boom",
+      "text": "Use Dynamite to defeat two Giant Albino Penguins at the same time."
+    },
+    "TheColdNeverBotheredMeAnyway": {
+      "name": "The Cold Never Bothered Me Anyway",
+      "text": "Win the Edge of the Earth campaign with eight Frost tokens in the chaos bag at the end of the campaign."
+    },
+    "HellFrozeOver": {
+      "name": "Hell Froze Over",
+      "text": "Win the Edge of the Earth campaign with zero Frost tokens in the chaos bag at the end of the campaign."
+    },
+    "AbandonedAndAlone": {
+      "name": "Abandoned and Alone",
+      "text": "Win the Edge of the Earth campaign without ever bringing a partner asset along with you during a scenario."
+    },
+    "FriendsForever": {
+      "name": "Friends Forever",
+      "text": "Bring the same partner with you in each scenario, ensure that they have confronted their demons, and win the Edge of the Earth campaign with them still alive."
+    },
+    "ThereAndBackAgain": {
+      "name": "There and Back Again",
+      "text": "Win the Edge of the Earth campaign with each of the following survivors:",
+      "items": {
+        "DrAmyKensler": "Dr. Amy Kensler",
+        "ProfWilliamDyer": "Prof. William Dyer",
+        "Danforth": "Danforth",
+        "JamesCookieFredericks": "James “Cookie” Fredericks",
+        "EliyahAshevak": "Eliyah Ashevak",
+        "DrMalaSinha": "Dr. Mala Sinha",
+        "TakadaHiroko": "Takada Hiroko",
+        "AveryClaypool": "Avery Claypool",
+        "RoaldEllsworth": "Roald Ellsworth"
+      }
+    },
+    "SnowLineInTheSand": {
+      "name": "Line in the…Snow",
+      "text": "Win the Edge of the Earth campaign with at least three Ultimatums active."
+    },
+    "AntarcticExpertise": {
+      "name": "Antarctic Expertise",
+      "text": "Win the Edge of the Earth campaign on Expert difficulty."
+    },
+    "CluedIn": {
+      "name": "Clued In",
+      "text": "Do not spend or drop a single clue via treachery cards in Riddles and Rain."
+    },
+    "TakeThatGhulat": {
+      "name": "Take That, Ghulat",
+      "text": "Ensure that not a single civilian is slain in Dead Heat."
+    },
+    "WhatsInAName": {
+      "name": "What’s in a Name?",
+      "text": "Tell Amaranth her real name in Dead Heat."
+    },
+    "PorqueNoLosDos": {
+      "name": "Porque No Los Dos?",
+      "text": "Defeat both copies of Desi simultaneously in Dancing Mad."
+    },
+    "LostAndFound": {
+      "name": "Lost and Found",
+      "text": "Take control of the Twisted Antiprism without a single clue on Clues Unveiled in Dealings in the Dark."
+    },
+    "ILikeTowerDefenseGames": {
+      "name": "I Like Tower Defense Games",
+      "text": "Defend The Claret Knight without any Key Locuses being destroyed in Dogs of War v. I."
+    },
+    "PlayWithYourFood": {
+      "name": "Play With Your Food",
+      "text": "Steal The Light of Pharos from either The Claret Knight or The Beast in a Cowl of Crimson while they have exactly 1 health remaining in Dogs of War v. II or v. III."
+    },
+    "MoreLikeDestroyedChimera": {
+      "name": "More Like “Destroyed” Chimera",
+      "text": "Defeat all five forms of the Void Chimera in a single session of On Thin Ice."
+    },
+    "WhoWatchesTheWatcher": {
+      "name": "Who Watches the Watcher?",
+      "text": "Unlock a secret final act in Sanguine Shadows."
+    },
+    "UnderMyUmbrella": {
+      "name": "Under My Umbrella",
+      "text": "Do not let Tzu San Niang devour a single Geist enemy in Shades of Suffering."
+    },
+    "AllHollow": {
+      "name": "All Hollow",
+      "text": "Learn about a place where Outsiders dwell and travel there to unlock Without a Trace."
+    },
+    "RedLooksGoodOnMe": {
+      "name": "Red Looks Good on Me",
+      "text": "Join the Red Coterie in Congress of the Keys."
+    },
+    "BloodyRedRevolution": {
+      "name": "Bloody Red Revolution",
+      "text": "Overthrow the Red Coterie in Congress of the Keys."
+    },
+    "ScarletWithYourPowersCombined": {
+      "name": "With Your Powers Combined…",
+      "text": "Shift 5 keys in a single turn."
+    },
+    "GiftOfGab": {
+      "name": "Gift of Gab",
+      "text": "Ensure that Commissioner Taylor orders you to “talk” 3 times during a single campaign."
+    },
+    "ImJustHereForTheLocalCuisine": {
+      "name": "“I’m Just Here for the Local Cuisine”",
+      "text": "In a single campaign, sample cuisine and/or visit bars or cafes from the following locations: Marrakesh, Havana, Buenos Aires, Tokyo, and Kuala Lumpur."
+    },
+    "SpeedDemon": {
+      "name": "Speed Demon",
+      "text": "Win The Scarlet Keys campaign with only 17 or fewer time passed."
+    },
+    "TrustNobody": {
+      "name": "Trust Nobody",
+      "text": "Win The Scarlet Keys campaign with 4 Elder Thing tokens in the chaos bag and without ever removing any Elder Thing tokens."
+    },
+    "TrustEverybody": {
+      "name": "Trust Everybody",
+      "text": "Win The Scarlet Keys campaign with 4 Tablet tokens in the chaos bag and without ever removing any Tablet tokens."
+    },
+    "HereIsYourBadge": {
+      "name": "Here is Your Badge",
+      "text": "Win The Scarlet Keys campaign and earn yourself a permanent position in the Foundation."
+    },
+    "KeyToMyHeart": {
+      "name": "Key to My Heart",
+      "text": "Collect each of the following keys throughout The Scarlet Keys campaign:",
+      "items": {
+        "TheEyeOfRavens": "The Eye of Ravens",
+        "TheLastBlossom": "The Last Blossom",
+        "TheLightOfPharos": "The Light of Pharos",
+        "TheSableGlass": "The Sable Glass",
+        "TheWeepingLady": "The Weeping Lady",
+        "TheTwistedAntiprism": "The Twisted Antiprism",
+        "TheShadeReaper": "The Shade Reaper",
+        "TheMirroringBlade": "The Mirroring Blade",
+        "TheBaleEngine": "The Bale Engine",
+        "TheRuinousChime": "The Ruinous Chime",
+        "TheWellspringOfFortune": "The Wellspring of Fortune"
+      }
+    },
+    "ScarletLineInTheSand": {
+      "name": "Line in the Sand",
+      "text": "Win The Scarlet Keys campaign with at least three Ultimatums active."
+    },
+    "GlobalExpertise": {
+      "name": "Global Expertise",
+      "text": "Win The Scarlet Keys campaign on Expert difficulty."
+    },
+    "Aperitif": {
+      "name": "Aperitif",
+      "text": "Complete The Feast of Hemlock Vale campaign once on any difficulty."
+    },
+    "Unshattered": {
+      "name": "Unshattered",
+      "text": "Achieve every ending in this campaign.",
+      "items": {
+        "MarquezSacrificedHerself": "Dr. Marquez sacrificed herself for the Vale",
+        "TheInvestigatorsSacrificedThemselves": "The investigators sacrificed themselves for the Vale",
+        "TheValeWasSaved": "The Vale was saved",
+        "TheValeBurned": "The Vale burned",
+        "BarelySurvivedTheFeast": "The investigators barely survived the feast",
+        "BecameTheTrueFeast": "The investigators became the true feast"
+      }
+    },
+    "AStrongSilentType": {
+      "name": "A Strong, Silent Type",
+      "text": "Finish The Feast of Hemlock Vale campaign without voluntarily triggering any codex entries."
+    },
+    "ColourOutsideTheLines": {
+      "name": "Colour Outside the Lines",
+      "text": "Skip both The Twisted Hollow and The Longest Night during a single playthrough."
+    },
+    "LifeOfTheParty": {
+      "name": "Life of the Party",
+      "text": "Complete The Feast of Hemlock Vale campaign with each resident at Relationship Level 2 or higher."
+    },
+    "DancingQueen": {
+      "name": "Dancing Queen",
+      "text": "Share a dance with 4 different residents during The Second Evening prelude."
+    },
+    "AudreyIII": {
+      "name": "Audrey III",
+      "text": "Complete a scenario engaged with a Poisonblossom having 10 or more overgrowth on it."
+    },
+    "HoldOnToYourPotatoes": {
+      "name": "Hold on to your Potatoes!",
+      "text": "Complete Written in Rock with both a resident and the Prismatic Shard asset under your control."
+    },
+    "DreamHomeBreakover": {
+      "name": "Dream Home Breakover",
+      "text": "Complete Hemlock House with 10 locations in the victory display."
+    },
+    "SettlingTheScore": {
+      "name": "Settling the Score",
+      "text": "Defeat the Thing in the Depths in The Thing in the Depths."
+    },
+    "HereCrabbyCrabby": {
+      "name": "“Here, Crabby Crabby!”",
+      "text": "Make the Limulus Hybrid flip at least 8 times during The Lost Sister."
+    },
+    "ADifferentKindOfStingOps": {
+      "name": "A Different Kind of Sting Ops",
+      "text": "Complete The Silent Heath without spawning the Brood Queen."
+    },
+    "WaitTheresNoShroudedShrine": {
+      "name": "Wait, There’s No Shrouded Shrine?",
+      "text": "Survive The Twisted Hollow in Standalone Mode until you reach at least Darkness Level 10."
+    },
+    "BearNecessities": {
+      "name": "Bear Necessities",
+      "text": "Defeat the Ursine Hybrid in The Longest Night using only scenario card effects."
+    },
+    "LetsDoTheTimeWarp": {
+      "name": "Let’s Do the Time Warp!",
+      "text": "Complete the Lambs to the Slaughter Resolution in Prelude: The Final Evening."
+    },
+    "OblivionShmoblivion": {
+      "name": "Oblivion Shmoblivion",
+      "text": "Win the Fate of the Vale with each Cosmic Emissary enemy in the victory display."
+    },
+    "HighDive": {
+      "name": "High Dive",
+      "text": "Sacrifice yourself for the Vale in Fate of the Vale."
+    },
+    "BestFriendsForever": {
+      "name": "Best Friends Forever!",
+      "text": "Reach Relationship Level 6 with the following residents:",
+      "items": {
+        "LeahAtwood": "Leah Atwood",
+        "SimeonAtwood": "Simeon Atwood",
+        "RiverHawthorne": "River Hawthorne",
+        "GideonMizrah": "Gideon Mizrah",
+        "WilliamHemlock": "William Hemlock"
+      }
+    },
+    "KnowYourPlace": {
+      "name": "Know Your Place",
+      "text": "Win The Feast of Hemlock Vale campaign with Mother Rachel at Relationship Level 3 or higher."
+    },
+    "HeartOfSteel": {
+      "name": "Heart of Steel",
+      "text": "Win The Feast of Hemlock Vale campaign with Judith Park at Relationship Level 7."
+    },
+    "HoldingOutForAHimbo": {
+      "name": "Holding Out for a Himbo",
+      "text": "Win The Feast of Hemlock Vale campaign with Theo Peters at Relationship Level 7."
+    },
+    "CaptivatingScream": {
+      "name": "Captivating Scream",
+      "text": "Win The Feast of Hemlock Vale campaign as Patrice Hathaway."
+    },
+    "HemlockLineInTheSand": {
+      "name": "Line in the Sand",
+      "text": "Win The Feast of Hemlock Vale campaign with at least three Ultimatums active."
+    },
+    "HemlockExpertise": {
+      "name": "Hemlock Expertise",
+      "text": "Win The Feast of Hemlock Vale campaign on Expert difficulty."
     }
   },
   "clearAll": "Clear all",
@@ -199,5 +949,9 @@
   "clearOne": "Clear this achievement",
   "clearAllConfirm": "Clear ALL earned achievements? This cannot be undone.",
   "clearCampaignConfirm": "Clear all earned achievements for {campaign}? This cannot be undone.",
-  "clearOneConfirm": "Clear the achievement \"{name}\"? This cannot be undone."
+  "clearOneConfirm": "Clear the achievement \"{name}\"? This cannot be undone.",
+  "parts": {
+    "theDreamQuest": "The Dream-Quest",
+    "theWebOfDreams": "The Web of Dreams"
+  }
 }

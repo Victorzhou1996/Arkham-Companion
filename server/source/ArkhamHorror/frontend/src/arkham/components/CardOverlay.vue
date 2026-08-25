@@ -13,7 +13,8 @@ import {
 import { imgsrc, isLocalized, toCamelCase } from '@/arkham/helpers'
 import { BugAntIcon } from '@heroicons/vue/20/solid'
 import { useDebug } from '@/arkham/debug'
-import { fetchPlayability, type PlayabilityResponse } from '@/arkham/api'
+import { fetchCard, fetchPlayability, type PlayabilityResponse } from '@/arkham/api'
+import type { CardDef } from '@/arkham/types/CardDef'
 import KeyToken from '@/arkham/components/Key.vue'
 import { type ArkhamKey, keyToId } from '@/arkham/types/Key'
 import PoolItem from '@/arkham/components/PoolItem.vue'
@@ -62,6 +63,8 @@ const isMobile = ref(false)
 
 const playabilityData = ref<PlayabilityResponse | null>(null)
 let playabilityTimer: number | null = null
+const cardDefCache = new Map<string, CardDef | null>()
+const overlayCardDef = ref<CardDef | null>(null)
 let cosmicEmissaryTimer: number | null = null
 type CosmicEmissaryTimerContext = {
   gameId: string
@@ -380,6 +383,39 @@ const getImage = (el: HTMLElement, depth = 0): string | null => {
 const card = computed<string | null>(() =>
   hoveredElement.value ? getImage(hoveredElement.value) : null,
 )
+
+const overlayCardCode = computed<string | null>(() => {
+  const el = hoveredElement.value
+  if (!el) return null
+  const direct = normalizedCardCode(el.dataset.cardCode ?? el.dataset.imageId)?.replace(/b$/, '')
+  if (direct) return direct
+  const match = card.value?.match(/\/cards\/c?(\d+)b?\.(?:avif|jpg|jpeg|png|webp)(?:\?.*)?$/i)
+  return match?.[1] ?? null
+})
+/* Card-def errata covers a whole card, but some errata only applies to one face —
+ * and the overlay resolves both faces to the same card def. A `data-errata`
+ * attribute lets whichever component knows which side is showing supply the text
+ * for just that side; it wins over the card def's own errata. */
+const cardErrata = computed<string | null>(
+  () => hoveredElement.value?.dataset.errata ?? overlayCardDef.value?.errata ?? null,
+)
+
+watch(overlayCardCode, async (code) => {
+  overlayCardDef.value = null
+  if (!code) return
+  if (cardDefCache.has(code)) {
+    overlayCardDef.value = cardDefCache.get(code) ?? null
+    return
+  }
+
+  try {
+    const cardDef = await fetchCard(code)
+    cardDefCache.set(code, cardDef)
+    if (overlayCardCode.value === code) overlayCardDef.value = cardDef
+  } catch {
+    cardDefCache.set(code, null)
+  }
+})
 
 const upsideDown = computed<boolean>(
   () => hoveredElement.value?.classList.contains('Reversed') ?? false,
@@ -1400,6 +1436,8 @@ watchEffect(() => {
         class="crossed-off"
         :class="{ [toCamelCase(entry)]: true }"
       ></div>
+
+      <p v-if="cardErrata" class="card-errata">Errata: {{ cardErrata }}</p>
     </div>
 
     <div
@@ -1705,6 +1743,19 @@ watchEffect(() => {
 
 .card-image {
   position: relative;
+}
+
+.card-errata {
+  width: 300px;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff7d6;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  box-shadow: 0 3px 10px #000;
 }
 
 .spirit-icon {

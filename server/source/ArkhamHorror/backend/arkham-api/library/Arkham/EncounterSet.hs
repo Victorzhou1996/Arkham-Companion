@@ -362,6 +362,7 @@ data EncounterSet
   | TheDoomOfArkhamPartII
   | Tasks
   | TdcExpedition
+  | TheDrownedCityExpedition
   | StarSpawn
   | UnderseaCreatures
   | Flood

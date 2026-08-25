@@ -1,6 +1,7 @@
 # Release Manifest
 
-This Server snapshot was packaged and verified on 2026-08-23.
+This Server source and game frontend snapshot was updated and verified on
+2026-08-25.
 
 ## Changes
 
@@ -10,34 +11,44 @@ This Server snapshot was packaged and verified on 2026-08-23.
 - Final physical and mental trauma is stored with the completed deck and restored
   when that deck is used in a later campaign.
 - Build deck conversion now preserves the deck notes used by the starter decks.
-- Preserved the selected upstream rules updates, current The Drowned City content,
-  Chinese scenario text, response controls, narration, and image fallbacks.
+- Added complete Chinese localization for all standalone scenarios while
+  preserving the existing The Drowned City localization.
+- Updated the source snapshot with the selected upstream rules and content fixes
+  while preserving the local undo modes, response controls, narration, Build,
+  management tools, starter decks, and image fallbacks.
+
+## Source Snapshot
+
+- Source commit: `bed34d7d3e`
+- Source location: `server/source/ArkhamHorror`
+- The game frontend in `server/release/frontend-dist` was built from this source.
+- Windows packages should rebuild the backend from this source and then apply the
+  files under `server/windows`.
 
 ## Server Artifacts
 
 - `server/release/bin/arkham-api`
   - Platform: Linux x86-64
   - SHA256: `725eb4cecca1da54f36cfcdf72d4b068701bcd1eb4178353bbe66d94fe75e9fe`
-- Server release tar SHA256:
-  `0e2fbc37984cc3d7c818c72346528e5ebb86f08fd94bae60e1d9341ba44f04fe`
+
+The bundled Linux backend remains the previously verified 2026-08-23 binary.
+Rebuild it from the included source before packaging any backend rule changes.
 
 The live database, user accounts, saves, runtime logs, server secrets, and
 deployment backups are intentionally not included.
 
 ## Verification
 
-- Backend library build: passed (6666 modules).
-- Registration behavior was verified with real temporary accounts on the local
-  and unkai databases; Build deck-conversion tests passed.
-- Frontend unit tests: passed.
+- Frontend unit tests: passed (29/29).
 - Frontend TypeScript/Vue type check: passed.
 - Frontend production build: passed.
-- macOS backend build: passed.
-- Linux x86-64 backend build: passed.
-- Local game, Build route, card images, real new-account registration, and unkai
-  deployment: passed.
+- Chinese locale validation: passed for all 144 locale JSON files, with no
+  missing locale files or leaf keys.
+- The complete macOS local package was separately rebuilt and verified from the
+  same source snapshot.
 
-The Online server was not modified by this release.
+No server database, player save, account, credential, or live deployment is
+included in this GitHub update.
 
 ## Cards
 

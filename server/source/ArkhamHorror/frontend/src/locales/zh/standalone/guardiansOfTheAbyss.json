@@ -1,0 +1,94 @@
+{
+  "label": {
+    "lookAtExplorationDeck": "查看探索牌堆顶的卡牌",
+    "lookAtEncounterDeck": "查看遭遇牌堆顶的卡牌",
+    "nassor": {
+      "addStrength": "为深渊增加1点强度",
+      "extraDamage": "纳索尔在此次攻击中造成+{count}点伤害和+{count}点恐惧"
+    },
+    "theBlackWind": {
+      "addStrength": "为深渊增加1点强度，并将黑风加入胜利牌区。",
+      "discard": "弃掉黑风，并抽取遭遇牌堆顶的1张卡牌以取代之。在本回合剩余时间内，你所有技能-1。"
+    },
+    "fateOfTheDreamers": {
+      "removeStrength": "从深渊移除2点强度。",
+      "addStrength": "为深渊增加2点强度。"
+    },
+    "prisonersOfConquest": {
+      "freeTheCreatures": "检定 {'{'}agility{'}'}（4），以释放这些生物。",
+      "slayTheCreatures": "检定 {'{'}combat{'}'}（4），以击杀这些生物。"
+    },
+    "ruinsOfSarkomand": {
+      "speakToTheDenizens": "检定 {'{'}intellect{'}'}（3），与居住在这些废墟中的近乎人形生物交谈。",
+      "blockTheTrapdoor": "检定 {'{'}combat{'}'}（3），以堵住暗门。"
+    },
+    "effigyOfNodens": {
+      "entreatForAid": "检定 {'{'}willpower{'}'}（2），向这座雕像所描绘的实体求援。",
+      "overthrowTheStatue": "检定 {'{'}combat{'}'}（2），以推翻这座雕像。"
+    },
+    "usurpTheNight": {
+      "proceed": "进行至结局 3",
+      "flipBack": "将此卡牌翻回其敌人面",
+      "acceptMercy": "接受克萨拉的仁慈，并立即撤退",
+      "refuse": "拒绝"
+    },
+    "theHourOfJudgment": {
+      "destroyNeith": "一劳永逸地摧毁奈斯。选择此选项，你相信那些仍受永恒沉眠诅咒支配的人将获得解放。",
+      "spareNeith": "饶恕奈斯，并倾听她的陈述。选择此选项，你相信自己可以更深入地了解奈斯口中的克萨拉。"
+    },
+    "defeatingXzharah": {
+      "proceed": "进行至结局 2",
+      "flipBack": "将此场景卡牌翻回其“a”面"
+    }
+  },
+  "intoTheGate": {
+    "ankh": "<p>*你的安卡护身符迸发出耀眼的光芒，令克萨拉瑟缩后退。“这么说，奈斯抛弃了我们！”克萨拉嘶声说道。*</p>"
+  },
+  "removeStrengthFromTheAbyss": "从深渊移除1点强度。",
+  "theTranslatorsEvidence": {
+    "benefit": "<p>*你将石碑带给艾尔·马斯里博士，她尽其所能加以翻译。“当抉择做出之时，祂将因圣地的千次献祭而获得力量。”她眨了几次眼，试图理解其含义。“现在有多少昏迷病人？”她睁大眼睛问道。*</p>"
+  },
+  "theSupplicantsEvidence": {
+    "benefit": "<p>*你设法在摩尔博士徒步逃离城市时堵住了他。“很聪明，”他承认道，“但你们已经没时间了。把我关起来也无所谓。梦者将被献祭，我们的被选中者将带领我们进入一个新时代。”但数小时后，他却哀求放他离开这座城市。“求求你们，收割者要来了！奈斯正在赶来对付我们所有人。我们都会被献祭，你们不明白吗？你我都是！我们所有人都得趁还来得及逃离这座城市！”*</p>"
+  },
+  "thePriestesssEvidence": {
+    "benefit": "<p>*你使用娜迪亚给你的钥匙，进入了那处被标记的住所。令你惊讶的是，里面空无一人——只有淡淡的腐臭味和陈旧皮革的气息。住所的地下室堆满了旧书，都是兄弟会及其众多代理人留下的记录。这些需要花些时间翻阅，但线索终究是线索。*</p>"
+  },
+  "theSalesmansEvidence": {
+    "benefit": "<p>*法里德一边把黄金神像扫进自己的背囊，一边咧嘴大笑。你在他过于兴奋之前逼问信息。“听着，他们承诺给我超乎想象的财富。你知道，我也有自己的价码？”他摊开双手，无奈地说。“让我给你看我的记录。过去几个月我做了不少‘生意’。那会给你指明正确的方向。”*</p>"
+  },
+  "theAssassinsEvidence": {
+    "benefit": "<p>*尽管身负致命伤，刺客仍邪恶地咧嘴而笑。“那日将至，”他一边咳嗽一边说。“你以为杀了我就能阻止它？蠢货！巨兽会把你们全部吞噬殆尽！”他在最后一口气中咯咯笑着，随即沉寂下来。*</p><p>*你迅速搜查他的随身物品，以免有旁观者发现尸体。在他身上的诸多奇珍异宝中，你发现一本用皮革装订的小书，上面刻着一行隐晦的铭文：*</p><p class='center'><span class='wolgast' style='line-height:1em;'>*我们的贡品浸透深渊之刃<br>千条灵魂永不苏醒<br>以此我们的被选中者将崛起<br>那日已然逼近！*</span></p>"
+  },
+  "theProfessorsEvidence": {
+    "benefit": "<p>*你将这件小玩意放在教授的桌上。他戴上单片眼镜，仔细端详。“有意思！”他惊呼道。“这只能来自皇家墓穴中的某一座特定陵墓。大多数学者都不相信它存在。”他站起身来，和你握手。“给我一些时间进一步研究。或许如果我们都能活着离开，我就能重新提交我的论文。”他带着病态的笑声说道。*</p>"
+  },
+  "rules": {
+    "storyCards": {
+      "title": "故事卡牌",
+      "body": "<p class='basic'>故事卡牌是本场冒险中的一种新卡牌类型。这些卡牌是提供额外叙述的途径，通常会作为另一张场景卡牌的反面出现。当指示你结算一张故事卡牌时，直接阅读其故事文本，并结算其游戏文本（如有）。</p><p class='basic'>（注意：当场上的一张地点或敌人翻到其另一面的故事卡牌时，在该故事卡牌结算期间，该地点或敌人仍被视为在游戏中。）</p>"
+    },
+    "strengthOfTheAbyss": {
+      "title": "深渊之力",
+      "body": "<p class='basic'>在本场冒险期间，场景参考卡上的资源标示着深渊当前的强度。当指示你为深渊增加强度或从深渊移除强度时，相应地调整场景参考卡上的资源标记数量。深渊之力本身没有固有的游戏效果，但某些遭遇卡牌的效果可能会随着深渊当前的强度而增强或改变。注意——随着深渊之力增强，与你作对的势力也将随之增强。若它变得过于强大，你作为深渊守护者必败无疑。</p>"
+    },
+    "takenByTheAbyss": {
+      "title": "“被深渊吞没”",
+      "body": "<p class='basic'>如果某效果指出一名被击败的调查员或_盟友_支援已被“被深渊吞没”，那么该角色便受到了一种令其陷入昏迷状态的诅咒。当一名调查员或_盟友_支援被深渊吞没时，首先为深渊增加1点强度。然后，如果该卡牌为唯一卡，在剧本日志中记录“（卡牌名）被深渊吞没”。被深渊吞没的调查员视同被击杀或精神失常。此外，在本剧本的剩余时间内，玩家不能打出任何已被深渊吞没的唯一_盟友_支援的复制。</p>"
+    }
+  },
+  "specialRules": [
+    {
+      "title": "@:standalone.guardiansOfTheAbyss.rules.storyCards.title",
+      "body": "@:standalone.guardiansOfTheAbyss.rules.storyCards.body"
+    },
+    {
+      "title": "@:standalone.guardiansOfTheAbyss.rules.strengthOfTheAbyss.title",
+      "body": "@:standalone.guardiansOfTheAbyss.rules.strengthOfTheAbyss.body"
+    },
+    {
+      "title": "@:standalone.guardiansOfTheAbyss.rules.takenByTheAbyss.title",
+      "body": "@:standalone.guardiansOfTheAbyss.rules.takenByTheAbyss.body"
+    }
+  ]
+}

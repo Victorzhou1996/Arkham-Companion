@@ -314,6 +314,13 @@ data Criterion
   | ElectrostaticDetonation
   | BearerNotEliminated
   | IsReturnTo
+  | {- | True when achievement tracking is switched on for this game. A handful of
+    cards carry a "don't offer this again, it would do nothing" guard that also
+    makes an official achievement unearnable; those guards are relaxed behind this
+    criterion (paired with 'onlyOnce') so the ability can still be resolved once,
+    as a no-op, when someone is chasing the achievement.
+    -}
+    AchievementsEnabled
   | IfCostsAreIgnored Criterion
   | IgnoreModifiersFrom Source Criterion
   | IfCriteria Criterion Criterion Criterion
@@ -513,6 +520,24 @@ canDamageEnemyAtMatch (toSource -> source) locationMatcher enemyMatcher =
           , exists (LocationWithExposableConcealedCard source <> locationMatcher)
           ]
       else exists (EnemyAt locationMatcher <> EnemyCanBeDamagedBySource source <> enemyMatcher)
+{- | "There is something here I can attack": a fightable enemy, or a concealed
+mini-card, which may be attacked as if it were an engaged enemy to expose it.
+-}
+canFightSomething :: Sourceable source => source -> Criterion
+canFightSomething (toSource -> source) =
+  oneOf -- technically Criteria
+    [ exists (CanFightEnemy source)
+    , exists (YourLocation <> LocationWithExposableConcealedCard source)
+    ]
+
+-- | Evade counterpart of 'canFightSomething'.
+canEvadeSomething :: Sourceable source => source -> Criterion
+canEvadeSomething (toSource -> source) =
+  oneOf -- technically Criteria
+    [ exists (CanEvadeEnemy source)
+    , exists (YourLocation <> LocationWithExposableConcealedCard source)
+    ]
+
 canEvadeEnemyAtMatch
   :: Sourceable source => source -> LocationMatcher -> EnemyMatcher -> Criterion
 canEvadeEnemyAtMatch (toSource -> source) locationMatcher enemyMatcher =
