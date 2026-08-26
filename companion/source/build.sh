@@ -87,5 +87,7 @@ PLIST
 
 chmod +x "$MACOS/ArkhamCompanion"
 xattr -cr "$APP_DIR" 2>/dev/null || true
+codesign --force --deep --sign - "$APP_DIR"
+codesign --verify --deep --strict "$APP_DIR"
 
 echo "Built: $APP_DIR"

@@ -1,0 +1,3921 @@
+{
+  "generatedAt": "2026-08-26T07:31:08.420Z",
+  "total": 558,
+  "counts": {
+    "official": 102,
+    "local-alias": 456
+  },
+  "reasons": {
+    "no-local-mutation": 66,
+    "unambiguous-local-mutation": 456,
+    "multiple-historical-mutations": 36
+  },
+  "items": [
+    {
+      "target": "01020-1.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01020-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01020-2.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01020-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01020-3.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01020-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01020-4.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01020-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01033-1.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-10.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-2.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-3.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-4.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-5.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-6.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-7.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-8.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01033-9.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "local-alias",
+      "source": "01033-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-1.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-10.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-2.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-3.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-4.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-5.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-6.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-7.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-8.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01050-9.avif",
+      "name": "Elusive",
+      "mode": "local-alias",
+      "source": "01050-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01073-10.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "01073-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01073-7.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "01073-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01073-8.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "01073-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01073-9.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "01073-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "01520-1.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01520-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01520-2.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01520-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01520-3.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01520-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01520-4.avif",
+      "name": "Machete",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01520-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-1.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-10.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-2.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-3.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-4.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-5.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-5.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-6.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-6.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-7.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-7.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-8.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-8.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01533-9.avif",
+      "name": "Dr. Milan Christopher",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01533-9.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-1.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-10.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-2.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-3.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-4.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-5.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-5.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-6.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-6.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-7.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-7.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-8.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-8.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01550-9.avif",
+      "name": "Elusive",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01550-9.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01573-10.avif",
+      "name": "Scavenging",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01573-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01573-7.avif",
+      "name": "Scavenging",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01573-7.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01573-8.avif",
+      "name": "Scavenging",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01573-8.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01573-9.avif",
+      "name": "Scavenging",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01573-9.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01692-10.avif",
+      "name": "Eucatastrophe",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01692-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01692-4.avif",
+      "name": "Eucatastrophe",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01692-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01692-5.avif",
+      "name": "Eucatastrophe",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01692-5.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01692-6.avif",
+      "name": "Eucatastrophe",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01692-6.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01692-7.avif",
+      "name": "Eucatastrophe",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01692-7.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01692-8.avif",
+      "name": "Eucatastrophe",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01692-8.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "01692-9.avif",
+      "name": "Eucatastrophe",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/01692-9.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02002-1.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-10.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-2.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-3.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-4.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-5.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-6.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-7.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-8.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02002-9.avif",
+      "name": "Rex Murphy",
+      "mode": "local-alias",
+      "source": "02002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-10.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-2.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-3.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-4.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-5.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-6.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-7.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-8.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02026-9.avif",
+      "name": "Double or Nothing",
+      "mode": "local-alias",
+      "source": "02026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02029-10.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "02029-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02029-5.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "02029-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02029-6.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "02029-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02029-7.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "02029-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02029-8.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "02029-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02029-9.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "02029-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-10.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-3.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-4.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-5.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-6.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-7.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-8.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02108-9.avif",
+      "name": "Pathfinder",
+      "mode": "local-alias",
+      "source": "02108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-1.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-10.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-2.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-3.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-4.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-5.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-6.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-7.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-8.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02111-9.avif",
+      "name": "Delve Too Deep",
+      "mode": "local-alias",
+      "source": "02111-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02152-1.avif",
+      "name": "Switchblade",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02152-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02152-2.avif",
+      "name": "Switchblade",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02152-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02152-3.avif",
+      "name": "Switchblade",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02152-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02152-4.avif",
+      "name": "Switchblade",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02152-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02152-5.avif",
+      "name": "Switchblade",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02152-5.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02153-10.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "02153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02153-6.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "02153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02153-7.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "02153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02153-8.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "02153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02153-9.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "02153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02187-1.avif",
+      "name": "Higher Education",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02187-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02187-2.avif",
+      "name": "Higher Education",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02187-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02187-3.avif",
+      "name": "Higher Education",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02187-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02187-4.avif",
+      "name": "Higher Education",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02187-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02187-5.avif",
+      "name": "Higher Education",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02187-5.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02189-1.avif",
+      "name": "Streetwise",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02189-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02189-2.avif",
+      "name": "Streetwise",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02189-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02189-3.avif",
+      "name": "Streetwise",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02189-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02189-4.avif",
+      "name": "Streetwise",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02189-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02189-5.avif",
+      "name": "Streetwise",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02189-5.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02193-1.avif",
+      "name": "Scrapper",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02193-1.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02193-2.avif",
+      "name": "Scrapper",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02193-2.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02193-3.avif",
+      "name": "Scrapper",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02193-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02193-4.avif",
+      "name": "Scrapper",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02193-4.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02193-5.avif",
+      "name": "Scrapper",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02193-5.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "02226-10.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-2.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-3.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-4.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-5.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-6.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-7.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-8.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02226-9.avif",
+      "name": "Springfield M1903",
+      "mode": "local-alias",
+      "source": "02226-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02229-1.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-1.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-10.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-10.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-2.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-2.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-3.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-3.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-4.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-4.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-5.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-5.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-6.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-6.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-7.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-7.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-8.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-8.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02229-9.avif",
+      "name": "Quick Thinking",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02229-9.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "02263-10.avif",
+      "name": "Strange Solution",
+      "mode": "local-alias",
+      "source": "02263-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02263-5.avif",
+      "name": "Strange Solution",
+      "mode": "local-alias",
+      "source": "02263-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02263-6.avif",
+      "name": "Strange Solution",
+      "mode": "local-alias",
+      "source": "02263-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02263-7.avif",
+      "name": "Strange Solution",
+      "mode": "local-alias",
+      "source": "02263-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02263-8.avif",
+      "name": "Strange Solution",
+      "mode": "local-alias",
+      "source": "02263-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02263-9.avif",
+      "name": "Strange Solution",
+      "mode": "local-alias",
+      "source": "02263-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-1.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-10.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-2.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-3.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-4.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-5.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-6.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-7.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-8.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02266-9.avif",
+      "name": "Ace in the Hole",
+      "mode": "local-alias",
+      "source": "02266-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02269-10.avif",
+      "name": "Jewel of Aureolus",
+      "mode": "local-alias",
+      "source": "02269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02269-5.avif",
+      "name": "Jewel of Aureolus",
+      "mode": "local-alias",
+      "source": "02269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02269-6.avif",
+      "name": "Jewel of Aureolus",
+      "mode": "local-alias",
+      "source": "02269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02269-7.avif",
+      "name": "Jewel of Aureolus",
+      "mode": "local-alias",
+      "source": "02269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02269-8.avif",
+      "name": "Jewel of Aureolus",
+      "mode": "local-alias",
+      "source": "02269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02269-9.avif",
+      "name": "Jewel of Aureolus",
+      "mode": "local-alias",
+      "source": "02269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "02300-10.avif",
+      "name": "Monster Slayer",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/02300-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "03006-10.avif",
+      "name": "Lola Hayes",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03006-10.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03006-5.avif",
+      "name": "Lola Hayes",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03006-5.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03006-6.avif",
+      "name": "Lola Hayes",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03006-6.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03006-7.avif",
+      "name": "Lola Hayes",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03006-7.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03006-8.avif",
+      "name": "Lola Hayes",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03006-8.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03006-9.avif",
+      "name": "Lola Hayes",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03006-9.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03019-10.avif",
+      "name": "Crisis of Identity",
+      "mode": "local-alias",
+      "source": "03019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03019-5.avif",
+      "name": "Crisis of Identity",
+      "mode": "local-alias",
+      "source": "03019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03019-6.avif",
+      "name": "Crisis of Identity",
+      "mode": "local-alias",
+      "source": "03019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03019-7.avif",
+      "name": "Crisis of Identity",
+      "mode": "local-alias",
+      "source": "03019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03019-8.avif",
+      "name": "Crisis of Identity",
+      "mode": "local-alias",
+      "source": "03019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03019-9.avif",
+      "name": "Crisis of Identity",
+      "mode": "local-alias",
+      "source": "03019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03029-1.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-1.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-10.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-10.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-2.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-2.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-3.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-3.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-4.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-4.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-5.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-5.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-6.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-6.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-7.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-7.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-8.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-8.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03029-9.avif",
+      "name": "Sleight of Hand",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/03029-9.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "03112-10.avif",
+      "name": "David Renfield",
+      "mode": "local-alias",
+      "source": "03112-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03112-5.avif",
+      "name": "David Renfield",
+      "mode": "local-alias",
+      "source": "03112-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03112-6.avif",
+      "name": "David Renfield",
+      "mode": "local-alias",
+      "source": "03112-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03112-7.avif",
+      "name": "David Renfield",
+      "mode": "local-alias",
+      "source": "03112-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03112-8.avif",
+      "name": "David Renfield",
+      "mode": "local-alias",
+      "source": "03112-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03112-9.avif",
+      "name": "David Renfield",
+      "mode": "local-alias",
+      "source": "03112-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-1.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-10.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-2.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-3.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-4.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-5.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-6.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-7.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-8.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "03315-9.avif",
+      "name": "Key of Ys",
+      "mode": "local-alias",
+      "source": "03315-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04032-10.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "04032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04032-5.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "04032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04032-6.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "04032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04032-7.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "04032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04032-8.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "04032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04032-9.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "04032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04105-10.avif",
+      "name": "Persuasion",
+      "mode": "local-alias",
+      "source": "04105-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04105-6.avif",
+      "name": "Persuasion",
+      "mode": "local-alias",
+      "source": "04105-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04105-7.avif",
+      "name": "Persuasion",
+      "mode": "local-alias",
+      "source": "04105-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04105-8.avif",
+      "name": "Persuasion",
+      "mode": "local-alias",
+      "source": "04105-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04105-9.avif",
+      "name": "Persuasion",
+      "mode": "local-alias",
+      "source": "04105-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04110-10.avif",
+      "name": "Counterspell",
+      "mode": "local-alias",
+      "source": "04110-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04110-5.avif",
+      "name": "Counterspell",
+      "mode": "local-alias",
+      "source": "04110-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04110-6.avif",
+      "name": "Counterspell",
+      "mode": "local-alias",
+      "source": "04110-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04110-7.avif",
+      "name": "Counterspell",
+      "mode": "local-alias",
+      "source": "04110-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04110-8.avif",
+      "name": "Counterspell",
+      "mode": "local-alias",
+      "source": "04110-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04110-9.avif",
+      "name": "Counterspell",
+      "mode": "local-alias",
+      "source": "04110-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04233-10.avif",
+      "name": "Pay Day",
+      "mode": "local-alias",
+      "source": "04233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04233-7.avif",
+      "name": "Pay Day",
+      "mode": "local-alias",
+      "source": "04233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04233-8.avif",
+      "name": "Pay Day",
+      "mode": "local-alias",
+      "source": "04233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04233-9.avif",
+      "name": "Pay Day",
+      "mode": "local-alias",
+      "source": "04233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-10.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-3.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-4.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-5.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-6.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-7.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-8.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04305-9.avif",
+      "name": "Flamethrower",
+      "mode": "local-alias",
+      "source": "04305-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-10.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-3.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-4.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-5.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-6.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-7.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-8.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "04309-9.avif",
+      "name": "All In",
+      "mode": "local-alias",
+      "source": "04309-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05020-10.avif",
+      "name": "Interrogate",
+      "mode": "local-alias",
+      "source": "05020-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05020-6.avif",
+      "name": "Interrogate",
+      "mode": "local-alias",
+      "source": "05020-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05020-7.avif",
+      "name": "Interrogate",
+      "mode": "local-alias",
+      "source": "05020-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05020-8.avif",
+      "name": "Interrogate",
+      "mode": "local-alias",
+      "source": "05020-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05020-9.avif",
+      "name": "Interrogate",
+      "mode": "local-alias",
+      "source": "05020-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05113-10.avif",
+      "name": "Banish",
+      "mode": "local-alias",
+      "source": "05113-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05113-6.avif",
+      "name": "Banish",
+      "mode": "local-alias",
+      "source": "05113-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05113-7.avif",
+      "name": "Banish",
+      "mode": "local-alias",
+      "source": "05113-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05113-8.avif",
+      "name": "Banish",
+      "mode": "local-alias",
+      "source": "05113-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05113-9.avif",
+      "name": "Banish",
+      "mode": "local-alias",
+      "source": "05113-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-10.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-3.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-4.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-5.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-6.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-7.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-8.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05116-9.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05116-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-10.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-3.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-4.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-5.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-6.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-7.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-8.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05153-9.avif",
+      "name": "Mr. \"Rook\"",
+      "mode": "local-alias",
+      "source": "05153-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05156-10.avif",
+      "name": "Swift Reflexes",
+      "mode": "local-alias",
+      "source": "05156-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05156-9.avif",
+      "name": "Swift Reflexes",
+      "mode": "local-alias",
+      "source": "05156-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05157-10.avif",
+      "name": "Wither",
+      "mode": "local-alias",
+      "source": "05157_Mutated25.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-10.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-2.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-3.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-4.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-5.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-6.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-7.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-8.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05159-9.avif",
+      "name": "Drawing Thin",
+      "mode": "local-alias",
+      "source": "05159-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-10.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-3.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-4.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-5.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-6.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-7.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-8.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05188-9.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05188-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-10.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-3.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-4.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-5.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-6.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-7.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-8.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05189-9.avif",
+      "name": "Scroll of Secrets",
+      "mode": "local-alias",
+      "source": "05189-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05230-10.avif",
+      "name": "Telescopic Sight",
+      "mode": "local-alias",
+      "source": "05230-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05230-4.avif",
+      "name": "Telescopic Sight",
+      "mode": "local-alias",
+      "source": "05230-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05230-5.avif",
+      "name": "Telescopic Sight",
+      "mode": "local-alias",
+      "source": "05230-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05230-6.avif",
+      "name": "Telescopic Sight",
+      "mode": "local-alias",
+      "source": "05230-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05230-7.avif",
+      "name": "Telescopic Sight",
+      "mode": "local-alias",
+      "source": "05230-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05230-8.avif",
+      "name": "Telescopic Sight",
+      "mode": "local-alias",
+      "source": "05230-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05230-9.avif",
+      "name": "Telescopic Sight",
+      "mode": "local-alias",
+      "source": "05230-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-10.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-3.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-4.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-5.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-6.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-7.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-8.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05231-9.avif",
+      "name": "Knowledge is Power",
+      "mode": "local-alias",
+      "source": "05231-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05321-10.avif",
+      "name": "Wither",
+      "mode": "local-alias",
+      "source": "05321_Mutated25.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05324-10.avif",
+      "name": "Eucatastrophe",
+      "mode": "local-alias",
+      "source": "05324-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05324-4.avif",
+      "name": "Eucatastrophe",
+      "mode": "local-alias",
+      "source": "05324-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05324-5.avif",
+      "name": "Eucatastrophe",
+      "mode": "local-alias",
+      "source": "05324-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05324-6.avif",
+      "name": "Eucatastrophe",
+      "mode": "local-alias",
+      "source": "05324-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05324-7.avif",
+      "name": "Eucatastrophe",
+      "mode": "local-alias",
+      "source": "05324-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05324-8.avif",
+      "name": "Eucatastrophe",
+      "mode": "local-alias",
+      "source": "05324-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "05324-9.avif",
+      "name": "Eucatastrophe",
+      "mode": "local-alias",
+      "source": "05324-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06002-10.avif",
+      "name": "Mandy Thompson",
+      "mode": "local-alias",
+      "source": "06002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06002-5.avif",
+      "name": "Mandy Thompson",
+      "mode": "local-alias",
+      "source": "06002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06002-6.avif",
+      "name": "Mandy Thompson",
+      "mode": "local-alias",
+      "source": "06002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06002-7.avif",
+      "name": "Mandy Thompson",
+      "mode": "local-alias",
+      "source": "06002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06002-8.avif",
+      "name": "Mandy Thompson",
+      "mode": "local-alias",
+      "source": "06002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06002-9.avif",
+      "name": "Mandy Thompson",
+      "mode": "local-alias",
+      "source": "06002-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06021-3.avif",
+      "name": "Segment of Onyx",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/06021-3.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "06022-10.avif",
+      "name": "Pendant of the Queen",
+      "mode": "local-alias",
+      "source": "06022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06022-4.avif",
+      "name": "Pendant of the Queen",
+      "mode": "local-alias",
+      "source": "06022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06022-5.avif",
+      "name": "Pendant of the Queen",
+      "mode": "local-alias",
+      "source": "06022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06022-6.avif",
+      "name": "Pendant of the Queen",
+      "mode": "local-alias",
+      "source": "06022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06022-7.avif",
+      "name": "Pendant of the Queen",
+      "mode": "local-alias",
+      "source": "06022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06022-8.avif",
+      "name": "Pendant of the Queen",
+      "mode": "local-alias",
+      "source": "06022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06022-9.avif",
+      "name": "Pendant of the Queen",
+      "mode": "local-alias",
+      "source": "06022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-10.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-3.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-4.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-5.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-6.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-7.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-8.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06195-9.avif",
+      "name": ".35 Winchester",
+      "mode": "local-alias",
+      "source": "06195-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06199-10.avif",
+      "name": "Three Aces",
+      "mode": "local-alias",
+      "source": "06199-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06199-4.avif",
+      "name": "Three Aces",
+      "mode": "local-alias",
+      "source": "06199-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06199-5.avif",
+      "name": "Three Aces",
+      "mode": "local-alias",
+      "source": "06199-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06199-6.avif",
+      "name": "Three Aces",
+      "mode": "local-alias",
+      "source": "06199-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06199-7.avif",
+      "name": "Three Aces",
+      "mode": "local-alias",
+      "source": "06199-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06199-8.avif",
+      "name": "Three Aces",
+      "mode": "local-alias",
+      "source": "06199-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06199-9.avif",
+      "name": "Three Aces",
+      "mode": "local-alias",
+      "source": "06199-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06332-10.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "06332-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06332-7.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "06332-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06332-8.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "06332-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "06332-9.avif",
+      "name": "Scavenging",
+      "mode": "local-alias",
+      "source": "06332-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07003-10.avif",
+      "name": "Trish Scarborough",
+      "mode": "local-alias",
+      "source": "07003-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07003-6.avif",
+      "name": "Trish Scarborough",
+      "mode": "local-alias",
+      "source": "07003-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07003-7.avif",
+      "name": "Trish Scarborough",
+      "mode": "local-alias",
+      "source": "07003-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07003-8.avif",
+      "name": "Trish Scarborough",
+      "mode": "local-alias",
+      "source": "07003-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07003-9.avif",
+      "name": "Trish Scarborough",
+      "mode": "local-alias",
+      "source": "07003-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07122-6.avif",
+      "name": "Ancient Covenant",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/07122-6.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "07122-7.avif",
+      "name": "Ancient Covenant",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/07122-7.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "07122-8.avif",
+      "name": "Ancient Covenant",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/07122-8.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "07122-9.avif",
+      "name": "Ancient Covenant",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/07122-9.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "07197-10.avif",
+      "name": "Signum Crucis",
+      "mode": "local-alias",
+      "source": "07197-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07197-5.avif",
+      "name": "Signum Crucis",
+      "mode": "local-alias",
+      "source": "07197-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07197-6.avif",
+      "name": "Signum Crucis",
+      "mode": "local-alias",
+      "source": "07197-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07197-7.avif",
+      "name": "Signum Crucis",
+      "mode": "local-alias",
+      "source": "07197-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07197-8.avif",
+      "name": "Signum Crucis",
+      "mode": "local-alias",
+      "source": "07197-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07197-9.avif",
+      "name": "Signum Crucis",
+      "mode": "local-alias",
+      "source": "07197-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07268-10.avif",
+      "name": "Flute of the Outer Gods",
+      "mode": "local-alias",
+      "source": "07268-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07268-5.avif",
+      "name": "Flute of the Outer Gods",
+      "mode": "local-alias",
+      "source": "07268-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07268-6.avif",
+      "name": "Flute of the Outer Gods",
+      "mode": "local-alias",
+      "source": "07268-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07268-7.avif",
+      "name": "Flute of the Outer Gods",
+      "mode": "local-alias",
+      "source": "07268-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07268-8.avif",
+      "name": "Flute of the Outer Gods",
+      "mode": "local-alias",
+      "source": "07268-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07268-9.avif",
+      "name": "Flute of the Outer Gods",
+      "mode": "local-alias",
+      "source": "07268-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07269-10.avif",
+      "name": "A Watchful Peace",
+      "mode": "local-alias",
+      "source": "07269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07269-4.avif",
+      "name": "A Watchful Peace",
+      "mode": "local-alias",
+      "source": "07269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07269-5.avif",
+      "name": "A Watchful Peace",
+      "mode": "local-alias",
+      "source": "07269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07269-6.avif",
+      "name": "A Watchful Peace",
+      "mode": "local-alias",
+      "source": "07269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07269-7.avif",
+      "name": "A Watchful Peace",
+      "mode": "local-alias",
+      "source": "07269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07269-8.avif",
+      "name": "A Watchful Peace",
+      "mode": "local-alias",
+      "source": "07269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07269-9.avif",
+      "name": "A Watchful Peace",
+      "mode": "local-alias",
+      "source": "07269-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07301-10.avif",
+      "name": "Hallow",
+      "mode": "local-alias",
+      "source": "07301-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07301-4.avif",
+      "name": "Hallow",
+      "mode": "local-alias",
+      "source": "07301-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07301-5.avif",
+      "name": "Hallow",
+      "mode": "local-alias",
+      "source": "07301-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07301-6.avif",
+      "name": "Hallow",
+      "mode": "local-alias",
+      "source": "07301-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07301-7.avif",
+      "name": "Hallow",
+      "mode": "local-alias",
+      "source": "07301-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07301-8.avif",
+      "name": "Hallow",
+      "mode": "local-alias",
+      "source": "07301-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07301-9.avif",
+      "name": "Hallow",
+      "mode": "local-alias",
+      "source": "07301-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07308-10.avif",
+      "name": "Rite of Equilibrium",
+      "mode": "local-alias",
+      "source": "07308-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07308-5.avif",
+      "name": "Rite of Equilibrium",
+      "mode": "local-alias",
+      "source": "07308-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07308-6.avif",
+      "name": "Rite of Equilibrium",
+      "mode": "local-alias",
+      "source": "07308-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07308-7.avif",
+      "name": "Rite of Equilibrium",
+      "mode": "local-alias",
+      "source": "07308-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07308-8.avif",
+      "name": "Rite of Equilibrium",
+      "mode": "local-alias",
+      "source": "07308-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "07308-9.avif",
+      "name": "Rite of Equilibrium",
+      "mode": "local-alias",
+      "source": "07308-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08019-10.avif",
+      "name": "Geared Up",
+      "mode": "local-alias",
+      "source": "08019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08019-6.avif",
+      "name": "Geared Up",
+      "mode": "local-alias",
+      "source": "08019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08019-7.avif",
+      "name": "Geared Up",
+      "mode": "local-alias",
+      "source": "08019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08019-8.avif",
+      "name": "Geared Up",
+      "mode": "local-alias",
+      "source": "08019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08019-9.avif",
+      "name": "Geared Up",
+      "mode": "local-alias",
+      "source": "08019-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08032-10.avif",
+      "name": "Jeremiah Kirby",
+      "mode": "local-alias",
+      "source": "08032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08032-5.avif",
+      "name": "Jeremiah Kirby",
+      "mode": "local-alias",
+      "source": "08032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08032-6.avif",
+      "name": "Jeremiah Kirby",
+      "mode": "local-alias",
+      "source": "08032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08032-7.avif",
+      "name": "Jeremiah Kirby",
+      "mode": "local-alias",
+      "source": "08032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08032-8.avif",
+      "name": "Jeremiah Kirby",
+      "mode": "local-alias",
+      "source": "08032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08032-9.avif",
+      "name": "Jeremiah Kirby",
+      "mode": "local-alias",
+      "source": "08032-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08045-10.avif",
+      "name": "Prophesiae Profana",
+      "mode": "local-alias",
+      "source": "08045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08045-5.avif",
+      "name": "Prophesiae Profana",
+      "mode": "local-alias",
+      "source": "08045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08045-6.avif",
+      "name": "Prophesiae Profana",
+      "mode": "local-alias",
+      "source": "08045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08045-7.avif",
+      "name": "Prophesiae Profana",
+      "mode": "local-alias",
+      "source": "08045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08045-8.avif",
+      "name": "Prophesiae Profana",
+      "mode": "local-alias",
+      "source": "08045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08045-9.avif",
+      "name": "Prophesiae Profana",
+      "mode": "local-alias",
+      "source": "08045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08055-10.avif",
+      "name": "Black Market",
+      "mode": "local-alias",
+      "source": "08055-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08055-5.avif",
+      "name": "Black Market",
+      "mode": "local-alias",
+      "source": "08055-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08055-6.avif",
+      "name": "Black Market",
+      "mode": "local-alias",
+      "source": "08055-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08055-7.avif",
+      "name": "Black Market",
+      "mode": "local-alias",
+      "source": "08055-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08055-8.avif",
+      "name": "Black Market",
+      "mode": "local-alias",
+      "source": "08055-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08055-9.avif",
+      "name": "Black Market",
+      "mode": "local-alias",
+      "source": "08055-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08076-10.avif",
+      "name": "Burn After Reading",
+      "mode": "local-alias",
+      "source": "08076-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08076-6.avif",
+      "name": "Burn After Reading",
+      "mode": "local-alias",
+      "source": "08076-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08076-7.avif",
+      "name": "Burn After Reading",
+      "mode": "local-alias",
+      "source": "08076-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08076-8.avif",
+      "name": "Burn After Reading",
+      "mode": "local-alias",
+      "source": "08076-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08076-9.avif",
+      "name": "Burn After Reading",
+      "mode": "local-alias",
+      "source": "08076-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08093-10.avif",
+      "name": "Cyclopean Hammer",
+      "mode": "local-alias",
+      "source": "08093-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08093-5.avif",
+      "name": "Cyclopean Hammer",
+      "mode": "local-alias",
+      "source": "08093-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08093-6.avif",
+      "name": "Cyclopean Hammer",
+      "mode": "local-alias",
+      "source": "08093-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08093-7.avif",
+      "name": "Cyclopean Hammer",
+      "mode": "local-alias",
+      "source": "08093-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08093-8.avif",
+      "name": "Cyclopean Hammer",
+      "mode": "local-alias",
+      "source": "08093-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08093-9.avif",
+      "name": "Cyclopean Hammer",
+      "mode": "local-alias",
+      "source": "08093-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08098-10.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08098-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08098-5.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08098-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08098-6.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08098-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08098-7.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08098-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08098-8.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08098-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08098-9.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08098-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08099-10.avif",
+      "name": "Gené Beauregard",
+      "mode": "local-alias",
+      "source": "08099-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08099-5.avif",
+      "name": "Gené Beauregard",
+      "mode": "local-alias",
+      "source": "08099-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08099-6.avif",
+      "name": "Gené Beauregard",
+      "mode": "local-alias",
+      "source": "08099-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08099-7.avif",
+      "name": "Gené Beauregard",
+      "mode": "local-alias",
+      "source": "08099-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08099-8.avif",
+      "name": "Gené Beauregard",
+      "mode": "local-alias",
+      "source": "08099-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08099-9.avif",
+      "name": "Gené Beauregard",
+      "mode": "local-alias",
+      "source": "08099-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08100-10.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08100-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08100-5.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08100-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08100-6.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08100-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08100-7.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08100-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08100-8.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08100-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08100-9.avif",
+      "name": "Eon Chart",
+      "mode": "local-alias",
+      "source": "08100-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "08113-10.avif",
+      "name": "Unscrupulous Loan",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/08113-10.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "08113-8.avif",
+      "name": "Unscrupulous Loan",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/08113-8.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "08113-9.avif",
+      "name": "Unscrupulous Loan",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/08113-9.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "09022-10.avif",
+      "name": "Runic Axe",
+      "mode": "local-alias",
+      "source": "09022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09022-6.avif",
+      "name": "Runic Axe",
+      "mode": "local-alias",
+      "source": "09022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09022-7.avif",
+      "name": "Runic Axe",
+      "mode": "local-alias",
+      "source": "09022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09022-8.avif",
+      "name": "Runic Axe",
+      "mode": "local-alias",
+      "source": "09022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09022-9.avif",
+      "name": "Runic Axe",
+      "mode": "local-alias",
+      "source": "09022-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09041-10.avif",
+      "name": "Empirical Hypothesis",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/09041-10.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "09041-8.avif",
+      "name": "Empirical Hypothesis",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/09041-8.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "09041-9.avif",
+      "name": "Empirical Hypothesis",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/09041-9.avif",
+      "reason": "multiple-historical-mutations"
+    },
+    {
+      "target": "09045-10.avif",
+      "name": "Research Notes",
+      "mode": "local-alias",
+      "source": "09045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09045-6.avif",
+      "name": "Research Notes",
+      "mode": "local-alias",
+      "source": "09045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09045-7.avif",
+      "name": "Research Notes",
+      "mode": "local-alias",
+      "source": "09045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09045-8.avif",
+      "name": "Research Notes",
+      "mode": "local-alias",
+      "source": "09045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09045-9.avif",
+      "name": "Research Notes",
+      "mode": "local-alias",
+      "source": "09045-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09072-10.avif",
+      "name": "Chuck Fergus",
+      "mode": "local-alias",
+      "source": "09072-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09072-9.avif",
+      "name": "Chuck Fergus",
+      "mode": "local-alias",
+      "source": "09072-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09077-10.avif",
+      "name": "Underworld Market",
+      "mode": "local-alias",
+      "source": "09077-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09077-8.avif",
+      "name": "Underworld Market",
+      "mode": "local-alias",
+      "source": "09077-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09077-9.avif",
+      "name": "Underworld Market",
+      "mode": "local-alias",
+      "source": "09077-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09081-10.avif",
+      "name": "Power Word",
+      "mode": "local-alias",
+      "source": "09081-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09081-6.avif",
+      "name": "Power Word",
+      "mode": "local-alias",
+      "source": "09081-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09081-7.avif",
+      "name": "Power Word",
+      "mode": "local-alias",
+      "source": "09081-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09081-8.avif",
+      "name": "Power Word",
+      "mode": "local-alias",
+      "source": "09081-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09081-9.avif",
+      "name": "Power Word",
+      "mode": "local-alias",
+      "source": "09081-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09108-10.avif",
+      "name": "Shed a Light",
+      "mode": "local-alias",
+      "source": "09108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09108-6.avif",
+      "name": "Shed a Light",
+      "mode": "local-alias",
+      "source": "09108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09108-7.avif",
+      "name": "Shed a Light",
+      "mode": "local-alias",
+      "source": "09108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09108-8.avif",
+      "name": "Shed a Light",
+      "mode": "local-alias",
+      "source": "09108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09108-9.avif",
+      "name": "Shed a Light",
+      "mode": "local-alias",
+      "source": "09108-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09117-10.avif",
+      "name": "Old Keyring",
+      "mode": "local-alias",
+      "source": "09117-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09117-7.avif",
+      "name": "Old Keyring",
+      "mode": "local-alias",
+      "source": "09117-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09117-8.avif",
+      "name": "Old Keyring",
+      "mode": "local-alias",
+      "source": "09117-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "09117-9.avif",
+      "name": "Old Keyring",
+      "mode": "local-alias",
+      "source": "09117-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10026-10.avif",
+      "name": "Hold Up",
+      "mode": "local-alias",
+      "source": "10026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10026-9.avif",
+      "name": "Hold Up",
+      "mode": "local-alias",
+      "source": "10026-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10030-10.avif",
+      "name": "Hand-Eye Coordination",
+      "mode": "local-alias",
+      "source": "10030-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10030-9.avif",
+      "name": "Hand-Eye Coordination",
+      "mode": "local-alias",
+      "source": "10030-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10031-10.avif",
+      "name": "Strong-Armed",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/10031-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "10037-10.avif",
+      "name": "Flurry of Blows",
+      "mode": "local-alias",
+      "source": "10037-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10037-9.avif",
+      "name": "Flurry of Blows",
+      "mode": "local-alias",
+      "source": "10037-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10059-10.avif",
+      "name": "Ravenous Myconid",
+      "mode": "local-alias",
+      "source": "10059-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10059-8.avif",
+      "name": "Ravenous Myconid",
+      "mode": "local-alias",
+      "source": "10059-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10059-9.avif",
+      "name": "Ravenous Myconid",
+      "mode": "local-alias",
+      "source": "10059-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10060-10.avif",
+      "name": "Ravenous Myconid",
+      "mode": "local-alias",
+      "source": "10060-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10060-8.avif",
+      "name": "Ravenous Myconid",
+      "mode": "local-alias",
+      "source": "10060-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10060-9.avif",
+      "name": "Ravenous Myconid",
+      "mode": "local-alias",
+      "source": "10060-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "10085-10.avif",
+      "name": "Rod of Carnamagos",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/10085-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "10098-10.avif",
+      "name": "Rod of Carnamagos",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/10098-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "11031-10.avif",
+      "name": "Quick Shot",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/11031-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "11055-10.avif",
+      "name": "Bum's Rush",
+      "mode": "official",
+      "source": "https://assets.arkham.build/optimized/11055-10.avif",
+      "reason": "no-local-mutation"
+    },
+    {
+      "target": "11065-10.avif",
+      "name": "Blood of Thoth",
+      "mode": "local-alias",
+      "source": "11065-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "11065-9.avif",
+      "name": "Blood of Thoth",
+      "mode": "local-alias",
+      "source": "11065-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "11071-10.avif",
+      "name": "Spectral Shield",
+      "mode": "local-alias",
+      "source": "11071_Mutated25.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "11075-10.avif",
+      "name": "Spiritual Echo",
+      "mode": "local-alias",
+      "source": "11075_Mutated25.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "11117-10.avif",
+      "name": "Archibald MacVeigh",
+      "mode": "local-alias",
+      "source": "11117-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "11117-9.avif",
+      "name": "Archibald MacVeigh",
+      "mode": "local-alias",
+      "source": "11117-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "11118-10.avif",
+      "name": "Library Pass",
+      "mode": "local-alias",
+      "source": "11118_Mutated25.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "11120-10.avif",
+      "name": "On Their Heels",
+      "mode": "local-alias",
+      "source": "11120_Mutated25.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-10.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-3.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-4.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-5.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-6.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-7.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-8.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60233-9.avif",
+      "name": "The Necronomicon",
+      "mode": "local-alias",
+      "source": "60233-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60318-10.avif",
+      "name": "Daredevil",
+      "mode": "local-alias",
+      "source": "60318-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60318-6.avif",
+      "name": "Daredevil",
+      "mode": "local-alias",
+      "source": "60318-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60318-7.avif",
+      "name": "Daredevil",
+      "mode": "local-alias",
+      "source": "60318-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60318-8.avif",
+      "name": "Daredevil",
+      "mode": "local-alias",
+      "source": "60318-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60318-9.avif",
+      "name": "Daredevil",
+      "mode": "local-alias",
+      "source": "60318-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60327-10.avif",
+      "name": "Sharpshooter",
+      "mode": "local-alias",
+      "source": "60327-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60327-6.avif",
+      "name": "Sharpshooter",
+      "mode": "local-alias",
+      "source": "60327-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60327-7.avif",
+      "name": "Sharpshooter",
+      "mode": "local-alias",
+      "source": "60327-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60327-8.avif",
+      "name": "Sharpshooter",
+      "mode": "local-alias",
+      "source": "60327-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60327-9.avif",
+      "name": "Sharpshooter",
+      "mode": "local-alias",
+      "source": "60327-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60332-10.avif",
+      "name": "Chuck Fergus",
+      "mode": "local-alias",
+      "source": "60332-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60332-9.avif",
+      "name": "Chuck Fergus",
+      "mode": "local-alias",
+      "source": "60332-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60405-10.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "60405_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60405-5.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "60405_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60405-6.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "60405_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60405-7.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "60405_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60405-8.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "60405_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60405-9.avif",
+      "name": "Ritual Candles",
+      "mode": "local-alias",
+      "source": "60405_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60414-10.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60414_Mutated21.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60414-6.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60414_Mutated21.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60414-7.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60414_Mutated21.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60414-8.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60414_Mutated21.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60414-9.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60414_Mutated21.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60416-10.avif",
+      "name": "Voice of Ra",
+      "mode": "local-alias",
+      "source": "60416-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60416-5.avif",
+      "name": "Voice of Ra",
+      "mode": "local-alias",
+      "source": "60416-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60416-6.avif",
+      "name": "Voice of Ra",
+      "mode": "local-alias",
+      "source": "60416-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60416-7.avif",
+      "name": "Voice of Ra",
+      "mode": "local-alias",
+      "source": "60416-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60416-8.avif",
+      "name": "Voice of Ra",
+      "mode": "local-alias",
+      "source": "60416-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60416-9.avif",
+      "name": "Voice of Ra",
+      "mode": "local-alias",
+      "source": "60416-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60417-10.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "60417_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60417-5.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "60417_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60417-6.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "60417_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60417-7.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "60417_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60417-8.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "60417_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60417-9.avif",
+      "name": "Dark Prophecy",
+      "mode": "local-alias",
+      "source": "60417_Mutated20.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60423-10.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60423-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60423-7.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60423-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60423-8.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60423-t.avif",
+      "reason": "unambiguous-local-mutation"
+    },
+    {
+      "target": "60423-9.avif",
+      "name": "Hypnotic Gaze",
+      "mode": "local-alias",
+      "source": "60423-t.avif",
+      "reason": "unambiguous-local-mutation"
+    }
+  ]
+}
