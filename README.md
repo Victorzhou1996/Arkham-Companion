@@ -25,6 +25,10 @@ rebuild workflow. Packaging and verification details are in
 发布与跨平台打包请先阅读 [新版本产物流程](docs/NEW-RELEASE-ARTIFACT-WORKFLOW.md)
 和 [2026-08-25 Server 发布说明](server/RELEASE-20260825.md)。
 
+需要让 AI 协助新装或更新 Linux 服务器时，请先阅读
+[Server AI 部署指南](server/AI-DEPLOYMENT.md)。该指南包含分支与 Git LFS
+校验、数据库备份、版本化切换、Sidecar、Nginx、验证和回滚的安全边界。
+
 For releases and cross-platform packaging, start with the
 [release artifact workflow](docs/NEW-RELEASE-ARTIFACT-WORKFLOW.md) and the
 [2026-08-25 Server release notes](server/RELEASE-20260825.md).
