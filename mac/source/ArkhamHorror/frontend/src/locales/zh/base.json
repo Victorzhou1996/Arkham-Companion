@@ -450,9 +450,9 @@
   "settingsForm": {
     "languageHelp": "这将更改卡牌和应用的语言。如果所选语言中没有可用的卡牌或文本，将默认显示英语。（译者：中文相关bug，请在QQ群里反馈）",
     "enrollInBeta": "加入测试版",
-    "betaWarning": "测试版功能可能存在严重错误，游戏可能无法恢复，请仅在愿意提供反馈的情况下启用此功能。",
+    "betaWarning": "开启后将显示第10循环《淹没之城》等测试版内容。测试版可能仍有错误，请仅在愿意提供反馈的情况下启用。",
     "enrollInDev": "加入开发版",
-    "devWarning": "开发版内容尚未完成，可能无法推进或恢复存档，仅供开发测试使用。",
+    "devWarning": "仅用于显示尚未完成的开发内容；第9循环和第10循环均无需开启此项。开发内容可能无法推进或恢复存档。",
     "preloadCardImages": "预加载所有卡图",
     "preloadingCardImages": "正在预加载卡图…",
     "cardImagesCached": "已缓存完成",
