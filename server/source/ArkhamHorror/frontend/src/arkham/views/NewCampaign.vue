@@ -47,6 +47,11 @@ const displayRuleOptions = computed(() => ({
 }))
 const gate = <T extends { alpha?: boolean; beta?: boolean; dev?: boolean }>(items: T[]) =>
   filterDisplayable(items, displayRuleOptions.value)
+const campaignDefinitions = campaignJSON.map((campaign) => {
+  if (campaign.id === '10') return { ...campaign, alpha: false, beta: false, dev: false }
+  if (campaign.id === '11') return { ...campaign, alpha: false, beta: true, dev: false }
+  return campaign
+})
 
 const step = ref<Step>('ChooseMode')
 const gameMode = ref<GameMode>('Campaign')
@@ -95,7 +100,7 @@ const timeLimitMinutes = ref(180)
 
 const scenarios = computed<Scenario[]>(() => gate(scenarioJSON))
 const sideStories = computed<Scenario[]>(() => gate(sideStoriesJSON))
-const campaigns = computed<Campaign[]>(() => gate(campaignJSON))
+const campaigns = computed<Campaign[]>(() => gate(campaignDefinitions))
 
 const scenario = computed(() =>
   gameMode.value === 'SideStory'

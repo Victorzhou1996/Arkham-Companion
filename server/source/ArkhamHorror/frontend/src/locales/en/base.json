@@ -495,9 +495,9 @@
   "settingsForm": {
     "languageHelp": "This will change the language of the cards and app, but will default to English if a card or text is not available in the selected language.",
     "enrollInBeta": "Enroll in beta",
-    "betaWarning": "Beta features are likely very broken and games may be unrecoverable, please only enable this if you are willing to provide feedback.",
+    "betaWarning": "Enabling this shows beta content such as Cycle 10, The Drowned City. Beta content may still contain errors; enable it only if you are willing to provide feedback.",
     "enrollInDev": "Enroll in development version",
-    "devWarning": "Development content is unfinished and may block progression or make games unrecoverable. Enable it only for development testing.",
+    "devWarning": "This only shows unfinished development content; Cycles 9 and 10 do not require it. Development content may block progression or make games unrecoverable.",
     "preloadCardImages": "Preload all card images",
     "preloadingCardImages": "Preloading card images…",
     "cardImagesCached": "All card images cached",
