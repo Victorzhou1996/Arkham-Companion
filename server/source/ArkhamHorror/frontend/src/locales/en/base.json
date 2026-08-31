@@ -474,6 +474,10 @@
     "noActiveGames": "No active games.",
     "loadGame": "Load Game",
     "loadingGame": "Loading…",
+    "serverStats": "Server statistics",
+    "totalPlayers": "Players",
+    "totalGames": "Game saves",
+    "totalSaveSteps": "Save steps",
     "supportTitle": "Support the Server",
     "supportAlt": "WeChat donation QR code",
     "supportBody": "Keeping the server stable requires ongoing bandwidth and hosting costs. If this local deployment has helped you, donations are welcome."

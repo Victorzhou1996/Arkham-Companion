@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import tempfile
@@ -168,6 +169,22 @@ class OnlineApiTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             validate_registration({"username": "A", "email": "bad", "password": "short"})
+
+
+class PublicStatsTests(unittest.IsolatedAsyncioTestCase):
+    async def test_public_stats_returns_aggregate_counts_and_uses_cache(self):
+        api = OnlineApi.__new__(OnlineApi)
+        api.public_stats_lock = asyncio.Lock()
+        api.public_stats_cache = None
+        api.sql = AsyncMock(return_value="12\t34\t567")
+
+        first = await api.public_stats(object())
+        second = await api.public_stats(object())
+
+        self.assertEqual(json.loads(first.text), {"players": 12, "games": 34, "saveSteps": 567})
+        self.assertEqual(json.loads(second.text), {"players": 12, "games": 34, "saveSteps": 567})
+        self.assertEqual(first.headers["Cache-Control"], "public, max-age=3600")
+        api.sql.assert_awaited_once()
 
 
 class StarterDeckTests(unittest.IsolatedAsyncioTestCase):
@@ -360,6 +377,7 @@ class DeploymentRoutingTests(unittest.TestCase):
         ).read_text()
         sidecar_route = "(archive|archive-status|full-export|join|claim-seat|file-bug)"
         self.assertIn(sidecar_route, config)
+        self.assertIn("location = /api/v1/arkham/public-stats", config)
         self.assertIn("location = /api/v1/arkham/games/import", config)
         self.assertLess(config.index(sidecar_route), config.index("location / {"))
 

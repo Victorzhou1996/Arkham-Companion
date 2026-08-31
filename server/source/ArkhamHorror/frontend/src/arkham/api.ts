@@ -83,6 +83,17 @@ export const fetchNotifications = async (): Promise<AppNotification[]> => {
   return data
 }
 
+export interface PublicStats {
+  players: number
+  games: number
+  saveSteps: number
+}
+
+export const fetchPublicStats = async (): Promise<PublicStats> => {
+  const { data } = await api.get('arkham/public-stats')
+  return data
+}
+
 export const findGame = async (playerId: string): Promise<GameDetailsEntry> => {
   const { data } = await api.get(`admin/games/find/${playerId}`)
   return gameDetailsEntryDecoder.decodePromise(data)

@@ -33,6 +33,7 @@ CODE_TTL_SECONDS = 600
 RESEND_SECONDS = 60
 MAX_CODE_ATTEMPTS = 5
 GAME_ID_RE = re.compile(r"^[0-9a-fA-F-]{36}$")
+PUBLIC_STATS_TTL_SECONDS = 60 * 60
 
 
 class ArchiveNotFound(Exception):
@@ -222,6 +223,8 @@ class OnlineApi:
         self.session: ClientSession | None = None
         self.bug_lock = asyncio.Lock()
         self.archive_lock = asyncio.Lock()
+        self.public_stats_lock = asyncio.Lock()
+        self.public_stats_cache: tuple[float, dict[str, int]] | None = None
 
     async def start(self, _app: web.Application) -> None:
         self.session = ClientSession(timeout=ClientTimeout(total=120), auto_decompress=False)
@@ -247,6 +250,40 @@ class OnlineApi:
         if process.returncode:
             raise RuntimeError(stderr.decode().strip())
         return stdout.decode().strip()
+
+    async def public_stats(self, _request: web.Request) -> web.Response:
+        now = time.monotonic()
+        cached = self.public_stats_cache
+        if cached and now - cached[0] < PUBLIC_STATS_TTL_SECONDS:
+            return web.json_response(
+                cached[1], headers={"Cache-Control": f"public, max-age={PUBLIC_STATS_TTL_SECONDS}"}
+            )
+
+        async with self.public_stats_lock:
+            cached = self.public_stats_cache
+            if cached and now - cached[0] < PUBLIC_STATS_TTL_SECONDS:
+                return web.json_response(
+                    cached[1], headers={"Cache-Control": f"public, max-age={PUBLIC_STATS_TTL_SECONDS}"}
+                )
+
+            row = await self.sql(
+                """
+                SELECT
+                  (SELECT count(*) FROM users),
+                  (SELECT count(*) FROM arkham_games),
+                  (SELECT count(*) FROM arkham_steps);
+                """
+            )
+            try:
+                players, games, save_steps = (int(value) for value in row.split("\t"))
+            except (TypeError, ValueError) as error:
+                raise web.HTTPServiceUnavailable(text="Statistics are temporarily unavailable") from error
+
+            stats = {"players": players, "games": games, "saveSteps": save_steps}
+            self.public_stats_cache = (time.monotonic(), stats)
+            return web.json_response(
+                stats, headers={"Cache-Control": f"public, max-age={PUBLIC_STATS_TTL_SECONDS}"}
+            )
 
     def psql_args(self, **variables: str) -> list[str]:
         args = [
@@ -1265,6 +1302,7 @@ def create_app() -> web.Application:
     app.router.add_post(f"{API_PREFIX}/register", online.register)
     app.router.add_post(f"{API_PREFIX}/register/verify", online.verify)
     app.router.add_post(f"{API_PREFIX}/password-reset", online.request_password_reset)
+    app.router.add_get(f"{API_PREFIX}/arkham/public-stats", online.public_stats)
     app.router.add_get(f"{API_PREFIX}/arkham/bugs", online.bugs)
     app.router.add_post(f"{API_PREFIX}/arkham/bugs/admin-login", online.bug_admin_login)
     app.router.add_post(f"{API_PREFIX}/arkham/bugs/export", online.export_bugs)
