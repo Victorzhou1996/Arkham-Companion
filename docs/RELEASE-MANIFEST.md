@@ -1,7 +1,7 @@
 # Release Manifest
 
 This Server source and game frontend snapshot was updated and verified on
-2026-08-25.
+2026-08-31.
 
 ## Changes
 
@@ -16,10 +16,13 @@ This Server source and game frontend snapshot was updated and verified on
 - Updated the source snapshot with the selected upstream rules and content fixes
   while preserving the local undo modes, response controls, narration, Build,
   management tools, starter decks, and image fallbacks.
+- Added the visible application version `2026.08.31` to the home page.
+- Added anonymous server totals below the support QR code. The browser refreshes
+  them hourly, while the sidecar caches the aggregate database query for one hour.
 
 ## Source Snapshot
 
-- Source commit: `bed34d7d3e`
+- Source commit: `555fcc8fac`
 - Source location: `server/source/ArkhamHorror`
 - The game frontend in `server/release/frontend-dist` was built from this source.
 - Windows packages should rebuild the backend from this source and then apply the
@@ -40,6 +43,7 @@ deployment backups are intentionally not included.
 ## Verification
 
 - Frontend unit tests: passed (29/29).
+- Sidecar unit tests: passed (19/19).
 - Frontend TypeScript/Vue type check: passed.
 - Frontend production build: passed.
 - Chinese locale validation: passed for all 144 locale JSON files, with no
