@@ -477,8 +477,28 @@ PG_CONF_EOF
         warn "pg_restore failed for $(basename "$dump_file") (see $PG_RESTORE_LOG)"
         return 1
     fi
+    apply_post_restore_migrations
     info "Logical backup restore complete."
     return 0
+}
+
+apply_post_restore_migrations() {
+    local tmp_sql log_file
+    [ -f "$DATA_DIR/setup.sql" ] || return 0
+    grep -q '^-- Added locally: official arkham_epic migration' "$DATA_DIR/setup.sql" 2>/dev/null || return 0
+
+    tmp_sql="$(mktemp "${TMPDIR:-/tmp}/arkham-migrate.XXXXXX.sql")"
+    {
+        printf 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;\n'
+        awk '/^-- Added locally: official arkham_epic migration/{flag=1} flag{print}' "$DATA_DIR/setup.sql"
+    } > "$tmp_sql"
+
+    log_file="$DATA_DIR/post-restore-migrations.log"
+    if ! psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 -f "$tmp_sql" > "$log_file" 2>&1; then
+        rm -f "$tmp_sql"
+        die 2010 "Post-restore schema migration failed" "$log_file"
+    fi
+    rm -f "$tmp_sql"
 }
 
 # Scan a directory for versioned .so files (lib*.so.X.Y) and recreate short symlinks:
@@ -1247,6 +1267,8 @@ do_start() {
             || die 2007 "Schema import failed" "$DATA_DIR/psql.log"
         info "Database recreation complete."
     fi
+
+    apply_post_restore_migrations
 
     # 2. arkham-api (port 3002)
     info "Starting backend API ..."
