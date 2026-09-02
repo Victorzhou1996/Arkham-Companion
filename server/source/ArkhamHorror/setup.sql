@@ -509,6 +509,9 @@ ALTER TABLE ONLY public.password_resets
 -- PostgreSQL database dump complete
 --
 
+-- The pg_dump above clears search_path. Restore it before applying local migrations.
+SET search_path = public, pg_catalog;
+
 -- Added locally: official arkham_epic migration for fresh offline installs.
 
 BEGIN;
