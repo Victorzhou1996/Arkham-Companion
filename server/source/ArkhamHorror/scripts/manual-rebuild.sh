@@ -16,6 +16,7 @@ SKIP_MAC=false
 SKIP_LINUX=false
 PREFLIGHT_ONLY=false
 NON_INTERACTIVE=false
+INCREMENTAL=false
 
 usage() {
   cat <<'EOF'
@@ -27,6 +28,7 @@ Options:
   --skip-mac        Skip the native macOS backend build.
   --skip-linux      Skip the Linux amd64 server backend build.
   --yes             Do not ask for confirmation.
+  --incremental     Reuse native backend objects; do not clean the build cache.
   --help            Show this help.
 
 Environment overrides:
@@ -47,6 +49,7 @@ while [ "$#" -gt 0 ]; do
     --skip-mac) SKIP_MAC=true ;;
     --skip-linux) SKIP_LINUX=true ;;
     --yes) NON_INTERACTIVE=true ;;
+    --incremental) INCREMENTAL=true ;;
     --help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
   esac
@@ -277,6 +280,7 @@ preflight() {
 
   require_cmd git
   require_cmd tar
+  require_cmd rsync
   require_cmd find
   require_cmd xargs
   require_cmd pgrep
@@ -518,7 +522,9 @@ build_mac_backend() {
   mkdir -p "${RUN_DIR}/macos-arm64"
   cd "${PROJECT_ROOT}/backend"
   # A release rebuild should never link against objects from an older module list.
-  stack clean arkham-api
+  if [ "$INCREMENTAL" != true ]; then
+    stack clean arkham-api
+  fi
   stack build --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
   stack --local-bin-path "${RUN_DIR}/macos-arm64" install arkham-api --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
   test -x "${RUN_DIR}/macos-arm64/arkham-api"
@@ -570,7 +576,14 @@ package_outputs() {
 
     local complete_dir="${RUN_DIR}/ArkhamHorror-macos-arm64"
     rm -rf "$complete_dir"
-    ditto "$LOCAL_RUNTIME_TEMPLATE" "$complete_dir"
+    mkdir -p "${complete_dir}/data"
+    rsync -a \
+      --exclude '/data/' \
+      --exclude '/bin/backups/' \
+      --exclude '/config/nginx.conf' \
+      --exclude '.DS_Store' \
+      "$LOCAL_RUNTIME_TEMPLATE/" "$complete_dir/"
+    install -m 644 "${LOCAL_RUNTIME_TEMPLATE}/data/setup.sql" "${complete_dir}/data/setup.sql"
 
     rm -rf "${complete_dir}/frontend/dist"
     mkdir -p "${complete_dir}/frontend/dist"
@@ -633,7 +646,9 @@ package_outputs() {
     local-update-macos-arm64.tar.gz \
     ArkhamHorror-macos-arm64-complete.tar.gz \
     server-update-linux-amd64.tar.gz; do
-    [ -f "$file" ] && sha256_file "$file" >>SHA256SUMS
+    if [ -f "$file" ]; then
+      sha256_file "$file" >>SHA256SUMS
+    fi
   done
 }
 

@@ -370,7 +370,7 @@ instance RunMessage TheDreamEaters where
           | otherwise -> do
               do_ msg
               pure c
-      CampaignStep s@(ScenarioStep _) -> do
+      CampaignStep step | s@(ScenarioStep _) <- step.unwrapScenario -> do
         when (s == BeyondTheGatesOfSleep && WakingNightmare `elem` campaignCompletedSteps attrs) do
           players <- allPlayers
           pushAll

@@ -7063,6 +7063,7 @@ test-suite spec
       Arkham.Game.ChooseDecksSpec
       Arkham.Game.DiffSpec
       Arkham.GameSpec
+      Arkham.SeptemberRuleFixesSpec
       Arkham.Helpers.InvestigatorSpec
       Arkham.Investigator.Cards.AgnesBakerSpec
       Arkham.Investigator.Cards.AshcanPeteSpec

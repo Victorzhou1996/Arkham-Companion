@@ -46,6 +46,7 @@ import Arkham.DefeatedBy
 import Arkham.Discover
 import Arkham.Draw.Types
 import Arkham.Enemy.Types qualified as Field
+import Arkham.Evade qualified as Evade
 import Arkham.Event.Types (Field (..))
 import Arkham.Fight.Types
 import {-# SOURCE #-} Arkham.Game (asIfTurn, withoutCanModifiers)
@@ -67,6 +68,7 @@ import Arkham.Helpers.Card (
 import Arkham.Helpers.Cost (getCanAffordCost)
 import Arkham.Helpers.Criteria (passesCriteria)
 import Arkham.Helpers.Discover
+import Arkham.Helpers.Enemy (expandCompositeEnemies, getInteractAsOneOf)
 import Arkham.Helpers.Game (withAlteredGame)
 import Arkham.Helpers.Location (
   getCanMoveTo,
@@ -568,10 +570,13 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     -- card that would otherwise start in play in the deck instead.
     setupModifiers <- getModifiers a
     let cannotPutIntoPlay c = any (\case CannotPutIntoPlay m -> cardMatch c m; _ -> False) setupModifiers
+    -- The defs are a snapshot persisted with the save, so they go stale as soon as the
+    -- card's definition changes; re-look them up and match on card code (#5611).
+    let startsWithDefs = map (\def -> fromMaybe def (lookupCardDef def)) investigatorStartsWith
     (startsWithMsgs, deck') <-
       foldM
         ( \(msgs, currentDeck) cardDef -> do
-            let (before, after) = break ((== cardDef) . toCardDef) (unDeck currentDeck)
+            let (before, after) = break ((== toCardCode cardDef) . toCardCode) (unDeck currentDeck)
             case after of
               (card : rest)
                 | cannotPutIntoPlay (toCard card) -> pure (msgs, currentDeck)
@@ -609,7 +614,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
               _ -> pure (msgs, currentDeck)
         )
         ([], Deck shuffled)
-        investigatorStartsWith
+        startsWithDefs
     let (permanentCards, deck'') =
           partition (\c -> cdPermanent (toCardDef c) && not (cannotPutIntoPlay (toCard c))) (unDeck deck')
     let deck''' =
@@ -942,6 +947,11 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     modifiers <- getModifiers a
     let source = choose.source
     let enemyMatcher = choose.matcher
+    -- "When interacting with Cthulhu, choose one of the cards on the Cthulhu Board":
+    -- a fight aimed at a composite enemy is a fight aimed at its member cards. Only the
+    -- candidate select uses this; 'includeAsIfEnemy' below still reads the card's own
+    -- matcher, since the expansion is not the card narrowing or widening its targets.
+    expandedMatcher <- expandCompositeEnemies enemyMatcher
     let
       isOverride = \case
         EnemyFightActionCriteria override -> Just override
@@ -966,7 +976,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         $ select
         $ foldr
           applyMatcherModifiers
-          (canFightMatcher <> enemyMatcher <> mustChooseMatchers)
+          (canFightMatcher <> expandedMatcher <> mustChooseMatchers)
           (modifiers <> smods)
 
     canMoveToConnected <- case source.asset of
@@ -1070,8 +1080,13 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
            ]
     pure a
   FightEnemy eid choose | choose.investigator == investigatorId && not choose.isAction -> do
-    handleSkillTestNesting_ choose.skillTest msg do
-      push (AttackEnemy eid choose)
+    -- A card that fights a named enemy ("this attack targets the attacking enemy") can
+    -- name a composite one; hand the choice of member card back to the player rather
+    -- than attacking the card that only stands for the group.
+    getInteractAsOneOf eid >>= \case
+      Just members -> push $ toMessage choose {chooseFightEnemyMatcher = members}
+      Nothing -> handleSkillTestNesting_ choose.skillTest msg do
+        push (AttackEnemy eid choose)
     pure a
   FailedAttackEnemy iid eid | iid == investigatorId -> do
     doesNotDamageOtherInvestigators <- hasModifier a DoesNotDamageOtherInvestigator
@@ -1092,6 +1107,8 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     let enemyMatcher = choose.matcher
     let isAction = choose.isAction
     let payCost = choose.payCost
+    -- Mirrors the fight side: evading a composite enemy is evading one of its members.
+    expandedMatcher <- expandCompositeEnemies enemyMatcher
     let
       isOverride = \case
         EnemyEvadeActionCriteria override -> Just override
@@ -1112,7 +1129,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       select
         $ foldr
           applyMatcherModifiers
-          (canEvadeMatcher <> enemyMatcher <> mustChooseMatchers)
+          (canEvadeMatcher <> expandedMatcher <> mustChooseMatchers)
           modifiers
     player <- getPlayer a.id
     -- A mini-card is not an enemy, so it can only satisfy an unqualified evade
@@ -1207,9 +1224,15 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         ]
     pure a
   EvadeEnemy sid iid eid source mTarget skillType False | iid == investigatorId -> do
-    handleSkillTestNesting_ sid msg do
-      attemptWindow <- checkWindows [mkWhen $ Window.AttemptToEvadeEnemy sid iid eid]
-      pushAll [attemptWindow, TryEvadeEnemy sid iid eid source mTarget skillType, AfterEvadeEnemy iid eid]
+    -- Mirrors the fight side: an evade named at a composite enemy becomes a choice of
+    -- which member card to evade.
+    getInteractAsOneOf eid >>= \case
+      Just members -> do
+        choose <- Evade.mkChooseEvadeMatch sid iid source members
+        push $ toMessage $ maybe id setTarget mTarget $ Evade.withSkillType skillType choose
+      Nothing -> handleSkillTestNesting_ sid msg do
+        attemptWindow <- checkWindows [mkWhen $ Window.AttemptToEvadeEnemy sid iid eid]
+        pushAll [attemptWindow, TryEvadeEnemy sid iid eid source mTarget skillType, AfterEvadeEnemy iid eid]
     pure a
   MoveAction iid lid cost True | iid == investigatorId -> handleMoveAction a iid lid cost
   MoveAction iid lid _cost False | iid == investigatorId -> handleMoveActionV2 a iid lid

@@ -187,6 +187,10 @@ cthulhuPatrolledThisRound :: (HasGame m, Tracing m) => m Bool
 cthulhuPatrolledThisRound =
   selectAny $ enemyIs Enemies.cthulhuAncientEvil <> EnemyWithModifier cthulhuPatrolledMarker
 
+-- The elder thing token's Cthulhu draw is limited once per round across all investigators.
+cthulhuDeckDrawnMarker :: ModifierType
+cthulhuDeckDrawnMarker = ScenarioModifier "cthulhuDeckDrawn"
+
 {- | Cancel the automatic trip to the Cthulhu discard pile that the scenario queues
 for every drawn action card.
 

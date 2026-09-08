@@ -1006,7 +1006,7 @@ instance RunMessage TheScarletKeys where
                 flavor $ setTitle "title" >> p "epilogue5"
         gameOver
         pure c
-      CampaignStep (ScenarioStep _) -> do
+      CampaignStep step | ScenarioStep _ <- step.unwrapScenario -> do
         TheScarletKeys attrs' <- lift $ defaultCampaignRunner msg c
         let meta = toResult @TheScarletKeysMeta attrs'.meta
         pure
@@ -1016,5 +1016,9 @@ instance RunMessage TheScarletKeys where
       CampaignStep (StandaloneScenarioStep sid _) -> do
         markTime $ getSideStoryCost sid
         pushAll [ResetInvestigators, ResetGame, StartScenario sid Nothing]
+        pure c
+      CampaignStep (StandaloneScenarioStepWithOptions sid _ opts) -> do
+        markTime $ getSideStoryCost sid
+        pushAll [ResetInvestigators, ResetGame, StartScenario sid (Just opts)]
         pure c
       _ -> lift $ defaultCampaignRunner msg c

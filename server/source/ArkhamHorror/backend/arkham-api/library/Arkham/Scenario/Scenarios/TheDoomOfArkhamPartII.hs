@@ -5,17 +5,19 @@ import Arkham.Agenda.Cards qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.CampaignStep (CampaignStep (EpilogueStep))
 import Arkham.Campaigns.TheDrownedCity.Import
+import Arkham.Campaigns.TheInnsmouthConspiracy.Helpers (getFloodLevelFor)
 import Arkham.Card
 import Arkham.ChaosToken
 import Arkham.Deck qualified as Deck
 import Arkham.EncounterSet qualified as Set
 import Arkham.Enemy.Cards qualified as Enemies
 import Arkham.Helpers.FlavorText
-import Arkham.Helpers.Modifiers (ModifierType (..), modifySelectWith)
+import Arkham.Helpers.Modifiers (ModifierType (..), hasModifier, modifySelectWith)
 import Arkham.Helpers.Query (getLead, getPlayerCount)
 import Arkham.Helpers.Xp
 import Arkham.Id
 import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.FloodLevel (FloodLevel (Unflooded))
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
@@ -266,6 +268,23 @@ instance RunMessage TheDoomOfArkhamPartII where
         $ attrs
         & (decksL %~ insertMap CthulhuDeck deck)
         & (deckDiscardsL %~ deleteMap CthulhuDeck)
+    ResolveChaosToken _ ElderThing iid -> do
+      drawAnotherChaosToken iid
+      pure s
+    ResolveChaosToken _ Cultist iid | isHardExpert attrs -> do
+      whenM ((/= Unflooded) <$> getFloodLevelFor iid) $ assignDamage iid Cultist 1
+      pure s
+    FailedSkillTest iid _ _ (ChaosTokenTarget token) _ _ -> do
+      case token.face of
+        Cultist
+          | isEasyStandard attrs ->
+              whenM ((/= Unflooded) <$> getFloodLevelFor iid) $ assignDamage iid Cultist 1
+        Tablet -> placeCluesOnLocation iid Tablet 1
+        ElderThing -> unlessM (hasModifier ScenarioTarget cthulhuDeckDrawnMarker) do
+          roundModifier attrs ScenarioTarget cthulhuDeckDrawnMarker
+          afterSkillTestQuiet $ drawCthulhuDeckCard iid attrs
+        _ -> pure ()
+      pure s
     ScenarioResolution res -> scope "resolutions" do
       case res of
         Resolution 1 -> do

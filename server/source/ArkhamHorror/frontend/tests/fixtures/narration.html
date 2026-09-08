@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Narration regression fixture</title>
+<style>body { margin: 16px; background: #2d333f; color: white; font-family: sans-serif; }</style>
+<div id="app"></div>
+<script type="module">
+  import '../../src/styles/index.css'
+  import { createApp, h } from 'vue'
+  import { createI18n } from 'vue-i18n'
+  import NarrationMenu from '../../src/arkham/components/NarrationMenu.vue'
+  import gameBar from '../../src/locales/zh/gameBoard/game_bar.json'
+  import * as narration from '../../src/arkham/narration.ts'
+  window.narrationFixture = narration
+  createApp({ render: () => h('header', { style: { height: '40px' } }, [h(NarrationMenu)]) }).use(createI18n({ legacy: false, locale: 'zh', messages: { zh: { gameBar } } })).mount('#app')
+</script>
+</html>

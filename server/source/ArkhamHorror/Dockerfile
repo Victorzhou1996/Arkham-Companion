@@ -93,6 +93,8 @@ RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
 
 FROM dependencies AS api
 
+ARG ARKHAM_BUILD_JOBS=4
+
 RUN mkdir -p \
   /opt/arkham/src/backend \
   /opt/arkham/bin
@@ -114,10 +116,10 @@ RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
     --mount=type=cache,id=stack-api-hie-${CACHE_ID},target=/opt/arkham/src/backend/arkham-api/.hie \
     --mount=type=cache,id=stack-validate-hie-${CACHE_ID},target=/opt/arkham/src/backend/validate/.hie \
     --mount=type=cache,id=stack-discover-hie-${CACHE_ID},target=/opt/arkham/src/backend/cards-discover/.hie \
-  ghc_build_options='-rtsopts -with-rtsopts=-V0 -j4 +RTS -V0 -A128m -n2m -RTS'; \
-  stack build --no-terminal --system-ghc --ghc-options "$ghc_build_options" && \
+  ghc_build_options="-rtsopts -with-rtsopts=-V0 -j${ARKHAM_BUILD_JOBS} +RTS -V0 -A128m -n2m -RTS"; \
+  stack build --jobs "$ARKHAM_BUILD_JOBS" --no-terminal --system-ghc --ghc-options "$ghc_build_options" && \
   stack --no-terminal --system-ghc --local-bin-path /opt/arkham/bin \
-    install arkham-api --ghc-options "$ghc_build_options"
+    install arkham-api --jobs "$ARKHAM_BUILD_JOBS" --ghc-options "$ghc_build_options"
 
 FROM scratch AS api-artifact
 

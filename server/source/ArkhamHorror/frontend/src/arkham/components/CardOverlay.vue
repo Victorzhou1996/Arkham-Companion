@@ -21,11 +21,11 @@ import PoolItem from '@/arkham/components/PoolItem.vue'
 import { useDbCardStore, ArkhamDBCard } from '@/stores/dbCards'
 import { useI18n } from 'vue-i18n'
 import {
-  type NarrationCategory,
   type NarrationSegment,
   setCurrentNarration,
 } from '@/arkham/narration'
 import { cardNarrationFromCsv } from '@/arkham/narrationCsv'
+import { cardNarrationCategory } from '@/arkham/narrationCategory'
 
 /* =============================================================================
  * Constants, basic helpers, and caches
@@ -679,23 +679,21 @@ const narrationImageCode = computed<string | null>(
   () => imageCardCode.value ?? declaredCardCode.value,
 )
 
-const narrationCategory = (dbCard?: ArkhamDBCard | null): NarrationCategory => {
-  if (dbCard?.type_code === 'act' || dbCard?.type_code === 'agenda') return 'actAgenda'
-  if (dbCard?.type_code === 'location' || dbCard?.type_code === 'enemy') return 'locationEnemy'
-  if (dbCard?.encounter_code || dbCard?.type_code === 'treachery') return 'encounter'
-  const classes = hoveredElement.value?.classList
-  if (classes?.contains('card--agenda') || classes?.contains('card--sideways')) return 'actAgenda'
-  if (classes?.contains('card--locations') || classes?.contains('enemy')) return 'locationEnemy'
-  if (classes?.contains('treachery')) return 'encounter'
-  return 'playerCard'
-}
-
 watch(
   [cardCode, narrationImageCode, hoveredElement, () => store.lang],
   async ([code, imageCode, element]) => {
     if (!imageCode || !element) return
 
-    const category = narrationCategory()
+    try {
+      await store.initDbCards()
+    } catch {
+      // The local CSV can still supply narration if card metadata cannot load.
+    }
+    if (narrationImageCode.value !== imageCode || hoveredElement.value !== element) return
+    const dbCard = code
+      ? store.getDbCard(code) ?? store.getDbCard(imageCode)
+      : store.getDbCard(imageCode)
+    const category = cardNarrationCategory(dbCard, element)
     const csvNarration = await cardNarrationFromCsv(code, imageCode, category)
     if (narrationImageCode.value !== imageCode || hoveredElement.value !== element) return
     if (csvNarration) {
@@ -703,11 +701,6 @@ watch(
       return
     }
 
-    await store.initDbCards()
-    if (narrationImageCode.value !== imageCode || hoveredElement.value !== element) return
-    const dbCard = code
-      ? store.getDbCard(code) ?? store.getDbCard(imageCode)
-      : store.getDbCard(imageCode)
     if (!dbCard) return
     const back = imageCode === `${dbCard.code}b`
     const segments: NarrationSegment[] = [

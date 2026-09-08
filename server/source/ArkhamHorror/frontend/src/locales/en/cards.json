@@ -1206,6 +1206,10 @@
     "unrelenting1": {
       "doneSealingTokens": "Done sealing tokens"
     },
+    "untimelyTransaction1": {
+      "noOnePays": "No one pays",
+      "playCard": "Play Card"
+    },
     "virgilGray": {
       "heal1HorrorFromVirgilGray": "Heal 1 horror from Virgil Gray"
     },
@@ -1599,10 +1603,6 @@
     },
     "trustyBullwhipAdvanced": {
       "dealDamageAndEvade": "Deal +1 damage for this attack and Automatically evade the enemy"
-    },
-    "untimelyTransaction1": {
-      "noOnePays": "No one pays",
-      "playCard": "Play Card"
     },
     "winchesterModel522": {
       "actionDiscardWinchester": "{'{'}action{'}'}: Discard Winchester Model 52: _Fight ({'{'}combat{'}'})_. You get +3 {'{'}combat{'}'} for this attack. If you succeed, automatically evade the targeted enemy.",

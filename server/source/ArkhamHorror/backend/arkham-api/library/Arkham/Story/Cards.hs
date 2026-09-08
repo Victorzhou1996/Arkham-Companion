@@ -439,7 +439,7 @@ theSentry :: CardDef
 theSentry = doubleSided $ story "06255b" "The Sentry" PointOfNoReturn
 
 seafloorFrieze :: CardDef
-seafloorFrieze = doubleSided $ story "11531b" "Seafloor Frieze" TheWesternWall
+seafloorFrieze = (doubleSided $ story "11531b" "Seafloor Frieze" TheWesternWall) {cdVictoryPoints = Just 1}
 
 theUnderseaVault :: CardDef
 theUnderseaVault = doubleSided $ story "11532b" "The Undersea Vault" TheWesternWall
@@ -651,22 +651,22 @@ theUnsealing :: CardDef
 theUnsealing = story "09571b" "The Unsealing" DealingsInTheDark & otherSideIs "09571a"
 
 playfulShadows :: CardDef
-playfulShadows = story "09674b" "Playful Shadows" ShadesOfSuffering & otherSideIs "09674a"
+playfulShadows = (story "09674b" "Playful Shadows" ShadesOfSuffering & otherSideIs "09674a") {cdVictoryPoints = Just 1}
 
 timorousShadows :: CardDef
-timorousShadows = story "09674d" "Timorous Shadows" ShadesOfSuffering & otherSideIs "09674c"
+timorousShadows = (story "09674d" "Timorous Shadows" ShadesOfSuffering & otherSideIs "09674c") {cdVictoryPoints = Just 1}
 
 aLostMemento :: CardDef
-aLostMemento = story "09675b" "A Lost Memento" ShadesOfSuffering & otherSideIs "09675a"
+aLostMemento = (story "09675b" "A Lost Memento" ShadesOfSuffering & otherSideIs "09675a") {cdVictoryPoints = Just 1}
 
 exhumeTheBones :: CardDef
-exhumeTheBones = story "09675d" "Exhume the Bones" ShadesOfSuffering & otherSideIs "09675c"
+exhumeTheBones = (story "09675d" "Exhume the Bones" ShadesOfSuffering & otherSideIs "09675c") {cdVictoryPoints = Just 1}
 
 sympathyPain :: CardDef
-sympathyPain = story "09676b" "Sympathy Pain" ShadesOfSuffering & otherSideIs "09676a"
+sympathyPain = (story "09676b" "Sympathy Pain" ShadesOfSuffering & otherSideIs "09676a") {cdVictoryPoints = Just 1}
 
 familialPain :: CardDef
-familialPain = story "09676d" "Familial Pain" ShadesOfSuffering & otherSideIs "09676c"
+familialPain = (story "09676d" "Familial Pain" ShadesOfSuffering & otherSideIs "09676c") {cdVictoryPoints = Just 1}
 
 thePredatoryHouse :: CardDef
 thePredatoryHouse = story "10524" "The Predatory House" HemlockHouse & otherSideIs "10524b"
@@ -709,7 +709,7 @@ easternWinds = story "11640b" "Eastern Winds" ObsidianCanyons & otherSideIs "116
 -- distinct from the front-side defs of the same name in Arkham.Location.Cards and
 -- Arkham.Treachery.Cards.
 erodedFriezeStory :: CardDef
-erodedFriezeStory = doubleSided $ story "11664b" "Eroded Frieze" ObsidianCanyons
+erodedFriezeStory = (doubleSided $ story "11664b" "Eroded Frieze" ObsidianCanyons) {cdVictoryPoints = Just 1}
 
 glyphOrreryStory :: CardDef
 glyphOrreryStory = doubleSided $ story "11662b" "Glyph Orrery" ObsidianCanyons

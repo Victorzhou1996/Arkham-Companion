@@ -647,6 +647,7 @@ instance RunMessage CongressOfTheKeys where
             li "startAt"
           li "actDeck"
           li.nested "yea" do
+            li "removeOtherCoterie"
             li "yeaNote"
           li.nested "nay" do
             li "nayNote"
@@ -680,9 +681,7 @@ instance RunMessage CongressOfTheKeys where
       setActDeck [Acts.secretsAndLiesV2, Acts.toTheTower, Acts.theAscent, Acts.theFinalErr]
       setAgendaDeck [Agendas.confluxOfConsequence, Agendas.theWorldUnbidden, Agendas.runningRed]
 
-      lead <- getLead
-      drawCard lead Enemies.theRedGlovedManPurposeUnknown
-      setAside $ coterieEnemies attrs (== Nay)
+      setAside $ Enemies.theRedGlovedManPurposeUnknown : coterieEnemies attrs (== Yea)
 
       investigators <- allInvestigators
       for_ (conspiratorAssets attrs (== Nay)) \card -> do

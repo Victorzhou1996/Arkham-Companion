@@ -1,0 +1,1 @@
+import{ao as a}from"./index-CIUOuBYD.js";import{n as r}from"./api-B3aArw1_.js";const o=a("cards",{state:()=>({cards:[],loaded:!1}),getters:{getCards(t){return t.cards}},actions:{async fetchCards(){if(!this.loaded)try{const t=await r(!0);this.cards=t,this.loaded=!0}catch(t){console.log(t)}}}});export{o as u};
