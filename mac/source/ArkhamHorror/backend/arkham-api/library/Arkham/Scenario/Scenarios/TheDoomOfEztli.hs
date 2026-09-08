@@ -14,7 +14,7 @@ import Arkham.EncounterSet qualified as Set
 import Arkham.Enemy.Cards qualified as Enemies
 import Arkham.Enemy.Types hiding (metaL)
 import Arkham.Helpers (Deck (..))
-import Arkham.Helpers.Campaign
+import Arkham.Helpers.Campaign hiding (forceAddCampaignCardToDeckChoice)
 import Arkham.Helpers.FlavorText
 import Arkham.Helpers.Location
 import Arkham.Helpers.Log
@@ -265,11 +265,17 @@ instance RunMessage TheDoomOfEztli where
                 (OutOfPlayEnemyField SetAsideZone EnemyDamage)
                 harbinger
             recordCount TheHarbingerIsStillAlive damage
+        addRelicOfAges = do
+          alreadyOwned <- getIsAlreadyOwned Assets.relicOfAgesADeviceOfSomeSort
+          unless alreadyOwned do
+            investigators <- allInvestigators
+            forceAddCampaignCardToDeckChoice investigators DoNotShuffleIn Assets.relicOfAgesADeviceOfSomeSort
 
       case n of
         Resolution 1 -> do
           resolutionWithXp "resolution1" $ allGainXp' attrs
           record TheInvestigatorsRecoveredTheRelicOfAges
+          addRelicOfAges
           harbingerMessages
           recordCount YigsFury $ yigsFury + vengeance
           endOfScenario
@@ -307,6 +313,7 @@ instance RunMessage TheDoomOfEztli where
         Resolution 5 -> do
           resolutionWithXp "resolution5" $ allGainXp' attrs
           record TheInvestigatorsRecoveredTheRelicOfAges
+          addRelicOfAges
           harbingerMessages
           recordCount YigsFury (yigsFury + vengeance + 10)
           endOfScenario

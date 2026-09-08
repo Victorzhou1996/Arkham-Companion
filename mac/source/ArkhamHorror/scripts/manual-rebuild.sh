@@ -16,6 +16,7 @@ SKIP_MAC=false
 SKIP_LINUX=false
 PREFLIGHT_ONLY=false
 NON_INTERACTIVE=false
+INCREMENTAL=false
 
 usage() {
   cat <<'EOF'
@@ -27,6 +28,7 @@ Options:
   --skip-mac        Skip the native macOS backend build.
   --skip-linux      Skip the Linux amd64 server backend build.
   --yes             Do not ask for confirmation.
+  --incremental     Reuse native backend objects; do not clean the build cache.
   --help            Show this help.
 
 Environment overrides:
@@ -47,6 +49,7 @@ while [ "$#" -gt 0 ]; do
     --skip-mac) SKIP_MAC=true ;;
     --skip-linux) SKIP_LINUX=true ;;
     --yes) NON_INTERACTIVE=true ;;
+    --incremental) INCREMENTAL=true ;;
     --help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
   esac
@@ -277,6 +280,7 @@ preflight() {
 
   require_cmd git
   require_cmd tar
+  require_cmd rsync
   require_cmd find
   require_cmd xargs
   require_cmd pgrep
@@ -428,15 +432,103 @@ configure_native_build_env() {
   export DYLD_LIBRARY_PATH="${pg_lib}${pcre_lib_dir:+:${pcre_lib_dir}}${DYLD_LIBRARY_PATH:+:${DYLD_LIBRARY_PATH}}"
 }
 
+verify_macos_binary_dependencies() {
+  local bin="$1" dep
+  while IFS= read -r dep; do
+    dep="$(printf '%s' "$dep" | sed 's/^[[:space:]]*//;s/ (.*//')"
+    case "$dep" in
+      /usr/lib/*|/System/Library/*|@rpath/*|@loader_path/*|@executable_path/*) ;;
+      /*)
+        echo "Non-portable macOS dependency in ${bin}: ${dep}" >&2
+        return 1
+        ;;
+    esac
+  done < <(otool -L "$bin" | tail -n +2)
+}
+
+relocate_macos_backend() {
+  local bin="$1" dep
+  dep="$(otool -L "$bin" | awk '/libpq(\.[0-9]+)?\.dylib/ {gsub(/^[[:space:]]+/, ""); sub(/ \(.*/, ""); print; exit}')"
+  if [ -n "$dep" ] && [[ "$dep" != @executable_path/* ]]; then
+    install_name_tool -change "$dep" '@executable_path/../lib/libpq.5.dylib' "$bin"
+  fi
+  codesign --force --sign - "$bin"
+  verify_macos_binary_dependencies "$bin"
+}
+
+relocate_complete_macos_runtime() {
+  local root="$1" file dep id base target candidate changed
+  while IFS= read -r -d '' file; do
+    file "$file" | grep -q 'Mach-O' || continue
+    changed=false
+
+    id="$(otool -D "$file" 2>/dev/null | tail -n +2 | head -n 1 || true)"
+    case "$id" in
+      /usr/lib/*|/System/Library/*|'') ;;
+      /*)
+        install_name_tool -id "@rpath/$(basename "$id")" "$file"
+        changed=true
+        ;;
+    esac
+
+    while IFS= read -r dep; do
+      dep="$(printf '%s' "$dep" | sed 's/^[[:space:]]*//;s/ (.*//')"
+      case "$dep" in
+        /usr/lib/*|/System/Library/*|@rpath/*|@loader_path/*|@executable_path/*) continue ;;
+        /*) ;;
+        *) continue ;;
+      esac
+      [ "$dep" = "$id" ] && continue
+      base="$(basename "$dep")"
+      case "$file" in
+        "$root"/pgsql/bin/*)
+          target="@executable_path/../lib/$base"
+          candidate="$root/pgsql/lib/$base"
+          ;;
+        "$root"/pgsql/lib/*)
+          target="@loader_path/$base"
+          candidate="$root/pgsql/lib/$base"
+          ;;
+        "$root"/bin/*)
+          target="@executable_path/../lib/$base"
+          candidate="$root/lib/$base"
+          ;;
+        "$root"/lib/*)
+          target="@loader_path/$base"
+          candidate="$root/lib/$base"
+          ;;
+        *)
+          echo "Unsupported Mach-O location for dependency relocation: ${file}" >&2
+          return 1
+          ;;
+      esac
+      if [ ! -f "$candidate" ]; then
+        echo "Missing bundled dependency for ${file}: ${candidate}" >&2
+        return 1
+      fi
+      install_name_tool -change "$dep" "$target" "$file"
+      changed=true
+    done < <(otool -L "$file" | tail -n +2)
+
+    if [ "$changed" = true ]; then
+      codesign --force --sign - "$file"
+    fi
+    verify_macos_binary_dependencies "$file"
+  done < <(find "$root/bin" "$root/lib" "$root/pgsql/bin" "$root/pgsql/lib" -type f -print0)
+}
+
 build_mac_backend() {
   configure_native_build_env
   mkdir -p "${RUN_DIR}/macos-arm64"
   cd "${PROJECT_ROOT}/backend"
   # A release rebuild should never link against objects from an older module list.
-  stack clean arkham-api
+  if [ "$INCREMENTAL" != true ]; then
+    stack clean arkham-api
+  fi
   stack build --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
   stack --local-bin-path "${RUN_DIR}/macos-arm64" install arkham-api --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
   test -x "${RUN_DIR}/macos-arm64/arkham-api"
+  relocate_macos_backend "${RUN_DIR}/macos-arm64/arkham-api"
 }
 
 wait_for_docker() {
@@ -484,7 +576,14 @@ package_outputs() {
 
     local complete_dir="${RUN_DIR}/ArkhamHorror-macos-arm64"
     rm -rf "$complete_dir"
-    ditto "$LOCAL_RUNTIME_TEMPLATE" "$complete_dir"
+    mkdir -p "${complete_dir}/data"
+    rsync -a \
+      --exclude '/data/' \
+      --exclude '/bin/backups/' \
+      --exclude '/config/nginx.conf' \
+      --exclude '.DS_Store' \
+      "$LOCAL_RUNTIME_TEMPLATE/" "$complete_dir/"
+    install -m 644 "${LOCAL_RUNTIME_TEMPLATE}/data/setup.sql" "${complete_dir}/data/setup.sql"
 
     rm -rf "${complete_dir}/frontend/dist"
     mkdir -p "${complete_dir}/frontend/dist"
@@ -493,13 +592,23 @@ package_outputs() {
     ditto "$CARD_IMAGE_SOURCE" "${complete_dir}/frontend/dist/img/arkham/zh/cards"
     install -m 755 "${RUN_DIR}/macos-arm64/arkham-api" "${complete_dir}/bin/arkham-api"
 
+    find "$complete_dir/lib" "$complete_dir/pgsql/lib" -type f -exec chmod u+w {} +
+    relocate_complete_macos_runtime "$complete_dir"
+
     find "$complete_dir" -name .DS_Store -delete
-    rm -rf "${complete_dir}/bin/backups" "${complete_dir}/data/nginx_temp"
+    rm -rf \
+      "${complete_dir}/bin/backups" \
+      "${complete_dir}/data/nginx_temp" \
+      "${complete_dir}/pgsql/lib/pgxs" \
+      "${complete_dir}/pgsql/lib/pkgconfig"
     rm -f \
       "${complete_dir}/data/"*.log \
       "${complete_dir}/data/"*.pid \
       "${complete_dir}/data/access.log" \
       "${complete_dir}/data/error.log"
+    # This file is generated from the install location on every start. Keeping a
+    # previously generated copy would leak the build machine's absolute path.
+    rm -f "${complete_dir}/config/nginx.conf"
 
     test -x "${complete_dir}/bin/arkham-api"
     test -x "${complete_dir}/bin/nginx"
@@ -512,6 +621,13 @@ package_outputs() {
     grep -Fq 'location /build/' "${complete_dir}/start.sh"
     grep -Fq 'location /build-api/' "${complete_dir}/start.sh"
     test -x "${complete_dir}/macOS用户双击我.command"
+    ! rg -l --hidden \
+      --glob '!frontend/dist/img/**' \
+      --glob '!*.dylib' \
+      --glob '!bin/arkham-api' \
+      --glob '!bin/nginx' \
+      '/Users/[^/]+/|ArkhamHorror-upgrade-work' \
+      "$complete_dir"
 
     COPYFILE_DISABLE=1 tar --no-xattrs -czf ArkhamHorror-macos-arm64-complete.tar.gz ArkhamHorror-macos-arm64
   fi
@@ -530,7 +646,9 @@ package_outputs() {
     local-update-macos-arm64.tar.gz \
     ArkhamHorror-macos-arm64-complete.tar.gz \
     server-update-linux-amd64.tar.gz; do
-    [ -f "$file" ] && sha256_file "$file" >>SHA256SUMS
+    if [ -f "$file" ]; then
+      sha256_file "$file" >>SHA256SUMS
+    fi
   done
 }
 

@@ -1,18 +1,26 @@
 <script lang="ts" setup>
-import { ref, computed, Ref } from 'vue'
+import { ref, computed, onUnmounted, Ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter, useRoute } from 'vue-router'
-import { deleteGame, fetchGames, fetchEvents, fetchNotifications } from '@/arkham/api'
+import {
+  deleteGame,
+  fetchGames,
+  fetchEvents,
+  fetchNotifications,
+  fetchPublicStats,
+} from '@/arkham/api'
 import { cullGameLocalStorage, removeGameLocalStorage } from '@/arkham/localStorage'
 import type { GameDetails } from '@/arkham/types/Game'
 import type { EventListEntry } from '@/arkham/types/EpicEvent'
 import type { AppNotification } from '@/arkham/api'
+import type { PublicStats } from '@/arkham/api'
 import GameRow from '@/arkham/components/GameRow.vue'
 import EventRow from '@/arkham/components/EventRow.vue'
 import NewGame from '@/arkham/views/NewCampaign.vue'
 import ImportGame from '@/arkham/components/ImportGame.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import { storeToRefs } from 'pinia'
+import { APP_VERSION } from '@/version'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +28,7 @@ const store = useUserStore()
 const { currentUser } = storeToRefs(store)
 const homeCacheVersion = 1
 const homeCacheMaxAge = 7 * 24 * 60 * 60 * 1000
+const publicStatsRefreshMs = 60 * 60 * 1000
 
 interface HomeCache {
   version: number
@@ -59,6 +68,7 @@ const cachedHome = readHomeCache()
 const games: Ref<GameDetails[]> = ref(cachedHome?.games ?? [])
 const events: Ref<EventListEntry[]> = ref(cachedHome?.events ?? [])
 const notifications: Ref<AppNotification[]> = ref([])
+const publicStats: Ref<PublicStats | null> = ref(null)
 
 const dismissedNotifications = JSON.parse(localStorage.getItem('dismissedNotifications') ?? '[]')
 
@@ -67,47 +77,68 @@ const finishedGames = computed(() => games.value.filter((g) => g.gameState.tag =
 
 function writeHomeCache() {
   try {
-    localStorage.setItem(tokenCacheKey(), JSON.stringify({
-      version: homeCacheVersion,
-      savedAt: Date.now(),
-      games: games.value,
-      events: events.value,
-    } satisfies HomeCache))
+    localStorage.setItem(
+      tokenCacheKey(),
+      JSON.stringify({
+        version: homeCacheVersion,
+        savedAt: Date.now(),
+        games: games.value,
+        events: events.value,
+      } satisfies HomeCache),
+    )
   } catch {
     // A fresh server response still remains available for this visit.
   }
 }
 
-fetchGames().then((result) => {
-  const availableGames = result.filter((g) => g.tag === 'game') as GameDetails[]
-  cullGameLocalStorage(availableGames)
-  games.value = availableGames
-  writeHomeCache()
-}).catch((error) => {
-  console.warn('Could not refresh saved games', error)
-})
+fetchGames()
+  .then((result) => {
+    const availableGames = result.filter((g) => g.tag === 'game') as GameDetails[]
+    cullGameLocalStorage(availableGames)
+    games.value = availableGames
+    writeHomeCache()
+  })
+  .catch((error) => {
+    console.warn('Could not refresh saved games', error)
+  })
 
 // Epic Multiplayer events surface as a single entry each, inline with regular
 // games (group games are hidden from fetchGames by the backend). A user who is
 // both organizer and player of an event gets duplicate membership rows; collapse
 // to one entry, preferring the organizer role.
-fetchEvents().then((result) => {
-  const byId = new Map<string, EventListEntry>()
-  for (const entry of result) {
-    const existing = byId.get(entry.id)
-    if (!existing || entry.role === 'organizer') byId.set(entry.id, entry)
-  }
-  events.value = [...byId.values()]
-  writeHomeCache()
-}).catch((error) => {
-  console.warn('Could not refresh events', error)
-})
+fetchEvents()
+  .then((result) => {
+    const byId = new Map<string, EventListEntry>()
+    for (const entry of result) {
+      const existing = byId.get(entry.id)
+      if (!existing || entry.role === 'organizer') byId.set(entry.id, entry)
+    }
+    events.value = [...byId.values()]
+    writeHomeCache()
+  })
+  .catch((error) => {
+    console.warn('Could not refresh events', error)
+  })
 
 fetchNotifications().then((result) => {
   notifications.value = result.filter(
     (n: AppNotification) => !dismissedNotifications.includes(n.id) && !isSupportNotification(n),
   )
 })
+
+function refreshPublicStats() {
+  fetchPublicStats()
+    .then((result) => {
+      publicStats.value = result
+    })
+    .catch(() => {
+      // Local deployments do not run the public statistics endpoint.
+    })
+}
+
+refreshPublicStats()
+const publicStatsTimer = window.setInterval(refreshPublicStats, publicStatsRefreshMs)
+onUnmounted(() => window.clearInterval(publicStatsTimer))
 
 async function deleteGameEvent(game: GameDetails) {
   deleteGame(game.id).then(() => {
@@ -192,6 +223,20 @@ const isSupportNotification = (notification: AppNotification) => {
         <aside class="support-card" aria-labelledby="support-title">
           <h3 id="support-title">{{ $t('home.supportTitle') }}</h3>
           <img :src="supportQrSrc" :alt="$t('home.supportAlt')" />
+          <dl v-if="publicStats" class="server-stats" :aria-label="$t('home.serverStats')">
+            <div>
+              <dt>{{ $t('home.totalPlayers') }}</dt>
+              <dd>{{ publicStats.players.toLocaleString() }}</dd>
+            </div>
+            <div>
+              <dt>{{ $t('home.totalGames') }}</dt>
+              <dd>{{ publicStats.games.toLocaleString() }}</dd>
+            </div>
+            <div>
+              <dt>{{ $t('home.totalSaveSteps') }}</dt>
+              <dd>{{ publicStats.saveSteps.toLocaleString() }}</dd>
+            </div>
+          </dl>
           <p>{{ $t('home.supportBody') }}</p>
         </aside>
 
@@ -259,6 +304,9 @@ const isSupportNotification = (notification: AppNotification) => {
         </div>
       </div>
     </div>
+    <div v-if="!newGame" class="app-version" aria-label="Application version">
+      v{{ APP_VERSION }}
+    </div>
   </div>
 </template>
 
@@ -301,6 +349,46 @@ h2 {
     padding: 0 12px;
     box-sizing: border-box;
   }
+}
+
+.server-stats {
+  border-bottom: 1px solid var(--box-border);
+  color: var(--text);
+  display: grid;
+  font-size: 0.78em;
+  gap: 4px;
+  margin: 0 0 10px;
+  opacity: 0.78;
+  padding: 0 2px 10px;
+  width: 100%;
+
+  div {
+    align-items: baseline;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  dt,
+  dd {
+    margin: 0;
+  }
+
+  dd {
+    color: var(--title);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+}
+
+.app-version {
+  bottom: 5px;
+  color: var(--text);
+  font-size: 11px;
+  opacity: 0.42;
+  pointer-events: none;
+  position: fixed;
+  right: 8px;
+  z-index: 10;
 }
 
 .home-layout {

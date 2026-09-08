@@ -105,14 +105,16 @@ instance RunMessage SkillTest where
               (fromMaybe skillTestDifficulty skillTestOriginalDifficulty)
           )
           { skillTestAction = skillTestAction
+          , skillTestDifficultyIncrease = skillTestDifficultyIncrease
           }
       pure s
     IncreaseSkillTestDifficulty n -> do
       -- see: faqs/drawing-thin
-      -- This alters the test's *inherent* difficulty, so it must also apply to
-      -- the original difficulty a RepeatSkillTest (Live and Learn) restores.
-      let increase (SkillTestDifficulty d) = SkillTestDifficulty (SumCalculation [d, Fixed n])
-      pure $ s & difficultyL %~ increase & originalDifficultyL %~ fmap increase
+      -- Tracked apart from the difficulty calculation so a SetDifficulty effect
+      -- (Sixth Sense, Unearth the Ancients) replaces the base value without
+      -- swallowing the increase. It is the test's *inherent* difficulty though,
+      -- so a RepeatSkillTest (Live and Learn) carries it over.
+      pure $ s & difficultyIncreaseL +~ n
     ChaosTokenCanceled _ _ token -> do
       let cancelIf t = if t.id == token.id then token {chaosTokenCancelled = True} else t
       pure
@@ -430,6 +432,7 @@ instance RunMessage SkillTest where
             & (resultL .~ SucceededBy Automatic modifiedSkillValue')
             & (originalDifficultyL .~ skillTestOriginalDifficulty)
             & (difficultyL .~ SkillTestDifficulty (Fixed 0))
+            & (difficultyIncreaseL .~ 0)
       results <- calculateSkillTestResultsData s'
       push $ SkillTestResults results
       pure s'
@@ -442,7 +445,7 @@ instance RunMessage SkillTest where
       let s' = s & resultL .~ SucceededBy NonAutomatic n
       results <- calculateSkillTestResultsData s'
       push $ SkillTestResults results
-      pure $ s' & resultL .~ SucceededBy NonAutomatic n
+      pure $ s' & difficultyIncreaseL .~ 0
     FailSkillTest -> do
       push $ Do FailSkillTest
       when (skillTestStep < SkillTestFastWindow2) $ push CheckAllAdditionalCommitCosts
@@ -954,9 +957,13 @@ instance RunMessage SkillTest where
             <> [After $ passed target | target <- skillTestSubscribers <> tokenSubscribers]
             <> [After $ passed (SkillTestInitiatorTarget skillTestTarget)]
         FailedBy _ n -> do
-          hauntedAbilities <- case (skillTestTarget, skillTestAction) of
-            (LocationTarget lid, Just Action.Investigate) -> select $ HauntedAbility <> AbilityOnLocation (LocationWithId lid)
-            _ -> pure []
+          -- Deferred so the ask is built after the `When` windows below, where a
+          -- card like Neither Rain nor Snow can still cancel it.
+          mHauntedLocation <- case (skillTestTarget, skillTestAction) of
+            (LocationTarget lid, Just Action.Investigate) -> do
+              hasHaunted <- selectAny $ HauntedAbility <> AbilityOnLocation (LocationWithId lid)
+              pure $ guard hasHaunted $> lid
+            _ -> pure Nothing
 
           investigatorsToResolveFailure <-
             (`notNullOr` [skillTestInvestigator])
@@ -964,33 +971,36 @@ instance RunMessage SkillTest where
 
           let needsChoice = skillTestResolveFailureInvestigator `notElem` investigatorsToResolveFailure
           let
-            handleChoice resolver player =
+            handleChoice resolver =
               let failed target = FailedSkillTest resolver skillTestAction skillTestSource target skillTestType n
                in [When (failed (Initiator skillTestTarget))]
                     <> [When (failed target) | target <- skillTestSubscribers <> tokenSubscribers]
-                    <> [ chooseOneAtATime player [AbilityLabel resolver ab [] [] [] | ab <- hauntedAbilities]
-                       | notNull hauntedAbilities
-                       ]
+                    <> [ResolveHauntedAbilities resolver lid | lid <- toList mHauntedLocation]
                     <> [After $ failed target | target <- skillTestSubscribers <> tokenSubscribers]
                     <> [After $ failed (SkillTestInitiatorTarget skillTestTarget)]
 
           if needsChoice
             then do
-              resolversWithPlayers <- traverse (traverseToSnd getPlayer) investigatorsToResolveFailure
               lead <- getLeadPlayer
 
               push
                 $ chooseOrRunOne
                   lead
-                  [ targetLabel resolver
-                      $ SetSkillTestResolveFailureInvestigator resolver
-                      : handleChoice resolver player
-                  | (resolver, player) <- resolversWithPlayers
+                  [ targetLabel resolver $ SetSkillTestResolveFailureInvestigator resolver : handleChoice resolver
+                  | resolver <- investigatorsToResolveFailure
                   ]
-            else do
-              player <- getPlayer skillTestResolveFailureInvestigator
-              pushAll $ handleChoice skillTestResolveFailureInvestigator player
+            else pushAll $ handleChoice skillTestResolveFailureInvestigator
         Unrun -> pure ()
+      pure s
+    ResolveHauntedAbilities iid lid -> do
+      modifiers' <- getModifiers (toTarget s)
+      targetMods <- getModifiers skillTestTarget
+      let cancelled = CancelEffects `elem` modifiers' && EffectsCannotBeCanceled `notElem` targetMods
+      unless cancelled do
+        hauntedAbilities <- select $ HauntedAbility <> AbilityOnLocation (LocationWithId lid)
+        unless (null hauntedAbilities) do
+          player <- getPlayer iid
+          push $ chooseOneAtATime player [AbilityLabel iid ab [] [] [] | ab <- hauntedAbilities]
       pure s
     AddSubscriber t -> pure $ s & subscribersL <>~ [t]
     RerunSkillTest -> case skillTestResult of

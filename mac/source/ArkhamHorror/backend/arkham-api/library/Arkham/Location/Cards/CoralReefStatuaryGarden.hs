@@ -23,7 +23,7 @@ instance RunMessage CoralReefStatuaryGarden where
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       drawCards iid (attrs.ability 1) 2
       gainResources iid (attrs.ability 1) 2
-      createEnemyAt_ Enemies.underseaParasite attrs
+      whenJustM (getSetAsideCardMaybe Enemies.underseaParasite) (`spawnEnemyAt_` attrs)
       pure l
     -- TODO: back side "Forced - When you enter Sea Floor: Increase the flood
     -- level of this location and an adjacent eligible location." (shared

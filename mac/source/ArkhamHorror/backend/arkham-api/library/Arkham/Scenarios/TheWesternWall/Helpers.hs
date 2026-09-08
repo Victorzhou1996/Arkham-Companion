@@ -4,7 +4,7 @@ import Arkham.Campaigns.TheDrownedCity.Helpers
 import Arkham.Classes.HasGame
 import Arkham.Classes.HasModifiersFor (HasModifiersM)
 import Arkham.Helpers.Investigator (getMaybeLocation)
-import Arkham.Helpers.Modifiers (ModifierType (CannotEnter, SetShroud), modifySelect, modifySelf)
+import Arkham.Helpers.Modifiers (ModifierType (BaseShroud, CannotEnter), modifySelect, modifySelf)
 import Arkham.I18n
 import Arkham.Id
 import Arkham.Location.Grid (Pos)
@@ -28,7 +28,7 @@ cannotEnterFromCluedLocation a =
 treacherousPathModifiers :: HasModifiersM m => LocationAttrs -> m ()
 treacherousPathModifiers a = do
   cannotEnterFromCluedLocation a
-  for_ a.position \pos -> modifySelf a [SetShroud $ locationLevel pos]
+  for_ a.position \pos -> modifySelf a [BaseShroud $ locationLevel pos]
 
 -- A location's vertical "level": its grid row + 1 (row 0 is level 1). Used by the
 -- scenario's chaos tokens ("X is your location's level").

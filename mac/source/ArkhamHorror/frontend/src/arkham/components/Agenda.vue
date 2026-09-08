@@ -16,6 +16,7 @@ import PoolItem from '@/arkham/components/PoolItem.vue';
 import Treachery from '@/arkham/components/Treachery.vue';
 import Event from '@/arkham/components/Event.vue';
 import Enemy from '@/arkham/components/Enemy.vue';
+import Story from '@/arkham/components/Story.vue';
 import StackIndicator from '@/arkham/components/StackIndicator.vue';
 import * as Arkham from '@/arkham/types/Agenda';
 
@@ -58,6 +59,22 @@ const image = computed(() => {
     return cardCodeImage(id.value.replace(/a$/, ''), 'b')
   }
   return cardCodeImage(id.value)
+})
+
+/* Errata that applies only to an agenda's back, so it is shown while the agenda is
+ * flipped and not before. Keyed by agenda id; the overlay picks it up from
+ * `data-errata`. The map holds i18n keys rather than translations so the lookup
+ * stays inside the computed — campaign messages load lazily, and translating at
+ * setup time would bake in the raw key whenever the scenario's file has not
+ * arrived yet. */
+const BACK_ERRATA_KEYS: Record<string, string> = {
+  c11691b: 'theDrownedCity.theDoomOfArkhamPartII.errata.theFinalSeal',
+}
+
+const backErrata = computed(() => {
+  if (!props.agenda.flipped) return null
+  const key = BACK_ERRATA_KEYS[id.value]
+  return key ? t(key) : null
 })
 
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
@@ -197,6 +214,11 @@ const nextToEvents = computed(() => Object.values(props.game.events).
   filter((t) => t.placement.tag === "NextToAgenda").
   map((t) => t.id))
 
+// Cthulhu deck action cards that stay in play (Fifth Eye, Hope Fades) live here.
+const nextToStories = computed(() => Object.values(props.game.stories).
+  filter((t) => t.placement.tag === "NextToAgenda").
+  map((t) => t.id))
+
 const attachedEnemies = computed(() => Object.values(props.game.enemies).
   filter((t) => t.placement.tag === "AttachedToAgenda").
   map((t) => t.id))
@@ -241,10 +263,11 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
     <div class="agenda-main">
       <div class="agenda-card">
         <img
-        :class="{ 'agenda--can-progress': interactAction !== -1, 'card--sideways': !isVertical }"
+          :class="{ 'agenda--can-progress': interactAction !== -1, 'card--sideways': !isVertical }"
           class="card card--agenda"
           @click="$emit('choose', interactAction)"
           :src="image"
+          :data-errata="backErrata ?? undefined"
         />
         <div class="pool" v-if="!agenda.flipped">
           <template v-if="debug.active">
@@ -291,6 +314,14 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
       <Event
         v-for="eventId in nextToEvents"
         :event="game.events[eventId]"
+        :game="game"
+        :playerId="playerId"
+        @choose="$emit('choose', $event)"
+      />
+      <Story
+        v-for="storyId in nextToStories"
+        :key="storyId"
+        :story="game.stories[storyId]"
         :game="game"
         :playerId="playerId"
         @choose="$emit('choose', $event)"

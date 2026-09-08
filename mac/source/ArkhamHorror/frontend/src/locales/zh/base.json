@@ -433,6 +433,10 @@
     "noActiveGames": "没有进行中的游戏。",
     "loadGame": "加载游戏",
     "loadingGame": "加载中…",
+    "serverStats": "服务器统计",
+    "totalPlayers": "玩家",
+    "totalGames": "游戏存档",
+    "totalSaveSteps": "存档步骤",
     "supportTitle": "支持服务器",
     "supportAlt": "微信赞赏码",
     "supportBody": "为了维持服务器稳定运行，需要持续承担带宽和机器成本。如果这个本地部署帮到了你，欢迎扫码支持。"

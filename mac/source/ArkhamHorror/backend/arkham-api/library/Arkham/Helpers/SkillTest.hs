@@ -561,7 +561,7 @@ getModifiedSkillTestDifficulty s = do
   imods <- filter forSkillTest <$> getModifiers s.investigator
   modifiers' <- (imods <>) <$> getModifiers (SkillTestTarget s.id)
   baseDifficulty <- getBaseSkillTestDifficulty s
-  let preModifiedDifficulty = foldr applyPreModifier baseDifficulty modifiers'
+  let preModifiedDifficulty = foldr applyPreModifier baseDifficulty modifiers' + s.difficultyIncrease
   let doubledDifficulty = foldr applyDoubler preModifiedDifficulty modifiers'
   max 0 <$> foldrM applyModifier doubledDifficulty modifiers'
  where
@@ -794,8 +794,20 @@ skillTestMatches iid source st mtchr = case Matcher.replaceYouMatcher iid mtchr 
       <$> countM
         (`Query.matches` Matcher.IncludeSealed matcher)
         (skillTestRevealedChaosTokens st <> skillTestAdditionalRevealedChaosTokens st)
-  Matcher.SkillTestOnCardWithTrait t -> elem t <$> sourceTraits (skillTestSource st)
-  Matcher.SkillTestOnCard match -> (`cardMatch` match) <$> sourceToCard (skillTestSource st)
+  -- The source may leave play mid-test (an event that shuffles itself back, for
+  -- example), so fall back to the card id captured when the test began.
+  Matcher.SkillTestOnCardWithTrait t
+    | isBasicAbilitySource (skillTestSource st) -> pure False
+    | otherwise -> do
+        traits <- sourceTraits (skillTestSource st)
+        if t `elem` traits
+          then pure True
+          else case st.sourceCard of
+            Nothing -> pure False
+            Just cid -> maybe False (`cardMatch` Matcher.CardWithTrait t) <$> Arkham.GameEnv.findCard ((== cid) . toCardId)
+  Matcher.SkillTestOnCard match
+    | isBasicAbilitySource (skillTestSource st) -> pure False
+    | otherwise -> (`cardMatch` match) <$> sourceToCard (skillTestSource st)
   Matcher.SkillTestOnLocation match -> case skillTestSource st of
     AbilitySource s n | n < 100 -> case s.location of
       Just lid -> lid <=~> match

@@ -16,7 +16,7 @@ arkhamWoodsWoodenBridge = location ArkhamWoodsWoodenBridge Cards.arkhamWoodsWood
 instance HasAbilities ArkhamWoodsWoodenBridge where
   getAbilities (ArkhamWoodsWoodenBridge a) =
     extendRevealed1 a
-      $ restricted a 1 (Here <> DuringSkillTest (WhileEvadingAnEnemy AnyEnemy))
+      $ restricted a 1 (Here <> DuringSkillTest WhileEvading)
       $ forced
       $ RevealChaosToken #when You AnyChaosToken
 

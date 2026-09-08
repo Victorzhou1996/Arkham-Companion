@@ -806,6 +806,7 @@ sledDog =
     , cdCardTraits = setFromList [Ally, Creature]
     , cdDeckRestrictions = [PerDeckLimit 4]
     , cdSlots = [#ally]
+    , cdTags = ["dog"]
     }
 
 rodOfAnimalism1 :: CardDef

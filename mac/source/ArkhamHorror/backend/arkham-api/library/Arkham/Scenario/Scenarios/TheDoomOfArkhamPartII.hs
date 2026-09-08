@@ -5,17 +5,19 @@ import Arkham.Agenda.Cards qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.CampaignStep (CampaignStep (EpilogueStep))
 import Arkham.Campaigns.TheDrownedCity.Import
+import Arkham.Campaigns.TheInnsmouthConspiracy.Helpers (getFloodLevelFor)
 import Arkham.Card
 import Arkham.ChaosToken
 import Arkham.Deck qualified as Deck
 import Arkham.EncounterSet qualified as Set
 import Arkham.Enemy.Cards qualified as Enemies
 import Arkham.Helpers.FlavorText
-import Arkham.Helpers.Modifiers (ModifierType (..), modifySelectWith)
+import Arkham.Helpers.Modifiers (ModifierType (..), hasModifier, modifySelectWith)
 import Arkham.Helpers.Query (getLead, getPlayerCount)
 import Arkham.Helpers.Xp
 import Arkham.Id
 import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.FloodLevel (FloodLevel (Unflooded))
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
@@ -173,11 +175,20 @@ instance RunMessage TheDoomOfArkhamPartII where
         , Locations.westernRooftops
         , Locations.easternRooftops
         ]
-      rivertown <- place Locations.rivertownTheDrownedCity
+      rivertown <- place Locations.rivertownRuined
       startAt rivertown
 
+      setAside
+        [ Locations.northsideRuined
+        , Locations.downtownRuined
+        , Locations.easttownRuined
+        , Locations.miskatonicUniversityRuined
+        , Locations.stMarysHospitalRuined
+        , Locations.southsideRuined
+        ]
+
       createEnemyAt_ Enemies.cthulhuAncientEvil rivertown
-      for_ cthulhuBoardSlots \(_, facet) -> createEnemyAt_ facet rivertown
+      for_ cthulhuBoardSlots \(_, toCardDef -> facet) -> createEnemyAt_ facet rivertown
 
       -- "Set the Star Spawn encounter set aside, out of play." The agenda shuffles
       -- them back in one at a time.
@@ -192,41 +203,36 @@ instance RunMessage TheDoomOfArkhamPartII where
       -- Neighborhoods'." Part I recorded the card codes, but Rivertown comes back
       -- Ruined here, so the entries are matched on title rather than code.
       floodedTitles <- map (nameTitle . toName) . mapMaybe lookupCardDef <$> getFloodedNeighborhoods
-      for_ floodedTitles \title ->
-        selectOne (LocationWithTitle title) >>= traverse_ increaseFloodLevel
+      for_ floodedTitles \title -> selectEach (LocationWithTitle title) increaseFloodLevel
 
-      eachInvestigator (`forInvestigator` Setup)
       doStep 1 Setup
-    ForInvestigator _ Setup -> pure s
     DoStep 1 Setup -> do
       -- "If the investigators stood together", the three allies join them; on the
       -- ritual route they wait out of play until Banish Him! hands them out.
       stoodTogether <- getHasRecord TheInvestigatorsStoodTogether
-      lead <- getLead
+      investigators <- select Anyone
       for_ allies \ally -> do
-        card <- genPlayerCard ally
+        card <- fetchCard ally
         if stoodTogether
           then do
-            investigators <- select Anyone
-            chooseOrRunOneM lead do
+            leadChooseOrRunOneM do
               questionLabeled' "chooseAllyInvestigator"
-              targets investigators \iid -> createAssetAt_ (toCard card) (InPlayArea iid)
+              targets investigators $ createAssetAt_ (toCard card) . InPlayArea
           else push $ SetAsideCards [toCard card]
       -- "Gather all earned artifacts that are not crossed out ... Put each of them
       -- into play under an investigator's control, divided as evenly as possible."
-      artifacts <- getUncrossedArtifacts
-      for_ artifacts \def -> push $ ForTarget (CardCodeTarget def.cardCode) (DoStep 2 Setup)
+      getUncrossedArtifacts >>= traverse_ \def ->
+        push $ ForTarget (CardCodeTarget def.cardCode) (DoStep 2 Setup)
       pure s
     ForTarget (CardCodeTarget cardCode) (DoStep 2 Setup) -> do
       for_ (lookupCardDef cardCode) \def -> do
         investigators <- select Anyone
         counts <-
           for investigators \iid ->
-            (iid,)
-              <$> selectCount (AssetWithTrait Artifact <> AssetControlledBy (InvestigatorWithId iid))
+            (iid,) <$> selectCount (AssetWithTrait Artifact <> assetControlledBy iid)
         unless (null counts) do
           let fewest = minimumEx $ map snd counts
-          card <- EncounterCard <$> genEncounterCard def
+          card <- fetchCard def
           lead <- getLead
           chooseOrRunOneM lead do
             questionLabeled' "chooseArtifactInvestigator"
@@ -241,8 +247,44 @@ instance RunMessage TheDoomOfArkhamPartII where
         resolveStory iid card
         push $ ScenarioSpecific "discardCthulhuCard" (toJSON card)
       pure s
+    -- Debug: draw the top card of the Cthulhu deck, as the agenda's forced ability would.
+    ScenarioSpecific "debugDrawCthulhuCard" _ -> do
+      lead <- getLead
+      drawCthulhuDeckCard lead attrs
+      pure s
+    ScenarioSpecific "setCthulhuActiveFacet" value -> do
+      let activeFacet = toResult @(Maybe Text) value
+      pure $ TheDoomOfArkhamPartII $ attrs & metaL .~ object ["activeCthulhuFacet" .= activeFacet]
     ScenarioSpecific "discardCthulhuCard" (toResult -> card) ->
       pure $ TheDoomOfArkhamPartII $ attrs & deckDiscardsL %~ insertWith (<>) CthulhuDeck [card]
+    {- Demolition: "shuffle this card into the Cthulhu deck along with the Cthulhu
+    discard pile." It has already cancelled its own discard, so it arrives here as
+    the card to fold in alongside everything discarded so far. -}
+    ScenarioSpecific "reshuffleCthulhuDeck" (toResult -> card) -> do
+      let discards = findWithDefault [] CthulhuDeck attrs.deckDiscards
+      deck <- shuffleM (card : discards <> findWithDefault [] CthulhuDeck attrs.decks)
+      pure
+        $ TheDoomOfArkhamPartII
+        $ attrs
+        & (decksL %~ insertMap CthulhuDeck deck)
+        & (deckDiscardsL %~ deleteMap CthulhuDeck)
+    ResolveChaosToken _ ElderThing iid -> do
+      drawAnotherChaosToken iid
+      pure s
+    ResolveChaosToken _ Cultist iid | isHardExpert attrs -> do
+      whenM ((/= Unflooded) <$> getFloodLevelFor iid) $ assignDamage iid Cultist 1
+      pure s
+    FailedSkillTest iid _ _ (ChaosTokenTarget token) _ _ -> do
+      case token.face of
+        Cultist
+          | isEasyStandard attrs ->
+              whenM ((/= Unflooded) <$> getFloodLevelFor iid) $ assignDamage iid Cultist 1
+        Tablet -> placeCluesOnLocation iid Tablet 1
+        ElderThing -> unlessM (hasModifier ScenarioTarget cthulhuDeckDrawnMarker) do
+          roundModifier attrs ScenarioTarget cthulhuDeckDrawnMarker
+          afterSkillTestQuiet $ drawCthulhuDeckCard iid attrs
+        _ -> pure ()
+      pure s
     ScenarioResolution res -> scope "resolutions" do
       case res of
         Resolution 1 -> do

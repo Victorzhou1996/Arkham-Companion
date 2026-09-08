@@ -76,7 +76,7 @@ import {
   choicesTooltipByPlayerKey,
 } from '@/arkham/composables/useGameChoices'
 import { buildGameIndexes, gameIndexesKey } from '@/arkham/composables/useGameIndexes'
-import { Card, cardDecoder } from '@/arkham/types/Card'
+import { Card, cardDecoder, toCardContents } from '@/arkham/types/Card'
 import * as Message from '@/arkham/types/Message'
 import { type Question } from '@/arkham/types/Question'
 import type { Source } from '@/arkham/types/Source'
@@ -338,6 +338,23 @@ watch(
 )
 
 const gameCard = ref<GameCard | null>(null)
+const cthulhuDeckCardCodes = new Set([
+  '11705',
+  '11706',
+  '11707',
+  '11708',
+  '11709',
+  '11710',
+  '11711',
+  '11712',
+  '11713',
+  '11714',
+  '11715',
+])
+const isCthulhuDeckReveal = computed(() => {
+  const focusedCard = gameCard.value
+  return focusedCard !== null && cthulhuDeckCardCodes.has(toCardContents(focusedCard.card).cardCode.replace(/^c/, ''))
+})
 const showTheSilenceModal = ref(false)
 const playabilityInfo = ref<PlayabilityInfo | null>(null)
 const gameLog = shallowRef<readonly string[]>(Object.freeze([]))
@@ -495,6 +512,12 @@ function questionTag(q: Question | null | undefined): string | null {
   if (!q) return null
   if (q.tag === 'QuestionLabel') return q.question.tag
   return q.tag
+}
+
+function scenarioBoardMounted(g: Arkham.Game) {
+  const scenario = g.scenario
+  if (!scenario || scenario.campaignStep || !scenario.started) return false
+  return Object.keys(g.investigators).length > 0
 }
 
 const isActualScenarioView = computed(() => {
@@ -858,16 +881,34 @@ function scheduleApplyUpdate(payload: string) {
       updateGameLog(updatedGame.log)
       if (!locked) {
         // PlayerTabs owns in-scenario perspective changes so tab routing and
-        // return navigation remain coordinated. Setup screens do not mount
-        // PlayerTabs, though, so follow their sole question here. Otherwise a
-        // multihanded solo game becomes inert after the first deck is chosen:
-        // the next player's ChooseDeck is present, but the view still has the
-        // previous playerId and therefore cannot answer it.
+        // return navigation remain coordinated. Campaign/setup screens do not
+        // mount PlayerTabs, though, so follow another pending question when the
+        // current seat has finished answering. Some sequential group stories
+        // keep an empty Read question parked for every seat, so presence alone
+        // does not mean the current seat still has an answer to give.
         const questionPlayers = Object.keys(updatedGame.question)
-        if (solo.value && questionPlayers.length === 1) {
-          const questionPlayer = questionPlayers[0]
-          const tag = questionTag(updatedGame.question[questionPlayer])
-          if (tag && AI_SETUP_DENYLIST.has(tag)) playerId.value = questionPlayer
+        const actionableQuestionPlayers = questionPlayers.filter(
+          (pid) => ArkhamGame.choices(updatedGame, pid).length > 0,
+        )
+        const currentPlayer = playerId.value ?? ''
+        const currentQuestion = updatedGame.question[currentPlayer]
+        const currentReadIsWaiting =
+          questionTag(currentQuestion) === 'Read' &&
+          ArkhamGame.choices(updatedGame, currentPlayer).length === 0 &&
+          actionableQuestionPlayers.length > 0
+        const nextQuestionPlayer = !questionPlayers.includes(currentPlayer)
+          ? questionPlayers[0]
+          : currentReadIsWaiting
+            ? actionableQuestionPlayers[0]
+            : null
+
+        if (
+          solo.value &&
+          !props.spectate &&
+          nextQuestionPlayer &&
+          !scenarioBoardMounted(updatedGame)
+        ) {
+          playerId.value = nextQuestionPlayer
         }
         continueSkipAll()
       }
@@ -2386,11 +2427,24 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <div v-else-if="gameCard" class="revelation">
+        <div
+          v-else-if="gameCard"
+          class="revelation"
+          :class="{ 'cthulhu-revelation': isCthulhuDeckReveal }"
+        >
           <div class="revelation-container">
             <h2>{{ format(gameCard.title) }}</h2>
             <div class="revelation-card-container">
-              <div class="revelation-card">
+              <div
+                class="revelation-card"
+                :class="{ 'cthulhu-revelation-card': isCthulhuDeckReveal }"
+                :role="isCthulhuDeckReveal ? 'button' : undefined"
+                :tabindex="isCthulhuDeckReveal ? 0 : undefined"
+                :aria-label="isCthulhuDeckReveal ? `${format(gameCard.title)}. Click to enact.` : undefined"
+                @click="isCthulhuDeckReveal && continueUI()"
+                @keydown.enter="isCthulhuDeckReveal && continueUI()"
+                @keydown.space.prevent="isCthulhuDeckReveal && continueUI()"
+              >
                 <CardView :game="game" :card="gameCard.card" :playerId="playerId" />
                 <img
                   v-if="gameCard.card.tag === 'PlayerCard'"
@@ -2399,7 +2453,8 @@ onUnmounted(() => {
                 />
                 <img v-else :src="imgsrc('back.png')" class="card back" />
               </div>
-              <button @click="continueUI">{{ $t('ok') }}</button>
+              <span v-if="isCthulhuDeckReveal" class="cthulhu-revelation-hint">Click to enact</span>
+              <button v-else @click="continueUI">{{ $t('ok') }}</button>
             </div>
           </div>
         </div>
@@ -3229,6 +3284,112 @@ header {
   justify-content: center;
   justify-items: center;
   justify-self: center;
+}
+
+.revelation.cthulhu-revelation {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  filter: none;
+  background:
+    linear-gradient(rgba(2, 16, 17, 0.78), rgba(1, 7, 8, 0.94)),
+    url('/img/arkham/extra/the-drowned-city/cthulhu-board.jpg') center / cover;
+  animation: cthulhu-revelation-in 500ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  &::before,
+  &::after {
+    position: absolute;
+    inset: -20%;
+    z-index: var(--z-index-0);
+    content: '';
+    pointer-events: none;
+  }
+
+  &::before {
+    background:
+      radial-gradient(ellipse at 50% 110%, rgba(45, 116, 99, 0.42) 0 12%, transparent 46%),
+      radial-gradient(ellipse at 12% 50%, rgba(13, 67, 64, 0.48), transparent 42%),
+      radial-gradient(ellipse at 88% 36%, rgba(68, 87, 43, 0.32), transparent 38%);
+    animation: cthulhu-murk 9s ease-in-out infinite alternate;
+  }
+
+  &::after {
+    opacity: 0.22;
+    background: url('/img/arkham/grunge.png') center / cover;
+    mix-blend-mode: screen;
+  }
+
+  .revelation-container {
+    position: relative;
+    z-index: var(--z-index-1);
+  }
+
+  h2 {
+    color: #cad8bd;
+    letter-spacing: 0.08em;
+    text-shadow: 0 2px 2px rgba(0, 0, 0, 0.9), 0 0 24px rgba(72, 129, 105, 0.8);
+  }
+}
+
+.cthulhu-revelation-card {
+  cursor: pointer;
+  outline: none;
+  filter: drop-shadow(0 20px 24px rgba(0, 4, 5, 0.8));
+  transition: transform 220ms ease, filter 220ms ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-5px) scale(1.025);
+    filter: drop-shadow(0 24px 28px rgba(0, 4, 5, 0.9)) drop-shadow(0 0 12px rgba(92, 148, 119, 0.5));
+  }
+
+  &:focus-visible {
+    border-radius: 15px;
+    box-shadow: 0 0 0 3px #a8c3a5;
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.985);
+  }
+}
+
+.cthulhu-revelation-hint {
+  color: #b9c9b1;
+  font-family: Teutonic, Georgia, serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  text-transform: uppercase;
+}
+
+@keyframes cthulhu-revelation-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cthulhu-murk {
+  from {
+    opacity: 0.62;
+    transform: scale(1) rotate(-1deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.08) rotate(1deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revelation.cthulhu-revelation,
+  .revelation.cthulhu-revelation::before,
+  .cthulhu-revelation-card {
+    animation: none;
+    transition: none;
+  }
 }
 
 @keyframes flip-back {

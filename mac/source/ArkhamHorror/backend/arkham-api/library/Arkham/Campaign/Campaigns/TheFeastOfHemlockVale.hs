@@ -1,6 +1,7 @@
 module Arkham.Campaign.Campaigns.TheFeastOfHemlockVale (theFeastOfHemlockVale) where
 
 import Arkham.Asset.Cards qualified as Assets
+import Arkham.Campaign.Campaigns.TheFeastOfHemlockVale.Achievements
 import Arkham.Campaign.Import.Lifted
 import Arkham.Campaigns.TheFeastOfHemlockVale.CampaignSteps
 import Arkham.Campaigns.TheFeastOfHemlockVale.Helpers
@@ -50,7 +51,7 @@ instance IsCampaign TheFeastOfHemlockVale where
             (Day1, Day) -> continueEdit (CampaignSpecificStep "preludeTheFirstEvening" Nothing) allowOptions
             (Day1, Night) -> continue PreludeDawnOfTheSecondDay
             (Day2, Day) -> continueEdit (CampaignSpecificStep "preludeTheSecondEvening" Nothing) allowOptions
-            (Day2, Night) -> Nothing
+            (Day2, Night) -> continue PreludeDawnOfTheFinalDay
             (Day3, _) -> continueEdit PreludeTheFinalEvening allowOptions
      in case (campaignStep (toAttrs a)).normalize of
           PrologueStep -> continue PreludeWelcomeToHemlockVale
@@ -66,7 +67,8 @@ instance IsCampaign TheFeastOfHemlockVale where
           _ -> Nothing
 
 instance RunMessage TheFeastOfHemlockVale where
-  runMessage msg c@(TheFeastOfHemlockVale attrs) = runQueueT $ campaignI18n $ case msg of
+  runMessage msg c@(TheFeastOfHemlockVale attrs) =
+    runQueueT $ campaignI18n $ lift (runHemlockValeAchievements msg) *> case msg of
     CampaignStep PrologueStep -> do
       scope "prologue" $ flavor $ setTitle "title" >> p "body"
       scope "additionalRulesAndClarifications" do
@@ -485,10 +487,10 @@ instance RunMessage TheFeastOfHemlockVale where
       pure c
     CampaignStep (CampaignSpecificStep "epilogueCodex" (Just entry)) -> scope "epilogue.codex" do
       case entry of
-        "atwoods" -> scope "atwoods" $ flavor $ setTitle "title" >> p "body"
-        "hemlocks" -> scope "hemlocks" $ flavor $ setTitle "title" >> p "body"
-        "judith" -> scope "judith" $ flavor $ setTitle "title" >> p "body"
-        "theo" -> scope "theo" $ flavor $ setTitle "title" >> p "body"
+        "atwoods" -> scope "atwoods" $ flavor $ p.green "body"
+        "hemlocks" -> scope "hemlocks" $ flavor $ p.green "body"
+        "judith" -> scope "judith" $ flavor $ p.green "body"
+        "theo" -> scope "theo" $ flavor $ p.green "body"
         _ -> error "Unknown epilogue codex"
       push $ CampaignStep $ CampaignSpecificStep "epilogueCodex" Nothing
       let meta = toResultDefault initMeta attrs.meta

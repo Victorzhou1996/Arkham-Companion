@@ -3,7 +3,9 @@ module Arkham.Asset.Assets.NoPlaceLikeHome (noPlaceLikeHome) where
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted hiding (RevealLocation)
+import Arkham.Campaigns.TheDrownedCity.Helpers (taskEnds)
 import Arkham.Campaigns.TheDrownedCity.Key qualified as Key
+import Arkham.GameValue
 import Arkham.Matcher
 import Arkham.Message.Lifted.Log (incrementRecordCountForInvestigator)
 import Arkham.Token
@@ -25,9 +27,13 @@ instance HasAbilities NoPlaceLikeHome where
   getAbilities (NoPlaceLikeHome a) =
     [ controlled a 1 (if a.use Discovery > 0 then NoRestriction else Never)
         $ forced revealedOrPutIntoPlay
-    , controlled a 2 (if a.use Discovery <= 1 then NoRestriction else Never)
-        $ forced
-        $ GameEnds #when
+    , -- "1 [per_investigator] or fewer discoveries" scales with the player
+      -- count, so the threshold has to be a calculation, not a fixed 1.
+      controlled
+        a
+        2
+        (HasCalculation (AssetTokenCountCalculation a.id #discovery) (AtMost $ PerPlayer 1))
+        $ forced taskEnds
     ]
 
 instance RunMessage NoPlaceLikeHome where

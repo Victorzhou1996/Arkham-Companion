@@ -1433,15 +1433,16 @@ getInvestigatorsMatching MatcherFunc {..} matcher = do
       pure $ count (not . isEmptySlot) slots > 0
     InvestigatorWithMetaKey k -> flip runMatchesM as $ \i -> do
       hasEffectKey <- hasModifier (toId i) (MetaModifier (String k))
-      if hasEffectKey
-        then pure True
-        else
-          field InvestigatorMeta (toId i) >>= \case
-            Object o ->
-              case KeyMap.lookup (Key.fromText k) o of
-                Just (Bool b) -> pure b
-                _ -> pure False
-            _ -> pure False
+      -- a transfigured form's bookkeeping lands in formMeta, ours stays in meta
+      let
+        hasMetaKey = \case
+          Object o | Just (Bool b) <- KeyMap.lookup (Key.fromText k) o -> b
+          _ -> False
+        attrs = toAttrs i
+      pure
+        $ hasEffectKey
+        || hasMetaKey (investigatorMeta attrs)
+        || hasMetaKey (investigatorFormMeta attrs)
     ContributedMatchingIcons valueMatcher -> flip runMatchesM as $ \i -> do
       mSkillTest <- getSkillTest
       case mSkillTest of
@@ -1918,6 +1919,7 @@ abilityMatches a@Ability {..} = \case
           `notElem` [AbilityAttack, AbilityInvestigate, AbilityEvade, AbilityEngage, AbilityMove]
       , abilitySource `sourceMatches` M.EncounterCardSource
       ]
+  AbilityOnCard _ | abilityBasic -> pure False
   AbilityOnCard cardMatcher -> sourceMatches abilitySource (M.SourceWithCard cardMatcher)
   AbilityOnExtendedCard extendedCardMatcher -> do
     ecards <- select extendedCardMatcher
@@ -2011,7 +2013,10 @@ getAbilitiesMatching matcher = guardYourLocation $ \_ -> do
           ( \a -> a.index `notElem` [AbilityAttack, AbilityInvestigate, AbilityEvade, AbilityEngage, AbilityMove]
           )
         & filterM (\a -> a.source `sourceMatches` M.EncounterCardSource)
-    AbilityOnCard cardMatcher -> filterM (\a -> a.source `sourceMatches` M.SourceWithCard cardMatcher) as
+    AbilityOnCard cardMatcher ->
+      as
+        & filter (not . abilityBasic)
+        & filterM \a -> a.source `sourceMatches` M.SourceWithCard cardMatcher
     AbilityOnExtendedCard extendedCardMatcher -> do
       ecards <- select extendedCardMatcher
       as & filterM \a -> a.source `sourceMatches` M.SourceWithCard (mapOneOf (CardWithId . toCardId) ecards)
@@ -4709,6 +4714,7 @@ instance Projection Act where
       ActDeckId -> pure actDeckId
       ActAbilities -> pure $ getAbilities a
       ActCard -> pure $ lookupCard (unActId aid) actCardId
+      ActCardsUnderneath -> pure actCardsUnderneath
       ActUsedWheelOfFortuneX -> pure actUsedWheelOfFortuneX
       ActFlipped -> pure actFlipped
       ActKeys -> pure actKeys
@@ -5042,6 +5048,7 @@ instance Projection Investigator where
           Just skillTest -> findWithDefault [] (toId i) (skillTestCommittedCards skillTest)
       InvestigatorDefeated -> pure investigatorDefeated
       InvestigatorResigned -> pure investigatorResigned
+      InvestigatorIsEliminated -> pure investigatorEliminated
       InvestigatorXp -> pure investigatorXp
       InvestigatorSupplies -> pure investigatorSupplies
 
@@ -5672,6 +5679,9 @@ instance Query ExtendedCardMatcher where
       CardIsBeneathActDeck -> do
         cards <- scenarioField ScenarioCardsUnderActDeck
         pure $ filter (`elem` cards) cs
+      CardIsBeneathAct -> do
+        cards <- concatMapM (field ActCardsUnderneath) =<< select AnyAct
+        pure $ filter (`elem` cards) cs
       CardSharesTitleWith inner -> do
         titles <- map toTitle <$> select inner
         pure $ filter ((`elem` titles) . toTitle) cs
@@ -6154,6 +6164,7 @@ instance Projection Story where
       StoryFlipped -> pure storyFlipped
       StoryOtherSide -> pure storyOtherSide
       StoryCardsUnderneath -> pure storyCardsUnderneath
+      StorySealedChaosTokens -> pure storySealedChaosTokens
 
 instance Projection Treachery where
   getAttrs tid = toAttrs <$> getTreachery tid

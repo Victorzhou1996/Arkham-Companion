@@ -4,6 +4,7 @@ import { ChaosToken, chaosTokenDecoder } from '@/arkham/types/ChaosToken';
 import { Card, cardDecoder} from '@/arkham/types/Card';
 import { SkillType, skillTypeDecoder} from '@/arkham/types/SkillType';
 import { Modifier, modifierDecoder } from '@/arkham/types/Modifier';
+import { Target, targetDecoder } from '@/arkham/types/Target';
 
 export type SkillTestStep
   = "DetermineSkillOfTestStep"
@@ -51,6 +52,7 @@ export type SkillTest = {
   // result: SkillTestResult;
   committedCards: Card[]
   source: Source;
+  target: Target;
   id: string
   action: string | null;
   targetCard?: string | null;
@@ -101,6 +103,7 @@ export const skillTestDecoder = JsonDecoder.object<SkillTest>(
     // result: skillTestResultDecoder,
     committedCards: JsonDecoder.record(JsonDecoder.array(cardDecoder, 'Card[]'), 'Record<string, Card[]>').map((record) => Object.values(record).flat()),
     source: sourceDecoder,
+    target: targetDecoder,
     targetCard: v2Optional(JsonDecoder.string()),
     sourceCard: v2Optional(JsonDecoder.string()),
     modifiedSkillValue: JsonDecoder.number(),

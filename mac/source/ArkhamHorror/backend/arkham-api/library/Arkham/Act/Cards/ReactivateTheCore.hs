@@ -41,7 +41,7 @@ instance HasAbilities ReactivateTheCore where
           2
           (EachUndefeatedInvestigator (at_ $ LocationWithTitle "Barrier Core" <> locationIs Locations.barrierCoreActive))
           $ Objective
-          $ forced (RoundEnds #when)
+          $ freeReaction (RoundEnds #when)
       ]
 
 instance RunMessage ReactivateTheCore where

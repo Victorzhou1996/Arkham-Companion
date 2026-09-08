@@ -95,6 +95,7 @@ import Arkham.Message.Lifted (
   batched,
   capture,
   do_,
+  evasionResult,
   obtainCard,
   placeKey,
   removeEnemy,
@@ -180,6 +181,9 @@ filterOutEnemyMessages eid ask'@(Ask pid q) = case q of
     x -> Just (Ask pid $ ChooseOneAtATime x)
   ChooseOneAtATimeWithAuto k msgs -> case mapMaybe (filterOutEnemyUiMessages eid) msgs of
     [] -> Nothing
+    -- Filtering can strip the question down to a single option, at which point the
+    -- auto ("resolve the rest") choice would just duplicate it.
+    [x] -> Just (Ask pid $ ChooseOneAtATime [x])
     x -> Just (Ask pid $ ChooseOneAtATimeWithAuto k x)
   ChooseUpgradeDeck -> Just (Ask pid ChooseUpgradeDeck)
   ChooseDeck -> Just ask'
@@ -246,6 +250,10 @@ getCanReady a = do
   phase <- getPhase
   pure $ CannotReady `notElem` mods && (DoesNotReadyDuringUpkeep `notElem` mods || phase /= #upkeep)
 
+{- | Whether an enemy is currently barred from attacking. 'CannotAttack' is
+unconditional; 'CannotAttackDuringEnemyPhase' only bites in the enemy phase,
+since @Do EnemiesAttack@ is also pushed by card effects outside of it.
+-}
 getCannotAttackNow :: HasGame m => [ModifierType] -> m Bool
 getCannotAttackNow mods
   | CannotAttack `elem` mods = pure True
@@ -1247,9 +1255,11 @@ instance RunMessage EnemyAttrs where
     Failed (Action.Fight, target) iid _source _ _ | isTarget a target -> do
       mods <- getCombinedModifiers [toTarget iid, toTarget a]
       keywords <- getModifiedKeywords a
+      canAttack <- canBeAttackedBy enemyId iid
 
       when
-        ( (Keyword.Retaliate `elem` keywords)
+        ( canAttack
+            && (Keyword.Retaliate `elem` keywords)
             && (IgnoreRetaliate `notElem` mods)
             && (not enemyExhausted || CanRetaliateWhileExhausted `elem` mods)
         )
@@ -1378,9 +1388,11 @@ instance RunMessage EnemyAttrs where
     Failed (Action.Evade, target) iid _ _ _ | isTarget a target -> do
       mods <- getModifiers iid
       keywords <- getModifiedKeywords a
+      canAttack <- canBeAttackedBy enemyId iid
       pushAll
         [ EnemyAttack $ viaAlert $ (enemyAttack enemyId a iid) {attackDamageStrategy = enemyDamageStrategy}
-        | Keyword.Alert `elem` keywords
+        | canAttack
+        , Keyword.Alert `elem` keywords
         , IgnoreRetaliate `notElem` mods
         ]
       pure a
@@ -2262,6 +2274,14 @@ instance RunMessage EnemyAttrs where
       pure $ a & tokensL .~ mempty
     PlaceReferenceCard (isTarget a -> True) cardCode -> do
       pure $ a & referenceCardsL %~ (cardCode :)
+    -- evade/defeat windows deliberately still name a removed enemy, so a reaction
+    -- resolving in one must not put it back on the table (#5610)
+    PlaceEnemy eid placement
+      | eid == enemyId
+      , enemyDefeated
+      , isInPlayPlacement placement
+      , not (isInPlayPlacement a.placement) ->
+          pure a
     PlaceEnemy eid placement | eid == enemyId -> do
       mods <- getModifiers a
       let cannotEngage = [x | CannotEngage x <- mods]
@@ -2387,7 +2407,7 @@ instance RunMessage EnemyAttrs where
       -- generic DoBatch handler
       liftRunMessage (Do msg') a
     ForTarget (isTarget a -> True) msg' -> liftRunMessage msg' a
-    UseAbility _ ab _ | isSource a ab.source || isProxySource a ab.source || isIndexedSource a ab.source -> do
+    UseAbility _ ab _ | isSource a ab.source || isProxySource a ab.source || isIndexed a ab.source -> do
       push $ Do msg
       pure a
     InSearch msg'@(UseAbility _ ab _) | isSource a ab.source || isProxySource a ab.source -> do

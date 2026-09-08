@@ -86,6 +86,9 @@ let queue: string[] = []
 let generation = 0
 let activeUtterance: SpeechSynthesisUtterance | null = null
 let restartTimer: number | null = null
+let activeItem: NarrationItem | null = null
+let activeText = ''
+let automaticPlayback = false
 
 const speech = () =>
   typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null
@@ -150,6 +153,7 @@ const chunks = (text: string, limit = 220): string[] => {
       continue
     }
     if (buffer) result.push(buffer)
+    buffer = ''
     for (let offset = 0; offset < sentence.length; offset += limit) {
       result.push(sentence.slice(offset, offset + limit))
     }
@@ -180,6 +184,9 @@ const finish = (token = generation) => {
   }
   queue = []
   activeUtterance = null
+  activeItem = null
+  activeText = ''
+  automaticPlayback = false
   speaking.value = false
   paused.value = false
 }
@@ -204,10 +211,12 @@ const speakNext = (token: number) => {
   utterance.volume = preferences.volume
   utterance.voice = selectedVoice()
   utterance.onend = () => {
+    if (token !== generation) return
     activeUtterance = null
     speakNext(token)
   }
   utterance.onerror = () => {
+    if (token !== generation) return
     activeUtterance = null
     finish(token)
   }
@@ -216,13 +225,23 @@ const speakNext = (token: number) => {
   engine.speak(utterance)
 }
 
-export const readNarration = (item: NarrationItem | null = current.value) => {
+export const readNarration = (item: NarrationItem | null = current.value, automatic = false) => {
   const engine = speech()
   if (!engine || !item) return
   const text = itemText(item)
-  if (!text) return
+  if (!text) {
+    stopNarration()
+    return
+  }
 
   const token = ++generation
+  if (restartTimer !== null) {
+    window.clearTimeout(restartTimer)
+    restartTimer = null
+  }
+  activeItem = item
+  activeText = text
+  automaticPlayback = automatic
   queue = chunks(text)
   paused.value = false
   const needsRestart = engine.speaking || engine.pending || engine.paused
@@ -241,7 +260,7 @@ export const readNarration = (item: NarrationItem | null = current.value) => {
 export const setCurrentNarration = (item: NarrationItem) => {
   const changed = current.value?.id !== item.id
   current.value = item
-  if (changed && preferences.autoRead) readNarration(item)
+  if (changed && preferences.autoRead && itemText(item)) readNarration(item, true)
 }
 
 export const pauseOrResumeNarration = () => {
@@ -280,8 +299,18 @@ if (speech()) {
   speech()!.addEventListener?.('voiceschanged', refreshVoices)
 }
 
-watch(preferences, (value) => localStorage.setItem(STORAGE_KEY, JSON.stringify(value)), {
+watch(preferences, (value) => {
+  if (activeItem && ((!value.autoRead && automaticPlayback) || itemText(activeItem) !== activeText)) {
+    stopNarration()
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
+  } catch {
+    // Playback controls must still work when browser storage is unavailable.
+  }
+}, {
   deep: true,
+  flush: 'sync',
 })
 
 export const useNarration = () => ({

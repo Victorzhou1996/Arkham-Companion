@@ -4,7 +4,7 @@ import { LogContents, LogKey, formatKey, logContentsDecoder } from '@/arkham/typ
 import { toCapitalizedWords, formatContent } from '@/arkham/helpers'
 import { cardArt } from '@/arkham/cardImages'
 import { computed, ref, onMounted, onUnmounted, watch, nextTick, type Component } from 'vue'
-import { fetchCard, fetchGameAchievements } from '@/arkham/api'
+import { fetchAchievements, fetchCard, fetchGameAchievements } from '@/arkham/api'
 import type { Achievement } from '@/arkham/types/Achievement'
 import type { CardDef } from '@/arkham/types/CardDef'
 import { type Name, simpleName } from '@/arkham/types/Name'
@@ -22,7 +22,7 @@ import CampaignLogSpecialRules from '@/arkham/components/CampaignLogSpecialRules
 import CampaignLogRecordedSets from '@/arkham/components/CampaignLogRecordedSets.vue'
 import CampaignLogInvestigatorSection from '@/arkham/components/CampaignLogInvestigatorSection.vue'
 import CampaignLogPartners from '@/arkham/components/CampaignLogPartners.vue'
-import { achievementCatalog } from '@/arkham/achievements'
+import { achievementCatalog, activeAchievementPart, type AchievementPart } from '@/arkham/achievements'
 import CampaignLogChaosBag from '@/arkham/components/CampaignLogChaosBag.vue'
 import CampaignLogAchievements from '@/arkham/components/CampaignLogAchievements.vue'
 import CampaignLogUltimatumsAndBoons from '@/arkham/components/CampaignLogUltimatumsAndBoons.vue'
@@ -53,6 +53,8 @@ type LogTab = 'log' | 'investigators' | 'rules' | 'achievements' | `additional:$
 const activeTab = ref<LogTab>('log')
 
 const achievements = ref<Achievement[]>([])
+// User-wide rows (any game) for checklist progress checkmarks.
+const userAchievements = ref<Achievement[]>([])
 const campaignAchievementEntries = computed(() =>
   achievementCatalog.filter((entry) => entry.campaignId === props.game.campaign?.id)
 )
@@ -64,6 +66,9 @@ onMounted(() => {
   fetchGameAchievements(props.game.id)
     .then((rows) => { achievements.value = rows })
     .catch(() => { achievements.value = [] })
+  fetchAchievements()
+    .then((rows) => { userAchievements.value = rows })
+    .catch(() => { userAchievements.value = [] })
 })
 
 const sectionComponentById: Record<string, Component> = {
@@ -142,6 +147,14 @@ const otherModeTitle = computed(() => {
   if (!title) return null
   return title === 'The Dream-Quest' ? 'The Web of Dreams' : 'The Dream-Quest'
 })
+
+// The mini-campaign being played, when only one half is in play (null = show all).
+const activeCampaignPart = computed<AchievementPart | null>(() =>
+  activeAchievementPart(props.game.campaign?.meta?.campaignMode)
+)
+
+// The whole inactive campaign rides along in the meta for the Dream Eaters A/B split
+const otherCampaignAttrs = computed(() => props.game.campaign?.meta?.otherCampaignAttrs ?? null)
 
 // decode the counterpart log if present (Dream Eaters A/B split)
 const otherLog = ref<LogContents | null>(null)
@@ -852,7 +865,9 @@ watch(
         <CampaignLogAchievements
           v-if="activeTab === 'achievements'"
           :achievements="achievements"
+          :user-achievements="userAchievements"
           :campaign-id="game.campaign?.id"
+          :part="activeCampaignPart"
         />
 
         <template v-for="(section, index) in additionalLogSections" :key="section.title">

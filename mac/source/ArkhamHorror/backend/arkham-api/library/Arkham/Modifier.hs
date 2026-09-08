@@ -94,6 +94,8 @@ data ModifierType
   | AsIfNotEngagedWith EnemyId
   | AsIfInHand Card
   | AsIfInHandFor ForPlay CardId
+  | -- out-of-play effects only, never treated as in hand
+    AsIfInHandForEffects CardId
   | AsIfResourcePool AssetId
   | AsIfUnderControlOf InvestigatorId
   | AsIfTurn InvestigatorId
@@ -101,6 +103,7 @@ data ModifierType
   | AttackDealsEitherDamageOrHorror
   | AttacksCannotBeCancelled
   | Barricades [LocationId]
+  | BaseShroud Int
   | BaseSkill Int
   | BaseSkillOf {skillType :: SkillType, value :: Int}
   | BaseSkillOfCalculated {skillType :: SkillType, calculation :: GameCalculation}
@@ -350,6 +353,13 @@ data ModifierType
   | IgnoreTextOnLocation LocationMatcher
   | InVictoryDisplayForCountingVengeance
   | IncreaseCostOf ExtendedCardMatcher Int
+  | {- | A composite enemy: several enemy cards that are a single enemy on the map
+    (Cthulhu and the facets on his Cthulhu Board). The card carrying this is never
+    itself fought or evaded; interacting with it means choosing one of the members.
+    Written with 'Arkham.Helpers.Modifiers.interactAsOneOf', which pairs it with the
+    @Cannot*@ modifiers that keep the card itself off every target list.
+    -}
+    InteractAsOneOf EnemyMatcher
   | InvestigateActionCriteria CriteriaOverride
   | IsEmptySpace
   | IsPointOfDamage
@@ -424,6 +434,7 @@ data ModifierType
   | RevealChaosTokensBeforeCommittingCards
   | SanityModifier Int
   | CampaignModifier Text
+  | InvestigatorModifier Text
   | ScenarioModifier Text
   | ScenarioModifierValue Text Value
   | SearchDepth Int

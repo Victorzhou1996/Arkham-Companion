@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { clearAchievements, fetchAchievements, type ClearAchievementsScope } from '@/arkham/api'
-import { achievementCatalog, type AchievementEntry } from '@/arkham/achievements'
+import { achievementCatalog, achievementChecklists, achievementSections, compareAchievementCampaignIds, type AchievementEntry } from '@/arkham/achievements'
 import type { Achievement } from '@/arkham/types/Achievement'
 import Prompt from '@/components/Prompt.vue'
 
@@ -68,13 +68,38 @@ const campaigns = computed(() => {
     if (group) group.push(entry)
     else groups.set(entry.campaignId, [entry])
   }
-  return [...groups.entries()].map(([campaignId, entries]) => ({ campaignId, entries }))
+  return [...groups.entries()]
+    .sort(([a], [b]) => compareAchievementCampaignIds(a, b))
+    .map(([campaignId, entries]) => ({
+      campaignId,
+      entries,
+      // The Dream-Eaters prints one list per mini-campaign; every other campaign
+      // comes back as a single unlabelled section.
+      sections: achievementSections(entries),
+    }))
 })
 
 const earnedRow = (entry: AchievementEntry): Achievement | null => {
   const row = byTag.value.get(entry.tag)
   return row && row.earnedAt !== null ? row : null
 }
+
+// Cross-playthrough checklist achievements: the row's progress column holds
+// the checked item keys; an earned row counts as fully checked.
+const checklist = (entry: AchievementEntry): string[] | undefined =>
+  achievementChecklists[entry.tag]
+
+const checkedItems = (entry: AchievementEntry): string[] => {
+  const row = byTag.value.get(entry.tag)
+  if (!row) return []
+  if (row.earnedAt !== null) return checklist(entry) ?? []
+  return Array.isArray(row.progress)
+    ? row.progress.filter((x): x is string => typeof x === 'string')
+    : []
+}
+
+const isChecked = (entry: AchievementEntry, item: string): boolean =>
+  checkedItems(entry).includes(item)
 
 const earnedDate = (row: Achievement): string | null => {
   if (!row.earnedAt) return null
@@ -113,9 +138,14 @@ const earnedDate = (row: Achievement): string | null => {
             {{ t('achievements.clearCampaign') }}
           </button>
         </summary>
+        <template v-for="section in campaign.sections" :key="section.part ?? 'all'">
+        <h3 v-if="section.part" class="part-header">
+          <span class="part-title">{{ t(`achievements.parts.${section.part}`) }}</span>
+          <span class="part-count">{{ campaignEarnedCount(section) }}/{{ section.entries.length }}</span>
+        </h3>
         <ul class="entry-list">
           <li
-            v-for="entry in campaign.entries"
+            v-for="entry in section.entries"
             :key="entry.tag"
             class="entry"
             :class="{ earned: !!earnedRow(entry) }"
@@ -124,6 +154,17 @@ const earnedDate = (row: Achievement): string | null => {
             <div class="entry-body">
               <span class="entry-name">{{ t(`achievements.entries.${entry.tag}.name`) }}</span>
               <span class="entry-text">{{ t(`achievements.entries.${entry.tag}.text`) }}</span>
+              <ul v-if="checklist(entry)" class="checklist">
+                <li
+                  v-for="item in checklist(entry)"
+                  :key="item"
+                  class="checklist-item"
+                  :class="{ checked: isChecked(entry, item) }"
+                >
+                  <span class="checkbox" aria-hidden="true">{{ isChecked(entry, item) ? '☑' : '☐' }}</span>
+                  {{ t(`achievements.entries.${entry.tag}.items.${item}`) }}
+                </li>
+              </ul>
               <span v-if="earnedRow(entry)" class="entry-earned">
                 {{ earnedDate(earnedRow(entry)!) }}
                 <router-link
@@ -144,6 +185,7 @@ const earnedDate = (row: Achievement): string | null => {
             </button>
           </li>
         </ul>
+        </template>
       </details>
 
       <Prompt
@@ -302,6 +344,31 @@ h2 {
   list-style: none;
 }
 
+/* Mini-campaign divider (The Dream-Eaters' two printed lists). */
+.part-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 16px 0 0;
+  font-family: teutonic, sans-serif;
+  font-size: 1em;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.part-title {
+  color: rgba(217, 184, 69, 0.8);
+}
+
+.part-count {
+  color: rgba(255, 255, 255, 0.4);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+
 .entry {
   display: flex;
   gap: 10px;
@@ -347,6 +414,32 @@ h2 {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.85rem;
   line-height: 1.45;
+}
+
+.checklist {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checklist-item {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.checklist-item.checked {
+  color: rgba(217, 184, 69, 0.85);
+}
+
+.checkbox {
+  font-size: 1rem;
 }
 
 .entry-earned {

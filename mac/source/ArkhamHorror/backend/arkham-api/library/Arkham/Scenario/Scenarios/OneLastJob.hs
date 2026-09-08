@@ -140,7 +140,7 @@ instance RunMessage OneLastJob where
             setTitle "title"
             p "body"
             popScope $ ul do
-              li "rubyLostTheBet"
+              li "rubyWonTheBet"
               withXp xp $ li "victory"
               li.validate discoveredAnAlienLanguage "discoveredAnAlienLanguage"
               li "proceed"
@@ -150,7 +150,7 @@ instance RunMessage OneLastJob where
             setTitle "title"
             p "body"
             popScope $ ul do
-              li "rubyWonTheBet"
+              li "rubyLostTheBet"
               withXp xp $ li "victory"
               li.validate discoveredAnAlienLanguage "discoveredAnAlienLanguage"
               li "proceed"

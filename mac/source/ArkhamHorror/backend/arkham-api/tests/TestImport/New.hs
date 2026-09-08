@@ -702,6 +702,25 @@ withEach xs f = for_ xs $ withRewind . f
 commit :: (HasCallStack, IsCard card) => card -> TestAppT ()
 commit = chooseTarget . toCardId
 
+-- | Assert that no pending question offers a reaction from this source.
+assertNoReactionOf :: (HasCallStack, Sourceable source) => source -> TestAppT ()
+assertNoReactionOf (toSource -> source) = do
+  questionMap <- gameQuestion <$> getGame
+  let
+    choicesOf question = case stripQuestionWrappers question of
+      ChooseOne msgs -> msgs
+      PlayerWindowChooseOne msgs -> msgs
+      WindowChooseOne msgs -> msgs
+      _ -> []
+    isReaction = \case
+      AbilityLabel {ability} -> case abilityType ability of
+        ReactionAbility {} -> abilitySource ability == source
+        _ -> False
+      _ -> False
+  case find isReaction (concatMap (choicesOf . snd) (mapToList questionMap)) of
+    Nothing -> pure ()
+    Just choice -> expectationFailure $ "expected no reaction from " <> show source <> ", but found:\n\n" <> show choice
+
 assertNoReaction :: TestAppT ()
 assertNoReaction = do
   questionMap <- gameQuestion <$> getGame

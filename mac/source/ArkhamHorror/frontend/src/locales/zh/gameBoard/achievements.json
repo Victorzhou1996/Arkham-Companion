@@ -8,9 +8,17 @@
   "settingsToggleDescription": "游玩时追踪本战役的官方成就。解锁记录会保存到你的账号，并显示在战役日志中。",
   "noneEarnedYet": "尚未解锁成就。",
   "campaigns": {
+    "06": "食梦者",
+    "07": "印斯茅斯阴谋",
+    "08": "地球边缘",
+    "09": "猩红密钥",
+    "10": "铁杉谷盛宴",
+    "11": "淹没之城",
     "50": "重返狂热之夜",
     "51": "重返敦威治遗产",
-    "52": "重返卡尔克萨之路"
+    "52": "重返卡尔克萨之路",
+    "53": "重返遗忘年代",
+    "54": "重返万象无终"
   },
   "entries": {
     "TheZealotsRevenge": {
@@ -87,7 +95,14 @@
     },
     "TheGangsAllHere": {
       "name": "人都到齐了",
-      "text": "在幸存者中，让亨利·阿米蒂奇博士、弗朗西斯·摩根博士、沃伦·莱斯教授、泽布伦·沃特利和厄尔·索耶全部活过敦威治遗产。"
+      "text": "在幸存者中，让亨利·阿米蒂奇博士、弗朗西斯·摩根博士、沃伦·莱斯教授、泽布伦·沃特利和厄尔·索耶全部活过敦威治遗产。",
+      "items": {
+        "DrHenryArmitage": "亨利·阿米蒂奇博士",
+        "ZebulonWhateley": "西布伦·沃特雷",
+        "DrFrancisMorgan": "佛朗西斯·摩尔根博士",
+        "EarlSawyer": "厄尔·索耶",
+        "ProfessorWarrenRice": "沃伦·莱斯教授"
+      }
     },
     "NoBroodLeftBehind": {
       "name": "一个子嗣也不能少",
@@ -135,7 +150,14 @@
     },
     "FirstSteps": {
       "name": "初次接触",
-      "text": "在最后的王者中，采访康斯坦斯·迪梅因、乔丹·佩里、石丸晴子、塞巴斯蒂安·莫罗和阿什莉·克拉克。"
+      "text": "在最后的王者中，采访康斯坦斯·迪梅因、乔丹·佩里、石丸晴子、塞巴斯蒂安·莫罗和阿什莉·克拉克。",
+      "items": {
+        "ConstanceDumaine": "康斯坦丝·杜梅因",
+        "SebastienMoreau": "赛巴斯蒂安·莫罗",
+        "JordanPerry": "乔丹·佩里",
+        "AshleighClarke": "阿什莉·克拉克",
+        "IshimaruHaruko": "石丸春子"
+      }
     },
     "CrashingTheParty": {
       "name": "不速之客",
@@ -192,6 +214,734 @@
     "CarcosaExpertise": {
       "name": "卡尔克萨专家",
       "text": "以专家难度赢得卡尔克萨之路战役。"
+    },
+    "WhyDidItHaveToBeSnakes": {
+      "name": "为什么偏偏是蛇？",
+      "text": "在《遗忘年代》战役中累计击败20个蛇族敌人。"
+    },
+    "WatchThemUnravel": {
+      "name": "看着命运展开",
+      "text": "在一次《命运之线》中完成全部4套场景牌组。"
+    },
+    "HopeForHumanity": {
+      "name": "人类的希望",
+      "text": "在《界限彼端》中恢复伊塔卡对人类的信心。"
+    },
+    "Scenario5What": {
+      "name": "剧本5？哪来的剧本5？",
+      "text": "跳过《久远腹地》第1部分。"
+    },
+    "BeyondPerfection": {
+      "name": "超越完美",
+      "text": "在一次《天机之城》中完成场景2上的全部8项任务。"
+    },
+    "IRememberEverything": {
+      "name": "我全都想起来了！",
+      "text": "在《天机之城》中恢复亚历杭德罗的记忆。"
+    },
+    "Patricide": {
+      "name": "弑父",
+      "text": "在《幽嘶深渊》中击败伊格。"
+    },
+    "HesGotAPoint": {
+      "name": "他说得有道理",
+      "text": "在《破碎永世》中站在亚历杭德罗一方。"
+    },
+    "ValusiaSoundsGreat": {
+      "name": "瓦卢西亚听起来不错",
+      "text": "在《破碎永世》中站在伊塔卡一方。"
+    },
+    "IveBuiltUpAnImmunity": {
+      "name": "我已经免疫了",
+      "text": "在从未中毒的情况下赢得《遗忘年代》战役。"
+    },
+    "WeHaveAnUnderstanding": {
+      "name": "我们达成了默契",
+      "text": "从未对瓦卢西亚的预示者造成伤害，并赢得《遗忘年代》战役。"
+    },
+    "WhoNeedsAnyOfThisJunk": {
+      "name": "谁需要这些破烂？",
+      "text": "未购买任何补给，并赢得《遗忘年代》战役。"
+    },
+    "DontTreadOnMe": {
+      "name": "别踩我",
+      "text": "在战役日志的“伊格之怒”下没有记录任何刻度，并赢得《遗忘年代》战役。"
+    },
+    "BaneOfYig": {
+      "name": "伊格之祸",
+      "text": "在战役日志的“伊格之怒”下记录至少25个刻度，并赢得《遗忘年代》战役。"
+    },
+    "IfICouldTurnBackTime": {
+      "name": "如果时光可以倒流",
+      "text": "开辟自己的道路，解锁剧本IX，并赢得《遗忘年代》战役。"
+    },
+    "YothExpertise": {
+      "name": "犹斯专家",
+      "text": "以专家难度赢得《遗忘年代》战役。"
+    },
+    "WhoYouGonnaCall": {
+      "name": "你要找谁来帮忙？",
+      "text": "在本战役中累计击败13个灵怪或幽灵敌人。未被弃置或加入胜利牌区的敌人不计数。"
+    },
+    "SaviorOfHumanity": {
+      "name": "人类救星",
+      "text": "救下《死亡门前》中出现的每个银暮秘社敌人。"
+    },
+    "TenOutOfTenWouldReadAgain": {
+      "name": "满分好评，值得再读",
+      "text": "在一次战役中，使用《黑书》的能力累计受到10点恐惧。"
+    },
+    "CarlShmarl": {
+      "name": "卡尔什么的",
+      "text": "加入银暮秘社的核心圈子，再在《聚合幻灭》中背叛他们。"
+    },
+    "TheThreefoldRule": {
+      "name": "三重法则",
+      "text": "与艾琳联手，再在《聚合幻灭》中背叛她的女巫集会。"
+    },
+    "NewWorldOrder": {
+      "name": "世界新秩序",
+      "text": "帮助银暮秘社赢得《万象无终》战役。"
+    },
+    "ImmortalitySoundsNice": {
+      "name": "永生听起来不错",
+      "text": "帮助安妮特的女巫集会赢得《万象无终》战役。"
+    },
+    "MoreLikeExcursion": {
+      "name": "更像一次郊游",
+      "text": "在没有发生任何侵袭的情况下完成《混沌魔掌》。"
+    },
+    "MemberThese": {
+      "name": "还记得这些吗？",
+      "text": "发现以下全部纪念品：",
+      "items": {
+        "MesmerizingFlute": "迷魂长笛",
+        "KeziahsFormulae": "凯西亚的公式",
+        "RitualComponents": "仪式材料",
+        "WornCrucifix": "破旧十字架",
+        "ScrapOfTornShadow": "残破暗影碎片",
+        "WispOfSpectralMist": "一缕幽灵迷雾",
+        "StrangeIncantation": "奇异咒语",
+        "CornHuskDoll": "玉米皮娃娃",
+        "GilmansJournal": "吉尔曼的日志",
+        "BloodyTreeCarvings": "血迹斑斑的树雕"
+      }
+    },
+    "CaseClosed": {
+      "name": "案件终结",
+      "text": "将以下所有角色从可怕的命运中救出：",
+      "items": {
+        "ValentinoRivas": "瓦伦蒂诺·里瓦斯",
+        "GavriellaMizrah": "加弗瑞拉·米兹拉克",
+        "PennyWhite": "佩妮·怀特",
+        "JeromeDavids": "杰罗姆·戴维斯"
+      }
+    },
+    "MusicOfTheOuterGods": {
+      "name": "外神之乐",
+      "text": "接受命运，加入阿撒托斯的笛手，并赢得《万象无终》战役。"
+    },
+    "WeaverOfShadowAndMist": {
+      "name": "影雾编织者",
+      "text": "拒绝命运，制作封印阿撒托斯的法术，并赢得《万象无终》战役。"
+    },
+    "FinePrint": {
+      "name": "附加条款",
+      "text": "在《阿撒托斯黑书》上签名，并赢得《万象无终》战役。"
+    },
+    "SpeakTheWordsAloud": {
+      "name": "出读声大语咒把",
+      "text": "发现一段古老咒语，将其倒序念出，并赢得《万象无终》战役。"
+    },
+    "CircleExpertise": {
+      "name": "万象无终专家",
+      "text": "以专家难度赢得《万象无终》战役。"
+    },
+    "OneFirstLastJob": {
+      "name": "第一份最后的工作",
+      "text": "以任意难度完成一次《淹没之城》战役。"
+    },
+    "SeasonTwo": {
+      "name": "第二季",
+      "text": "使用来自4个不同旧战役的4名调查员，以困难或专家难度完成本战役。当前无法获得：此成就需要尚未实现的史诗战役模式。"
+    },
+    "CliffDiver": {
+      "name": "无装备潜水",
+      "text": "在从未携带潜水服的情况下完成本战役。"
+    },
+    "ThisIsACoup": {
+      "name": "这是一场政变",
+      "text": "在《金盆洗手》中，仅使用场景3a的谈判能力击败娜奥米·奥班尼恩和萨迪·谢尔顿。"
+    },
+    "ThoroughSearch": {
+      "name": "彻底搜查",
+      "text": "结束《西部高墙》时，所有地点均已揭示。"
+    },
+    "TidalFlipMinigame": {
+      "name": "潮汐翻转游戏",
+      "text": "完成《淹没城区》时，所有地点均已揭示且未被淹没。"
+    },
+    "NoAcolyteLeftBehind": {
+      "name": "一个信徒都不能少",
+      "text": "在《育蜂场》中救出5名信徒。"
+    },
+    "KillTheAdds": {
+      "name": "先清小怪",
+      "text": "在《育蜂场》中，仅利用主母自身的强制效果击败她。"
+    },
+    "InTheDeepEnd": {
+      "name": "深入险境",
+      "text": "所有地点均被完全淹没后，带着潮汐石板逃出《宏伟宝库》。"
+    },
+    "SorryDidntSeeYouThere": {
+      "name": "抱歉，没看见你",
+      "text": "巨型暴君生成后，不再移动大升降梯并完成《古老者庭院》。"
+    },
+    "SkyRider": {
+      "name": "御空而行",
+      "text": "在一次《黑曜石峡谷》中，至少5次于开放天空结束你的回合。"
+    },
+    "SkipToTheEnd": {
+      "name": "直奔终局",
+      "text": "在《沉睡者陵墓》中击败克苏鲁。"
+    },
+    "AlienSchoolDropout": {
+      "name": "异星文字肄业生",
+      "text": "完成本战役，且没有翻译任何异星字符。"
+    },
+    "AlienSchoolGraduate": {
+      "name": "异星文字毕业生",
+      "text": "在一次《淹没之城》战役中翻译全部26个异星字符。"
+    },
+    "EmptyHanded": {
+      "name": "两手空空",
+      "text": "未收集任何神器剧情支援便从拉莱耶归来。"
+    },
+    "WhyWontYouStayDead": {
+      "name": "为什么你就是死不了？！",
+      "text": "在一次战役中，将“无可逃避者”加入胜利牌区至少20次。"
+    },
+    "DrownedCityLineInTheSand": {
+      "name": "划定界线",
+      "text": "启用至少3项终极挑战，并赢得《淹没之城》战役。"
+    },
+    "RlyehExpertise": {
+      "name": "拉莱耶专家",
+      "text": "以专家难度赢得《淹没之城》战役。"
+    },
+    "WithYourPowersCombined": {
+      "name": "众志成城……",
+      "text": "完成《淹没之城》战役时，已获得以下全部神器：",
+      "items": {
+        "BarrierNode": "屏障节点",
+        "GrislyMask": "骇人“面具”",
+        "ObsidianClaw": "黑曜石利爪",
+        "TidalTablet": "潮汐石板",
+        "ShardOfYchlecht": "伊库勒刻特碎片",
+        "HorrorInClay": "泥塑恐怖"
+      }
+    },
+    "Obligations": {
+      "name": "职责所在",
+      "text": "完成《淹没之城》战役时，已完成以下全部任务：",
+      "items": {
+        "WalkInFaith": "信仰之行",
+        "DreamsOfDestruction": "毁灭之梦",
+        "ToeTheLine": "坚守底线",
+        "DoNoHarm": "不伤害他人",
+        "GoodMoney": "好钱",
+        "NoPlaceLikeHome": "无处如家",
+        "ProveYourWorth": "证明你的价值",
+        "PlumbTheDepths": "探究深渊"
+      }
+    },
+    "DoYouAlwaysFollowOrders": {
+      "name": "你总是服从命令吗？",
+      "text": "不要偏离梦境门外中的路径。"
+    },
+    "AwwButTheyreSoCute": {
+      "name": "哎呀，它们这么可爱",
+      "text": "在《梦境门外》中不要击败任何祖各敌人。"
+    },
+    "LosingMyReligion": {
+      "name": "失去我的宗教信仰",
+      "text": "在一次游戏中，找到并揭开 寻觅卡达斯 中的全部 10 个众神的印记。"
+    },
+    "FantasyFlightGamesDoesNotCondoneAccomplishingThisAchievement": {
+      "name": "Fantasy Flight Games® 不赞成达成此成就",
+      "text": "在《寻觅卡达斯》中违反乌撒的法律。"
+    },
+    "TacticalEspionageAction": {
+      "name": "战术间谍行动",
+      "text": "完成 月之暗面，每个 调查员 的报警级别为零。"
+    },
+    "MoonLizardsIDontBelieveTheyExist": {
+      "name": "月蜥？我不信它存在",
+      "text": "在《月之暗面》中击败月蜥。"
+    },
+    "BarkhamHorrorEnthusiast": {
+      "name": "巴卡姆恐怖爱好者",
+      "text": "使用猫盟友或狗盟友的战斗能力击败 1 个或多个 土星猫。"
+    },
+    "OnlyWayToBeSure": {
+      "name": "唯一确定的方法",
+      "text": "将 不可描述的高阶祭司 的剩余生命值减少到 1，然后将其推入 神居之所 的井中。"
+    },
+    "GiveThemSomethingToTalkAbout": {
+      "name": "给他们一些话题",
+      "text": "在一轮中，将 奈亚拉托提普 的每个隐藏形式添加到 神居之所 中的 胜利牌区 中。"
+    },
+    "ThisIsntEvenMyFinalForm": {
+      "name": "这还不是我的最终形态！",
+      "text": "暴露并击败奈亚拉托提普在神居之所中的真实形态。"
+    },
+    "DontTellAnyoneBut": {
+      "name": "不要告诉任何人，但是……",
+      "text": "利用大礼堂上的能力，将6张不同的隐藏牌给予神居之所中的另一张调查员。"
+    },
+    "DreamQuestLineInTheSand": {
+      "name": "划定界线",
+      "text": "启用至少3项终极挑战，并赢得《寻梦秘境》战役。"
+    },
+    "DreamlandsExpertise": {
+      "name": "梦境专家",
+      "text": "以专家难度赢得《寻梦秘境》战役。"
+    },
+    "BewareTheBlackCat": {
+      "name": "当心黑猫",
+      "text": "完成 食梦者 战役，好的，好吧，按你的方式进行，然后记录在你的 战役日志 中。"
+    },
+    "ReunitedAndItFeelsSoGood": {
+      "name": "重逢的感觉真好",
+      "text": "通过相互关联的 8 部分战役赢得 食梦者，并让两个小组在尾声中重聚。"
+    },
+    "EveryonesAFeministUntilThereIsASpiderAround": {
+      "name": "每个人都是女权主义者，直到周围有蜘蛛",
+      "text": "击败二十只蜘蛛敌人。 （群体卡不算在内。）"
+    },
+    "TheCarterMethod": {
+      "name": "卡特方法",
+      "text": "让每个地点都被感染，然后将它们全部密封在清醒恶梦中。"
+    },
+    "TheDoctorIsIn": {
+      "name": "医生来了",
+      "text": "随身携带席瓦妮·马斯沃伦医生，并且不要让她带走清醒恶梦中任何数量的伤害或恐惧。"
+    },
+    "DejaVu": {
+      "name": "似曾相识",
+      "text": "解析 万千骇形 中每个 地点 上的每个 闪电能力（不包括第 2 步期间的 神秘阶梯）。"
+    },
+    "TheCasaLomaManeuver": {
+      "name": "卡萨罗马演习",
+      "text": "在万千骇形最顶层的楼梯处使用不可名状之物逃离无尽的楼梯。"
+    },
+    "IRememberThisPlace": {
+      "name": "我记得这个地方",
+      "text": "在无归之地中找到离开地狱的出路。"
+    },
+    "BadAdvice": {
+      "name": "不好的建议",
+      "text": "将无归之地中的每个地点至少翻转一次。"
+    },
+    "MarchOfTheGhouls": {
+      "name": "食尸鬼行军",
+      "text": "将 4 个食尸鬼 敌人 附加到 无归之地 中的 理查德·厄普顿·皮克曼 上。"
+    },
+    "TheIshimuraFlex": {
+      "name": "石村式炫技",
+      "text": "在《编织宇宙》的同一轮中，击败阿特拉克·纳克亚的全部4条腿。"
+    },
+    "YouSpinMeRightRound": {
+      "name": "你让我旋转",
+      "text": "确保 阿特拉克·纳克亚 在 编织宇宙 中单相旋转完整 360 度。"
+    },
+    "MasterOfUnlocking": {
+      "name": "解锁大师",
+      "text": "使用 银钥匙 在单个剧本的整个过程中总共取消至少 10 个 恐惧。"
+    },
+    "WebOfDreamsLineInTheSand": {
+      "name": "划定界线",
+      "text": "启用至少3项终极挑战，并赢得《梦境之网》战役。"
+    },
+    "UnderworldExpertise": {
+      "name": "冥界专家",
+      "text": "以专家难度赢得《梦境之网》战役。"
+    },
+    "WouldYouJustDieAlready": {
+      "name": "你想死了吗",
+      "text": "在绝望深坑中击败混生畸物 5次或以上。"
+    },
+    "ElementaryDearDawson": {
+      "name": "基本推理，亲爱的道森",
+      "text": "在《艾莲娜·哈珀失踪案》中，同时猜中嫌疑人与藏身处。"
+    },
+    "AintNothinGonnaBreakMyStride": {
+      "name": "没有什么能打破我的步伐",
+      "text": "摧毁深陷危局中的所有障碍。"
+    },
+    "SpeedingTicket": {
+      "name": "超速罚单",
+      "text": "在《全速恐惧》中，不主动停车、不离开车辆，也不进入任何一张《绕远路》，并抵达猎鹰岬通路。"
+    },
+    "YoureLockedInHereWithMe": {
+      "name": "你和我一起被锁在这里",
+      "text": "完成 雾中之光，且没有任何 调查员 被捕获。"
+    },
+    "FishOutOfWater": {
+      "name": "鱼离开水",
+      "text": "完成 暗潮之下，每个 调查员 仍佩戴其 潜水服。"
+    },
+    "DontWakeDaddy": {
+      "name": "别吵醒爸爸",
+      "text": "在不唤醒 达贡 或 海德拉 的情况下完成 达贡巢穴 和 暗潮之下。"
+    },
+    "GoneFishing": {
+      "name": "去钓鱼",
+      "text": "击败20个深潜者 敌人。"
+    },
+    "FullBuild": {
+      "name": "完整构建",
+      "text": "同时装备浪蚀偶像、觉醒斗篷和伊哈·恩斯雷的头冠。"
+    },
+    "YouWakeUpInARoom": {
+      "name": "“你在一个房间里醒来……”",
+      "text": "在《印斯茅斯阴谋》战役中恢复以下全部记忆：",
+      "items": {
+        "AMeetingWithThomasDawson": "与 托马斯·道森 的会议。",
+        "ABattleWithAHorrifyingDevil": "与可怕的恶魔的战斗。",
+        "ADecisionToStickTogether": "团结在一起的决定。",
+        "AnEncounterWithASecretCult": "遭遇秘密邪教。",
+        "ADealWithJoeSargent": "与 乔·萨金特 的交易。",
+        "AFollowedLead": "跟随线索。",
+        "AnIntervention": "干预。",
+        "AJailbreak": "越狱。",
+        "DiscoveryOfAStrangeIdol": "发现一个奇怪的偶像。",
+        "DiscoveryOfAnUnholyMantle": "发现邪恶斗篷。",
+        "DiscoveryOfAMysticalRelic": "发现神秘遗迹。",
+        "AConversationWithMrMoore": "与摩尔先生的对话。",
+        "TheLifecycleOfADeepOne": "“深潜者”的生命周期。",
+        "AStingingBetrayal": "一次刺痛的背叛。",
+        "TheHorribleTruth": "可怕的事实。"
+      }
+    },
+    "BiggerFishToFry": {
+      "name": "还有更大的鱼要对付",
+      "text": "在不击败任何深潜者敌人的情况下完成《印斯茅斯阴谋》战役。"
+    },
+    "InnsmouthLineInTheSand": {
+      "name": "划定界线",
+      "text": "启用至少3项终极挑战，并赢得《印斯茅斯阴谋》战役。"
+    },
+    "InnsmouthExpertise": {
+      "name": "印斯茅斯专家",
+      "text": "以专家难度赢得《印斯茅斯阴谋》战役。"
+    },
+    "SafeBet": {
+      "name": "安全赌注",
+      "text": "在 亡命冰原 第 I 部分中庇护所值为 8 的 地点 露营。"
+    },
+    "LookAtAllThisStuff": {
+      "name": "看看这些东西！",
+      "text": "回收亡命冰原中的全部七个补给品，并将其全部运送至失落之峰中的山顶。"
+    },
+    "InYourHead": {
+      "name": "在你的脑海里",
+      "text": "用 胜利牌区 中的九张故事卡完成 致命幻景。"
+    },
+    "ChaosChaos": {
+      "name": "混沌中的混沌",
+      "text": "在《古老者之城》中累计收集并花费至少10把钥匙。"
+    },
+    "KnockKnock": {
+      "name": "敲门，敲门",
+      "text": "在《疯狂之心》第1部分收集、激活并放置全部5枚封印。"
+    },
+    "MadWithPower": {
+      "name": "力量使人疯狂",
+      "text": "在《疯狂之心》第2部分同时消耗15张“无名疯狂”。"
+    },
+    "ConstructAdditionalPylons": {
+      "name": "建造更多高塔",
+      "text": "在《疯狂之心》第2部分使全部5座迷雾高塔崩塌并活着逃离。"
+    },
+    "TheSoundOfMadness": {
+      "name": "疯狂之声",
+      "text": "在一局游戏中抽到10张“忒咳哩-哩！”。"
+    },
+    "SorryImAllOutOfDogPuns": {
+      "name": "抱歉，我已经没有狗双关语了",
+      "text": "同时使用 安雨 和四个或更多标题中带有“狗”的其他资产。"
+    },
+    "KindOfAHatOnAHat": {
+      "name": "帽子上再戴一顶帽子",
+      "text": "从“背包”打出“木制雪橇”，然后立即用其能力将另一张“背包”附加到它上面。"
+    },
+    "ThisWasYourIdea": {
+      "name": "这是你的主意",
+      "text": "在单个剧本中，使用 威廉·戴尔教授 的能力从 丹佛斯 治疗至少 4 个 恐惧。"
+    },
+    "NoRespectForTheDead": {
+      "name": "对逝者毫无敬意",
+      "text": "同时控制至少5张来自“失落者纪念物”遭遇组的支援。"
+    },
+    "WukWukBoom": {
+      "name": "轰！轰！",
+      "text": "使用“炸药”同时击败2只巨型白化企鹅。"
+    },
+    "TheColdNeverBotheredMeAnyway": {
+      "name": "寒冷从未困扰过我",
+      "text": "战役结束时混乱袋中有8个冰霜标记，并赢得《地球边缘》战役。"
+    },
+    "HellFrozeOver": {
+      "name": "地狱也结冰了",
+      "text": "战役结束时混乱袋中没有冰霜标记，并赢得《地球边缘》战役。"
+    },
+    "AbandonedAndAlone": {
+      "name": "孤身一人",
+      "text": "从未在剧本中携带伙伴支援，并赢得《地球边缘》战役。"
+    },
+    "FriendsForever": {
+      "name": "永远的朋友",
+      "text": "在每个剧本中带上相同的伙伴，确保他们已经对抗了自己的恶魔，并在他们还活着的情况下赢得了 地球边缘 战役。"
+    },
+    "ThereAndBackAgain": {
+      "name": "来来回回",
+      "text": "与以下幸存者一起赢得 地球边缘 战役：",
+      "items": {
+        "DrAmyKensler": "艾米·肯斯勒博士",
+        "ProfWilliamDyer": "威廉·戴尔教授",
+        "Danforth": "丹佛斯",
+        "JamesCookieFredericks": "詹姆斯“Cookie”弗雷德里克斯",
+        "EliyahAshevak": "伊里亚·阿什瓦克",
+        "DrMalaSinha": "玛拉·辛哈医生",
+        "TakadaHiroko": "高田弘子",
+        "AveryClaypool": "艾弗里·克莱普尔",
+        "RoaldEllsworth": "罗尔德·埃尔斯沃思"
+      }
+    },
+    "SnowLineInTheSand": {
+      "name": "雪中界线",
+      "text": "启用至少3项终极挑战，并赢得《地球边缘》战役。"
+    },
+    "AntarcticExpertise": {
+      "name": "南极专家",
+      "text": "以专家难度赢得《地球边缘》战役。"
+    },
+    "CluedIn": {
+      "name": "线索在手",
+      "text": "在《雨雾中的谜团》中，不因诡计卡花费或丢失任何线索。"
+    },
+    "TakeThatGhulat": {
+      "name": "接招吧，古拉特",
+      "text": "确保《致命酷热》中没有任何平民被杀。"
+    },
+    "WhatsInAName": {
+      "name": "名字意味着什么？",
+      "text": "在《致命酷热》中告诉永生花她的真名。"
+    },
+    "PorqueNoLosDos": {
+      "name": "为什么不能两个都要？",
+      "text": "在《癫狂起舞》中同时击败两张德西。"
+    },
+    "LostAndFound": {
+      "name": "失而复得",
+      "text": "在《暗盘交易》中，“揭露的线索”上没有线索时控制扭曲反棱镜。"
+    },
+    "ILikeTowerDefenseGames": {
+      "name": "我喜欢塔防游戏",
+      "text": "在《战争之犬》版本I中保护酒红骑士，且没有任何密钥护所被摧毁。"
+    },
+    "PlayWithYourFood": {
+      "name": "玩弄你的食物",
+      "text": "在《战争之犬》版本II或III中，当酒红骑士或猩红斗篷下的野兽恰好剩余1点生命时，从其手中夺取法罗斯之光。"
+    },
+    "MoreLikeDestroyedChimera": {
+      "name": "更像“已摧毁”的奇美拉",
+      "text": "在一次《如履薄冰》中击败虚空混源体的全部5种形态。"
+    },
+    "WhoWatchesTheWatcher": {
+      "name": "谁来监视监视者？",
+      "text": "在《讪笑阴影》中解锁隐藏的最终场景。"
+    },
+    "UnderMyUmbrella": {
+      "name": "在我的伞下",
+      "text": "在《苦难形影》中，不让梓三娘吞噬任何灵怪敌人。"
+    },
+    "AllHollow": {
+      "name": "空无一物",
+      "text": "得知外来者栖身之处并前往那里，以解锁《无痕异域》。"
+    },
+    "RedLooksGoodOnMe": {
+      "name": "红色很衬我",
+      "text": "在《密钥峰会》中加入红衣结社。"
+    },
+    "BloodyRedRevolution": {
+      "name": "血色革命",
+      "text": "在《密钥峰会》中推翻红衣结社。"
+    },
+    "ScarletWithYourPowersCombined": {
+      "name": "众志成城……",
+      "text": "在同一回合中转移5把密钥。"
+    },
+    "GiftOfGab": {
+      "name": "巧舌如簧",
+      "text": "让泰勒专员在一次战役中命令你“谈话”3次。"
+    },
+    "ImJustHereForTheLocalCuisine": {
+      "name": "“我只是来尝尝当地美食”",
+      "text": "在一次战役中，于以下地点品尝美食和/或造访酒吧或咖啡馆：马拉喀什、哈瓦那、布宜诺斯艾利斯、东京和吉隆坡。"
+    },
+    "SpeedDemon": {
+      "name": "速度狂魔",
+      "text": "只经过17个或更少时间单位，并赢得《猩红密钥》战役。"
+    },
+    "TrustNobody": {
+      "name": "谁也别信",
+      "text": "混乱袋中有4个远古之物标记、且从未移除过远古之物标记，并赢得《猩红密钥》战役。"
+    },
+    "TrustEverybody": {
+      "name": "相信所有人",
+      "text": "混乱袋中有4个石板标记、且从未移除过石板标记，并赢得《猩红密钥》战役。"
+    },
+    "HereIsYourBadge": {
+      "name": "这是你的徽章",
+      "text": "赢得《猩红密钥》战役，并在基金会获得永久职位。"
+    },
+    "KeyToMyHeart": {
+      "name": "我心中的密钥",
+      "text": "在《猩红密钥》战役中收集以下全部密钥：",
+      "items": {
+        "TheEyeOfRavens": "渡鸦之眼",
+        "TheLastBlossom": "终末之花",
+        "TheLightOfPharos": "法罗斯之光",
+        "TheSableGlass": "黑曜透镜",
+        "TheWeepingLady": "泣血女士",
+        "TheTwistedAntiprism": "扭曲棱镜",
+        "TheShadeReaper": "形影死神",
+        "TheMirroringBlade": "镜像之刃",
+        "TheBaleEngine": "恶祸引擎",
+        "TheRuinousChime": "毁灭响钟",
+        "TheWellspringOfFortune": "时运泉源"
+      }
+    },
+    "ScarletLineInTheSand": {
+      "name": "划定界线",
+      "text": "启用至少3项终极挑战，并赢得《猩红密钥》战役。"
+    },
+    "GlobalExpertise": {
+      "name": "环球专家",
+      "text": "以专家难度赢得《猩红密钥》战役。"
+    },
+    "Aperitif": {
+      "name": "开胃酒",
+      "text": "以任意难度完成一次《铁杉谷盛宴》战役。"
+    },
+    "Unshattered": {
+      "name": "完整无缺",
+      "text": "达成本战役的全部结局：",
+      "items": {
+        "MarquezSacrificedHerself": "马尔克斯博士为铁杉谷牺牲自己",
+        "TheInvestigatorsSacrificedThemselves": "调查员为铁杉谷牺牲自己",
+        "TheValeWasSaved": "铁杉谷获救",
+        "TheValeBurned": "铁杉谷焚毁",
+        "BarelySurvivedTheFeast": "调查员勉强挺过盛宴",
+        "BecameTheTrueFeast": "调查员成为真正的盛宴"
+      }
+    },
+    "AStrongSilentType": {
+      "name": "沉默寡言的强者",
+      "text": "完成《铁杉谷盛宴》战役，且从未主动触发任何圣典条目。"
+    },
+    "ColourOutsideTheLines": {
+      "name": "不按常理出牌",
+      "text": "在一次战役中同时跳过《盘根空树》和《长夜》。"
+    },
+    "LifeOfTheParty": {
+      "name": "派对焦点",
+      "text": "完成《铁杉谷盛宴》战役时，每位住民的友好度均至少为2。"
+    },
+    "DancingQueen": {
+      "name": "舞后",
+      "text": "在“第二晚”序章中与4位不同的住民共舞。"
+    },
+    "AudreyIII": {
+      "name": "奥黛丽三世",
+      "text": "完成剧本时，与一只拥有至少10点繁茂的毒花交战。"
+    },
+    "HoldOnToYourPotatoes": {
+      "name": "抓紧你的土豆！",
+      "text": "完成《铭刻于石》时，同时控制一位住民和“棱柱碎片”支援。"
+    },
+    "DreamHomeBreakover": {
+      "name": "梦想家园大改造",
+      "text": "完成《铁杉之家》时，胜利牌区中有10个地点。"
+    },
+    "SettlingTheScore": {
+      "name": "算清旧账",
+      "text": "在《深渊之物》中击败深渊之物。"
+    },
+    "HereCrabbyCrabby": {
+      "name": "“来呀，小螃蟹！”",
+      "text": "在《迷途姊妹》中让鲎混种翻面至少8次。"
+    },
+    "ADifferentKindOfStingOps": {
+      "name": "另一种诱捕行动",
+      "text": "在未生成巢群女王的情况下完成《静寂荒原》。"
+    },
+    "WaitTheresNoShroudedShrine": {
+      "name": "等等，这里没有隐秘神殿？",
+      "text": "以独立模式游玩《盘根空树》，存活到黑暗等级至少达到10。"
+    },
+    "BearNecessities": {
+      "name": "熊之必需",
+      "text": "在《长夜》中，仅使用剧本卡效果击败混种熊。"
+    },
+    "LetsDoTheTimeWarp": {
+      "name": "来一次时间扭曲！",
+      "text": "在序章“最后一晚”中完成“待宰羔羊”结局。"
+    },
+    "OblivionShmoblivion": {
+      "name": "湮灭？不过如此",
+      "text": "在每个宇宙使者敌人都位于胜利牌区时赢得《谷中宿命》。"
+    },
+    "HighDive": {
+      "name": "纵身一跃",
+      "text": "在《谷中宿命》中为铁杉谷牺牲自己。"
+    },
+    "BestFriendsForever": {
+      "name": "永远的挚友！",
+      "text": "与以下住民的友好度达到6：",
+      "items": {
+        "LeahAtwood": "莉亚·阿特伍德",
+        "SimeonAtwood": "西缅·阿特伍德",
+        "RiverHawthorne": "芮福·霍桑",
+        "GideonMizrah": "吉迪恩·米兹拉",
+        "WilliamHemlock": "威廉·赫姆拉克"
+      }
+    },
+    "KnowYourPlace": {
+      "name": "认清自己的位置",
+      "text": "瑞秋主母的友好度至少为3，并赢得《铁杉谷盛宴》战役。"
+    },
+    "HeartOfSteel": {
+      "name": "钢铁之心",
+      "text": "朱迪丝·帕克的友好度达到7，并赢得《铁杉谷盛宴》战役。"
+    },
+    "HoldingOutForAHimbo": {
+      "name": "就等这个傻大个",
+      "text": "西奥·彼得斯的友好度达到7，并赢得《铁杉谷盛宴》战役。"
+    },
+    "CaptivatingScream": {
+      "name": "摄人尖叫",
+      "text": "使用派翠斯·海瑟薇赢得《铁杉谷盛宴》战役。"
+    },
+    "HemlockLineInTheSand": {
+      "name": "划定界线",
+      "text": "启用至少3项终极挑战，并赢得《铁杉谷盛宴》战役。"
+    },
+    "HemlockExpertise": {
+      "name": "铁杉谷专家",
+      "text": "以专家难度赢得《铁杉谷盛宴》战役。"
     }
   },
   "clearAll": "清除全部",
@@ -199,5 +949,9 @@
   "clearOne": "清除此成就",
   "clearAllConfirm": "确定清除全部已解锁成就吗？此操作无法撤销。",
   "clearCampaignConfirm": "确定清除{campaign}的全部已解锁成就吗？此操作无法撤销。",
-  "clearOneConfirm": "确定清除成就“{name}”吗？此操作无法撤销。"
+  "clearOneConfirm": "确定清除成就“{name}”吗？此操作无法撤销。",
+  "parts": {
+    "theDreamQuest": "寻梦秘境",
+    "theWebOfDreams": "梦境之网"
+  }
 }

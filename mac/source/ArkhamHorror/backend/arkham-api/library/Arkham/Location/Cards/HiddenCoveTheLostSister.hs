@@ -26,7 +26,7 @@ instance HasAbilities HiddenCoveTheLostSister where
             $ GroupClueCost (PerPlayer 2) (be a)
         , restricted a 2 Here
             $ forced
-            $ SkillTestResult #after You (WhileAttackingAnEnemy AnyEnemy) #failure
+            $ SkillTestResult #after You WhileAttacking #failure
         ]
 
 instance RunMessage HiddenCoveTheLostSister where
