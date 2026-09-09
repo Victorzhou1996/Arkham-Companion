@@ -15,14 +15,15 @@ Arkham Companion is a Chinese-localized distribution of Arkham Horror: The Card 
 The default branch is `Companion`. The `Mac` and `Server` branches are complete snapshots for their respective environments.
 
 Current Server source, Linux backend, and game frontend snapshot:
-**2026.09.07-test**. It adds narration category and cancellation fixes plus 51
-selected upstream gameplay fixes while retaining the five undo modes, starter
-decks, management tools, Build integration, Chinese card images, achievements,
-and the Cycle 9 stable / Cycle 10 beta channel rules. Packaging and verification
-details are in [`server/RELEASE-20260907.md`](server/RELEASE-20260907.md).
+**2026.09.09-test**. It adds a verified JSON handoff from the embedded Build
+interface to arkham.build while retaining the narration fixes, 51 selected
+upstream gameplay fixes, five undo modes, starter decks, management tools,
+Chinese card images, achievements, and the Cycle 9 stable / Cycle 10 beta
+channel rules. Details are in
+[`server/RELEASE-20260909.md`](server/RELEASE-20260909.md).
 
 发布与跨平台打包请先阅读 [新版本产物流程](docs/NEW-RELEASE-ARTIFACT-WORKFLOW.md)
-和 [2026-09-07 Server 发布说明](server/RELEASE-20260907.md)。
+和 [2026-09-09 Server 发布说明](server/RELEASE-20260909.md)。
 
 需要让 AI 协助新装或更新 Linux 服务器时，请先阅读
 [Server AI 部署指南](server/AI-DEPLOYMENT.md)。该指南包含分支与 Git LFS
@@ -30,7 +31,7 @@ details are in [`server/RELEASE-20260907.md`](server/RELEASE-20260907.md).
 
 For releases and cross-platform packaging, start with the
 [release artifact workflow](docs/NEW-RELEASE-ARTIFACT-WORKFLOW.md) and the
-[2026-09-07 Server release notes](server/RELEASE-20260907.md).
+[2026-09-09 Server release notes](server/RELEASE-20260909.md).
 
 ## 主要特性 / Main Features
 

@@ -1,0 +1,205 @@
+.masthead {
+  flex: 0 0 auto;
+  grid-area: header;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  height: calc(1.5rem + var(--icon-3xl));
+}
+
+@media (max-width: 52rem) {
+  .masthead {
+    gap: 0.25rem;
+  }
+}
+
+.masthead.invert {
+  color: var(--nord-6);
+}
+
+.left {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.logo {
+  display: inline-flex;
+  gap: 0.375rem;
+  margin-left: 0.25rem;
+  align-items: center;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: currentColor;
+}
+
+.logo svg {
+  font-size: var(--icon-lg);
+  fill: currentColor;
+  flex: 0 0 auto;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.nav-link {
+  white-space: nowrap;
+}
+
+.icon-link {
+  flex: 0 0 auto;
+}
+
+.nav-link.active,
+.icon-link.active,
+.menu-link-active {
+  background: var(--palette-1);
+  border-color: var(--palette-2);
+  font-weight: 700;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 52rem) {
+  .right {
+    gap: 0.25rem;
+  }
+}
+
+.right svg {
+  font-size: var(--icon-sm);
+}
+
+.logged-in-as,
+.sync-status {
+  width: 100%;
+  padding: 0.25rem 0.75rem;
+  text-align: left;
+  color: var(--palette-three-point-five);
+  font-style: italic;
+  word-break: break-all;
+}
+
+.arkham-masthead {
+  flex: 0 0 auto;
+  grid-area: header;
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  background: #242831;
+  border-bottom: 1px solid rgb(255 255 255 / 7%);
+  box-shadow: 0 1px 12px rgb(0 0 0 / 50%);
+  color: #f2f2f2;
+  position: relative;
+  z-index: 100;
+}
+
+.arkham-main-links {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
+
+.arkham-home-link,
+.arkham-nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  color: color-mix(in srgb, #879c5a 45%, #666);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  position: relative;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.arkham-home-link {
+  color: color-mix(in srgb, #879c5a 70%, #ccc);
+  font-size: 0.925rem;
+  font-weight: 700;
+}
+
+.arkham-home-link:hover,
+.arkham-nav-link:hover,
+.arkham-nav-link.active {
+  color: #879c5a;
+}
+
+.arkham-nav-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #879c5a;
+  border-radius: 2px 2px 0 0;
+}
+
+.arkham-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 0.5rem;
+  padding: 0 16px;
+}
+
+@media (max-width: 768px) {
+  .arkham-nav-link {
+    display: none;
+  }
+}
+
+.arkham-user-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 100%;
+  padding: 0;
+  color: #f2f2f2;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.arkham-user-button:hover {
+  color: #fff;
+}
+
+.arkham-user-button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.arkham-user-button svg {
+  width: 1rem;
+  height: 1rem;
+  color: color-mix(in srgb, #879c5a 70%, #ccc);
+}
+
+.arkham-logged-in {
+  width: 100%;
+  padding: 0.25rem 0.75rem;
+  color: var(--palette-three-point-five);
+  font-style: italic;
+  word-break: break-all;
+}
