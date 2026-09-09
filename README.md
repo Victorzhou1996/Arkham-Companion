@@ -14,10 +14,11 @@ Arkham Companion is a Chinese-localized distribution of Arkham Horror: The Card 
 
 The default branch is `Companion`. The `Mac` and `Server` branches are complete snapshots for their respective environments.
 
-Current Mac runtime package: **2026.09.07-test**. It installs separate game and
-management tool entries in Applications and includes the narration fixes plus
-51 selected upstream gameplay fixes. Packaging and verification details are in
-[`mac/RELEASE-20260907.md`](mac/RELEASE-20260907.md).
+Current Mac runtime package: **2026.09.09-test**. It installs separate game and
+management tool entries in Applications and includes the narration fixes, 51
+selected upstream gameplay fixes, and a verified JSON handoff from the local
+Build interface to arkham.build. Packaging and verification details are in
+[`mac/RELEASE-20260909.md`](mac/RELEASE-20260909.md).
 
 ## 主要特性 / Main Features
 

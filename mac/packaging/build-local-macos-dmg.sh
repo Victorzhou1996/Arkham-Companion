@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
-RUNTIME_DIR="${RUNTIME_DIR:-$ROOT_DIR/mac/release/ArkhamHorror-macos-arm64}"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+RUNTIME_DIR="${RUNTIME_DIR:-$ROOT_DIR/ArkhamHorror-macos-arm64}"
 BACKEND_BIN="${BACKEND_BIN:-$RUNTIME_DIR/bin/arkham-api}"
-CARDS_DIR="${CARDS_DIR:-$ROOT_DIR/shared/cards}"
+CARDS_DIR="${CARDS_DIR:-$ROOT_DIR/cards}"
 RELEASE_DATE="${RELEASE_DATE:-$(date +%Y%m%d)}"
-APP_VERSION="${APP_VERSION:-1.0.1}"
+APP_VERSION="${APP_VERSION:-1.0.0}"
 RELEASE_NAME="Arkham-Horror-Local-App-macOS-arm64-${RELEASE_DATE}"
 RELEASES_DIR="$ROOT_DIR/releases"
 STAGING_DIR="$RELEASES_DIR/$RELEASE_NAME"
@@ -34,6 +34,10 @@ if [ ! -d "$CARDS_DIR" ]; then
   echo "Missing card image directory: $CARDS_DIR" >&2
   exit 1
 fi
+if [ ! -f "$ROOT_DIR/packaging/manager_icon.icns" ]; then
+  echo "Missing manager app icon: $ROOT_DIR/packaging/manager_icon.icns" >&2
+  exit 1
+fi
 if [ -e "$STAGING_DIR" ] || [ -e "$DMG_PATH" ]; then
   echo "Release output already exists: $RELEASE_NAME" >&2
   exit 1
@@ -45,6 +49,7 @@ rsync -a \
   --exclude '.DS_Store' \
   --exclude 'bin/backups/' \
   --exclude 'data/' \
+  --exclude 'config/client_session_key.aes' \
   --exclude 'config/nginx.conf' \
   --exclude 'pgsql/lib/pgxs/' \
   --exclude 'pgsql/lib/pkgconfig/' \
@@ -107,6 +112,11 @@ while IFS= read -r -d '' binary; do
 done < <(find "$GAME_DIR" -type f -print0)
 
 cp "$RUNTIME_DIR/data/setup.sql" "$GAME_DIR/data/setup.sql"
+
+if [ -e "$GAME_DIR/config/client_session_key.aes" ]; then
+  echo "Generated client session key must not be included in a release." >&2
+  exit 1
+fi
 
 # Bundle the Chinese card library once. The local image override directories
 # are created at install time and fall back to this built-in library.
@@ -187,7 +197,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST_EOF
 </plist>
 PLIST_EOF
 
-cp "$ROOT_DIR/companion/app/Arkham Companion.app/Contents/Resources/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
+cp "$ROOT_DIR/arkham-local/app_icon.icns" "$RESOURCES_DIR/AppIcon.icns"
 
 cat > "$MANAGER_MACOS_DIR/ArkhamHorrorManager" <<'MANAGER_LAUNCH_EOF'
 #!/usr/bin/env bash
@@ -235,7 +245,7 @@ cat > "$MANAGER_CONTENTS_DIR/Info.plist" <<PLIST_EOF
 </plist>
 PLIST_EOF
 
-cp "$ROOT_DIR/companion/app/Arkham Companion.app/Contents/Resources/AppIcon.icns" "$MANAGER_RESOURCES_DIR/AppIcon.icns"
+cp "$ROOT_DIR/packaging/manager_icon.icns" "$MANAGER_RESOURCES_DIR/AppIcon.icns"
 
 cat > "$STAGING_DIR/使用说明.txt" <<'README_EOF'
 Arkham Horror 本地部署应用版（macOS Apple Silicon）
@@ -295,5 +305,5 @@ hdiutil create \
   -imagekey zlib-level=9 \
   "$DMG_PATH"
 
-shasum -a 256 "$DMG_PATH" > "$DMG_PATH.sha256"
+(cd "$RELEASES_DIR" && shasum -a 256 "$(basename "$DMG_PATH")") > "$DMG_PATH.sha256"
 echo "$DMG_PATH"
