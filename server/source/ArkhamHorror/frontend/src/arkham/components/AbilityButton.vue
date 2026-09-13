@@ -19,7 +19,8 @@ const props = withDefaults(defineProps<{
  ability: AbilityLabel | FightLabel | FightLabelWithSkill | EvadeLabel | EvadeLabelWithSkill | EngageLabel
  tooltipIsButtonText?: boolean
  showMove?: boolean
-}>(), { tooltipIsButtonText: false, showMove: true })
+ hostHasSwarm?: boolean
+}>(), { tooltipIsButtonText: false, showMove: true, hostHasSwarm: false })
 
 const ability = computed<Ability | null>(() => "ability" in props.ability ? props.ability.ability : null)
 
@@ -93,7 +94,8 @@ const boonName = computed(() => {
 const isObjective = computed(() => ability.value && ability.value.type.tag === "Objective")
 const isFastActionAbility = computed(() => ability.value && ability.value.type.tag === "FastAbility")
 const isReactionAbility = computed(() => ability.value && ability.value.type.tag === "ReactionAbility")
-const isForcedAbility = computed(() => ability.value && ability.value.type.tag === "ForcedAbility")
+const isForcedAbility = computed(() =>
+  ability.value && (ability.value.type.tag === "ForcedAbility" || ability.value.type.tag === "ForcedAbilityWithCost"))
 const isDelayedAbility = computed(() => ability.value && ability.value.type.tag === "DelayedAbility")
 const isHaunted = computed(() => ability.value && ability.value.type.tag === "Haunted")
 
@@ -191,7 +193,12 @@ const abilityLabel = computed(() => {
   if (props.ability.tag === MessageType.ABILITY_LABEL) {
     if (props.ability.ability.displayAs === 'DisplayAsAction') {
       const cost = ability.value ? abilityTypeCost(ability.value.type) : null
-      return cost ? replaceIcons("{action}".repeat(totalActionCost(cost))) : ''
+      const actionIcons = cost ? replaceIcons("{action}".repeat(totalActionCost(cost))) : ''
+      const labelled = labelType.value
+      if (labelled?.tag === "ConstantReaction" || labelled?.tag === "CustomizationReaction") {
+        return `${actionIcons}${labelled.label}`
+      }
+      return actionIcons
     }
     if (props.ability.ability.displayAs === 'DisplayAsCard') {
       return props.ability.ability.tooltip ? formatContent(maybeFormat(props.ability.ability.tooltip)) : ''
@@ -199,19 +206,19 @@ const abilityLabel = computed(() => {
   }
 
   if (props.ability.tag === MessageType.EVADE_LABEL) {
-    return `${t('Evade')} (${abilityString.value ? abilityString.value : '<i class="skill-icon skill-combat"></i>'})`
+    return t('Evade')
   }
 
   if (props.ability.tag === MessageType.FIGHT_LABEL) {
-    return `${t('Fight')} (${abilityString.value ? abilityString.value : '<i class="skill-icon skill-combat"></i>'})`
+    return t('Fight')
   }
 
   if (props.ability.tag === MessageType.FIGHT_LABEL_WITH_SKILL) {
-    return `${t('Fight')} (${abilityString.value ? abilityString.value : '<i class="skill-icon skill-fight"></i>'})`
+    return t('Fight')
   }
 
   if (props.ability.tag === MessageType.EVADE_LABEL_WITH_SKILL) {
-    return `${t('Evade')} (${abilityString.value ? abilityString.value : '<i class="skill-icon skill-agility"></i>'})`
+    return t('Evade')
   }
 
   if (props.ability.tag === MessageType.ENGAGE_LABEL) {
@@ -226,8 +233,15 @@ const abilityLabel = computed(() => {
     return boonName.value
   }
 
-  if (labelType.value?.tag === "ForcedAbility") {
+  if (labelType.value?.tag === "ForcedAbility" || labelType.value?.tag === "ForcedAbilityWithCost") {
     return t('Forced')
+  }
+
+  // "Anytime" abilities (SilentForcedAbility AnyWindow) are the only silent
+  // forced abilities the engine offers as a choice rather than auto-triggering,
+  // and they carry no window text of their own.
+  if (labelType.value?.tag === "SilentForcedAbility") {
+    return t('Use')
   }
 
   if (labelType.value?.tag === "Objective") {
@@ -253,17 +267,16 @@ const abilityLabel = computed(() => {
   if (labelType.value?.tag === "ActionAbility") {
     const { actions, cost } = labelType.value
     const total = totalActionCost(cost)
-    const skillIcon = abilityString.value ? ` (${abilityString.value})` : ""
     const actionPrefix = total > 0 ? `<span>${replaceIcons("{action}".repeat(total))}</span>` : ""
 
     if (actions.tag === "OrActions") {
       const labels = actions.contents.map(a => actionsToList(a).map(n => t(n)).join(" "))
-      return `${actionPrefix}<span>${t('slashOr', labels)}</span>${skillIcon}`
+      return `${actionPrefix}<span>${t('slashOr', labels)}</span>`
     }
 
     const asList = actionsToList(actions)
     if (asList.length === 1) {
-      return `${actionPrefix}<span>${t(asList[0])}</span>${skillIcon}`
+      return `${actionPrefix}<span>${t(asList[0])}</span>`
     }
 
     return replaceIcons("{action}".repeat(totalActionCost(cost)))
@@ -275,7 +288,10 @@ const abilityLabel = computed(() => {
 
   return ""
 })
+const abilitySkillSection = computed(() => isButtonText.value ? null : abilityString.value)
 const display = computed(() => !(isAction("Move") && ability.value?.index === 104) || props.showMove)
+const showSwarmHostWarning = computed(() => props.hostHasSwarm && isFight.value)
+const swarmHostWarningTooltip = 'This host cannot be defeated while it has swarm cards attached.'
 
 const isZeroedActionAbility = computed(() => {
   if (!ability.value) {
@@ -443,8 +459,18 @@ const classObject = computed(() => {
     @click="$emit('choose', ability)"
     v-bind="attributes"
     v-tooltip="!isButtonText && tooltip"
-    v-html="abilityLabel"
-    ></button>
+  >
+    <span
+      v-if="showSwarmHostWarning"
+      class="swarm-host-warning"
+      v-tooltip="swarmHostWarningTooltip"
+      @click.stop
+    >
+      <font-awesome-icon icon="triangle-exclamation" aria-hidden="true" />
+    </span>
+    <span class="button-label" v-html="abilityLabel" />
+    <span v-if="abilitySkillSection" class="button-skill-section" v-html="abilitySkillSection" />
+  </button>
 </template>
 
 <style scoped>
@@ -458,11 +484,73 @@ const classObject = computed(() => {
   z-index: var(--z-index-1000);
   width: 100%;
   min-width: max-content;
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
-.button:has(.skill-icon) {
-  text-align: left;
+.button-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  padding: 3px 6px;
+}
+
+.button-label:empty {
+  display: none;
+}
+
+.button::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+}
+
+.button.ability-button::before,
+.button.zeroed-ability-button::before,
+.button.fast-ability-button::before,
+.button.reaction-ability-button::before {
+  padding: 3px 6px;
+  margin-right: 0;
+}
+
+.button-skill-section {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  align-self: stretch;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.14);
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  white-space: nowrap;
+}
+
+.swarm-host-warning {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8em;
+  min-width: 1.8em;
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.34);
+  border-right: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px 0 0 4px;
+  color: #ffd166;
+}
+
+.swarm-host-warning svg {
   display: block;
+  width: 1em;
+  height: 1em;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.65));
 }
 
 .objective-button {

@@ -10,7 +10,9 @@ import {
   onUnmounted,
   type VNodeRef,
 } from 'vue'
-import { imgsrc, isLocalized, toCamelCase } from '@/arkham/helpers'
+import { cardImg, formatContent, imgsrc, isLocalized, toCamelCase } from '@/arkham/helpers'
+import { homebrewTokenMap } from '@/arkham/homebrewAssets'
+import { originalArt } from '@/arkham/artVariants'
 import { BugAntIcon } from '@heroicons/vue/20/solid'
 import { useDebug } from '@/arkham/debug'
 import { fetchCard, fetchPlayability, type PlayabilityResponse } from '@/arkham/api'
@@ -60,6 +62,7 @@ const { t } = useI18n()
 const cardOverlay = ref<HTMLElement | null>(null)
 const hoveredElement = ref<HTMLElement | null>(null)
 const isMobile = ref(false)
+const overPopover = computed(() => !!hoveredElement.value?.closest('.v-popper__popper'))
 
 const playabilityData = ref<PlayabilityResponse | null>(null)
 let playabilityTimer: number | null = null
@@ -288,7 +291,11 @@ const onPointerMove = (e: PointerEvent) => {
   }
 }
 
-const onPointerUp = () => {
+const onPointerUp = (e: PointerEvent) => {
+  // A control layered on top of a card can change which face that card shows (the
+  // act/agenda stack popover's flip button). Clicking it must leave the overlay up,
+  // otherwise every click after the first dismisses it.
+  if ((e.target as HTMLElement | null)?.closest?.('[data-keep-card-overlay]')) return
   if (canDisablePress) {
     canDisablePress = false
   } else {
@@ -356,7 +363,7 @@ onUnmounted(() => {
 const getImage = (el: HTMLElement, depth = 0): string | null => {
   if (depth > 3) return null // avoid runaway recursion
 
-  if (el.dataset.imageId) return imgsrc(`cards/${el.dataset.imageId}.avif`)
+  if (el.dataset.imageId) return cardImg(el.dataset.imageId)
 
   if (
     el instanceof HTMLImageElement &&
@@ -380,25 +387,53 @@ const getImage = (el: HTMLElement, depth = 0): string | null => {
   return el.dataset.image ?? null
 }
 
-const card = computed<string | null>(() =>
-  hoveredElement.value ? getImage(hoveredElement.value) : null,
-)
+// getImage and the class/dataset readers below pull straight off the DOM, which is
+// not a reactive source: a card that changes face under a stationary cursor (the
+// act/agenda stack popover's flip button) left the overlay on the old image. Bump a
+// counter whenever the hovered element's own attributes change and depend on it.
+const hoveredVersion = ref(0)
+let hoveredObserver: MutationObserver | null = null
+watch(hoveredElement, (el) => {
+  hoveredObserver?.disconnect()
+  hoveredObserver = null
+  hoveredVersion.value++
+  if (!el) return
+  hoveredObserver = new MutationObserver(() => { hoveredVersion.value++ })
+  hoveredObserver.observe(el, {
+    attributes: true,
+    attributeFilter: ['src', 'style', 'class', 'data-image', 'data-image-id', 'data-card-code', 'data-errata', 'data-sideways'],
+  })
+})
+onUnmounted(() => { hoveredObserver?.disconnect(); hoveredObserver = null })
 
+const card = computed<string | null>(() => {
+  void hoveredVersion.value
+  return hoveredElement.value ? getImage(hoveredElement.value) : null
+})
 const overlayCardCode = computed<string | null>(() => {
+  void hoveredVersion.value
   const el = hoveredElement.value
   if (!el) return null
   const direct = normalizedCardCode(el.dataset.cardCode ?? el.dataset.imageId)?.replace(/b$/, '')
-  if (direct) return direct
-  const match = card.value?.match(/\/cards\/c?(\d+)b?\.(?:avif|jpg|jpeg|png|webp)(?:\?.*)?$/i)
-  return match?.[1] ?? null
+  // Homebrew definitions are not served by the single-card endpoint.
+  if (direct) return direct.startsWith(':') ? null : direct
+
+  const image = card.value
+  // A homebrew image path ends in /cards/<local code>, which otherwise looks
+  // like an official card code to the fallback matcher below.
+  if (!image || image.includes('/homebrew/')) return null
+
+  const match = image.match(/\/cards\/c?(\d+b?)\.(?:avif|jpg|jpeg|png|webp)(?:\?.*)?$/i)
+  return match ? originalArt(match[1]).replace(/b$/, '') : null
 })
 /* Card-def errata covers a whole card, but some errata only applies to one face —
  * and the overlay resolves both faces to the same card def. A `data-errata`
  * attribute lets whichever component knows which side is showing supply the text
  * for just that side; it wins over the card def's own errata. */
-const cardErrata = computed<string | null>(
-  () => hoveredElement.value?.dataset.errata ?? overlayCardDef.value?.errata ?? null,
-)
+const cardErrata = computed<string | null>(() => {
+  void hoveredVersion.value
+  return hoveredElement.value?.dataset.errata ?? overlayCardDef.value?.errata ?? null
+})
 
 watch(overlayCardCode, async (code) => {
   overlayCardDef.value = null
@@ -407,7 +442,6 @@ watch(overlayCardCode, async (code) => {
     overlayCardDef.value = cardDefCache.get(code) ?? null
     return
   }
-
   try {
     const cardDef = await fetchCard(code)
     cardDefCache.set(code, cardDef)
@@ -417,14 +451,17 @@ watch(overlayCardCode, async (code) => {
   }
 })
 
-const upsideDown = computed<boolean>(
-  () => hoveredElement.value?.classList.contains('Reversed') ?? false,
-)
-const reversed = computed<boolean>(
-  () => hoveredElement.value?.classList.contains('reversed') ?? false,
-)
+const upsideDown = computed<boolean>(() => {
+  void hoveredVersion.value
+  return hoveredElement.value?.classList.contains('Reversed') ?? false
+})
+const reversed = computed<boolean>(() => {
+  void hoveredVersion.value
+  return hoveredElement.value?.classList.contains('reversed') ?? false
+})
 
 const sideways = computed<boolean>(() => {
+  void hoveredVersion.value
   const el = hoveredElement.value
   if (!el) return false
 
@@ -440,8 +477,7 @@ const sideways = computed<boolean>(() => {
   if (el.tagName.toLowerCase() === 'span') return false
 
   // fall back to natural aspect for dataset image
-  const url =
-    el.dataset.image ?? (el.dataset.imageId ? imgsrc(`cards/${el.dataset.imageId}.avif`) : null)
+  const url = el.dataset.image ?? (el.dataset.imageId ? cardImg(el.dataset.imageId) : null)
   if (url) {
     const ar = imgARCache.get(url)
     if (ar != null) return ar > 1
@@ -471,12 +507,6 @@ const getPosition = (el: HTMLElement): { top: number; left: number } => {
   const width = sideways.value ? OVERLAY_W / CARD_RATIO : OVERLAY_W
   const height = (sideways.value ? OVERLAY_W : Math.round(OVERLAY_W / CARD_RATIO)) * scale
 
-  const top = rect.top + window.scrollY - 40
-  const bottom = top + height
-  const newTop = Math.max(
-    0,
-    bottom > window.innerHeight ? rect.bottom - height + window.scrollY - 40 : top,
-  )
   const gap = 2
   const hasCust = !!customizationsCard.value
   const totalWidth = (hasCust ? width * 2 + gap : width) * scale
@@ -492,6 +522,10 @@ const getPosition = (el: HTMLElement): { top: number; left: number } => {
     const left = Math.max(window.scrollX + viewportPad, Math.min(desiredLeft, maxLeft))
     return { top, left }
   }
+
+  const top = rect.top + window.scrollY - 40
+  const bottom = top + height
+  const newTop = Math.max(0, bottom > window.innerHeight ? rect.bottom - height + window.scrollY - 40 : top)
 
   const rightSide = rect.left + window.scrollX + rect.width + 10
   return rightSide + totalWidth >= window.innerWidth
@@ -668,11 +702,12 @@ const imageCardCode = computed<string | null>(() => {
   return match ? match[1].replace(/_.*$/, '') : null
 })
 
-const declaredCardCode = computed<string | null>(() =>
-  normalizedCardCode(
+const declaredCardCode = computed<string | null>(() => {
+  void hoveredVersion.value
+  return normalizedCardCode(
     hoveredElement.value?.dataset.cardCode ?? hoveredElement.value?.dataset.imageId,
-  ),
-)
+  )
+})
 
 const cardCode = computed<string | null>(() => declaredCardCode.value ?? imageCardCode.value)
 const narrationImageCode = computed<string | null>(
@@ -728,7 +763,10 @@ watch(
   },
 )
 
-const mutated = computed<string>(() => {
+const customizationVariant = computed<string>(() => {
+  void hoveredVersion.value
+  const chained = hoveredElement.value?.dataset?.chained
+  if (chained) return `_${chained}`
   if (!card.value) return ''
   const m = card.value.match(/cards\/\d+(_Mutated\d+)\.avif$/)
   return m ? m[1] : ''
@@ -740,10 +778,26 @@ const additionalCard = computed<string | null>(() => {
   return imgsrc(`cards/${cardCode.value}b.avif`)
 })
 
+// A later taboo can mutate a card without touching its customizable sheet -- Taboo 24
+// only changed Power Word's test difficulty, which lives on the front. Point those
+// variants at the sheet from the taboo that last changed it.
+const customizationSheetVariants: Record<string, string> = {
+  '09081_Mutated24': '_Mutated21',
+}
+
+const customizationSheetVariant = computed<string>(() => {
+  const variant = customizationVariant.value
+  if (!variant || !cardCode.value) return variant
+  return customizationSheetVariants[`${cardCode.value}${variant}`] ?? variant
+})
+
 const customizationsCard = computed<string | null>(() => {
   if (!cardCode.value) return null
   if (!allCustomizations.has(cardCode.value)) return null
-  return imgsrc(`customizations/${cardCode.value}${mutated.value}.jpg`)
+  // Chained sheets (Runic Axe) ship as .avif; base and mutated sheets as .jpg.
+  const chained = hoveredElement.value?.dataset?.chained
+  if (chained) return imgsrc(`customizations/${cardCode.value}_${chained}.avif`)
+  return imgsrc(`customizations/${cardCode.value}${customizationSheetVariant.value}.jpg`)
 })
 
 /* =============================================================================
@@ -906,7 +960,7 @@ const parsedTicks = computed<TickParsed[]>(() =>
 const tickPct = (tp: TickParsed): { top?: number; left?: number } => {
   const base = TICK_TABLE[tp.code]
   if (!base) return {}
-  const topMap = tp.code === '09081' && mutated.value ? TICK_TABLE_MUT_09081_TOP : base.top
+  const topMap = (tp.code === '09081' && customizationVariant.value) ? TICK_TABLE_MUT_09081_TOP : base.top
   return { top: topMap[tp.first], left: base.left[tp.idx] }
 }
 
@@ -1109,6 +1163,7 @@ const TOKEN_MAP: Record<string, string> = {
   '[bless]': '<span class="bless-icon"></span>',
   '[curse]': '<span class="curse-icon"></span>',
   '[frost]': '<span class="frost-icon"></span>',
+  '[blood]': '<span class="blood-icon"></span>',
   '[per_investigator]': '<span class="per-player"></span>',
   '[seal_a]': '<span class="seal-a-icon"></span>',
   '[seal_b]': '<span class="seal-b-icon"></span>',
@@ -1118,6 +1173,7 @@ const TOKEN_MAP: Record<string, string> = {
   '[day]': '<span class="day-icon"></span>',
   '[night]': '<span class="night-icon"></span>',
   '[codex]': '<span class="codex-icon"></span>',
+  ...homebrewTokenMap,
 }
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -1200,16 +1256,16 @@ watchEffect(() => {
     dbCardFlavor.value =
       ''
   const src = card.value
-  if (!src) return
+  if (!src || src.includes('/homebrew/')) return
   const code = cardCode.value
   const imageCode = imageCardCode.value
   if (!code || !imageCode) return
   const tabooSuffix = src.match(/(_[^/?]+)\.avif(?:[?#].*)?$/)?.[1]
   if (isLocalized(src)) return
 
-  const dbCard = store.getDbCard(code) ?? store.getDbCard(imageCode)
+  const dbCard = store.getDbCard(code) ?? store.getDbCard(originalArt(imageCode)) ?? store.getDbCard(imageCode)
   if (!dbCard) return
-  const needBack = imageCode === `${dbCard.code}b`
+  const needBack = originalArt(imageCode) === `${dbCard.code}b` && dbCard.double_sided
 
   const name = getCardName(dbCard, needBack)
   const type = getCardTypeName(dbCard)
@@ -1232,12 +1288,13 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div
-    class="card-overlay"
-    ref="cardOverlay"
-    :style="{ top: overlayPosition.top + 'px', left: overlayPosition.left + 'px' }"
-    :class="{ sideways, tarot, isMobile }"
-  >
+  <Teleport to="body">
+    <div
+      class="card-overlay"
+      ref="cardOverlay"
+      :style="{ top: overlayPosition.top + 'px', left: overlayPosition.left + 'px'}"
+      :class="{ sideways, tarot, isMobile, overPopover }"
+    >
     <div class="card-image">
       <svg
         v-if="card"
@@ -1423,14 +1480,9 @@ watchEffect(() => {
         </g>
       </svg>
 
-      <div
-        v-for="entry in crossedOff"
-        :key="entry"
-        class="crossed-off"
-        :class="{ [toCamelCase(entry)]: true }"
-      ></div>
+      <div v-for="entry in crossedOff" :key="entry" class="crossed-off" :class="{ [toCamelCase(entry)]: true }"></div>
 
-      <p v-if="cardErrata" class="card-errata">Errata: {{ cardErrata }}</p>
+      <p v-if="cardErrata" class="card-errata" v-html="`Errata: ${formatContent(cardErrata)}`"></p>
     </div>
 
     <div
@@ -1480,15 +1532,17 @@ watchEffect(() => {
       <KeyToken v-for="k in spentKeys" :key="keyToId(k)" :keyToken="k" @choose="() => {}" />
     </div>
 
-    <div class="card-data" v-if="dbCardCustomizationText">
-      <p v-if="dbCardName">
-        <b>{{ dbCardName }}</b>
-      </p>
-      <p
-        v-if="dbCardCustomizationText"
-        v-html="dbCardCustomizationText"
-        style="font-size: 0.85em"
-      ></p>
+    <div
+      class="card-data card-data-customization"
+      v-if="dbCardCustomizationText"
+      :class="{ [`faction-${dbCardFactionCode || 'neutral'}`]: true }"
+    >
+      <div class="card-data-header">
+        <p v-if="dbCardName"><b>{{ dbCardName }}</b></p>
+      </div>
+      <div class="card-data-body">
+        <p v-html="dbCardCustomizationText"></p>
+      </div>
     </div>
 
     <div v-if="playabilityData && debug.active" class="playability-panel">
@@ -1506,7 +1560,8 @@ watchEffect(() => {
         </li>
       </ul>
     </div>
-  </div>
+    </div>
+  </Teleport>
   <Teleport to="body">
     <div v-if="cosmicEmissaryPrompt" class="cosmic-emissary-prompt-backdrop">
       <div
@@ -1661,7 +1716,7 @@ watchEffect(() => {
   font-family: serif;
   flex: 1;
   padding: 15px;
-  background-color: rgba(212, 212, 212, 0.85);
+  background-color: rgba(212, 212, 212, 0.96);
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
 }
@@ -1696,6 +1751,18 @@ watchEffect(() => {
   font-style: italic;
 }
 
+/* Customization sheets run longer than card text, and the overlay is
+   pointer-events: none, so a scrollbar would be unusable -- grow instead. */
+.card-data-customization {
+  align-self: flex-start;
+  height: auto;
+  aspect-ratio: auto;
+}
+
+.card-data-customization .card-data-body {
+  font-size: 0.8em;
+}
+
 .card-overlay {
   position: absolute;
   z-index: var(--z-card-hover-overlay);
@@ -1709,6 +1776,10 @@ watchEffect(() => {
   transform: scale(var(--card-hover-zoom, 1));
   transform-origin: top left;
 }
+.card-overlay.overPopover {
+  z-index: var(--z-card-hover-overlay-over-popover);
+}
+
 .card-overlay.sideways {
   /* on narrow portrait screens, allow horizontal scroll if both SVGs visible */
   @media (max-width: 800px) and (orientation: portrait) {
@@ -1736,6 +1807,19 @@ watchEffect(() => {
 
 .card-image {
   position: relative;
+}
+
+.card-errata {
+  width: 300px;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff7d6;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  box-shadow: 0 3px 10px #000;
 }
 
 .card-errata {

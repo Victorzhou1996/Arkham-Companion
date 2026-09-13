@@ -6,6 +6,7 @@ import Arkham.Prelude
 
 import Arkham.Card.CardCode
 import Arkham.Card.CardDef
+import Arkham.Card.CustomCard
 import Arkham.Card.Id
 import Arkham.EncounterCard
 import Arkham.Id
@@ -52,17 +53,24 @@ instance HasCardCode EncounterCard where
 instance HasCardDef EncounterCard where
   toCardDef c =
     fromMaybe
-      (error $ "missing card def for encounter card " <> show (ecCardCode c))
+      ( error
+          $ "missing card def for encounter card "
+          <> show (ecCardCode c)
+          <> "\n"
+          <> prettyCallStack callStack
+      )
       $ lookup (ecCardCode c) allEncounterCards
       <|> lookup (ecOriginalCardCode c) allEncounterCards
       <|> lookup (flippedCardCode $ ecCardCode c) allEncounterCards
+      <|> lookupCustomCardDef (ecCardCode c)
+      <|> lookupCustomCardDef (ecOriginalCardCode c)
 
 instance Named EncounterCard where
   toName = toName . toCardDef
 
 instance HasOriginalCardCode EncounterCard where
   toOriginalCardCode = ecOriginalCardCode
-  setOriginalCardCode (toCardCode -> cCode) ec = ec { ecOriginalCardCode = cCode }
+  setOriginalCardCode (toCardCode -> cCode) ec = ec {ecOriginalCardCode = cCode}
 
 lookupEncounterCard :: CardDef -> CardId -> EncounterCard
 lookupEncounterCard cardDef cardId =

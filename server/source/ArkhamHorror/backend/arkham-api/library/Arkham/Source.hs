@@ -19,6 +19,7 @@ import Arkham.Matcher.Types (
   EnemyMatcher,
   LocationMatcher,
   SourceMatcher (..),
+  TreacheryMatcher,
  )
 import Arkham.Prelude
 import Arkham.Tarot
@@ -57,6 +58,7 @@ data Source
   | InvestigatorSource InvestigatorId
   | LocationMatcherSource LocationMatcher
   | EnemyMatcherSource EnemyMatcher
+  | TreacheryMatcherSource TreacheryMatcher
   | LocationSource LocationId
   | ProxySource {source :: Source, originalSource :: Source}
   | ResourceSource InvestigatorId
@@ -90,6 +92,17 @@ instance HasField "asset" Source (Maybe AssetId) where
     AbilitySource s _ -> s.asset
     UseAbilitySource _ s _ -> s.asset
     PaymentSource s -> s.asset
+    _ -> Nothing
+
+instance HasField "investigator" Source (Maybe InvestigatorId) where
+  getField = \case
+    InvestigatorSource iid -> Just iid
+    ProxySource (CardIdSource _) s -> s.investigator
+    IndexedSource _ s -> s.investigator
+    ProxySource s _ -> s.investigator
+    AbilitySource s _ -> s.investigator
+    UseAbilitySource _ s _ -> s.investigator
+    PaymentSource s -> s.investigator
     _ -> Nothing
 
 instance HasField "event" Source (Maybe EventId) where
@@ -171,7 +184,7 @@ isIndexed _ _ = False
 proxy :: (Sourceable a, Sourceable b) => a -> b -> Source
 proxy a b = ProxySource (toSource a) (toSource b)
 
-indexed :: (Sourceable a) => Int -> a -> Source
+indexed :: Sourceable a => Int -> a -> Source
 indexed n = IndexedSource n . toSource
 
 isIndexedSource :: Sourceable a => Int -> a -> Source -> Bool
@@ -296,11 +309,21 @@ instance Sourceable LocationMatcher where
 instance Sourceable EnemyMatcher where
   toSource = EnemyMatcherSource
 
+instance Sourceable TreacheryMatcher where
+  toSource = TreacheryMatcherSource
+
 toAbilitySource :: Sourceable a => a -> Int -> Source
 toAbilitySource a n = case toSource a of
   AbilitySource b n' -> AbilitySource b n'
   UseAbilitySource _ b n' -> AbilitySource b n'
   b -> AbilitySource b n
+
+{- | Drop the investigator credited on 'UseAbilitySource' so an ability source
+compares equal regardless of who used it.
+-}
+asAbilitySource :: Source -> Source
+asAbilitySource (UseAbilitySource _ s n) = AbilitySource s n
+asAbilitySource s = s
 
 isAbilitySource :: Sourceable a => a -> Int -> Source -> Bool
 isAbilitySource a idx (AbilitySource b idx') | idx == idx' = isSource a b

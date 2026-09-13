@@ -5,10 +5,13 @@ import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
 import Arkham.Capability
 import Arkham.Card
+import Arkham.Helpers.Investigator (getCardAttachments)
 import Arkham.Helpers.Modifiers (getAdditionalSearchTargets)
 import Arkham.I18n
+import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher hiding (PlaceUnderneath)
 import Arkham.Message.Lifted.Choose
+import Arkham.Projection
 import Arkham.Name (toTitle)
 import Arkham.Strategy
 import Arkham.Trait qualified as Trait
@@ -28,10 +31,28 @@ instance HasAbilities Bewitching3 where
    where
     criteria = if null a.cardsUnderneath then Never else NoRestriction
 
+pickCardsByCodes :: [CardCode] -> [Card] -> Maybe [Card]
+pickCardsByCodes [] _ = Just []
+pickCardsByCodes (code : codes) cards = do
+  let (before, rest) = break ((== code) . (.cardCode)) cards
+  case rest of
+    [] -> Nothing
+    card : after -> (card :) <$> pickCardsByCodes codes (before <> after)
+
 instance RunMessage Bewitching3 where
   runMessage msg a@(Bewitching3 attrs) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
-      search iid attrs iid [fromDeck] #any (defer attrs IsNotDraw)
+      attachments <- getCardAttachments iid attrs
+      if null attachments
+        then search iid attrs iid [fromDeck] #any (defer attrs IsNotDraw)
+        else do
+          deck <- fieldMap InvestigatorDeck (map toCard . (.cards)) iid
+          let tricks = filterCards (CardWithTrait Trait.Trick) deck
+          case pickCardsByCodes attachments tricks of
+            Just selected | length selected <= 3 -> do
+              traverse_ obtainCard selected
+              placeUnderneath attrs selected
+            _ -> search iid attrs iid [fromDeck] #any (defer attrs IsNotDraw)
       pure a
     SearchFound iid (isTarget attrs -> True) _ cards -> do
       let tricks = filterCards (CardWithTrait Trait.Trick) cards
@@ -44,7 +65,7 @@ instance RunMessage Bewitching3 where
       let underTitles = map toTitle attrs.cardsUnderneath
       let tricks = cards & filterCards (CardWithTrait Trait.Trick) & filter ((`notElem` underTitles) . toTitle)
       unless (null tricks) do
-        cardI18n $ scope "bewitching3" $ chooseUpToNM' iid 1 "chooseNoMoreTrickCards" do
+        cardI18n $ scope "bewitching3" $ chooseUpToNM iid 1 "chooseNoMoreTrickCards" do
           targets tricks \card -> do
             push $ RemoveCardFromSearch iid card.id
             push $ PlaceUnderneath (toTarget attrs) [card]
@@ -53,10 +74,10 @@ instance RunMessage Bewitching3 where
     UseThisAbility iid (isSource attrs -> True) 2 -> do
       canSearch <- can.search.deck iid
       chooseOrRunOneM iid do
-        (cardI18n $ labeled' "bewitching3.draw1AttachedCard") do
+        (cardI18n $ labeled "bewitching3.draw1AttachedCard") do
           focusCards attrs.cardsUnderneath $ chooseTargetM iid attrs.cardsUnderneath $ drawCard iid
         when canSearch do
-          (cardI18n $ labeled' "bewitching3.searchTopOfDeck")
+          (cardI18n $ labeled "bewitching3.searchTopOfDeck")
             do
               let cardMatcher = mapOneOf (CardWithTitle . toTitle) attrs.cardsUnderneath
               search iid attrs iid [fromTopOfDeck 9] (basic cardMatcher) (DrawFound iid 1)

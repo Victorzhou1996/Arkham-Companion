@@ -13,7 +13,6 @@ import Arkham.Matcher
 import Arkham.Message.Lifted.Move
 import Arkham.Modifier
 import Arkham.Projection
-import Arkham.Tracing
 
 newtype CallForBackup2 = CallForBackup2 EventAttrs
   deriving anyclass (IsEvent, HasModifiersFor, HasAbilities)
@@ -22,7 +21,7 @@ newtype CallForBackup2 = CallForBackup2 EventAttrs
 callForBackup2 :: EventCard CallForBackup2
 callForBackup2 = event CallForBackup2 Cards.callForBackup2
 
-control :: (HasGame m, Tracing m) => InvestigatorId -> [ClassSymbol] -> ClassSymbol -> m Bool
+control :: HasGame m => InvestigatorId -> [ClassSymbol] -> ClassSymbol -> m Bool
 control iid ks k =
   if k `notElem` ks
     then
@@ -86,23 +85,23 @@ instance RunMessage CallForBackup2 where
       when (hasRogue || hasGuardian || hasSeeker || hasMystic || hasSurvivor) do
         chooseOneM iid $ cardI18n $ scope "callForBackup2" do
           when hasRogue do
-            labeled' "rogueOption" do
+            labeled "rogueOption" do
               doStep 1 msg'
               do_ msg'
           when hasGuardian do
-            labeled' "guardianOption" do
+            labeled "guardianOption" do
               doStep 2 msg'
               do_ msg'
           when hasSeeker do
-            labeled' "seekerOption" do
+            labeled "seekerOption" do
               doStep 3 msg'
               do_ msg'
           when hasMystic do
-            labeled' "mysticOption" do
+            labeled "mysticOption" do
               doStep 4 msg'
               do_ msg'
           when hasSurvivor do
-            labeled' "survivorOption" do
+            labeled "survivorOption" do
               doStep 5 msg'
               do_ msg'
           labeledI "doneChoosingOptions" nothing

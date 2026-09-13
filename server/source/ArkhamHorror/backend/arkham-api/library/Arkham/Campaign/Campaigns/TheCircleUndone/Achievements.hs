@@ -43,12 +43,11 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Scenario.Types (Field (ScenarioVictoryDisplay))
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Trait (Trait (Geist, SilverTwilight, Spectral))
 import Data.Aeson.Key qualified as Key
 
 runCircleAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runCircleAchievements msg = whenEligibleCampaign $ case msg of
   -- "Savior of Humanity": rescue every Silver Twilight enemy in At Death's
   -- Doorstep. Escaping the Spectral Realm (Resolution 1) is the only surviving
@@ -155,17 +154,22 @@ runCircleAchievements msg = whenEligibleCampaign $ case msg of
   InvestigatorAssignDamage _ src _ _ horror | horror > 0 -> do
     for_ src.asset \aid -> do
       whenM (selectAny $ AssetWithId aid <> assetIs Assets.theBlackBook) do
-        c <- storedInt blackBookHorrorKey
-        setStore blackBookHorrorKey (c + horror)
-        when (c + horror >= 10) $ earn TenOutOfTenWouldReadAgain
+        bumpCounter blackBookHorrorKey horror
+
+  -- Deferred threshold checks: 'bumpCounter' does its arithmetic when the
+  -- message is processed, so the counter only reads its new value here.
+  CounterBumped k
+    | k == blackBookHorrorKey -> whenM ((>= 10) <$> storedInt k) $ earn TenOutOfTenWouldReadAgain
+    | k == geistDefeatsKey -> whenM ((>= 13) <$> storedInt k) $ earn WhoYouGonnaCall
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => TheCircleUndoneAchievement -> m ()
 earn = earnAchievement . TheCircleUndoneAchievement
 
--- | "Circle Expertise": earn when the current campaign win happens on Expert.
--- Called from every winning-campaign record (the Black Throne survivals and the
--- two loyal-faction gameOver endings in Union and Disillusion).
+{- | "Circle Expertise": earn when the current campaign win happens on Expert.
+Called from every winning-campaign record (the Black Throne survivals and the
+two loyal-faction gameOver endings in Union and Disillusion).
+-}
 checkCircleExpertise :: (HasGame m, HasQueue Message m) => m ()
 checkCircleExpertise = do
   g <- getGame
@@ -175,11 +179,8 @@ checkCircleExpertise = do
 progressCase :: (HasGame m, HasQueue Message m) => Text -> m ()
 progressCase item = achievementProgress (TheCircleUndoneAchievement CaseClosed) [item]
 
-bumpGeist :: (HasCallStack, HasGame m, HasQueue Message m, Tracing m) => m ()
-bumpGeist = do
-  n <- storedInt geistDefeatsKey
-  setStore geistDefeatsKey (n + 1)
-  when (n + 1 >= 13) $ earn WhoYouGonnaCall
+bumpGeist :: HasQueue Message m => m ()
+bumpGeist = bumpCounter geistDefeatsKey 1
 
 isGeistOrSpectral :: Set Trait -> Bool
 isGeistOrSpectral traits = Geist `member` traits || Spectral `member` traits
@@ -194,7 +195,7 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ TheCircleUndoneAchievement CircleExpertise
   when (maybe False (`elem` eligible) mCampaignId) body
 
-whenInTheClutchesOfChaos :: (HasGame m, Tracing m) => m () -> m ()
+whenInTheClutchesOfChaos :: HasGame m => m () -> m ()
 whenInTheClutchesOfChaos body = do
   mSid <- selectOne TheScenario
   when (maybe False (`elem` (["05284", "54049"] :: [ScenarioId])) mSid) body
@@ -250,8 +251,8 @@ incursionOccurredKey = "circleAchIncursionOccurred"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k

@@ -4,6 +4,7 @@ import { useUserStore } from '@/stores/user'
 import { useRouter, useRoute } from 'vue-router'
 import {
   deleteGame,
+  deleteEvent,
   fetchGames,
   fetchEvents,
   fetchNotifications,
@@ -148,7 +149,14 @@ async function deleteGameEvent(game: GameDetails) {
   })
 }
 
-const newGame = ref(route.path === '/new-game' || false)
+async function deleteEpicEvent(event: EventListEntry) {
+  deleteEvent(event.id).then(() => {
+    events.value = events.value.filter((e) => e.id !== event.id)
+    writeHomeCache()
+  })
+}
+
+const newGame = ref(route.path === "/new-game" || false)
 const showImportGame = ref(false)
 const importGameRef = ref<any>(null)
 const supportQrSrc = `${import.meta.env.BASE_URL}wechat_qr.png`
@@ -281,7 +289,7 @@ const isSupportNotification = (notification: AppNotification) => {
             <div v-if="activeGames.length === 0 && events.length === 0" class="box">
               <p>{{ $t('home.noActiveGames') }}</p>
             </div>
-            <EventRow v-for="event in events" :key="event.id" :event="event" />
+            <EventRow v-for="event in events" :key="event.id" :event="event" :deleteEvent="() => deleteEpicEvent(event)" />
             <GameRow
               v-for="game in activeGames"
               :key="game.id"
@@ -346,7 +354,7 @@ h2 {
   @media (max-width: 768px) {
     min-width: unset;
     width: 100%;
-    padding: 0 12px;
+    padding: 20px 12px 10px;
     box-sizing: border-box;
   }
 }

@@ -7,7 +7,7 @@ where
 import Arkham.Prelude
 
 import Arkham.Classes
-import Arkham.Enemy.Cards qualified as Cards
+import Arkham.Enemy.CardDefs.TheDreamEaters qualified as Cards
 import Arkham.Enemy.Runner
 import Arkham.Investigator.Cards qualified as Investigators
 import Arkham.Matcher
@@ -29,7 +29,7 @@ instance HasAbilities TonysQuarry where
   getAbilities (TonysQuarry a) =
     withBaseAbilities
       a
-      [mkAbility a 1 $ ForcedAbility $ EnemySpawns #after Anywhere $ EnemyWithId (toId a)]
+      [mkAbility a 1 $ ForcedAbility $ EnemySpawns #after AnyPlacement $ EnemyWithId (toId a)]
 
 -- Bounty needs to be via a THEN, two things can affect a THEN:
 

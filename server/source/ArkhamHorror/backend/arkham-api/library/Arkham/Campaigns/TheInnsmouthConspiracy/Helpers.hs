@@ -11,6 +11,7 @@ import Arkham.Classes.Query
 import Arkham.Effect.Types (makeEffectBuilder)
 import Arkham.Helpers.Location (getLocationOf)
 import Arkham.Helpers.Log hiding (recordSetInsert)
+import Arkham.Helpers.Modifiers (getModifiers)
 import Arkham.Helpers.Scenario
 import Arkham.I18n
 import Arkham.Id
@@ -23,12 +24,12 @@ import Arkham.Message (
  )
 import Arkham.Message.Lifted
 import Arkham.Message.Lifted.Log
+import Arkham.Modifier (ModifierType (TreatFullyFloodedAsPartiallyFlooded))
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Scenario.Types
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 
 placeUnrevealedKeyOn :: (ReverseQueue m, Targetable target) => target -> m ()
 placeUnrevealedKeyOn target = do
@@ -62,14 +63,16 @@ needsAir a n =
         $ at_ FullyFloodedLocation
         <> not_ (InVehicleMatching $ assetIs Assets.fishingVessel)
         <> not_ (HasMatchingAsset $ assetIs Assets.divingSuit)
+        <> not_ (HasMatchingAsset $ assetIs Assets.divingSuitTheDrownedCity)
     )
     $ forced
     $ TurnBegins #when You
 
-getFloodLevel :: (HasGame m, Tracing m, AsId location, IdOf location ~ LocationId) => location -> m FloodLevel
+getFloodLevel
+  :: (HasGame m, AsId location, IdOf location ~ LocationId) => location -> m FloodLevel
 getFloodLevel = fieldWithDefault Unflooded LocationFloodLevel . asId
 
-getFloodLevelFor :: (HasGame m, Tracing m) => InvestigatorId -> m FloodLevel
+getFloodLevelFor :: HasGame m => InvestigatorId -> m FloodLevel
 getFloodLevelFor iid = do
   inFishingVessel <- matches iid $ InVehicleMatching $ assetIs Assets.fishingVessel
   if inFishingVessel
@@ -77,10 +80,16 @@ getFloodLevelFor iid = do
     else
       getLocationOf iid >>= \case
         Nothing -> pure Unflooded
-        Just location -> getFloodLevel location
+        Just location -> do
+          floodLevel <- getFloodLevel location
+          modifiers <- getModifiers iid
+          pure
+            $ if floodLevel == FullyFlooded && TreatFullyFloodedAsPartiallyFlooded `elem` modifiers
+              then PartiallyFlooded
+              else floodLevel
 
 canIncreaseFloodLevel
-  :: (HasGame m, Tracing m, AsId location, IdOf location ~ LocationId) => location -> m Bool
+  :: (HasGame m, AsId location, IdOf location ~ LocationId) => location -> m Bool
 canIncreaseFloodLevel = (<=~> CanHaveFloodLevelIncreased) . asId
 
 increaseThisFloodLevelOrElse
@@ -106,15 +115,16 @@ setThisFloodLevel
   :: (ReverseQueue m, AsId location, IdOf location ~ LocationId) => location -> FloodLevel -> m ()
 setThisFloodLevel location level = push $ SetFloodLevel (asId location) level
 
-struggleForAir :: (Sourceable a, HasGame m, Tracing m, HasQueue Message m) => a -> InvestigatorId -> m ()
+struggleForAir
+  :: (Sourceable a, HasGame m, HasQueue Message m) => a -> InvestigatorId -> m ()
 struggleForAir a iid = do
   builder <- makeEffectBuilder "noair" Nothing a iid
   push $ CreateEffect builder
 
-whenRecoveredMemory :: (HasGame m, Tracing m) => Memory -> m () -> m ()
+whenRecoveredMemory :: HasGame m => Memory -> m () -> m ()
 whenRecoveredMemory memory action = whenM (hasMemory memory) action
 
-hasMemory :: (HasGame m, Tracing m) => Memory -> m Bool
+hasMemory :: HasGame m => Memory -> m Bool
 hasMemory memory = inRecordSet memory MemoriesRecovered
 
 recoverMemory :: ReverseQueue m => Memory -> m ()

@@ -35,10 +35,18 @@ export function deckMetaAlternateFront(meta: Meta | string | undefined): string 
   }
 }
 
+/* The deck as it will be played -- the stored list with any overlay applied.
+ * The backend computes it so the two never disagree; `list` stays the deck the
+ * user actually built, which is what the overlay editor edits against. */
+export function deckPlayList(deck: Deck): DeckList {
+  return deck.playList ?? deck.list
+}
+
 export function deckInvestigator(deck: Deck) {
-  const alternate = deckMetaAlternateFront(deck.list.meta)
+  const list = deckPlayList(deck)
+  const alternate = deckMetaAlternateFront(list.meta)
   if (alternate) return alternate
-  return deck.list.investigator_code.replace('c', '')
+  return list.investigator_code.replace(/^c/, '')
 }
 
 export function deckClass(deck: Deck) {
@@ -50,6 +58,37 @@ export function deckClass(deck: Deck) {
   return {}
 }
 
+export type DeckSort = 'name' | 'class' | 'recent'
+
+const CLASS_ORDER = ["guardian", "seeker", "rogue", "mystic", "survivor", "neutral"] as const
+
+/* Shared by the decks page and the in-game picker so the two agree.
+ * `recent` puts never-played decks after every played one rather than mixing
+ * them in at the bottom of an arbitrary order, and falls back to name so the
+ * tail stays stable. */
+export function sortDecks(decks: Deck[], sortBy: DeckSort): Deck[] {
+  const byName = (a: Deck, b: Deck) => a.name.localeCompare(b.name)
+
+  switch (sortBy) {
+    case 'class':
+      return [...decks].sort((a, b) => {
+        const rank = (d: Deck) => {
+          const cls = deckClass(d)
+          const idx = CLASS_ORDER.findIndex(k => cls[k])
+          return idx === -1 ? CLASS_ORDER.length - 1 : idx
+        }
+        return rank(a) - rank(b) || byName(a, b)
+      })
+    case 'recent':
+      return [...decks].sort((a, b) => {
+        const used = (d: Deck) => d.lastUsedAt ?? ''
+        return used(b).localeCompare(used(a)) || byName(a, b)
+      })
+    default:
+      return [...decks].sort(byName)
+  }
+}
+
 export type DeckList = {
   investigator_code: string;
   slots: Record<string, number>;
@@ -58,12 +97,23 @@ export type DeckList = {
   taboo_id?: number
 }
 
+export type DeckOverlay = {
+  investigator: string | null;
+  swaps: Record<string, string>;
+  add: Record<string, number>;
+  remove: Record<string, number>;
+}
+
 export type Deck = {
   id: string;
   name: string;
   url : string | null;
   investigatorName?: string;
   list: DeckList;
+  playList?: DeckList;
+  overlay?: DeckOverlay | null;
+  /* When the deck was last taken into a game. Null for a deck never played. */
+  lastUsedAt?: string | null;
 }
 
 export type CampaignDeckStatus = 'active' | 'completed'
@@ -85,6 +135,15 @@ export function campaignDeckStatus(deck: Deck): CampaignDeckStatus | null {
   const status = deckMetaValue(deck, 'arkham_horror_campaign_status')
   return status === 'active' || status === 'completed' ? status : null
 }
+export const deckOverlayDecoder = JsonDecoder.object<DeckOverlay>(
+  {
+    investigator: JsonDecoder.nullable(JsonDecoder.string()),
+    swaps: JsonDecoder.record<string>(JsonDecoder.string(), 'Dict<cardcode, cardcode>'),
+    add: JsonDecoder.record<number>(JsonDecoder.number(), 'Dict<cardcode, number>'),
+    remove: JsonDecoder.record<number>(JsonDecoder.number(), 'Dict<cardcode, number>'),
+  },
+  'DeckOverlay',
+);
 
 export const deckListDecoder = JsonDecoder.object<DeckList>(
   {
@@ -104,6 +163,9 @@ export const deckDecoder = JsonDecoder.object<Deck>(
     url: JsonDecoder.nullable(JsonDecoder.string()),
     investigatorName: v2Optional(JsonDecoder.string()),
     list: deckListDecoder,
+    playList: v2Optional(deckListDecoder),
+    overlay: v2Optional(JsonDecoder.nullable(deckOverlayDecoder)),
+    lastUsedAt: v2Optional(JsonDecoder.nullable(JsonDecoder.string())),
   },
   'Deck',
 );

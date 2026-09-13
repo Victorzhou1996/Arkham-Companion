@@ -1,11 +1,12 @@
 module Arkham.Scenario.Scenarios.AllOrNothing (allOrNothing) where
 
-import Arkham.Act.Cards qualified as Acts
+import Arkham.Act.CardDefs.AllOrNothing qualified as Acts
 import Arkham.Act.Types (Field (ActResources))
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Agenda.CardDefs.AllOrNothing qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.AllOrNothing qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDunwichLegacy.TheHouseAlwaysWins qualified as Enemies
 import Arkham.Event.Cards qualified as Events
 import Arkham.Exception
 import Arkham.Helpers.FlavorText
@@ -13,7 +14,8 @@ import Arkham.Helpers.Xp
 import Arkham.Investigator.Types (
   Field (InvestigatorClues, InvestigatorName, InvestigatorResources),
  )
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.ReturnToTheDunwichLegacy.ReturnToTheHouseAlwaysWins qualified as Locations
+import Arkham.Location.CardDefs.TheDunwichLegacy.TheHouseAlwaysWins qualified as Locations
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
@@ -24,7 +26,9 @@ import Arkham.Resolution
 import Arkham.Scenario.Import.Lifted
 import Arkham.ScenarioLogKey
 import Arkham.Scenarios.AllOrNothing.Helpers
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Treacheries
+import Arkham.Treachery.CardDefs.Standalone qualified as Treacheries
 
 {- FOURMOLU_DISABLE -}
 easyTokens, standardTokens, hardTokens, expertTokens :: [ChaosTokenFace]
@@ -86,7 +90,7 @@ instance RunMessage AllOrNothing where
         p "body"
       storyWithChooseOneM
         do
-          buildFlavor $ scope "setup" $ ul do
+          scope "setup" $ ul do
             li.nested "returnTo" do
               li "returnToSetupCard"
               li "returnToVersions"
@@ -94,8 +98,8 @@ instance RunMessage AllOrNothing where
               li "returnToTreacheries"
               li "cheated"
         do
-          labeled' "returnTo.include" $ setScenarioMeta $ object ["includeReturnTo" .= True]
-          labeled' "returnTo.exclude" $ setScenarioMeta $ object ["includeReturnTo" .= False]
+          labeled "returnTo.include" $ setScenarioMeta $ object ["includeReturnTo" .= True]
+          labeled "returnTo.exclude" $ setScenarioMeta $ object ["includeReturnTo" .= False]
       pure s
     StandaloneSetup -> do
       setChaosTokens $ case attrs.difficulty of
@@ -213,14 +217,14 @@ instance RunMessage AllOrNothing where
             hasOnTheLam <- hasCardInDeck skids Events.onTheLam
             hasAdvancedHospitalDebts <- hasCardInDeck skids Treacheries.hospitalDebtsAdvanced
             chooseOneM skids do
-              questionLabeled' "skidsMaySwap"
-              when hasOnTheLam $ labeled' "upgradeOnTheLam" do
+              questionLabeled "skidsMaySwap"
+              when hasOnTheLam $ labeled "upgradeOnTheLam" do
                 removeCampaignCardFromDeck skids Events.onTheLam
                 addCampaignCardToDeck skids DoNotShuffleIn Events.onTheLamAdvanced
-              when hasAdvancedHospitalDebts $ labeled' "downgradeHospitalDebts" do
+              when hasAdvancedHospitalDebts $ labeled "downgradeHospitalDebts" do
                 removeCampaignCardFromDeck skids Treacheries.hospitalDebtsAdvanced
                 addCampaignCardToDeck skids DoNotShuffleIn Treacheries.hospitalDebts
-              labeled' "doNotSwap" nothing
+              labeled "doNotSwap" nothing
           endOfScenario
         Resolution 2 -> do
           resolutionWithXp "resolution2" $ allGainXp' attrs
@@ -229,11 +233,11 @@ instance RunMessage AllOrNothing where
             hasAdvancedOnTheLam <- hasCardInDeck skids Events.onTheLamAdvanced
             when (hasHospitalDebts || hasAdvancedOnTheLam) do
               chooseOrRunOneM skids do
-                questionLabeled' "skidsMustSwap"
-                when hasHospitalDebts $ labeled' "upgradeHospitalDebts" do
+                questionLabeled "skidsMustSwap"
+                when hasHospitalDebts $ labeled "upgradeHospitalDebts" do
                   removeCampaignCardFromDeck skids Treacheries.hospitalDebts
                   addCampaignCardToDeck skids DoNotShuffleIn Treacheries.hospitalDebtsAdvanced
-                when hasAdvancedOnTheLam $ labeled' "downgradeOnTheLam" do
+                when hasAdvancedOnTheLam $ labeled "downgradeOnTheLam" do
                   removeCampaignCardFromDeck skids Events.onTheLamAdvanced
                   addCampaignCardToDeck skids DoNotShuffleIn Events.onTheLam
           endOfScenario

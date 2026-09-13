@@ -3,8 +3,11 @@
 
 module Arkham.Campaign.Types where
 
+import Arkham.Ability.Types (Ability)
 import Arkham.Ability.Used
+import Arkham.Campaign.Overlay (CampaignOverlay)
 import Arkham.CampaignLog
+import Arkham.CampaignLogKey
 import Arkham.CampaignStep
 import Arkham.Card
 import Arkham.ChaosToken.Types
@@ -29,7 +32,7 @@ import Arkham.Source
 import Arkham.Target
 import Arkham.Tarot
 import Arkham.Xp
-import Control.Monad.Writer hiding (filterM)
+import Control.Monad.Writer
 import Data.Aeson.TH
 import Data.Aeson.Types (Parser)
 import Data.Data
@@ -56,6 +59,10 @@ class
   invalidCards :: a -> [CardCode]
   invalidCards _ = []
   campaignTokens :: Difficulty -> [ChaosTokenFace]
+  campaignAbilities :: a -> [Ability]
+  campaignAbilities _ = []
+  campaignOverlays :: a -> [CampaignOverlay]
+  campaignOverlays _ = []
 
 data instance Field Campaign :: Type -> Type where
   CampaignCompletedSteps :: Field Campaign [CampaignStep]
@@ -76,6 +83,30 @@ data XpBreakdownStep = XpBreakdownStep
   }
   deriving stock (Show, Eq, Ord, Generic, Data)
 
+{- | A recorded change to the campaign chaos bag, grouped by the campaign step it
+happened during. The bag is kept in full on both sides so the campaign log can show
+what was added and removed (the multiset difference) and what the bag looked like
+before and after.
+-}
+data ChaosBagChange = ChaosBagChange
+  { cbcStep :: CampaignStep
+  , cbcBefore :: [ChaosTokenFace]
+  , cbcAfter :: [ChaosTokenFace]
+  }
+  deriving stock (Show, Eq, Ord, Generic, Data)
+
+{- | A recorded change to one of the campaign log's counts (Yig's Fury, ...),
+grouped by the campaign step it happened during, so the log can show how a
+total was arrived at rather than just its current value.
+-}
+data RecordCountChange = RecordCountChange
+  { rccStep :: CampaignStep
+  , rccKey :: CampaignLogKey
+  , rccBefore :: Int
+  , rccAfter :: Int
+  }
+  deriving stock (Show, Eq, Ord, Generic, Data)
+
 data CampaignAttrs = CampaignAttrs
   { campaignId :: CampaignId
   , campaignName :: Text
@@ -83,17 +114,20 @@ data CampaignAttrs = CampaignAttrs
   , campaignStoryCards :: Map InvestigatorId [Card]
   , campaignDifficulty :: Difficulty
   , campaignChaosBag :: [ChaosTokenFace]
+  , campaignChaosBagHistory :: [ChaosBagChange]
+  , campaignRecordCountHistory :: [RecordCountChange]
   , campaignLog :: CampaignLog
   , campaignStep :: CampaignStep
   , campaignCompletedSteps :: [CampaignStep]
   , campaignResolutions :: Map ScenarioId Resolution
   , campaignXpBreakdown :: [XpBreakdownStep]
   , campaignModifiers :: Map InvestigatorId [Modifier]
-  , -- | Modifiers that apply to /all/ investigators for the remainder of the
-    -- campaign (current and future). Unlike 'campaignModifiers' these are not
-    -- snapshotted per-investigator; they are expanded onto every investigator
-    -- when modifiers are collected.
-    campaignModifiersForAll :: [ModifierType]
+  , campaignModifiersForAll :: [ModifierType]
+  {- ^ Modifiers that apply to /all/ investigators for the remainder of the
+  campaign (current and future). Unlike 'campaignModifiers' these are not
+  snapshotted per-investigator; they are expanded onto every investigator
+  when modifiers are collected.
+  -}
   , campaignMeta :: Value
   , campaignStore :: Map Text Value
   , campaignDestiny :: Map Scope TarotCard
@@ -207,6 +241,51 @@ usedAbilitiesL = lens campaignUsedAbilities $ \m x -> m {campaignUsedAbilities =
 xpBreakdownL :: Lens' CampaignAttrs [XpBreakdownStep]
 xpBreakdownL = lens campaignXpBreakdown $ \m x -> m {campaignXpBreakdown = x}
 
+chaosBagHistoryL :: Lens' CampaignAttrs [ChaosBagChange]
+chaosBagHistoryL = lens campaignChaosBagHistory $ \m x -> m {campaignChaosBagHistory = x}
+
+{- | Change the campaign chaos bag, recording the change so the campaign log can show
+the bag's history. Everything that happens during one campaign step folds into a
+single entry, and an entry that nets back to where it started is dropped.
+-}
+overCampaignChaosBag :: ([ChaosTokenFace] -> [ChaosTokenFace]) -> CampaignAttrs -> CampaignAttrs
+overCampaignChaosBag f attrs
+  | sort before == sort after = attrs
+  | otherwise = attrs & chaosBagL .~ after & chaosBagHistoryL %~ record
+ where
+  before = campaignChaosBag attrs
+  after = f before
+  step = normalizedCampaignStep (campaignStep attrs)
+  record = \case
+    c : rest | c.cbcStep == step -> [c {cbcAfter = after} | sort c.cbcBefore /= sort after] <> rest
+    history -> ChaosBagChange step before after : history
+
+recordCountHistoryL :: Lens' CampaignAttrs [RecordCountChange]
+recordCountHistoryL =
+  lens campaignRecordCountHistory $ \m x -> m {campaignRecordCountHistory = x}
+
+{- | Change one of the campaign log's counts, recording the change so the log can
+show where the total came from. Like 'overCampaignChaosBag', everything that
+happens to a key during one campaign step folds into a single entry, and an
+entry that nets back to where it started is dropped.
+-}
+overRecordedCount
+  :: CampaignLogKey -> (Maybe Int -> Maybe Int) -> CampaignAttrs -> CampaignAttrs
+overRecordedCount key f attrs
+  | before == after = attrs'
+  | otherwise = attrs' & recordCountHistoryL %~ record
+ where
+  counts = (campaignLog attrs).recordedCounts
+  before = findWithDefault 0 key counts
+  after = fromMaybe 0 $ f (lookup key counts)
+  attrs' = attrs & logL . recordedCountsL %~ alterMap f key
+  step = normalizedCampaignStep (campaignStep attrs)
+  -- Other keys can be written in between, so fold into this key's entry for the
+  -- step wherever it sits rather than only when it is the most recent one.
+  record history = case break (\c -> c.rccStep == step && c.rccKey == key) history of
+    (before', c : after') -> before' <> [c {rccAfter = after} | c.rccBefore /= after] <> after'
+    _ -> RecordCountChange step key before after : history
+
 completeStep :: CampaignStep -> [CampaignStep] -> [CampaignStep]
 completeStep step' steps = step' : steps
 
@@ -224,23 +303,42 @@ instance Entity CampaignAttrs where
   overAttrs f = f
 
 getRandomBasicWeakness :: MonadRandom m => ClassSymbol -> Int -> Maybe ArkhamDBDecklist -> m CardDef
-getRandomBasicWeakness investigatorClass playerCount mDecklist =
-  sampleRandomBasicWeakness
-    RandomBasicWeaknessContext
-      { rbwInvestigatorClass = investigatorClass
-      , rbwPlayerCount = playerCount
-      , rbwDecklist = mDecklist
-      , rbwStandalone = False
-      }
+getRandomBasicWeakness = getRandomBasicWeaknessExcluding []
 
+-- | 'getRandomBasicWeakness', skipping weaknesses whose canonical card code is excluded.
+getRandomBasicWeaknessExcluding
+  :: MonadRandom m => [CardCode] -> ClassSymbol -> Int -> Maybe ArkhamDBDecklist -> m CardDef
+getRandomBasicWeaknessExcluding excluded investigatorClass playerCount mDecklist =
+  sampleRandomBasicWeaknessExcluding excluded
+    $ decklistWeaknessContext investigatorClass playerCount False mDecklist
+
+{- | Replace every random basic weakness placeholder in the deck with an actual weakness.
+Each draw excludes what the earlier draws produced, and the basic weaknesses already in
+the deck, since only one physical copy of each exists (#5424).
+-}
 addRandomBasicWeaknessIfNeeded
-  :: CardGen m => ClassSymbol -> Int -> Maybe ArkhamDBDecklist -> Deck PlayerCard -> m (Deck PlayerCard, [Card])
+  :: CardGen m
+  => ClassSymbol -> Int -> Maybe ArkhamDBDecklist -> Deck PlayerCard -> m (Deck PlayerCard, [Card])
 addRandomBasicWeaknessIfNeeded investigatorClass playerCount mDecklist deck = do
-  runWriterT do
-    Deck <$> flip filterM (unDeck deck) \card -> do
-      when (toCardDef card == randomWeakness) do
-        getRandomBasicWeakness investigatorClass playerCount mDecklist >>= lift . genCard >>= tell . pure
-      pure $ toCardDef card /= randomWeakness
+  let (placeholders, rest) = partition ((== randomWeakness) . toCardDef) (unDeck deck)
+  weaknesses <- foldM drawWeakness [] placeholders
+  pure (Deck rest, weaknesses)
+ where
+  inDeck = basicWeaknessCodes $ unDeck deck
+  drawWeakness acc _ = do
+    cardDef <-
+      getRandomBasicWeaknessExcluding
+        (inDeck <> basicWeaknessCodes acc)
+        investigatorClass
+        playerCount
+        mDecklist
+    card <- genCard cardDef
+    pure $ acc <> [card]
+
+-- | The canonical card codes of the basic weaknesses among these cards.
+basicWeaknessCodes :: HasCardDef a => [a] -> [CardCode]
+basicWeaknessCodes =
+  map canonicalCardCode . filter ((== Just BasicWeakness) . cdCardSubType) . map toCardDef
 
 campaignWith
   :: forall a
@@ -270,6 +368,8 @@ campaign f campaignId' name difficulty =
       , campaignStoryCards = mempty
       , campaignDifficulty = difficulty
       , campaignChaosBag = campaignTokens @a difficulty
+      , campaignChaosBagHistory = mempty
+      , campaignRecordCountHistory = mempty
       , campaignLog = mkCampaignLog
       , campaignStep = ContinueCampaignStep $ Continuation PrologueStep False False Nothing False
       , campaignCompletedSteps = []
@@ -301,7 +401,7 @@ instance Data Campaign where
   dataTypeOf _ = error "dataTypeOf(Campaign)"
 
 instance HasAbilities Campaign where
-  getAbilities _ = []
+  getAbilities (Campaign a) = campaignAbilities a
 
 instance Eq Campaign where
   (Campaign (a :: a)) == (Campaign (b :: b)) = case eqT @a @b of
@@ -312,7 +412,7 @@ instance Show Campaign where
   show (Campaign a) = show a
 
 instance ToJSON Campaign where
-  toJSON (Campaign a) = toJSON a
+  toJSON (Campaign a) = toJSON (With a $ Envelope @"overlays" $ campaignOverlays a)
 
 instance HasModifiersFor Campaign where
   getModifiersFor (Campaign a) = getModifiersFor a
@@ -326,15 +426,31 @@ chaosBagOf = campaignChaosBag . toAttrs
 $(deriveToJSON (aesonOptions $ Just "campaign") ''CampaignAttrs)
 
 instance ToJSON XpBreakdownStep where
-  toJSON xs = object
-    [ "step" .= xs.xbsStep
-    , "investigators" .= xs.xbsInvestigators
-    , "entries" .= xs.xbsEntries
-    ]
+  toJSON xs =
+    object
+      [ "step" .= xs.xbsStep
+      , "investigators" .= xs.xbsInvestigators
+      , "entries" .= xs.xbsEntries
+      ]
 
 instance FromJSON XpBreakdownStep where
   parseJSON = withObject "XpBreakdownStep" $ \o ->
     XpBreakdownStep <$> o .: "step" <*> o .: "investigators" <*> o .: "entries"
+
+instance ToJSON ChaosBagChange where
+  toJSON c = object ["step" .= c.cbcStep, "before" .= c.cbcBefore, "after" .= c.cbcAfter]
+
+instance FromJSON ChaosBagChange where
+  parseJSON = withObject "ChaosBagChange" $ \o ->
+    ChaosBagChange <$> o .: "step" <*> o .: "before" <*> o .: "after"
+
+instance ToJSON RecordCountChange where
+  toJSON c =
+    object ["step" .= c.rccStep, "key" .= c.rccKey, "before" .= c.rccBefore, "after" .= c.rccAfter]
+
+instance FromJSON RecordCountChange where
+  parseJSON = withObject "RecordCountChange" $ \o ->
+    RecordCountChange <$> o .: "step" <*> o .: "key" <*> o .: "before" <*> o .: "after"
 
 oldBreakdown :: Map ScenarioId XpBreakdown -> [(CampaignStep, XpBreakdown)]
 oldBreakdown = map (first ScenarioStep) . Map.toList
@@ -356,6 +472,8 @@ instance FromJSON CampaignAttrs where
       (o .: "storyCards") <|> (o .: "storyCards" >>= parseEitherCards)
     campaignDifficulty <- o .: "difficulty"
     campaignChaosBag <- o .: "chaosBag"
+    campaignChaosBagHistory <- o .:? "chaosBagHistory" .!= mempty
+    campaignRecordCountHistory <- o .:? "recordCountHistory" .!= mempty
     campaignLog <- o .: "log"
     campaignStep <- o .: "step"
     campaignCompletedSteps <- o .: "completedSteps"
@@ -364,8 +482,8 @@ instance FromJSON CampaignAttrs where
         toXpBreakdownStep (s, e) = XpBreakdownStep s deckIids e
     campaignXpBreakdown <-
       (map toXpBreakdownStep . oldBreakdown <$> o .: "xpBreakdown")
-      <|> (map toXpBreakdownStep <$> o .:? "xpBreakdown" .!= mempty)
-      <|> (o .:? "xpBreakdown" .!= mempty)
+        <|> (map toXpBreakdownStep <$> o .:? "xpBreakdown" .!= mempty)
+        <|> (o .:? "xpBreakdown" .!= mempty)
     campaignModifiers <- o .: "modifiers"
     campaignModifiersForAll <- o .:? "modifiersForAll" .!= mempty
     campaignMeta <- o .: "meta"

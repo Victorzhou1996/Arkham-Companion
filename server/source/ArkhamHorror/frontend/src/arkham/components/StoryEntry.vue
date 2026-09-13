@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch, type Ref } from 'vue'
 import { imgsrc, formatContent } from '@/arkham/helpers'
 import { cardArt, cardImage } from '@/arkham/cardImages'
 import { Game } from '@/arkham/types/Game'
@@ -20,12 +20,18 @@ export interface Props {
 }
 
 const grunge = `url(${imgsrc('grunge.png')})`
-const checkpoint_fleur = `url(${imgsrc('checkpoint_fleur.png')})`
-const resolution_fleur = `url(${imgsrc('resolution_fleur.png')})`
-const black_fleur = `url(${imgsrc('black_fleur.png')})`
+const checkpoint_fleur = `url(${imgsrc('fleurs/checkpoint_fleur.png')})`
+const resolution_fleur = `url(${imgsrc('fleurs/resolution_fleur.png')})`
+const black_fleur = `url(${imgsrc('fleurs/black_fleur.png')})`
 const props = defineProps<Props>()
 const emit = defineEmits(['choose'])
-const choose = (idx: number) => emit('choose', idx)
+// The passage stays on screen while its answer is in flight so the page does not
+// blank between bodies of text; ignore any further clicks until it is replaced.
+const answerPending = inject<Ref<boolean>>('storyAnswerPending', ref(false))
+const choose = (idx: number) => {
+  if (answerPending.value) return
+  emit('choose', idx)
+}
 const { t, locale } = useI18n()
 
 const maybeFormat = function (body: string) {
@@ -33,6 +39,14 @@ const maybeFormat = function (body: string) {
 }
 
 const tformat = (t: string) => (t.startsWith('$') ? t.slice(1) : t)
+
+watch(
+  [() => props.question.flavorText, locale],
+  ([flavorText]) => {
+    setCurrentNarration(flavorTextNarration(flavorText as FlavorText, t))
+  },
+  { immediate: true },
+)
 
 const drownedCityTaskCards: Record<string, string> = {
   noPlaceLikeHome: '11753a',
@@ -79,14 +93,10 @@ const drownedCityTaskRecommendation = (body: string) => {
   return key ? t(`theDrownedCity.anOfferYouCantRefuse.recommended.${key}`) : null
 }
 
-const selectedTaskChoice = ref<{
-  index: number
-  label: string
-  cardCode: string
-  canConfirm: boolean
-} | null>(null)
+const selectedTaskChoice = ref<{ index: number; label: string; cardCode: string; canConfirm: boolean } | null>(null)
 
 const selectDrownedCityTask = (choice: ReadChoice) => {
+  if (answerPending.value) return false
   if (!('label' in choice)) return false
   const cardCode = drownedCityTaskCardCode(choice.label)
   if (!cardCode) return false
@@ -108,20 +118,9 @@ const confirmDrownedCityTask = () => {
   if (selectedTaskChoice.value?.canConfirm) choose(selectedTaskChoice.value.index)
 }
 
-watch(
-  () => props.question,
-  () => {
-    selectedTaskChoice.value = null
-  },
-)
-
-watch(
-  [() => props.question.flavorText, locale],
-  ([flavorText]) => {
-    setCurrentNarration(flavorTextNarration(flavorText as FlavorText, t))
-  },
-  { immediate: true },
-)
+watch(() => props.question, () => {
+  selectedTaskChoice.value = null
+})
 
 const readCards = computed(() => props.question.readCards ?? [])
 
@@ -199,144 +198,101 @@ const flippableCard = (cardCode: string) => {
     cost: null,
     otherSide: `${cardCode}b`,
     meta: {},
-    errata: null,
+    errata: null
   }
 }
 </script>
 <template>
-  <div class="intro-text">
-    <div
-      class="entry-row"
-      :class="{
-        'task-layout': readChoices.some(
-          (choice) => 'label' in choice && !!drownedCityTaskCardCode(choice.label),
-        ),
-      }"
-    >
+  <div class="intro-text" :class="{ 'answer-pending': answerPending }">
+    <div class="entry-row" :class="{ 'task-layout': readChoices.some((choice) => 'label' in choice && !!drownedCityTaskCardCode(choice.label)) }">
       <div class="entry">
-        <h1 v-if="question.flavorText.title">{{ maybeFormat(question.flavorText.title) }}</h1>
+        <h1
+          v-if="question.flavorText.title"
+          v-html="formatContent(maybeFormat(question.flavorText.title))"
+        ></h1>
         <section v-if="focusedChaosTokens.length > 0" class="focused-tokens">
-          <Token
-            v-for="(focusedToken, index) in focusedChaosTokens"
-            :key="index"
-            :token="focusedToken"
-            :playerId="playerId"
-            :game="game"
-            @choose="() => {}"
-          />
+          <Token v-for="(focusedToken, index) in focusedChaosTokens" :key="index" :token="focusedToken" :playerId="playerId" :game="game" @choose="() => {}" />
         </section>
         <div class="entry-body">
           <img :src="cardImage(cardCode)" v-for="cardCode in readCards" class="card no-overlay" />
-          <FormattedEntry
-            v-for="(paragraph, index) in question.flavorText.body"
-            :key="index"
-            :entry="paragraph"
-          />
+          <FormattedEntry v-for="(paragraph, index) in question.flavorText.body" :key="index" :entry="paragraph" />
         </div>
         <div class="pick-cards" v-if="pickCards.length > 0">
           <template v-for="card in pickCards" :key="card.index">
-            <CardImage
-              v-if="card.flippable"
-              :card="flippableCard(card.cardCode)"
-              class="no-overlay pick"
-              @click="choose(card.index)"
-            />
-            <img
-              v-else
-              :src="cardImage(card.cardCode)"
-              class="card no-overlay pick"
-              @click="choose(card.index)"
-            />
+            <CardImage v-if="card.flippable" :card="flippableCard(card.cardCode)" class="no-overlay pick" @click="choose(card.index)" />
+            <img v-else :src="cardImage(card.cardCode)" class="card no-overlay pick" @click="choose(card.index)" />
           </template>
         </div>
       </div>
       <div class="task-selection">
         <div class="task-row">
-          <aside
-            v-if="
-              readChoices.some(
-                (choice) => 'label' in choice && !!drownedCityTaskCardCode(choice.label),
-              )
-            "
-            class="task-card-panel"
-          >
-            <div class="task-card-frame" :class="{ empty: !selectedTaskChoice }">
-              <img
-                v-if="selectedTaskChoice"
-                :src="cardImage(selectedTaskChoice.cardCode)"
-                class="no-overlay task-card-image"
-                :alt="maybeFormat(selectedTaskChoice.label)"
-              />
-              <span v-else>Select a task to preview its card.</span>
-            </div>
-          </aside>
-          <div class="options">
-            <template
-              v-for="(readChoice, choiceIndex) in readChoices"
-              :key="readChoice.tag === 'Info' ? `info-${choiceIndex}` : readChoice.index"
-            >
-              <div class="choice-wrapper">
-                <button
-                  v-if="readChoice.tag === 'InvalidLabel'"
-                  :class="{
-                    'task-choice': drownedCityTaskCardCode(readChoice.label),
-                    selected: selectedTaskChoice?.index === readChoice.index,
-                  }"
-                  :disabled="!drownedCityTaskCardCode(readChoice.label)"
-                  @click="selectDrownedCityTask(readChoice)"
-                >
-                  <i class="option"></i>
-                  <span class="choice-content">
-                    <span
-                      class="choice-label"
-                      v-html="formatContent(maybeFormat(readChoice.label))"
-                    ></span>
-                    <span
-                      v-if="drownedCityTaskRecommendation(readChoice.label)"
-                      class="choice-subtext"
-                      v-html="formatContent(drownedCityTaskRecommendation(readChoice.label) ?? '')"
-                    ></span>
-                  </span>
-                </button>
-                <button
-                  v-else-if="readChoice.tag === 'Label'"
-                  :class="{
-                    'task-choice': drownedCityTaskCardCode(readChoice.label),
-                    selected: selectedTaskChoice?.index === readChoice.index,
-                  }"
-                  @click="handleChoice(readChoice)"
-                >
-                  <i class="option"></i>
-                  <span class="choice-content">
-                    <span
-                      class="choice-label"
-                      v-html="formatContent(maybeFormat(readChoice.label))"
-                    ></span>
-                    <span
-                      v-if="drownedCityTaskRecommendation(readChoice.label)"
-                      class="choice-subtext"
-                      v-html="formatContent(drownedCityTaskRecommendation(readChoice.label) ?? '')"
-                    ></span>
-                  </span>
-                </button>
-              </div>
-            </template>
+        <aside v-if="readChoices.some((choice) => 'label' in choice && !!drownedCityTaskCardCode(choice.label))" class="task-card-panel">
+          <div class="task-card-frame" :class="{ empty: !selectedTaskChoice }">
+            <img
+              v-if="selectedTaskChoice"
+              :src="cardImage(selectedTaskChoice.cardCode)"
+              class="no-overlay task-card-image"
+              :alt="maybeFormat(selectedTaskChoice.label)"
+            />
+            <span v-else>Select a task to preview its card.</span>
           </div>
+        </aside>
+        <div class="options">
+          <template v-for="(readChoice, choiceIndex) in readChoices" :key="readChoice.tag === 'Info' ? `info-${choiceIndex}` : readChoice.index">
+            <div class="choice-wrapper">
+              <button
+                v-if="readChoice.tag === 'InvalidLabel'"
+                :class="{ 'task-choice': drownedCityTaskCardCode(readChoice.label), selected: selectedTaskChoice?.index === readChoice.index }"
+                :disabled="!drownedCityTaskCardCode(readChoice.label)"
+                @click="selectDrownedCityTask(readChoice)"
+                >
+                <i class="option"></i>
+                <span class="choice-content">
+                  <span class="choice-label" v-html="formatContent(maybeFormat(readChoice.label))"></span>
+                  <span
+                    v-if="drownedCityTaskRecommendation(readChoice.label)"
+                    class="choice-subtext"
+                    v-html="formatContent(drownedCityTaskRecommendation(readChoice.label) ?? '')"
+                  ></span>
+                </span>
+              </button>
+              <button
+                v-else-if="readChoice.tag === 'Label'"
+                :class="{ 'task-choice': drownedCityTaskCardCode(readChoice.label), selected: selectedTaskChoice?.index === readChoice.index }"
+                @click="handleChoice(readChoice)"
+                >
+                <i class="option"></i>
+                <span class="choice-content">
+                  <span class="choice-label" v-html="formatContent(maybeFormat(readChoice.label))"></span>
+                  <span
+                    v-if="drownedCityTaskRecommendation(readChoice.label)"
+                    class="choice-subtext"
+                    v-html="formatContent(drownedCityTaskRecommendation(readChoice.label) ?? '')"
+                  ></span>
+                </span>
+              </button>
+            </div>
+          </template>
+        </div>
         </div>
         <button
           v-if="selectedTaskChoice"
           class="confirm-task-button"
           :disabled="!selectedTaskChoice.canConfirm"
           @click="confirmDrownedCityTask"
-        >
-          Confirm
-        </button>
+        >Confirm</button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Choices stay in place (and keep the page from reflowing) but stop responding
+   once answered, until the next passage replaces them. */
+.intro-text.answer-pending :is(.options, .pick-cards, .confirm-task-button) {
+  pointer-events: none;
+}
+
 .entry {
   border-radius: 5px;
   background: #dcd6d0;
@@ -733,6 +689,92 @@ const flippableCard = (cardCode: string) => {
   }
 }
 
+.entry-row {
+  display: block;
+}
+
+.entry-row.task-layout {
+  display: block;
+}
+
+.entry-row .entry {
+  min-width: 0;
+}
+
+.task-selection {
+  margin-top: 20px;
+}
+
+.entry-row.task-layout .task-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.entry-row.task-layout .options {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.task-card-panel {
+  flex: 0 0 260px;
+  position: sticky;
+  top: 0;
+}
+
+.task-card-frame {
+  align-items: center;
+  aspect-ratio: 0.714;
+  background: rgba(17, 13, 20, 0.72);
+  border: 2px solid rgba(220, 214, 208, 0.45);
+  border-radius: 13px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  color: #d8d0df;
+  display: flex;
+  font-family: Arial, sans-serif;
+  font-size: 0.72em;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 1.2;
+  padding: 10px;
+  text-align: center;
+}
+
+.task-card-frame.empty {
+  border-style: dashed;
+}
+
+.task-card-frame:not(.empty) {
+  overflow: hidden;
+  padding: 0;
+}
+
+.task-card-image {
+  border-radius: 10px;
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.confirm-task-button {
+  margin-top: 10px;
+  background-color: #2f6141;
+  &:hover { background-color: #3c7d54; }
+}
+
+@media (max-width: 780px) {
+  .entry-row.task-layout .task-row {
+    flex-direction: column;
+  }
+
+  .task-card-panel {
+    position: static;
+    width: min(260px, 100%);
+  }
+}
+
 p {
   font-family: 'ArkhamFlavor';
   :deep(i) {
@@ -782,18 +824,27 @@ a.button {
     align-items: flex-start;
     gap: 10px;
     transition: none;
-    &:hover {
-      transform: none;
-    }
+    &:hover { transform: none; }
   }
 
   &.selected {
     background-color: #241430;
     box-shadow: inset 0 0 0 2px #d8d0df;
-    &:hover {
-      background-color: #241430;
-    }
+    &:hover { background-color: #241430; }
   }
+}
+
+/* Buttons here are width:100%, so the global scale(0.97) press bounce grows
+   with viewport width. Ramp the scale toward 1 on wider screens to keep the
+   pixel bounce roughly constant. */
+button:active:not(:disabled) {
+  transform: scale(0.985);
+}
+@media (min-width: 900px) {
+  button:active:not(:disabled) { transform: scale(0.99); }
+}
+@media (min-width: 1400px) {
+  button:active:not(:disabled) { transform: scale(0.994); }
 }
 
 .task-choice .choice-content,
@@ -824,27 +875,17 @@ a.button {
 .choice-subtext :deep(.mystic-icon)::before,
 .choice-subtext :deep(.survivor-icon)::before {
   display: inline-block;
-  font-family: 'Arkham';
+  font-family: "Arkham";
   font-size: 1.1em;
   font-weight: normal;
   text-transform: none;
 }
 
-.choice-subtext :deep(.guardian-icon)::before {
-  content: '\0051';
-}
-.choice-subtext :deep(.seeker-icon)::before {
-  content: '\0045';
-}
-.choice-subtext :deep(.rogue-icon)::before {
-  content: '\0054';
-}
-.choice-subtext :deep(.mystic-icon)::before {
-  content: '\0057';
-}
-.choice-subtext :deep(.survivor-icon)::before {
-  content: '\0052';
-}
+.choice-subtext :deep(.guardian-icon)::before { content: "\0051"; }
+.choice-subtext :deep(.seeker-icon)::before { content: "\0045"; }
+.choice-subtext :deep(.rogue-icon)::before { content: "\0054"; }
+.choice-subtext :deep(.mystic-icon)::before { content: "\0057"; }
+.choice-subtext :deep(.survivor-icon)::before { content: "\0052"; }
 
 a.button {
   display: block;
@@ -933,6 +974,13 @@ a.button {
     img {
       border-radius: 4%;
     }
+  }
+
+  :deep(div.story-card-rule:has(> img)) {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
   }
 
   &:deep(.resolution) {
@@ -1040,5 +1088,59 @@ a.button {
 
 :deep(div) > :has(.card) {
   flex-shrink: 0;
+}
+
+:deep(.epilogue-table-wrap) {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+:deep(.epilogue-matrix) {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-family: var(--font-family-title);
+  font-size: 0.85em;
+
+  th, td {
+    border: 1px solid rgba(54, 43, 36, 0.35);
+    padding: 10px 12px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  th {
+    background: rgba(54, 43, 36, 0.1);
+    font-weight: 700;
+  }
+
+  tbody th {
+    text-align: left;
+  }
+
+  td {
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+  }
+}
+
+:deep(.epilogue-matrix[data-selected='1'] [data-epilogue='1']),
+:deep(.epilogue-matrix[data-selected='2'] [data-epilogue='2']),
+:deep(.epilogue-matrix[data-selected='3'] [data-epilogue='3']),
+:deep(.epilogue-matrix[data-selected='4'] [data-epilogue='4']),
+:deep(.epilogue-matrix[data-selected='5'] [data-epilogue='5']),
+:deep(.epilogue-matrix[data-selected='6'] [data-epilogue='6']),
+:deep(.epilogue-matrix[data-selected='7'] [data-epilogue='7']),
+:deep(.epilogue-matrix[data-selected='8'] [data-epilogue='8']),
+:deep(.epilogue-matrix[data-selected='9'] [data-epilogue='9']),
+:deep(.epilogue-matrix[data-selected='10'] [data-epilogue='10']),
+:deep(.epilogue-matrix[data-selected='11'] [data-epilogue='11']),
+:deep(.epilogue-matrix[data-selected='12'] [data-epilogue='12']),
+:deep(.epilogue-matrix[data-selected='13'] [data-epilogue='13']),
+:deep(.epilogue-matrix[data-selected='14'] [data-epilogue='14']),
+:deep(.epilogue-matrix[data-selected='15'] [data-epilogue='15']),
+:deep(.epilogue-matrix[data-selected='16'] [data-epilogue='16']) {
+  background: rgba(145, 111, 42, 0.3);
+  box-shadow: inset 0 0 0 2px #795c23;
+  font-weight: 800;
 }
 </style>

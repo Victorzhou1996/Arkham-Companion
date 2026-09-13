@@ -115,6 +115,8 @@ import Arkham.Message as X (
   pattern RepeatSkillTest,
   pattern SetSkillTestTarget,
   pattern SetSkillTestResolveFailureInvestigator,
+  pattern AddChaosToken,
+  pattern AddChaosTokenForGame,
   pattern BeginSkillTestWithPreMessages,
   pattern BeginSkillTestWithPreMessages',
   pattern BeginSkillTestAfterFast,
@@ -261,6 +263,7 @@ setNextCampaignStepEdit cs = push . NextCampaignStep . continueEdit cs
 
 interludeStepPart :: ReverseQueue m => Int -> Maybe InterludeKey -> Int -> m ()
 interludeStepPart n mKey part = push $ NextCampaignStep $ Just $ InterludeStepPart n mKey part
+
 campaignStep_ :: ReverseQueue m => CampaignStep -> m ()
 campaignStep_ s = setNextCampaignStep s
 

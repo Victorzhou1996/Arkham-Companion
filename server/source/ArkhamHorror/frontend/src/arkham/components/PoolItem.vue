@@ -13,12 +13,12 @@ const props = defineProps<Props>()
 const emit = defineEmits<{ choose: [] }>()
 
 const tokenImages: Record<string, string> = {
-  clue: 'clue.png',
-  doom: 'doom.png',
-  resource: 'resource.png',
+  clue: 'tokens/clue.png',
+  doom: 'tokens/doom.png',
+  resource: 'tokens/resource.png',
   sanity: 'horror.png',
-  card: 'encounter_back.jpg',
-  player_card: 'player_back.jpg',
+  card: 'backs/back_encounter.jpg',
+  player_card: 'backs/back_player.jpg',
   artifact_card: 'backs/back_artifact.jpg',
 }
 

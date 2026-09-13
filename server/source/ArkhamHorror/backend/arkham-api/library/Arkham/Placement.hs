@@ -4,12 +4,14 @@ module Arkham.Placement (
   Placement (..),
   IsPlacement (..),
   placementToAttached,
+  isDirectlyAtLocation,
   isOutOfPlayPlacement,
   isInPlayPlacement,
   isHiddenPlacement,
   isInPlayArea,
   treacheryPlacementToPlacement,
   _AtLocation,
+  _FacedownInThreatArea,
   _OutOfPlay,
 ) where
 
@@ -27,6 +29,12 @@ data Placement
   | AttachedToLocation LocationId
   | InPlayArea InvestigatorId
   | InThreatArea InvestigatorId
+  | {- | An encounter card sitting *face down* in an investigator's threat area
+    (Dark Matter, "Lost Quantum"). The entity exists but its revelation has
+    not resolved; it resolves when the card is later "drawn" from the threat
+    area. Face down, so it is not in play.
+    -}
+    FacedownInThreatArea InvestigatorId
   | StillInHand InvestigatorId
   | HiddenInHand InvestigatorId
   | OnTopOfDeck InvestigatorId
@@ -39,6 +47,7 @@ data Placement
   | AttachedToAgenda AgendaId
   | NextToAgenda
   | NextToAct
+  | NextToScenarioReference
   | InVehicle AssetId
   | AttachedToInvestigator InvestigatorId
   | AsSwarm {swarmHost :: EnemyId, swarmCard :: Card}
@@ -91,11 +100,13 @@ placementToAttached = \case
   InPlayArea _ -> Nothing
   InVehicle _ -> Nothing
   InThreatArea _ -> Nothing
+  FacedownInThreatArea _ -> Nothing
   AttachedToAsset aid _ -> Just $ AssetTarget aid
   AttachedToAct aid -> Just $ ActTarget aid
   AttachedToAgenda aid -> Just $ AgendaTarget aid
   NextToAgenda -> Nothing
   NextToAct -> Nothing
+  NextToScenarioReference -> Nothing
   AttachedToInvestigator iid -> Just $ InvestigatorTarget iid
   Unplaced -> Nothing
   Global -> Nothing
@@ -121,6 +132,7 @@ isInPlayPlacement = \case
   InPlayArea {} -> True
   InVehicle {} -> True
   InThreatArea {} -> True
+  FacedownInThreatArea {} -> False
   StillInHand {} -> False
   StillInDiscard {} -> False
   StillInEncounterDiscard -> False
@@ -131,6 +143,7 @@ isInPlayPlacement = \case
   AttachedToAgenda {} -> True
   NextToAgenda {} -> True -- is it in play, idk
   NextToAct {} -> True -- is it in play, idk
+  NextToScenarioReference {} -> True
   AttachedToInvestigator {} -> True
   AsSwarm {} -> True
   Unplaced {} -> False
@@ -147,6 +160,18 @@ isInPlayPlacement = \case
 isHiddenPlacement :: Placement -> Bool
 isHiddenPlacement = \case
   HiddenInHand _ -> True
+  FacedownInThreatArea _ -> True
+  _ -> False
+
+{- | Whether this placement sits *directly* on the given location, as opposed to
+reaching it transitively through an enemy, asset, treachery, vehicle or
+investigator standing there. Those attachments are their host's
+responsibility when the host leaves play, see #5426.
+-}
+isDirectlyAtLocation :: LocationId -> Placement -> Bool
+isDirectlyAtLocation lid = \case
+  AtLocation lid' -> lid' == lid
+  AttachedToLocation lid' -> lid' == lid
   _ -> False
 
 isInPlayArea :: Placement -> Bool
@@ -187,6 +212,7 @@ mconcat
   [ deriveToJSON defaultOptions ''Placement
   , makePrisms ''Placement
   ]
+
 class IsPlacement a where
   toPlacement :: a -> Placement
 

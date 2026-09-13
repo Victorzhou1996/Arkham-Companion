@@ -5,22 +5,26 @@ module Arkham.PlayerCard (
   randomWeakness,
 ) where
 
+import Arkham.Homebrew.Defs qualified as Homebrew
 import Arkham.Prelude
 
 import Arkham.Asset.Cards (allPlayerAssetCards, allSpecialPlayerAssetCards)
 import Arkham.Card.CardCode
 import Arkham.Card.CardDef
 import Arkham.Card.CardType
+import Arkham.Card.CustomCard (lookupCustomCardDef)
 import Arkham.ClassSymbol
 import Arkham.Enemy.Cards (allPlayerEnemyCards)
 import Arkham.Event.Cards (allPlayerEventCards)
 import Arkham.Skill.Cards (allPlayerSkillCards)
-import Arkham.Story.Cards (realityAcid)
+import Arkham.Story.CardDefs.TheBlobThatAteEverythingELSE (realityAcid)
 import Arkham.Treachery.Cards (allPlayerTreacheryCards)
+
 lookupPlayerCardDef :: CardCode -> CardDef
 lookupPlayerCardDef cardCode =
   fromJustNote ("Unknown card: " <> show cardCode)
     $ lookup cardCode allPlayerCards
+    <|> lookupCustomCardDef cardCode
 
 allBasicWeaknesses :: [CardDef]
 allBasicWeaknesses =
@@ -34,6 +38,7 @@ allPlayerCards =
     <> allSpecialPlayerAssetCards
     <> allPlayerEventCards
     <> allPlayerSkillCards
+    <> Homebrew.playerStoriesMap
     <> singletonMap "89005" realityAcid
     <> singletonMap "01000" randomWeakness
 

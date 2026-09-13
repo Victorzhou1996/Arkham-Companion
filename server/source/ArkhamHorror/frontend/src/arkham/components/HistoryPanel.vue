@@ -6,7 +6,7 @@ import type { Game } from '@/arkham/types/Game';
 import type { History, SkillTestResult, DefeatedEnemy } from '@/arkham/types/History';
 import Card from '@/arkham/components/Card.vue';
 import { useDbCardStore } from '@/stores/dbCards';
-import { imgsrc } from '@/arkham/helpers';
+import { cardImg, imgsrc } from '@/arkham/helpers';
 
 const props = defineProps<{
   game: Game
@@ -209,11 +209,11 @@ const counts = computed(() => {
     ['historyActionsSpent',     'historyPanel.field.actionsSpent',     null],
     ['historyMoved',            'historyPanel.field.moved',            null],
     ['historyCardsDrawn',       'historyPanel.field.cardsDrawn',       null],
-    ['historyResourcesGained',  'historyPanel.field.resourcesGained',  'resource.png'],
+    ['historyResourcesGained',  'historyPanel.field.resourcesGained',  'tokens/resource.png'],
     ['historyAttacksOfOpportunity',    'historyPanel.field.attacksOfOpportunity',    null],
-    ['historySuccessfulAttacks',       'historyPanel.field.successfulAttacks',       'health-icon.png'],
+    ['historySuccessfulAttacks',       'historyPanel.field.successfulAttacks',       'icons/health-icon.png'],
     ['historySuccessfulEvasions',      'historyPanel.field.successfulEvasions',      null],
-    ['historySuccessfulInvestigations','historyPanel.field.successfulInvestigations','clue-icon.png'],
+    ['historySuccessfulInvestigations','historyPanel.field.successfulInvestigations','icons/clue-icon.png'],
   ] as const)
     .map(([key, label, icon]) => ({
       key,
@@ -241,11 +241,11 @@ function strippedCode(code: string): string {
 }
 
 function cardImageFor(code: string): string {
-  return imgsrc(`cards/${strippedCode(code)}.avif`)
+  return cardImg(strippedCode(code))
 }
 
-const clueIcon = imgsrc('clue-icon.png')
-const healthIcon = imgsrc('health-icon.png')
+const clueIcon = imgsrc('icons/clue-icon.png')
+const healthIcon = imgsrc('icons/health-icon.png')
 
 type EnemyResolution =
   | { tag: 'live', cardCode: string, name: string }

@@ -5,7 +5,7 @@ import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Modifier
 import Arkham.Trait (Trait (Unbroken))
-import Arkham.Treachery.Cards qualified as Cards
+import Arkham.Treachery.CardDefs.EdgeOfTheEarth qualified as Cards
 import Arkham.Treachery.Import.Lifted
 
 newtype BurdenOfDestiny = BurdenOfDestiny TreacheryAttrs
@@ -29,7 +29,7 @@ instance RunMessage BurdenOfDestiny where
         withI18n
           $ numberVar "damage" 1
           $ numberVar "horror" 1
-          $ labeled' "takeDamageAndHorror"
+          $ labeled "takeDamageAndHorror"
           $ assignDamageAndHorror iid attrs 1 1
       pure t
     _ -> BurdenOfDestiny <$> liftRunMessage msg attrs

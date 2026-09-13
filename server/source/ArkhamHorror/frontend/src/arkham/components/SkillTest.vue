@@ -6,7 +6,7 @@ import { computed } from 'vue';
 import { ChaosBag } from '@/arkham/types/ChaosBag';
 import * as Cards from '@/arkham/types/Card';
 import { chaosTokenImage, type TokenFace } from '@/arkham/types/ChaosToken';
-import { scenarioToI18n } from '@/arkham/types/Scenario';
+import { chaosTokenEffectKey, symbolChaosTokenFaces } from '@/arkham/types/Scenario';
 import { Game } from '@/arkham/types/Game';
 import { Enemy } from '@/arkham/types/Enemy';
 import { Modifier, cannotCommitCardsToWords } from '@/arkham/types/Modifier';
@@ -83,9 +83,12 @@ const yourModifiers = computed(() => {
   return (investigator.modifiers ?? []).filter(shouldRenderYourModifiers)
 })
 
+const shouldRenderSkillTestModifier = (mod: Modifier) =>
+  mod.type.tag !== 'MetaModifier' || mod.type.contents === 'ThreeAces1'
+
 const modifiers = computed(() =>
   [...(props.game.investigators[props.skillTest.investigator]?.modifiers ?? []).
-    filter(shouldRender), ...yourModifiers.value, ...(props.skillTest.modifiers ?? [])]) 
+    filter(shouldRender), ...yourModifiers.value, ...(props.skillTest.modifiers ?? []).filter(shouldRenderSkillTestModifier)])
 const committedCards = computed(() => props.skillTest.committedCards)
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 const skipTriggersAction = computed(() => choices.value.findIndex((c) => c.tag === MessageType.SKIP_TRIGGERS_BUTTON))
@@ -244,25 +247,23 @@ const tokenEffects = computed(() => {
   const tokens = props.skillTest.resolvedChaosTokens.length > 0
     ? props.skillTest.resolvedChaosTokens
     : props.skillTest.revealedChaosTokens
-  const faces = tokens.map((t) => t.face)
+  const skillTestTokens = new Map(props.game.skillTestChaosTokens.map((token) => [token.id, token]))
+  const faces = tokens.flatMap((token) => {
+    const displayedToken = skillTestTokens.get(token.id) ?? token
+    return displayedToken.modifiedFaces?.length ? displayedToken.modifiedFaces : [token.face]
+  })
 
-  const difficulty = ['Easy', 'Standard'].includes(scenario.difficulty) ? 'easyStandard' : 'hardExpert'
-
-  // lowercase the first letter
-  const lowerFirst = (str: string) => str.charAt(0).toLowerCase() + str.slice(1)
-
-  const baseRef = scenario.reference.replace(/b$/, '')
-
-  const tokenScope =
-    baseRef === 'c10501' || baseRef === 'c10502'
-      ? (scenario.reference.endsWith('b') ? '.act2' : '.act1')
-      : ''
-
-
-  return (["Skull", "Cultist", "Tablet", "ElderThing"] as TokenFace[]).filter((face) => faces.includes(face)).map((face) => 
-    `<img src='${chaosTokenImage(face)}' /><span>`
-          + formatContent(t(`${scenarioToI18n(scenario)}${tokenScope}.tokens.${difficulty}.${lowerFirst(face)}`)) + `</span>`
-          )
+  return (symbolChaosTokenFaces as readonly TokenFace[])
+    .filter((face) => faces.includes(face))
+    .flatMap((face) => {
+      const key = chaosTokenEffectKey(scenario, face)
+      if (!key) return []
+      // Scenarios without a `tokens` block in their locale (every homebrew one
+      // so far) get the key back from `t`; showing it would leak the raw path.
+      const text = t(key)
+      if (text === key) return []
+      return [{ face, image: chaosTokenImage(face), html: formatContent(text) }]
+    })
 })
 
 const createModifier = (target: {tag: string, contents: string}, modifier: {tag: string, contents: unknown}) => 
@@ -293,7 +294,9 @@ const adjustDebugSkillValue = (event: MouseEvent, direction: 1 | -1) => {
 </script>
 
 <template>
-  <Draggable>
+  <Draggable
+    avoid-selector=".concealed-card--can-interact, .location-cell--can-interact, .location-cell--can-interact .location-wrapper, .location-cell--can-interact .card-frame"
+  >
     <template #handle>
       <h2>{{ $t('skillTestTitle') }}</h2>
     </template>
@@ -313,7 +316,7 @@ const adjustDebugSkillValue = (event: MouseEvent, direction: 1 | -1) => {
       <div class="skill-test-contents">
         <div v-if="swarmEnemy" class="target-card swarming">
           <div class="swarm">
-            <img :src="imgsrc('player_back.jpg')" class="card" />
+            <img :src="imgsrc('backs/back_player.jpg')" class="card" />
           </div>
           <div v-if="swarmHost" class="host">
             <Card :game="game" :card="swarmHost" :revealed="true" playerId="" />
@@ -352,7 +355,7 @@ const adjustDebugSkillValue = (event: MouseEvent, direction: 1 | -1) => {
               </div>
             </div>
             <div v-else-if="skillTest.baseValue.tag === 'HalfResourcesOf'" class="half-resources">
-              <img :src="imgsrc(`resource.png`)" /> / 2
+              <img :src="imgsrc(`tokens/resource.png`)" /> / 2
             </div>
             <span>VS</span>
           </div>
@@ -394,7 +397,10 @@ const adjustDebugSkillValue = (event: MouseEvent, direction: 1 | -1) => {
         <Token v-for="focusedToken in focusedChaosTokens" :key="focusedToken.id" :token="focusedToken" :playerId="playerId" :game="game" @choose="choose" />
       </div>
       <div v-if="tokenEffects.length > 0" class="token-effects">
-        <div class="token-effect" v-for="effect in tokenEffects" :key="effect" v-html="effect"></div>
+        <div class="token-effect" v-for="effect in tokenEffects" :key="effect.face">
+          <div class="token-effect__token"><img :src="effect.image" /></div>
+          <div class="token-effect__text"><span v-html="effect.html"></span></div>
+        </div>
       </div>
       <div v-if="debug.active && skillTest.result?.tag == 'Unrun' && !['SkillTestFastWindow1', 'SkillTestFastWindow2'].includes(skillTest.step)">
         <button @click="debug.send(game.id, {tag: 'SkillTestMessage', contents: {tag: 'PassSkillTest_'}})">{{ $t('skillTestActions.passSkillTest') }}</button>
@@ -434,7 +440,7 @@ const adjustDebugSkillValue = (event: MouseEvent, direction: 1 | -1) => {
           </template>
           <template v-if="modifier.type.tag === 'DiscoveredClues'">
             <span>+{{modifier.type.contents}}</span>
-            <img :src="imgsrc(`clue.png`)" />
+            <img :src="imgsrc(`tokens/clue.png`)" />
           </template>
           <template v-if="modifier.type.tag === 'SkillTestResultValueModifier'">
             <span class="text">{{ $t('modifier.result') }}</span> <span>{{modifier.type.contents > 0 ? '+' : ''}}{{modifier.type.contents}}</span>
@@ -487,6 +493,9 @@ const adjustDebugSkillValue = (event: MouseEvent, direction: 1 | -1) => {
             <span class="text">{{ $t('modifier.skillIconsSubtract') }}</span>
           </template>
           <template v-if="modifier.type.tag === 'OtherModifier' && modifier.type.contents === 'SkillTestAutomaticallySucceeds'">
+            <span class="text">{{ $t('modifier.skillTestAutomaticallySucceeds') }}</span>
+          </template>
+          <template v-if="modifier.type.tag === 'MetaModifier' && modifier.type.contents === 'ThreeAces1'">
             <span class="text">{{ $t('modifier.skillTestAutomaticallySucceeds') }}</span>
           </template>
           <template v-if="modifier.type.tag === 'OtherModifier' && modifier.type.contents === 'RevealAnotherChaosToken'">
@@ -547,6 +556,7 @@ const adjustDebugSkillValue = (event: MouseEvent, direction: 1 | -1) => {
 
   .question-choices, :deep(.question-choices) {
     gap: 0px;
+    padding: 0;
   }
 }
 
@@ -993,6 +1003,7 @@ i.iconSkillAgility {
 .focused-chaos-tokens {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   align-items: center;
   gap: 8px;
@@ -1012,17 +1023,44 @@ i.iconSkillAgility {
 }
 
 .token-effect {
-  background: transparent;
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: stretch;
+  background: rgba(10, 11, 15, 0.66);
+
+  & + .token-effect {
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+  }
+}
+
+.token-effect__token {
+  display: grid;
+  place-items: center;
+  padding: 8px 0;
+  background: rgba(0, 0, 0, 0.42);
+  border-right: 1px solid rgba(255, 255, 255, 0.09);
+
+  img {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.token-effect__text {
   display: flex;
-  gap: 10px;
-  padding: 10px;
-  align-items: start;
-  color: var(--title);
-  justify-content: start;
+  align-items: center;
+  padding: 9px 14px;
   text-align: left;
+  color: #dbe0e7;
+  font-family: 'Noto Sans', Avenir, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+
   :deep(img) {
-    width: 25px;
-    flex-shrink: 0;
+    height: 1.1em;
+    vertical-align: -0.15em;
   }
 }
 

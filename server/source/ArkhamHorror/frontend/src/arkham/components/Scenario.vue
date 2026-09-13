@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import UpgradeDeck from '@/arkham/components/UpgradeDeck.vue';
-import { EyeIcon, QuestionMarkCircleIcon, ViewColumnsIcon, ArchiveBoxXMarkIcon, ArrowPathIcon } from '@heroicons/vue/20/solid'
+import { EyeIcon, QuestionMarkCircleIcon, ViewColumnsIcon, ArchiveBoxXMarkIcon, ArrowPathIcon, LockClosedIcon, LockOpenIcon, ArrowUturnLeftIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from '@heroicons/vue/20/solid'
 import {
   watchEffect,
   watch,
@@ -15,7 +15,7 @@ import {
   provide
 } from 'vue';
 import { type Game } from '@/arkham/types/Game';
-import { type Scenario } from '@/arkham/types/Scenario';
+import { type Scenario, usesHardExpertReference } from '@/arkham/types/Scenario';
 import { type Story as StoryAttrs } from '@/arkham/types/Story';
 import { type Enemy } from '@/arkham/types/Enemy';
 import { type ConcealedCard } from '@/arkham/types/ConcealedCard';
@@ -41,6 +41,7 @@ import Act from '@/arkham/components/Act.vue';
 import CardView from '@/arkham/components/Card.vue';
 import Draggable from '@/components/Draggable.vue';
 import ChaosBag from '@/arkham/components/ChaosBag.vue';
+import ChaosBagWindow from '@/arkham/components/ChaosBagWindow.vue';
 import Agenda from '@/arkham/components/Agenda.vue';
 import Investigator from '@/arkham/components/Investigator.vue';
 import EnemyView from '@/arkham/components/Enemy.vue';
@@ -48,7 +49,14 @@ import CardRow from '@/arkham/components/CardRow.vue';
 import KeyToken from '@/arkham/components/Key.vue';
 import PlayerTabs from '@/arkham/components/PlayerTabs.vue';
 import Connections from '@/arkham/components/Connections.vue';
+import RainOverlay from '@/arkham/components/RainOverlay.vue';
+import { supportsHtmlInCanvas } from '@/arkham/droplets';
+import { createRainAudio, type RainAudioInstance } from '@/arkham/rainAudio';
+import { useSoundsDisabled } from '@/composable/useSoundsDisabled';
 import PoolItem from '@/arkham/components/PoolItem.vue';
+import { chaosTokenImage } from '@/arkham/types/ChaosToken';
+import { homebrewTotalsTokens } from '@/arkham/homebrewData';
+import scenarioMetadata from '@/arkham/data/scenarios';
 import EncounterDeck from '@/arkham/components/EncounterDeck.vue';
 import VictoryDisplay from '@/arkham/components/VictoryDisplay.vue';
 import SkillTest from '@/arkham/components/SkillTest.vue';
@@ -62,8 +70,10 @@ import Asset from '@/arkham/components/Asset.vue';
 import Location from '@/arkham/components/Location.vue';
 import TreacheryView from '@/arkham/components/Treachery.vue';
 import { useGameChoices } from '@/arkham/composables/useGameChoices';
-import { setLocationOffset } from '@/arkham/api';
+import { setLocationOffset, resetLocationOffsets, updateGameRaw } from '@/arkham/api';
 import { useDebug, scenarioHasDebugOptions } from '@/arkham/debug'
+import * as DebugMove from '@/arkham/debugCardMove'
+import { useCardStore } from '@/stores/cards'
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { IsMobile } from '@/arkham/isMobile';
@@ -85,7 +95,11 @@ export interface Props {
   realityAcidLightActive?: boolean
 }
 const props = defineProps<Props>()
-const emit = defineEmits(['choose', 'toggleRealityAcidLight'])
+const allowCurvedPaths = computed(() => {
+  const scenarioId = props.scenario.id.replace(/^c(?=:)/, '')
+  return scenarioMetadata.find(metadata => metadata.id === scenarioId)?.allowCurvedPaths === true
+})
+const emit = defineEmits(['choose', 'update', 'toggleRealityAcidLight'])
 const debug = useDebug()
 const { addEntry, removeEntry } = useMenu()
 
@@ -93,9 +107,76 @@ const upgradeDeck = computed(() => Object.values(props.game.question).some((q) =
 
 // emit helpers
 const choose = async (idx: number) => emit('choose', idx)
+const update = async (game: Game) => emit('update', game)
 
 //Refs
 const settingsStore = useSettings()
+
+// Riddles and Rain. Only once EndSetup has run, so the rain starts with the
+// scenario rather than over the setup screens. RainOverlay additionally
+// requires html-in-canvas, without which it renders nothing and just passes the
+// board through untouched.
+// Only worth offering a switch where the effect can actually render; without
+// html-in-canvas the drops have nothing to refract and RainOverlay draws
+// nothing at all.
+const rainSupported = supportsHtmlInCanvas()
+const rainEnabled = ref(getGameLocalStorageItem(props.game.id, 'rainEnabled') !== 'false')
+
+watch(rainEnabled, (value) => {
+  setGameLocalStorageItem(props.game.id, 'rainEnabled', value ? 'true' : 'false')
+})
+
+const rainAvailable = computed(() =>
+  props.game.scenario?.id === 'c09501' &&
+  !props.game.inSetup &&
+  rainSupported &&
+  settingsStore.extraAnimations
+)
+
+const showRain = computed(() => rainAvailable.value && rainEnabled.value)
+
+// Ambient rain, tied to the same switch as the visuals and to the global Sounds
+// preference. Built lazily so no AudioContext exists for anyone who never sees
+// the effect.
+const { soundsDisabled } = useSoundsDisabled()
+const rainAudioWanted = computed(() => showRain.value && !soundsDisabled.value)
+let rainAudio: RainAudioInstance | null = null
+let rainAudioUnavailable = false
+
+watch(rainAudioWanted, (wanted) => {
+  if (!wanted) {
+    rainAudio?.stop()
+    return
+  }
+  if (!rainAudio && !rainAudioUnavailable) {
+    rainAudio = createRainAudio()
+    rainAudioUnavailable = rainAudio === null
+  }
+  void rainAudio?.start()
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  rainAudio?.destroy()
+  rainAudio = null
+})
+
+// From the canvasui playground: slow, thin, sparse. Note this sits at the
+// bottom of the effect's usable range — at intensity 0.2 the first rain layer,
+// S(0.25, 0.75, intensity), is exactly zero, so only the second draws and its
+// coverage lands right against the shader's hard S(0.3, 1.0) cull. Lower and
+// the rain disappears rather than thinning; to reduce it further lower `scale`
+// (drop count goes with its square) instead.
+const rainOptions = {
+  intensity: 0.45,
+  speed: 0.4,
+  // Density comes off `scale`, not `intensity`: intensity feeds the
+  // S(0.25, 0.75) and S(0.0, 0.5) layer ramps, and dropping it switches whole
+  // layers off rather than thinning them. Drop count goes with scale squared.
+  scale: 0.28,
+  staticDrops: 0.1,
+  dropWidth: 0.8,
+  fallSpeed: 0.6,
+}
 const { splitView } = storeToRefs(settingsStore)
 const { toggleSplitView, setGameId } = settingsStore
 const needsInit = ref(true)
@@ -110,7 +191,10 @@ const showScenarioDebugOptions = ref(false)
 const realityAcidLightAnchor = ref<HTMLElement | null>(null)
 const realityAcidLightRect = reactive({ left: 0, top: 0, width: 0, height: 0 })
 const locationMap = ref<Element | null>(null)
+const locationCardsContainer = ref<HTMLElement | null>(null)
 const scrollerRef = ref<HTMLElement | null>(null)
+const hiddenLocationActionEdges = ref({ top: false, right: false, bottom: false, left: false })
+const hasHiddenLocationActionEdge = computed(() => Object.values(hiddenLocationActionEdges.value).some(Boolean))
 const viewingDiscard = ref(false)
 const revealingCards = ref(false)
 const cardRowTitle = ref("")
@@ -121,6 +205,11 @@ const legsSet = ref(["legs1", "legs2", "legs3", "legs4"])
 let legObserver: MutationObserver | null = null
 let cosmicEmissaryObserver: MutationObserver | null = null
 let cosmicEmissaryResizeObserver: ResizeObserver | null = null
+let hiddenLocationActionObserver: MutationObserver | null = null
+let hiddenLocationActionResizeObserver: ResizeObserver | null = null
+let hiddenLocationActionRaf: number | null = null
+let stagePan: { pointerId: number, startX: number, startY: number, scrollLeft: number, scrollTop: number, moved: boolean } | null = null
+let suppressNextStageClick = false
 let cosmicEmissaryCompactRequest: number | null = null
 let cosmicEmissaryCompactForce = false
 
@@ -170,10 +259,21 @@ const enableCosmicEmissaryAnimation = ref(
     : getGameLocalStorageItem(props.game.id, 'enableCosmicEmissaryAnimation') !== 'false'
 )
 const locationsZoom = ref(parseFloat(getGameLocalStorageItem(props.game.id, 'locationsZoom') ?? '1'))
-const doubleZoomActive = ref(false)
-const doubleZoomPrevValue = ref(1)
-const doubleZoomPrevScroll = { left: 0, top: 0 }
+// Persisted alongside locationsZoom: a remount with the zoom restored but the toggle reset
+// would make the next double-tap zoom "in" again instead of back out.
+const doubleZoomActive = ref(getGameLocalStorageItem(props.game.id, 'doubleZoomActive') === 'true')
+const doubleZoomPrevValue = ref(parseFloat(getGameLocalStorageItem(props.game.id, 'doubleZoomPrevValue') ?? '1'))
+const doubleZoomPrevScroll = {
+  left: parseFloat(getGameLocalStorageItem(props.game.id, 'doubleZoomPrevScrollLeft') ?? '0'),
+  top: parseFloat(getGameLocalStorageItem(props.game.id, 'doubleZoomPrevScrollTop') ?? '0'),
+}
 const DOUBLE_ZOOM_LEVEL = 3
+
+function setDoubleZoomActive(active: boolean) {
+  if (doubleZoomActive.value === active) return
+  doubleZoomActive.value = active
+  setGameLocalStorageItem(props.game.id, 'doubleZoomActive', String(active))
+}
 watch(locationsZoom, async (value) => {
   setGameLocalStorageItem(props.game.id, 'locationsZoom', String(value))
   await updateScrollMargins()
@@ -187,15 +287,24 @@ function zoomStep(value: number): number {
   return Math.max(min, max * Math.exp(-Math.pow(value - center, 2) / (2 * sigma * sigma)))
 }
 
+// Zooming by hand takes over from the double-tap toggle, whose saved level is now stale.
 function increaseZoom() {
+  setDoubleZoomActive(false)
   locationsZoom.value = parseFloat((locationsZoom.value + zoomStep(locationsZoom.value)).toFixed(3))
 }
 
 function decreaseZoom() {
+  setDoubleZoomActive(false)
   locationsZoom.value = parseFloat(Math.max(0.01, locationsZoom.value - zoomStep(locationsZoom.value)).toFixed(3))
 }
 
 const locationsUnlocked = ref(false)
+const locationsFullscreen = ref(false)
+function onFullscreenKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && locationsFullscreen.value) {
+    locationsFullscreen.value = false
+  }
+}
 const draggingLocationId = ref<string | null>(null)
 // Optimistic offsets after a drop, kept until the server echoes them back.
 // Stored in canonical (rotationSteps=0) coordinates, same as the backend.
@@ -295,6 +404,11 @@ const locationGridOffsets = computed<Record<string, { column: number, row: numbe
   }
   return offsets
 })
+
+const hasAnyOffset = computed(() =>
+  Object.keys(locationOffsets.value).length > 0
+    || Object.keys(pendingOffsets.value).length > 0
+)
 
 // Padding to extend the scroll area so dragged locations near the edges
 // aren't clipped. Transforms don't expand the parent's layout box, so we
@@ -489,6 +603,12 @@ function cancelActiveDrag() {
   draggingLocationId.value = null
 }
 
+function toggleLocationsUnlocked() {
+  locationsUnlocked.value = !locationsUnlocked.value
+  if (!locationsUnlocked.value) cancelActiveDrag()
+  nextTick(() => window.dispatchEvent(new Event('arkham-location-layout-change')))
+}
+
 function suppressLocationInteractionWhenUnlocked(event: MouseEvent) {
   if (!locationsUnlocked.value) return
   event.preventDefault()
@@ -502,6 +622,16 @@ function clearCosmicEmissaryCompactStyles() {
   sessionStorage.removeItem(cosmicEmissaryEnemyStylesCacheKey)
   sessionStorage.removeItem(cosmicEmissaryLocationCellStylesCacheKey)
   cosmicEmissaryFormationHasMeasured.value = false
+}
+
+async function resetLocationsLayout() {
+  if (!hasAnyOffset.value) return
+  await resetLocationOffsets(props.game.id)
+  pendingOffsets.value = {}
+  if (props.scenario.id === 'c10651') {
+    clearCosmicEmissaryCompactStyles()
+    requestCosmicEmissaryCompact(true)
+  }
 }
 
 let holdTimer: ReturnType<typeof setTimeout> | null = null
@@ -582,6 +712,125 @@ function proxyClippedLocationClick(event: MouseEvent) {
   }))
 }
 
+function onStagePointerDown(event: PointerEvent) {
+  if (event.button !== 0) return
+  const scroller = scrollerRef.value
+  if (!scroller) return
+  const target = event.target as HTMLElement | null
+  if (target?.closest([
+    'button',
+    'a',
+    'input',
+    'select',
+    'textarea',
+    '[role="button"]',
+    '.card',
+    '.card-frame',
+    '.enemy',
+    '.enemy--outer',
+    '.swarm-button-wrap',
+    '.v-popper__popper',
+  ].join(', '))) return
+  if (scroller.scrollWidth <= scroller.clientWidth && scroller.scrollHeight <= scroller.clientHeight) return
+
+  // Do NOT capture the pointer here. Capturing on pointerdown retargets the
+  // browser-synthesized click to the scroller, swallowing clicks on any board
+  // element that hasn't handled the pointerdown itself. We only capture once a
+  // real drag begins (see onStagePointerMove), so a stationary click always
+  // reaches whatever it lands on.
+  stagePan = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    scrollLeft: scroller.scrollLeft,
+    scrollTop: scroller.scrollTop,
+    moved: false,
+  }
+}
+
+function onStagePointerMove(event: PointerEvent) {
+  if (!stagePan || stagePan.pointerId !== event.pointerId) return
+  const scroller = scrollerRef.value
+  if (!scroller) return
+  const dx = event.clientX - stagePan.startX
+  const dy = event.clientY - stagePan.startY
+  if (!stagePan.moved && Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+    stagePan.moved = true
+    // Capture now that this is a real drag, so we keep receiving move/up events
+    // even if the pointer leaves the scroller. A click that never dragged is
+    // never captured, so it isn't swallowed.
+    scroller.setPointerCapture(event.pointerId)
+  }
+  if (!stagePan.moved) return
+  event.preventDefault()
+  scroller.scrollLeft = stagePan.scrollLeft - dx
+  scroller.scrollTop = stagePan.scrollTop - dy
+}
+
+function onStagePointerUp(event: PointerEvent) {
+  if (!stagePan || stagePan.pointerId !== event.pointerId) return
+  const scroller = scrollerRef.value
+  if (scroller?.hasPointerCapture(event.pointerId)) scroller.releasePointerCapture(event.pointerId)
+  suppressNextStageClick = stagePan.moved
+  stagePan = null
+}
+
+function onStageClick(event: MouseEvent) {
+  if (!suppressNextStageClick) return
+  suppressNextStageClick = false
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function updateHiddenLocationActionEdges() {
+  const container = locationCardsContainer.value
+  if (!container) return
+
+  const bounds = container.getBoundingClientRect()
+  const next = { top: false, right: false, bottom: false, left: false }
+  const actionEls = Array.from(
+    container.querySelectorAll<HTMLElement>('.location-cell--can-interact, .can-interact, [class*="--can-interact"]')
+  )
+
+  for (const el of actionEls) {
+    const rect = el.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) continue
+
+    const style = getComputedStyle(el)
+    if (style.visibility === 'hidden' || style.display === 'none') continue
+
+    const isPartiallyVisible =
+      rect.right > bounds.left &&
+      rect.left < bounds.right &&
+      rect.bottom > bounds.top &&
+      rect.top < bounds.bottom
+    if (isPartiallyVisible) continue
+
+    if (rect.right <= bounds.left) next.left = true
+    if (rect.left >= bounds.right) next.right = true
+    if (rect.bottom <= bounds.top) next.top = true
+    if (rect.top >= bounds.bottom) next.bottom = true
+  }
+
+  const current = hiddenLocationActionEdges.value
+  if (
+    current.top !== next.top ||
+    current.right !== next.right ||
+    current.bottom !== next.bottom ||
+    current.left !== next.left
+  ) {
+    hiddenLocationActionEdges.value = next
+  }
+}
+
+function scheduleHiddenLocationActionEdgesUpdate() {
+  if (hiddenLocationActionRaf !== null) cancelAnimationFrame(hiddenLocationActionRaf)
+  hiddenLocationActionRaf = requestAnimationFrame(() => {
+    hiddenLocationActionRaf = null
+    updateHiddenLocationActionEdges()
+  })
+}
+
 // callbacks
 onMounted(() => {
   setGameId(props.game.id)
@@ -589,11 +838,27 @@ onMounted(() => {
   window.addEventListener('arkham-setting-change', onCosmicEmissarySettingChange)
   window.addEventListener('resize', updateRealityAcidLightRect)
   window.addEventListener('scroll', updateRealityAcidLightRect, true)
+  window.addEventListener('resize', scheduleHiddenLocationActionEdgesUpdate)
+  window.addEventListener('scroll', scheduleHiddenLocationActionEdgesUpdate, true)
   document.addEventListener('click', proxyClippedLocationClick, true)
+  window.addEventListener('keydown', onFullscreenKeydown)
   nextTick(updateRealityAcidLightRect)
   updateScrollMargins()
   updateCellDimensions()
   updateLayoutPadding()
+  nextTick(scheduleHiddenLocationActionEdgesUpdate)
+  if (locationCardsContainer.value) {
+    hiddenLocationActionObserver = new MutationObserver(scheduleHiddenLocationActionEdgesUpdate)
+    hiddenLocationActionObserver.observe(locationCardsContainer.value, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+      childList: true,
+      subtree: true,
+    })
+
+    hiddenLocationActionResizeObserver = new ResizeObserver(scheduleHiddenLocationActionEdgesUpdate)
+    hiddenLocationActionResizeObserver.observe(locationCardsContainer.value)
+  }
   if(props.scenario.id === "c10651") {
     nextTick(requestCosmicEmissaryCompact)
     setTimeout(requestCosmicEmissaryCompact, 100)
@@ -686,13 +951,24 @@ onBeforeUnmount(() => {
   window.removeEventListener('arkham-setting-change', onCosmicEmissarySettingChange)
   window.removeEventListener('resize', updateRealityAcidLightRect)
   window.removeEventListener('scroll', updateRealityAcidLightRect, true)
+  window.removeEventListener('resize', scheduleHiddenLocationActionEdgesUpdate)
+  window.removeEventListener('scroll', scheduleHiddenLocationActionEdgesUpdate, true)
   document.removeEventListener('click', proxyClippedLocationClick, true)
+  window.removeEventListener('keydown', onFullscreenKeydown)
   legObserver?.disconnect()
   legObserver = null
   cosmicEmissaryObserver?.disconnect()
   cosmicEmissaryObserver = null
   cosmicEmissaryResizeObserver?.disconnect()
   cosmicEmissaryResizeObserver = null
+  hiddenLocationActionObserver?.disconnect()
+  hiddenLocationActionObserver = null
+  hiddenLocationActionResizeObserver?.disconnect()
+  hiddenLocationActionResizeObserver = null
+  if (hiddenLocationActionRaf !== null) cancelAnimationFrame(hiddenLocationActionRaf)
+  hiddenLocationActionRaf = null
+  stagePan = null
+  suppressNextStageClick = false
   if (cosmicEmissaryCompactRequest !== null) cancelAnimationFrame(cosmicEmissaryCompactRequest)
   cosmicEmissaryCompactRequest = null
   cancelActiveDrag()
@@ -763,17 +1039,17 @@ watch(() => props.scenario.difficulty, (difficulty) => {
 
 const scenarioGuide = computed(() => {
   const { reference } = props.scenario
-  const difficulty = displayedScenarioDifficulty.value
+  const hardExpertSide = usesHardExpertReference(props.scenario, displayedScenarioDifficulty.value)
   const referenceCode = reference.replace(/^c/, '')
   const referenceBase = referenceCode.replace(/b$/, '')
 
   if (props.scenario.id === 'c10501' || referenceBase === '10501' || referenceBase === '10502') {
     const referenceSide = referenceCode.endsWith('b') ? 'b' : ''
-    const writtenInRockReference = difficulty === 'Hard' || difficulty === 'Expert' ? '10502' : '10501'
+    const writtenInRockReference = hardExpertSide ? '10502' : '10501'
     return cardCodeImage(`${writtenInRockReference}${referenceSide}`)
   }
 
-  const difficultySuffix = difficulty === 'Hard' || difficulty === 'Expert' ? 'b' : ''
+  const difficultySuffix = hardExpertSide ? 'b' : ''
   return cardCodeImage(reference, difficultySuffix)
 })
 
@@ -916,7 +1192,38 @@ const scenarioBadges = computed<ScenarioBadge[]>(() => {
   return badges
 })
 
-const showScenarioNotifierBar = computed(() => scenarioBadges.value.length > 0 || props.realityAcidLightDevoured === true)
+const heededDanielsWarning = computed(() =>
+  props.game.campaign?.id === '03' || props.game.campaign?.id === '52'
+    ? props.game.campaign.log.recorded.some((r) => r.tag === 'ThePathToCarcosaKey' && r.contents === 'YouHeadedDanielsWarning')
+    : false
+)
+const hasturSpeaker = computed(() => {
+  const investigators = Object.values(props.game.investigators).filter((i) => !i.eliminated && !i.defeated)
+  return investigators.find((i) => i.playerId === props.playerId) ?? investigators[0] ?? null
+})
+const spokenHasturTooltip = computed(() => {
+  const name = hasturSpeaker.value?.name.title ?? 'an investigator'
+  return `Record that ${name} spoke HASTUR aloud and take 1 horror.`
+})
+
+async function recordSpokenHastur() {
+  const investigatorId = hasturSpeaker.value?.id
+  if (!investigatorId) return
+
+  await updateGameRaw(props.game.id, {
+    tag: 'InvestigatorMessage',
+    contents: {
+      tag: 'InvestigatorAssignDamage_',
+      contents: [investigatorId, { tag: 'CampaignSource' }, { tag: 'DamageAny' }, 0, 1],
+    },
+  })
+}
+
+// The rain switch lives in this bar, so the bar has to appear for it even when
+// there are no other badges and no reality-acid switch.
+const showScenarioNotifierBar = computed(
+  () => scenarioBadges.value.length > 0 || props.realityAcidLightDevoured === true || rainAvailable.value
+)
 
 watch(
   () => [props.realityAcidLightDevoured, props.realityAcidLightActive, scenarioBadges.value.length],
@@ -1077,7 +1384,11 @@ const enemyGroups = computed(()=>{
       if (p.contents === 'PursuitZone') pursuit.push(e)
     }
     if (p.tag === 'OtherPlacement' && p.contents === 'Global' && e.asSelfLocation === null) global.push(e)
-    if (e.asSelfLocation !== null) asLoc.push(e)
+    // An enemy that IS its own location keeps its asSelfLocation label after it
+    // leaves play, so the placement has to be checked too — otherwise a defeated
+    // Leg of Atlach-Nacha keeps occupying its grid slot. Not narrowed to
+    // AtLocation: Atlach-Nacha itself sits at Global while it is the web's centre.
+    if (e.asSelfLocation !== null && p.tag !== 'OutOfPlay') asLoc.push(e)
   }
   return { outOfPlay, pursuit, global, asLoc, firstVoid }
 })
@@ -1159,6 +1470,43 @@ const topOfEncounterDiscard = computed(() => {
   if (!props.scenario.discard[0]) return null
   return cardCodeImage(props.scenario.discard[0].cardCode)
 })
+
+const cardStore = useCardStore()
+const encounterDiscardDraggedOver = ref(false)
+// null while nothing is in flight, false when the dragged card has the wrong
+// back for an encounter discard.
+const encounterDiscardAccepts = computed(() =>
+  DebugMove.draggedCardAccepted(props.game, cardStore.cards, 'encounterDiscard')
+)
+
+function onDragOverEncounterDiscard(event: DragEvent) {
+  if (!debug.active) return
+  encounterDiscardDraggedOver.value = true
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = encounterDiscardAccepts.value === false ? 'none' : 'copy'
+  }
+}
+
+function onDragLeaveEncounterDiscard(event: DragEvent) {
+  const target = event.currentTarget
+  const related = event.relatedTarget
+  if (target instanceof Node && related instanceof Node && target.contains(related)) return
+  encounterDiscardDraggedOver.value = false
+}
+
+function onDropEncounterDiscard(event: DragEvent) {
+  event.preventDefault()
+  encounterDiscardDraggedOver.value = false
+  if (!debug.active || !event.dataTransfer) return
+  const data = event.dataTransfer.getData('text/plain')
+  if (!data) return
+  const json = JSON.parse(data)
+  if (json.tag !== 'CardTarget') return
+  const card = DebugMove.resolveCard(props.game, json.contents)
+  if (!card) return
+  if (!DebugMove.canMoveCardTo(DebugMove.cardDefFor(cardStore.cards, card), 'encounterDiscard')) return
+  DebugMove.debugMoveCard(props.game.id, json.contents, DebugMove.discarded)
+}
 const spectralEncounterDeck = computed(() => props.scenario.encounterDecks['SpectralEncounterDeck']?.[0])
 const spectralDiscard = computed(() => props.scenario.encounterDecks['SpectralEncounterDeck']?.[1])
 const spectralDiscards = computed<Card[]>(() => (spectralDiscard.value ?? []).map(c => ({ tag: 'EncounterCard', contents: c })))
@@ -1189,11 +1537,21 @@ const nextToTreacheries = computed<string[]>(() => Object.values(props.game.trea
   map((t) => t.id))
 const agendaGroupedTreacheries = computed(() => Object.entries(groupBy(nextToTreacheries.value, (t) => props.game.treacheries[t].cardCode)))
 
+// Cards attached to the scenario reference card (Primordial Evils) sit beside
+// it, since the reference card itself is just an image.
+const scenarioReferenceTreacheries = computed<string[]>(() => Object.values(props.game.treacheries).
+  filter((t) => t.placement.tag === "NextToScenarioReference").
+  map((t) => t.id))
+
 const keys = computed(() => props.scenario.setAsideKeys)
 const spentKeys = computed(() => props.scenario.keys)
 // TODO: not showing cosmos should be more specific, as there could be a cosmos location in the future?
+// A [[Starship]] location (Starfall's The Tatterdemalion / The Cassilda) is
+// attached to another location but is still a location on the map, sitting in
+// its own berth cell. Only placements that take a location off the map entirely
+// (InPlayArea) are filtered out here.
 const locations = computed(() => Object.values(props.game.locations).
-  filter((a) => a.placement === null && a.label !== "cosmos"))
+  filter((a) => (a.placement === null || a.placement.tag === 'AttachedToLocation') && a.label !== "cosmos"))
 watch(locations, updateScrollMargins, { flush: 'post' })
 watch(layoutPadding, updateScrollMargins, { flush: 'post' })
 watch([locations, rotationSteps, locationsZoom], updateCellDimensions, { flush: 'post' })
@@ -1217,6 +1575,7 @@ const unusedLabels = computed(() => {
   return locationLayout.flatMap((row) => row.split(' ')).filter((x) => !usedLabels.value.includes(x) && x !== '.')
 })
 const choices = useGameChoices(() => props.game, () => props.playerId)
+watch([choices, locations, locationsZoom], () => nextTick(scheduleHiddenLocationActionEdgesUpdate), { flush: 'post' })
 
 type LocationLike = { id: string, label: string }
 
@@ -1677,11 +2036,19 @@ async function toggleZoom(e: MouseEvent) {
   if (!scroller || !gridEl) return
 
   if (doubleZoomActive.value) {
-    doubleZoomActive.value = false
+    setDoubleZoomActive(false)
     locationsZoom.value = doubleZoomPrevValue.value
     await updateScrollMargins()
     scroller.scrollLeft = doubleZoomPrevScroll.left
     scroller.scrollTop = doubleZoomPrevScroll.top
+    return
+  }
+
+  // Already at (or past) the double-zoom level with no toggle to undo. Zooming in again would
+  // only re-centre the scroller, leaving the map stuck zoomed in, so zoom out instead.
+  if (locationsZoom.value >= DOUBLE_ZOOM_LEVEL) {
+    locationsZoom.value = doubleZoomPrevValue.value < DOUBLE_ZOOM_LEVEL ? doubleZoomPrevValue.value : 1
+    await updateScrollMargins()
     return
   }
 
@@ -1723,9 +2090,12 @@ async function toggleZoom(e: MouseEvent) {
   doubleZoomPrevValue.value = currentZ
   doubleZoomPrevScroll.left = scroller.scrollLeft
   doubleZoomPrevScroll.top = scroller.scrollTop
+  setGameLocalStorageItem(props.game.id, 'doubleZoomPrevValue', String(currentZ))
+  setGameLocalStorageItem(props.game.id, 'doubleZoomPrevScrollLeft', String(doubleZoomPrevScroll.left))
+  setGameLocalStorageItem(props.game.id, 'doubleZoomPrevScrollTop', String(doubleZoomPrevScroll.top))
 
   // Apply new zoom and wait for margins to update
-  doubleZoomActive.value = true
+  setDoubleZoomActive(true)
   locationsZoom.value = DOUBLE_ZOOM_LEVEL
   await updateScrollMargins()
 
@@ -1763,6 +2133,30 @@ const blessTokens = computed(() => props.scenario.chaosBag.chaosTokens.filter((t
 ).length)
 const curseTokens = computed(() => props.scenario.chaosBag.chaosTokens.filter((t) => t.face === 'CurseToken').length)
 const frostTokens = computed(() => props.scenario.chaosBag.chaosTokens.filter((t) => t.face === 'FrostToken').length)
+const bloodTokens = computed(() => props.scenario.chaosBag.chaosTokens.filter((t) => t.face === 'BloodToken').length)
+
+// Custom campaign tokens (e.g. the Circus Ex Mortis moon) that opt into the
+// totals bar via their campaign's homebrew tokens.json. Counted out of the
+// chaos bag only, like the bless/curse/frost/blood totals above: sealing takes
+// a token out of the bag, and sealed tokens show on the card they sit on.
+const homebrewTotals = computed(() => {
+  const all = props.scenario.chaosBag.chaosTokens
+  return homebrewTotalsTokens
+    .map((cfg) => ({
+      face: cfg.face,
+      tooltip: cfg.tooltip,
+      image: chaosTokenImage(cfg.face),
+      count: all.filter((t) => t.face === cfg.face).length,
+    }))
+    .filter((t) => t.count > 0)
+})
+
+// The totals plate separates scenario totals (doom, clues) from chaos bag
+// counts with a hairline; it is only drawn when the bag half is non-empty.
+const hasBagTotals = computed(() =>
+  blessTokens.value > 0 || curseTokens.value > 0 || frostTokens.value > 0
+    || bloodTokens.value > 0 || homebrewTotals.value.length > 0
+)
 
 async function removeChaosToken(face: any){
   debug.send(props.game.id, {tag: 'ChaosBagMessage', contents: {tag: 'RemoveChaosToken_', contents: face}})
@@ -1775,7 +2169,7 @@ async function addChaosToken(face: any){
 
 <template>
   <div v-if="upgradeDeck" id="game" class="game">
-    <UpgradeDeck :game="game" :key="playerId" :playerId="playerId" @choose="choose"/>
+    <UpgradeDeck :game="game" :key="playerId" :playerId="playerId" @choose="choose" @update="update"/>
   </div>
   <div v-else-if="!gameOver" id="scenario" class="scenario" :data-scenario="scenario.id">
     <div class="scenario-body" :class="{'split-view': splitView, 'scenario-body--notifier-overlays': showScenarioNotifierBar }">
@@ -1796,8 +2190,7 @@ async function addChaosToken(face: any){
         </div>
         <button v-if="!forcedShowOutOfPlay" class="close button" @click="showOutOfPlay = false">{{$t('close')}}</button>
       </Draggable>
-      <Draggable v-if="showChaosBag">
-        <template #handle><header><h2>{{$t('gameBar.chaosBag')}}</h2></header></template>
+      <ChaosBagWindow v-if="showChaosBag" :game="game" @close="showChaosBag = false">
         <ChaosBag :game="game" :skillTest="null" :chaosBag="scenario.chaosBag" :playerId="playerId" @choose="choose" />
         <div v-if="debug.active" class="buttons buttons-row">
           <div class="tri-button blessed">
@@ -1814,6 +2207,11 @@ async function addChaosToken(face: any){
             <button class="button frost" @click="removeChaosToken('FrostToken')">-</button>
             <span class="frost-icon"></span>
             <button class="button frost" @click="addChaosToken('FrostToken')">+</button>
+          </div>
+          <div class="tri-button blood">
+            <button class="button blood" @click="removeChaosToken('BloodToken')">-</button>
+            <span class="blood-icon"></span>
+            <button class="button blood" @click="addChaosToken('BloodToken')">+</button>
           </div>
           <div class="tri-button">
             <button class="button" @click="removeChaosToken('PlusOne')">-</button>
@@ -1896,8 +2294,7 @@ async function addChaosToken(face: any){
             <button class="button auto-fail-button" @click="addChaosToken('AutoFail')">+</button>
           </div>
         </div>
-        <button class="button close-button" @click="showChaosBag = false">{{$t('close')}}</button>
-      </Draggable>
+      </ChaosBagWindow>
       <CardRow
         v-if="showCards.ref.length > 0"
         :game="game"
@@ -2009,7 +2406,17 @@ async function addChaosToken(face: any){
         />
         <VictoryDisplay :game="game" :victoryDisplay="victoryDisplay" @choose="choose" :playerId="playerId" />
         <div class="scenario-encounter-decks">
-          <div v-if="topOfEncounterDiscard" class="discard" style="grid-area: encounterDiscard">
+          <div
+            v-if="topOfEncounterDiscard"
+            class="discard"
+            :class="{ 'discard--drop-target': encounterDiscardDraggedOver && encounterDiscardAccepts === true, 'discard--drop-refused': encounterDiscardDraggedOver && encounterDiscardAccepts === false }"
+            style="grid-area: encounterDiscard"
+            @drop="onDropEncounterDiscard($event)"
+            @dragover.prevent="onDragOverEncounterDiscard($event)"
+            @dragleave="onDragLeaveEncounterDiscard($event)"
+            @dragend="encounterDiscardDraggedOver = false"
+            @dragenter.prevent
+          >
             <div class="discard-card">
               <img
                 :src="topOfEncounterDiscard"
@@ -2038,11 +2445,19 @@ async function addChaosToken(face: any){
               </template>
             </div>
           </div>
+          <!-- An empty discard still has to be a drop target, or there is nothing
+               to drop the first card onto. -->
           <div
             v-else-if="props.scenario.hasEncounterDeck && !hideEncounterDeck"
             class="encounter-discard-placeholder"
+            :class="{ 'discard--drop-target': encounterDiscardDraggedOver && encounterDiscardAccepts === true, 'discard--drop-refused': encounterDiscardDraggedOver && encounterDiscardAccepts === false }"
             style="grid-area: encounterDiscard"
             aria-hidden="true"
+            @drop="onDropEncounterDiscard($event)"
+            @dragover.prevent="onDragOverEncounterDiscard($event)"
+            @dragleave="onDragLeaveEncounterDiscard($event)"
+            @dragend="encounterDiscardDraggedOver = false"
+            @dragenter.prevent
           ></div>
 
           <EncounterDeck
@@ -2091,7 +2506,11 @@ async function addChaosToken(face: any){
         </div>
 
         <div class="scenario-decks" :style="scenarioDeckStyles">
-          <template v-if="Object.values(game.agendas).length > 0">
+          <TransitionGroup
+            v-if="Object.values(game.agendas).length > 0"
+            name="deck-advance"
+            :duration="{ enter: 0, leave: 420 }"
+          >
             <Agenda
               v-for="(agenda, key) in game.agendas"
               :key="key"
@@ -2106,7 +2525,7 @@ async function addChaosToken(face: any){
               @choose="choose"
               @show="doShowCards"
             />
-          </template>
+          </TransitionGroup>
           <div v-else-if="agendaGroupedTreacheries.length > 0" class="treacheries">
             <div v-for="([cCode, treacheries], idx) in agendaGroupedTreacheries" :key="cCode" class="treachery-group" :style="{ zIndex: `calc(var(--z-index-10) * ${agendaGroupedTreacheries.length - idx})` }">
               <div v-for="treacheryId in treacheries" class="treachery-card" :key="treacheryId" >
@@ -2121,20 +2540,22 @@ async function addChaosToken(face: any){
             </div>
           </div>
 
-          <Act
-            v-for="(act, key) in game.acts"
-            :key="key"
-            :act="act"
-            :cardsUnder="cardsUnderAct"
-            :cardsNextTo="cardsNextToAct"
-            :remainingStack="scenario.actStack[act.deckId] || []"
-            :completedStack="scenario.completedActStack[act.deckId] || []"
-            :game="game"
-            :playerId="playerId"
-            :style="{ 'grid-area': `act${act.deckId}`, 'justify-self': 'center' }"
-            @choose="choose"
-            @show="doShowCards"
-          />
+          <TransitionGroup name="deck-advance" :duration="{ enter: 0, leave: 420 }">
+            <Act
+              v-for="(act, key) in game.acts"
+              :key="key"
+              :act="act"
+              :cardsUnder="cardsUnderAct"
+              :cardsNextTo="cardsNextToAct"
+              :remainingStack="scenario.actStack[act.deckId] || []"
+              :completedStack="scenario.completedActStack[act.deckId] || []"
+              :game="game"
+              :playerId="playerId"
+              :style="{ 'grid-area': `act${act.deckId}`, 'justify-self': 'center' }"
+              @choose="choose"
+              @show="doShowCards"
+            />
+          </TransitionGroup>
         </div>
 
         <EnemyView
@@ -2239,6 +2660,29 @@ async function addChaosToken(face: any){
                 <PoolItem v-if="damage && damage > 0" type="damage" :amount="damage" />
               </div>
             </div>
+            <div v-if="scenarioReferenceTreacheries.length > 0" class="scenario-reference-attachments">
+              <TreacheryView
+                v-for="treacheryId in scenarioReferenceTreacheries"
+                :key="treacheryId"
+                :treachery="game.treacheries[treacheryId]"
+                :game="game"
+                :playerId="playerId"
+                @choose="choose"
+                :overlay-delay="310"
+              />
+            </div>
+            <div v-if="heededDanielsWarning" class="spoken-hastur-recorder">
+              <button
+                type="button"
+                class="spoken-hastur-button"
+                :disabled="!hasturSpeaker"
+                v-tooltip="spokenHasturTooltip"
+                :aria-label="spokenHasturTooltip"
+                @click.stop.prevent="recordSpokenHastur"
+              >
+                <img :src="imgsrc('chaos-tokens/ct-cultist.png')" alt="" />
+              </button>
+            </div>
           </div>
           <div class="keys" v-if="keys.length > 0">
             <KeyToken v-for="k in keys" :key="keyToId(k)" :keyToken="k" :game="game" :playerId="playerId" @choose="choose" />
@@ -2318,6 +2762,21 @@ async function addChaosToken(face: any){
               <small v-if="badge.detail">{{ badge.detail }}</small>
             </span>
           </div>
+          <button
+            v-if="rainAvailable"
+            type="button"
+            class="scenario-badge rain-switch"
+            :class="{ 'rain-switch--on': rainEnabled }"
+            :title="rainEnabled ? 'Stop the rain' : 'Let it rain'"
+            @click="rainEnabled = !rainEnabled"
+          >
+            <span class="rain-switch-track" aria-hidden="true">
+              <span class="rain-switch-knob"></span>
+            </span>
+            <span class="scenario-badge-text rain-switch-label">
+              <strong>{{ rainEnabled ? 'Rain on' : 'Rain off' }}</strong>
+            </span>
+          </button>
           <span
             v-if="realityAcidLightDevoured"
             ref="realityAcidLightAnchor"
@@ -2364,10 +2823,78 @@ async function addChaosToken(face: any){
       </div>
 
 
-      <div class="location-cards-container" @dblclick.passive="toggleZoom">
-        <div class="location-cards-scroller" ref="scrollerRef">
+      <RainOverlay :enabled="showRain" :options="rainOptions">
+      <div
+        ref="locationCardsContainer"
+        class="location-cards-container"
+        :class="{
+          'location-cards-container--hidden-action': hasHiddenLocationActionEdge,
+          'location-cards-container--hidden-action-top': hiddenLocationActionEdges.top,
+          'location-cards-container--hidden-action-right': hiddenLocationActionEdges.right,
+          'location-cards-container--hidden-action-bottom': hiddenLocationActionEdges.bottom,
+          'location-cards-container--hidden-action-left': hiddenLocationActionEdges.left,
+          'location-cards-container--unlocked': locationsUnlocked,
+          'location-cards-container--fullscreen': locationsFullscreen,
+        }"
+        @dblclick.passive="toggleZoom"
+      >
+        <!-- ponytail: in-board mirror of the player-zone zoom-control; duplicated markup
+             beats prop-drilling ~10 handlers into a shared child. Keep the two in sync.
+             Used for fullscreen (floating, top right) and for split view, where the
+             player zone is too narrow for it and it docks to the bottom of the board
+             instead. The player-zone copy hides itself in split view. -->
+        <div
+          v-if="locationsFullscreen || splitView"
+          class="zoom-control"
+          :class="locationsFullscreen ? 'zoom-control--fullscreen' : 'zoom-control--docked'"
+          @dblclick.stop
+        >
+          <button class="zoom-btn" @pointerdown.stop="startHold(decreaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">−</button>
+          <input v-model.number="locationsZoom" type="range" min="0.25" max="6" step="0.05" class="zoom-slider" />
+          <button class="zoom-btn" @pointerdown.stop="startHold(increaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">+</button>
+          <button
+            class="zoom-btn"
+            :class="{ 'zoom-btn--active': locationsUnlocked }"
+            @click.stop="toggleLocationsUnlocked"
+            v-tooltip="locationsUnlocked ? 'Lock locations' : 'Unlock locations to drag'"
+          >
+            <LockOpenIcon v-if="locationsUnlocked" class="zoom-btn__icon" />
+            <LockClosedIcon v-else class="zoom-btn__icon" />
+          </button>
+          <button
+            v-if="hasAnyOffset"
+            class="zoom-btn"
+            @click.stop="resetLocationsLayout"
+            v-tooltip="'Reset location positions'"
+          >
+            <ArrowUturnLeftIcon class="zoom-btn__icon" />
+          </button>
+          <button
+            class="zoom-btn"
+            :class="{ 'zoom-btn--active': locationsFullscreen }"
+            @click.stop="locationsFullscreen = !locationsFullscreen"
+            v-tooltip="locationsFullscreen ? 'Exit fullscreen locations (Esc)' : 'Expand locations to full screen'"
+          >
+            <ArrowsPointingInIcon v-if="locationsFullscreen" class="zoom-btn__icon" />
+            <ArrowsPointingOutIcon v-else class="zoom-btn__icon" />
+          </button>
+        </div>
+        <div
+          class="location-cards-scroller"
+          ref="scrollerRef"
+          @pointerdown="onStagePointerDown"
+          @pointermove="onStagePointerMove"
+          @pointerup="onStagePointerUp"
+          @pointercancel="onStagePointerUp"
+          @click.capture="onStageClick"
+        >
         <div class="location-cards-stage">
-        <Connections :game="game" :playerId="playerId" :enableCosmicEmissaryAnimation="enableCosmicEmissaryAnimation" />
+        <Connections
+          :game="game"
+          :playerId="playerId"
+          :allowCurvedPaths="allowCurvedPaths"
+          :enableCosmicEmissaryAnimation="enableCosmicEmissaryAnimation"
+        />
         <transition-group name="map" tag="div" ref="locationMap" class="location-cards" :css="props.scenario.id !== 'c10651'" :style="locationStyles" @before-leave="beforeLeave">
           <!-- Keyed by id, not label: a location that changes grid label (the
                Great Lift sliding between levels) must stay the same element so
@@ -2438,7 +2965,7 @@ async function addChaosToken(face: any){
 
           <template v-if="barriers">
             <div v-for="[area, amount] in Object.entries(barriers)" :key="area" class="barrier" :class="{ vertical: isVertical(area) }" :style="{ 'grid-area': `barrier-${area}` }">
-              <img v-for="n in amount" :key="n" :src="imgsrc('resource.png')" />
+              <img v-for="n in amount" :key="n" :src="imgsrc('tokens/resource.png')" />
               <button v-if="debug.active && (amount as number > 0)" @click="debug.send(game.id, {tag: 'ScenarioCountDecrementBy', contents: [{ 'tag': 'Barriers', 'contents': area.split('--') }, 1]})">x</button>
             </div>
           </template>
@@ -2456,7 +2983,6 @@ async function addChaosToken(face: any){
             </template>
           </template>
         </transition-group>
-        </div>
         <div v-if="playerLocationZones.length > 0" class="player-location-zones">
           <section
             v-for="zone in playerLocationZones"
@@ -2479,9 +3005,11 @@ async function addChaosToken(face: any){
           </section>
         </div>
         </div>
+        </div>
       </div>
+      </RainOverlay>
 
-      <div id="player-zone">
+      <div id="player-zone" :class="{ 'player-zone--fullscreen': locationsFullscreen }">
         <PlayerTabs
           :game="game"
           :playerId="playerId"
@@ -2491,17 +3019,46 @@ async function addChaosToken(face: any){
           :tarotCards="props.scenario.tarotCards"
           @choose="choose"
         >
-          <div class="zoom-control">
+          <div v-if="!splitView" class="zoom-control">
             <button class="zoom-btn" @pointerdown.stop="startHold(decreaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">−</button>
             <button class="zoom-btn" @pointerdown.stop="startHold(increaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">+</button>
+            <button
+              class="zoom-btn"
+              :class="{ 'zoom-btn--active': locationsUnlocked }"
+              @click.stop="toggleLocationsUnlocked"
+              v-tooltip="locationsUnlocked ? 'Lock locations' : 'Unlock locations to drag'"
+            >
+              <LockOpenIcon v-if="locationsUnlocked" class="zoom-btn__icon" />
+              <LockClosedIcon v-else class="zoom-btn__icon" />
+            </button>
+            <button
+              v-if="hasAnyOffset"
+              class="zoom-btn"
+              @click.stop="resetLocationsLayout"
+              v-tooltip="'Reset location positions'"
+            >
+              <ArrowUturnLeftIcon class="zoom-btn__icon" />
+            </button>
+            <button
+              class="zoom-btn"
+              :class="{ 'zoom-btn--active': locationsFullscreen }"
+              @click.stop="locationsFullscreen = !locationsFullscreen"
+              v-tooltip="locationsFullscreen ? 'Exit fullscreen locations (Esc)' : 'Expand locations to full screen'"
+            >
+              <ArrowsPointingInIcon v-if="locationsFullscreen" class="zoom-btn__icon" />
+              <ArrowsPointingOutIcon v-else class="zoom-btn__icon" />
+            </button>
           </div>
         </PlayerTabs>
         <div id="totals">
           <PoolItem type="doom" :amount="game.totalDoom" tooltip="Total Doom" />
           <PoolItem type="clue" :amount="game.totalClues" tooltip="Total Spendable Clues" />
-          <PoolItem v-if="blessTokens > 0" type="ct_bless" :amount="blessTokens" />
-          <PoolItem v-if="curseTokens > 0" type="ct_curse" :amount="curseTokens" />
-          <PoolItem v-if="frostTokens > 0" type="ct_frost" :amount="frostTokens" />
+          <hr v-if="hasBagTotals" class="totals-rule" />
+          <PoolItem v-if="blessTokens > 0" type="chaos-tokens/ct-bless" :amount="blessTokens" />
+          <PoolItem v-if="curseTokens > 0" type="chaos-tokens/ct-curse" :amount="curseTokens" />
+          <PoolItem v-if="frostTokens > 0" type="chaos-tokens/ct-frost" :amount="frostTokens" />
+          <PoolItem v-if="bloodTokens > 0" type="chaos-tokens/ct-blood" :amount="bloodTokens" />
+          <PoolItem v-for="t in homebrewTotals" :key="t.face" type="custom-token" :image="t.image" :amount="t.count" :tooltip="t.tooltip" />
         </div>
       </div>
     </div>
@@ -2566,6 +3123,19 @@ async function addChaosToken(face: any){
 </template>
 
 <style scoped>
+/* Pending drop target — the receiver of the drag, so cyan; a refused drop (wrong
+   back for this pile) gets a plain red, which is an error state rather than a
+   role in the highlight language. */
+.discard--drop-target {
+  outline: 3px solid var(--highlight);
+  outline-offset: 3px;
+}
+
+.discard--drop-refused {
+  outline: 3px solid rgba(220, 70, 70, 0.9);
+  outline-offset: 3px;
+}
+
 .card {
   border-radius: 5px;
   width: var(--card-width);
@@ -2670,7 +3240,7 @@ async function addChaosToken(face: any){
 
     &:deep(.player-info) {
       grid-column: 1;
-      grid-row: 2 / 5;
+      grid-row: 2 / 3;
       display: flex;
       flex-direction: column;
 
@@ -2763,9 +3333,16 @@ async function addChaosToken(face: any){
       flex-wrap: wrap;
     }
 
-    .location-cards-container {
+    /* RainOverlay wraps the locations container when html-in-canvas is
+       available, which makes ITS host the grid item. Place both, so the
+       placement survives whether or not the wrapper is present. No :deep()
+       needed — Vue stamps this component's scope id onto a child component's
+       root element, and :deep() would compile to a descendant selector that
+       cannot match a direct child of .scenario-body. */
+    .location-cards-container,
+    .rain-host {
       grid-column: 2;
-      grid-row: 1 / 5;
+      grid-row: 1 / 3;
     }
   }
 }
@@ -2788,6 +3365,10 @@ async function addChaosToken(face: any){
 }
 
 .player-location-zones {
+  grid-area: 2 / 1;
+  justify-self: center;
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -2830,6 +3411,7 @@ async function addChaosToken(face: any){
 .location-cards-stage {
   position: relative;
   display: grid;
+  row-gap: 16px;
   flex-shrink: 0;
   width: max-content;
   height: max-content;
@@ -2839,12 +3421,19 @@ async function addChaosToken(face: any){
 .location-cards {
   display: grid;
   grid-area: 1 / 1;
+  justify-self: center;
   position: relative;
   z-index: 1;
   transition: transform 0.2s ease;
 }
 
 .location-cards-container {
+  --hidden-location-action-glow: rgba(255, 0, 255, 0.32);
+  --hidden-location-action-soft: rgba(255, 0, 255, 0.12);
+  --hidden-location-action-top: transparent;
+  --hidden-location-action-right: transparent;
+  --hidden-location-action-bottom: transparent;
+  --hidden-location-action-left: transparent;
   display: flex;
   overflow: hidden;
   flex: 1;
@@ -2854,6 +3443,103 @@ async function addChaosToken(face: any){
     padding-bottom: 5px;
   }
 }
+
+.location-cards-container--fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-50);
+  background: var(--background);
+}
+
+/* Split view: docked to the bottom of the locations board. Positioned against
+   .location-cards-container, which is the relative ancestor whether or not the
+   rain overlay is wrapping it. Deliberately does NOT force display, so the
+   coarse-pointer rule on .zoom-control still hides it on touch exactly as the
+   player-zone copy does today. */
+.zoom-control--docked {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  z-index: var(--z-index-10, 10);
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.zoom-control--fullscreen {
+  position: absolute;
+  top: 45px;
+  right: 10px;
+  z-index: var(--z-index-10, 10);
+  display: flex !important;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Keep the player zone (hand + in-play assets) usable while the board is a
+   fixed fullscreen overlay: pin it to the viewport bottom above the overlay. */
+.player-zone--fullscreen {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(var(--z-index-50) + 1);
+  background: var(--background);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.location-cards-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-index-30);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background:
+    linear-gradient(to bottom, var(--hidden-location-action-top), transparent 14px) top / 100% 14px no-repeat,
+    linear-gradient(to left, var(--hidden-location-action-right), transparent 14px) right / 14px 100% no-repeat,
+    linear-gradient(to top, var(--hidden-location-action-bottom), transparent 14px) bottom / 100% 14px no-repeat,
+    linear-gradient(to right, var(--hidden-location-action-left), transparent 14px) left / 14px 100% no-repeat;
+  box-shadow: inset 0 0 6px var(--hidden-location-action-soft);
+}
+
+.location-cards-container--hidden-action::after {
+  opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+.location-cards-scroller {
+  cursor: grab;
+  user-select: none;
+}
+
+.location-cards-scroller:active {
+  cursor: grabbing;
+}
+
+
+.location-cards-container--hidden-action-top {
+  --hidden-location-action-top: var(--hidden-location-action-glow);
+}
+
+.location-cards-container--hidden-action-right {
+  --hidden-location-action-right: var(--hidden-location-action-glow);
+}
+
+.location-cards-container--hidden-action-bottom {
+  --hidden-location-action-bottom: var(--hidden-location-action-glow);
+}
+
+.location-cards-container--hidden-action-left {
+  --hidden-location-action-left: var(--hidden-location-action-glow);
+}
+
 
 .portrait {
   border-radius: 3px;
@@ -3044,6 +3730,15 @@ async function addChaosToken(face: any){
 .scenario-guide-main {
   position: relative;
   width: fit-content;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.scenario-reference-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .scenario-badges {
@@ -3111,6 +3806,55 @@ async function addChaosToken(face: any){
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.58rem;
+}
+
+.rain-switch {
+  pointer-events: auto;
+  cursor: pointer;
+  border-color: rgb(255 255 255 / 24%);
+  border-left-color: rgb(150 195 235 / 90%);
+  background: rgb(32 36 42 / 98%);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 90%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 65%);
+}
+
+.rain-switch--on {
+  box-shadow:
+    inset 0 0 12px rgb(150 195 235 / 16%),
+    0 0 0 1px rgb(150 195 235 / 14%),
+    0 0 18px rgb(150 195 235 / 32%),
+    0 2px 8px rgb(0 0 0 / 65%);
+}
+
+.rain-switch-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: #48607a;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 35%);
+  transition: background 0.15s ease;
+}
+
+.rain-switch--on .rain-switch-track {
+  background: #8fc0e6;
+}
+
+.rain-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #1d2229;
+  transition: left 0.15s ease;
+}
+
+.rain-switch--on .rain-switch-knob {
+  left: 18px;
 }
 
 .reality-acid-light-switch-anchor {
@@ -3268,6 +4012,28 @@ async function addChaosToken(face: any){
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .deck-advance-leave-active {
+    pointer-events: none;
+    position: relative;
+    z-index: var(--z-index-10);
+  }
+
+  .deck-advance-leave-active :deep(.agenda-card > img.card--agenda),
+  .deck-advance-leave-active :deep(.act-row > .card-container > img.card) {
+    will-change: transform, opacity;
+    transition:
+      transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 320ms ease-in;
+  }
+
+  .deck-advance-leave-to :deep(.agenda-card > img.card--agenda),
+  .deck-advance-leave-to :deep(.act-row > .card-container > img.card) {
+    opacity: 0;
+    transform: translate3d(0, -32px, 0) scale(1.035);
+  }
+}
+
 .scenario-encounter-decks {
   display: grid;
   grid-template: "encounterDiscard encounterDeck" "spectralDiscard spectralDeck";
@@ -3406,6 +4172,11 @@ async function addChaosToken(face: any){
 
   .frost {
     background-color: var(--frost);
+  }
+
+  .blood {
+    background-color: var(--blood);
+    color: var(--blood-red)
   }
 
   button {
@@ -3573,6 +4344,7 @@ async function addChaosToken(face: any){
 /* While a swarm is fanned open (hovering the swarm, or its abilities menu is open),
    lift the whole cell above its neighbours so the fanned cards aren't occluded by an
    adjacent location's wrapper — otherwise sweeping across the fan would lose hover. */
+.location-cell:has(.enemy--outer:hover),
 .location-cell:has(.swarm:hover),
 .location-cell:has(.enemy--swarming.showAbilities) {
   z-index: var(--z-index-30);
@@ -3580,6 +4352,7 @@ async function addChaosToken(face: any){
 
 .location-wrapper {
   width: fit-content;
+  padding-top: 5px;
 }
 
 .abyss-location-count {
@@ -3711,12 +4484,22 @@ async function addChaosToken(face: any){
 #totals {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 5px;
-  background: darkslategrey;
+  gap: 6px;
+  padding: 8px 7px;
+  background: linear-gradient(180deg, #333b4d 0%, #252b3a 100%);
   margin-top: 10px;
-  border-top-left-radius: 10px;
-  box-shadow: -1px 1px 3px rgba(0, 0, 0, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.13);
+  border-left: 1px solid rgba(255, 255, 255, 0.13);
+  border-top-left-radius: 12px;
+  box-shadow: -2px -1px 6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.totals-rule {
+  width: 100%;
+  height: 1px;
+  border: 0;
+  margin: 2px 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14), transparent);
 }
 
 .tri-button {
@@ -3802,6 +4585,42 @@ async function addChaosToken(face: any){
     grid-column-gap: 0;
   }
 }
+
+.spoken-hastur-recorder {
+  position: absolute;
+  top: 4px;
+  right: -42px;
+  z-index: calc(var(--z-index-9999) + 1);
+}
+
+.spoken-hastur-button {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(241, 196, 15, 0.45);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+
+  img {
+    width: 22px;
+    height: 22px;
+    filter: sepia(1) saturate(5) hue-rotate(350deg) brightness(1.15);
+  }
+
+  &:hover {
+    background: rgba(241, 196, 15, 0.16);
+    border-color: rgba(241, 196, 15, 0.75);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
 
 .concealed-card {
   width: calc(var(--card-width) * 0.55);

@@ -8,6 +8,7 @@ import Arkham.Actions as X
 import Arkham.Asset.Uses
 import Arkham.Calculation
 import Arkham.Card.CardCode
+import Arkham.Card.CardOption
 import Arkham.Card.CardType
 import Arkham.Card.Cost
 import Arkham.ClassSymbol
@@ -71,25 +72,28 @@ data CardLimit
   | LimitPerTraitPerLocation Trait Int
   deriving stock (Show, Eq, Ord, Data)
 
--- | An enemy's printed health, as it appears on the card. A newtype over
--- 'GameValue' so it can be matched/queried without building the enemy.
--- 'ValueX'/'ValueStar' are the variable (X) and special (*) printouts; enemies
--- with no printed health (e.g. Azathoth, Vulnerable Heart) are 'Nothing'.
+{- | An enemy's printed health, as it appears on the card. A newtype over
+'GameValue' so it can be matched/queried without building the enemy.
+'ValueX'/'ValueStar' are the variable (X) and special (*) printouts; enemies
+with no printed health (e.g. Azathoth, Vulnerable Heart) are 'Nothing'.
+-}
 newtype Health = Health GameValue
   deriving stock (Show, Eq, Ord, Data)
   deriving newtype (ToJSON, FromJSON)
 
--- | The numeric printed health for fixed/per-investigator health; 'Nothing' for
--- variable (X), special (*), or unknown health.
-fixedHealth :: Health -> Maybe Int
-fixedHealth (Health gv) = case gv of
+{- | The numeric printed health for fixed/per-investigator health; 'Nothing' for
+variable (X), special (*), or unknown health.
+-}
+fixedHealth :: Int -> Health -> Maybe Int
+fixedHealth pc (Health gv) = case gv of
   Static n -> Just n
-  PerPlayer n -> Just n
+  PerPlayer n -> Just (n * pc)
   _ -> Nothing
 
--- | An enemy's printed fight value, as a newtype over 'GameValue' (so it can be
--- matched/queried without building the enemy). The constructor is 'FightValue'
--- to avoid clashing with the @Fight@ action constructor.
+{- | An enemy's printed fight value, as a newtype over 'GameValue' (so it can be
+matched/queried without building the enemy). The constructor is 'FightValue'
+to avoid clashing with the @Fight@ action constructor.
+-}
 newtype Fight = FightValue GameValue
   deriving stock (Show, Eq, Ord, Data)
   deriving newtype (ToJSON, FromJSON)
@@ -148,6 +152,8 @@ toCardCodePairs c =
               , cdArt = unCardCode cardCode
               , cdAlternateCardCodes =
                   map (\c' -> if c' == cardCode then c.cardCode else c') (cdAlternateCardCodes c)
+              , cdSkills = fromMaybe (cdSkills c) $ lookup cardCode (cdAlternateSkills c)
+              , cdErrata = lookup cardCode (cdAlternateErrata c) <|> cdErrata c
               }
           )
       )
@@ -155,11 +161,66 @@ toCardCodePairs c =
 
 {- | A stable key shared by every printing of a card. 'toCardCodePairs' rewrites
 'cdCardCode' per printing but preserves the full code set on each copy, so the minimum is
-identical across them. Use this to ask "are these the same card?" when the two 'CardDef's
-may be different printings (their derived 'Eq' would say no).
+identical across them. A campaign-overlay stand-in names its original outright. Use this
+to ask "are these the same card?" when the two 'CardDef's may be different printings
+(their derived 'Eq' would say no).
 -}
 canonicalCardCode :: CardDef -> CardCode
-canonicalCardCode c = foldl' min (cdCardCode c) (cdAlternateCardCodes c)
+canonicalCardCode c =
+  fromMaybe (foldl' min (cdCardCode c) (cdAlternateCardCodes c)) (cdReplacementCardCode c)
+
+{- | Is @cardCode@ one of the printings of this entity's card? 'toCardCodePairs'
+gives every printing its own 'CardDef' with 'cdCardCode' rewritten, so a bare
+@toCardCode x == cardCode@ misses reprints (Revised Core, Chapter 2); a campaign
+overlay's stand-in card is likewise accepted for the code it replaces. Used by the
+'*Is' matchers; still goes through the loose 'Eq CardCode' so a/b sides keep
+cross-matching (see 'Arkham.Matcher.EnemyIsExact' for the strict variant).
+-}
+isPrintingOf :: (HasCardCode a, HasCardDef a) => CardCode -> a -> Bool
+isPrintingOf cardCode x =
+  toCardCode x == cardCode
+    || cardCode `elem` def.cardCodes
+    || cdReplacementCardCode def == Just cardCode
+ where
+  def = toCardDef x
+
+{- | 'cdTags' marker for cards with an ability that triggers on
+'Arkham.Matcher.EnemyReadies' or 'Arkham.Matcher.EnemyWouldReady'. Any such card MUST
+carry this tag: 'Arkham.Game.hasEnemyReadyAbilities' skips the enemy-ready window
+outright when no tagged card is in play, so an untagged card's ability never fires
+(see #5440).
+-}
+enemyReadyTag :: Text
+enemyReadyTag = "enemy-ready"
+
+{- | 'cdTags' marker for a card whose entire text resolves at deck creation or
+between scenarios (deck size, deckbuilding options, purchase cost, purchase
+trauma/XP). The engine never does anything with it during play.
+-}
+noGameplayEffectTag :: Text
+noGameplayEffectTag = "no-gameplay-effect"
+
+{- | 'cdTags' marker for a card whose entire text resolves once, at or before
+setup, and then never acts again: a slot grant applied on entering play, or a
+draw driven from the setup code. The card stays in play but nothing consults it.
+-}
+setupOnlyTag :: Text
+setupOnlyTag = "setup-only"
+
+{- | 'cdTags' marker for a card that is spent once its once-per-game ability has
+been used, rather than at a fixed point like setup. Clients decide it is spent by
+looking for the card in the controller's used abilities.
+-}
+hideWhenUsedTag :: Text
+hideWhenUsedTag = "hide-when-used"
+
+{- | 'cdTags' marker for the back of a double-sided card that always starts a game
+on its other side. A flip is persisted with the campaign's story cards, so without
+this the card would come back flipped in the next scenario; setup swaps it for
+'cdOtherSide' instead.
+-}
+startsOnOtherSideTag :: Text
+startsOnOtherSideTag = "starts-on-other-side"
 
 data IsRevelation
   = NoRevelation
@@ -236,7 +297,15 @@ data CardDef = CardDef
   , cdStage :: Maybe Int
   , cdSlots :: [SlotType]
   , cdAlternateCardCodes :: [CardCode]
+  , cdReplacementCardCode :: Maybe CardCode
+  {- ^ The printed card this def stands in for when a campaign overlay swaps it
+  in (see 'Arkham.Campaign.Overlay'). Purely an identity annotation: it is never
+  a lookup key, so the original code keeps resolving to the original def, but
+  'isPrintingOf' -- and so every @*Is@ matcher -- accepts the stand-in.
+  -}
   , cdArt :: Text
+  , cdArtVariants :: Map Text CardCode
+  , cdBackArtVariants :: Map Text CardCode
   , cdLocationSymbol :: Maybe LocationSymbol
   , cdLocationRevealedSymbol :: Maybe LocationSymbol
   , cdLocationConnections :: [LocationSymbol]
@@ -253,19 +322,30 @@ data CardDef = CardDef
   , cdWhenDiscarded :: DiscardType
   , cdCanCommitWhenNoIcons :: Bool
   , cdCommitTrigger :: Bool
-  -- ^ True for cards whose RunMessage reacts to `Do (CommitCard …)` or
-  -- `InvestigatorCommittedSkill`; used in CheckAllAdditionalCommitCosts to
-  -- decide whether to prompt the active player for ordering.
+  {- ^ True for cards with an on-commit effect whose resolution order relative to
+  the other cards committed to the same test can matter; used in
+  CheckAllAdditionalCommitCosts to decide whether to prompt the active player for
+  ordering. Merely handling `Do (CommitCard …)` or `InvestigatorCommittedSkill` is
+  not enough — a handler that only reconfigures its own card (e.g. Persistence
+  setting its own afterPlay) is invisible to the rest of the test and must stay
+  False, or the player is asked to order a choice with no consequence.
+  -}
   , cdMeta :: Map Text Value
+  , cdOptions :: [CardOption]
+  -- ^ Player-configurable options this card offers; see "Arkham.Card.CardOption".
   , cdTags :: [Text]
   , cdOutOfPlayEffects :: [OutOfPlayEffect]
   , cdHealth :: Maybe Health
-  -- ^ Printed enemy health (set by the enemy CardDef builders). 'Nothing' for
-  -- non-enemy cards and enemies with no printed health.
+  {- ^ Printed enemy health (set by the enemy CardDef builders). 'Nothing' for
+  non-enemy cards and enemies with no printed health.
+  -}
   , cdFight :: Maybe Fight
   , cdEvade :: Maybe Evade
   , cdHealthDamage :: Maybe HealthDamage
   , cdSanityDamage :: Maybe SanityDamage
+  , cdAlternateSkills :: Map CardCode [SkillIcon]
+  , cdAlternateErrata :: Map CardCode Text
+  , cdErrata :: Maybe Text
   }
   deriving stock (Show, Eq, Ord, Data)
 
@@ -339,7 +419,7 @@ instance HasField "unique" CardDef Bool where
   getField = cdUnique
 
 instance HasField "doubleSided" CardDef Bool where
-  getField = isJust . cdOtherSide
+  getField = cdDoubleSided
 
 instance HasField "otherSide" CardDef (Maybe CardCode) where
   getField = cdOtherSide
@@ -384,7 +464,10 @@ emptyCardDef cCode name cType =
     , cdStage = Nothing
     , cdSlots = mempty
     , cdAlternateCardCodes = mempty
+    , cdReplacementCardCode = Nothing
     , cdArt = unCardCode cCode
+    , cdArtVariants = mempty
+    , cdBackArtVariants = mempty
     , cdLocationSymbol = Nothing
     , cdLocationRevealedSymbol = Nothing
     , cdLocationConnections = mempty
@@ -402,6 +485,7 @@ emptyCardDef cCode name cType =
     , cdCanCommitWhenNoIcons = False
     , cdCommitTrigger = False
     , cdMeta = mempty
+    , cdOptions = []
     , cdTags = []
     , cdOutOfPlayEffects = []
     , cdHealth = Nothing
@@ -409,6 +493,9 @@ emptyCardDef cCode name cType =
     , cdEvade = Nothing
     , cdHealthDamage = Nothing
     , cdSanityDamage = Nothing
+    , cdAlternateSkills = mempty
+    , cdAlternateErrata = mempty
+    , cdErrata = Nothing
     }
 
 instance IsCardMatcher CardDef where
@@ -428,6 +515,7 @@ isSignature = any isSignatureDeckRestriction . cdDeckRestrictions . toCardDef
 
 instance Named CardDef where
   toName = cdName
+
 class HasCardDef a where
   toCardDef :: HasCallStack => a -> CardDef
 
@@ -466,82 +554,99 @@ newtype Unrevealed a = Unrevealed a
 
 $(deriveJSON defaultOptions ''OutOfPlayEffect)
 
--- | Shared, omit-empty field list for CardDef. Polymorphic over 'KeyValue' so it
--- backs both `toJSON` (via `object`) and the more efficient `toEncoding` (via
--- `pairs`). Empty/default fields are dropped to keep the payload small; the
--- FromJSON instance (and the frontend decoder) fill the same defaults back in,
--- so absence is always safe.
+{- | Shared, omit-empty field list for CardDef. Polymorphic over 'KeyValue' so it
+backs both `toJSON` (via `object`) and the more efficient `toEncoding` (via
+`pairs`). Empty/default fields are dropped to keep the payload small; the
+FromJSON instance (and the frontend decoder) fill the same defaults back in,
+so absence is always safe.
+-}
 cardDefKeyValues :: KeyValue e kv => CardDef -> [kv]
 cardDefKeyValues CardDef {..} =
-    concat
-        [ ["cardCode" .= cdCardCode]
-        , ["name" .= cdName]
-        , pairJust "revealedName" cdRevealedName
-        , pairJust "cost" cdCost
-        , pairJust "additionalCost" cdAdditionalCost
-        , pairJust "level" cdLevel
-        , ["cardType" .= cdCardType]
-        , pairJust "cardSubType" cdCardSubType
-        , pairWhen (not $ null cdClassSymbols) "classSymbols" cdClassSymbols
-        , pairWhen (not $ null cdSkills) "skills" cdSkills
-        , pairWhen (not $ null cdCardTraits) "cardTraits" cdCardTraits
-        , pairWhen (not $ null cdRevealedCardTraits) "revealedCardTraits" cdRevealedCardTraits
-        , pairWhen (not $ null cdKeywords) "keywords" cdKeywords
-        , pairJust "fastWindow" cdFastWindow
-        , pairWhen (not $ null $ actionsToList cdActions) "actions" cdActions
-        , pairWhen (cdRevelation /= NoRevelation) "revelation" cdRevelation
-        , pairJust "victoryPoints" cdVictoryPoints
-        , pairJust "vengeancePoints" cdVengeancePoints
-        , pairJust "criteria" cdCriteria
-        , pairWhen cdOverrideActionPlayableIfCriteriaMet "overrideActionPlayableIfCriteriaMet" cdOverrideActionPlayableIfCriteriaMet
-        , pairWhen (not $ null cdCommitRestrictions) "commitRestrictions" cdCommitRestrictions
-        , pairWhen (not $ null cdAttackOfOpportunityModifiers) "attackOfOpportunityModifiers" cdAttackOfOpportunityModifiers
-        , pairWhen cdPermanent "permanent" cdPermanent
-        , pairJust "encounterSet" cdEncounterSet
-        , pairJust "encounterSetQuantity" cdEncounterSetQuantity
-        , pairWhen cdUnique "unique" cdUnique
-        , pairWhen cdDoubleSided "doubleSided" cdDoubleSided
-        , pairWhen (not $ null cdLimits) "limits" cdLimits
-        , pairWhen cdExceptional "exceptional" cdExceptional
-        , pairWhen (cdUses /= NoUses) "uses" cdUses
-        , pairWhen cdPlayableFromDiscard "playableFromDiscard" cdPlayableFromDiscard
-        , pairJust "stage" cdStage
-        , pairWhen (not $ null cdSlots) "slots" cdSlots
-        , pairWhen (not $ null cdAlternateCardCodes) "alternateCardCodes" cdAlternateCardCodes
-        , ["art" .= cdArt]
-        , pairJust "locationSymbol" cdLocationSymbol
-        , pairJust "locationRevealedSymbol" cdLocationRevealedSymbol
-        , pairWhen (not $ null cdLocationConnections) "locationConnections" cdLocationConnections
-        , pairWhen (not $ null cdLocationRevealedConnections) "locationRevealedConnections" cdLocationRevealedConnections
-        , pairWhen (cdPurchaseTrauma /= NoTrauma) "purchaseTrauma" cdPurchaseTrauma
-        , pairJust "grantedXp" cdGrantedXp
-        , pairWhen (not cdCanReplace) "canReplace" cdCanReplace
-        , pairWhen (not $ null cdDeckRestrictions) "deckRestrictions" cdDeckRestrictions
-        , pairWhen (not $ null cdBondedWith) "bondedWith" cdBondedWith
-        , pairWhen cdSkipPlayWindows "skipPlayWindows" cdSkipPlayWindows
-        , pairWhen cdBeforeEffect "beforeEffect" cdBeforeEffect
-        , pairWhen (not $ null cdCustomizations) "customizations" cdCustomizations
-        , pairJust "otherSide" cdOtherSide
-        , pairWhen (cdWhenDiscarded /= ToDiscard) "whenDiscarded" cdWhenDiscarded
-        , pairWhen
-            (cdCanCommitWhenNoIcons /= (null cdSkills && cdCardType == SkillType))
-            "canCommitWhenNoIcons"
-            cdCanCommitWhenNoIcons
-        , pairWhen cdCommitTrigger "commitTrigger" cdCommitTrigger
-        , pairWhen (not $ null cdMeta) "meta" cdMeta
-        , pairWhen (not $ null cdTags) "tags" cdTags
-        , pairWhen (not $ null cdOutOfPlayEffects) "outOfPlayEffects" cdOutOfPlayEffects
-        , pairJust "health" cdHealth
-        , pairJust "fight" cdFight
-        , pairJust "evade" cdEvade
-        , pairJust "healthDamage" cdHealthDamage
-        , pairJust "sanityDamage" cdSanityDamage
-        ]
-  where
-    pairWhen :: (KeyValue e kv, ToJSON v) => Bool -> Key -> v -> [kv]
-    pairWhen b k v = [k .= v | b]
-    pairJust :: (KeyValue e kv, ToJSON v) => Key -> Maybe v -> [kv]
-    pairJust k = maybe [] (\v -> [k .= v])
+  concat
+    [ ["cardCode" .= cdCardCode]
+    , ["name" .= cdName]
+    , pairJust "revealedName" cdRevealedName
+    , pairJust "cost" cdCost
+    , pairJust "additionalCost" cdAdditionalCost
+    , pairJust "level" cdLevel
+    , ["cardType" .= cdCardType]
+    , pairJust "cardSubType" cdCardSubType
+    , pairWhen (not $ null cdClassSymbols) "classSymbols" cdClassSymbols
+    , pairWhen (not $ null cdSkills) "skills" cdSkills
+    , pairWhen (not $ null cdCardTraits) "cardTraits" cdCardTraits
+    , pairWhen (not $ null cdRevealedCardTraits) "revealedCardTraits" cdRevealedCardTraits
+    , pairWhen (not $ null cdKeywords) "keywords" cdKeywords
+    , pairJust "fastWindow" cdFastWindow
+    , pairWhen (not $ null $ actionsToList cdActions) "actions" cdActions
+    , pairWhen (cdRevelation /= NoRevelation) "revelation" cdRevelation
+    , pairJust "victoryPoints" cdVictoryPoints
+    , pairJust "vengeancePoints" cdVengeancePoints
+    , pairJust "criteria" cdCriteria
+    , pairWhen
+        cdOverrideActionPlayableIfCriteriaMet
+        "overrideActionPlayableIfCriteriaMet"
+        cdOverrideActionPlayableIfCriteriaMet
+    , pairWhen (not $ null cdCommitRestrictions) "commitRestrictions" cdCommitRestrictions
+    , pairWhen
+        (not $ null cdAttackOfOpportunityModifiers)
+        "attackOfOpportunityModifiers"
+        cdAttackOfOpportunityModifiers
+    , pairWhen cdPermanent "permanent" cdPermanent
+    , pairJust "encounterSet" cdEncounterSet
+    , pairJust "encounterSetQuantity" cdEncounterSetQuantity
+    , pairWhen cdUnique "unique" cdUnique
+    , pairWhen cdDoubleSided "doubleSided" cdDoubleSided
+    , pairWhen (not $ null cdLimits) "limits" cdLimits
+    , pairWhen cdExceptional "exceptional" cdExceptional
+    , pairWhen (cdUses /= NoUses) "uses" cdUses
+    , pairWhen cdPlayableFromDiscard "playableFromDiscard" cdPlayableFromDiscard
+    , pairJust "stage" cdStage
+    , pairWhen (not $ null cdSlots) "slots" cdSlots
+    , pairWhen (not $ null cdAlternateCardCodes) "alternateCardCodes" cdAlternateCardCodes
+    , pairJust "replacementCardCode" cdReplacementCardCode
+    , ["art" .= cdArt]
+    , ["artVariants" .= cdArtVariants | notNull cdArtVariants]
+    , ["backArtVariants" .= cdBackArtVariants | notNull cdBackArtVariants]
+    , pairJust "locationSymbol" cdLocationSymbol
+    , pairJust "locationRevealedSymbol" cdLocationRevealedSymbol
+    , pairWhen (not $ null cdLocationConnections) "locationConnections" cdLocationConnections
+    , pairWhen
+        (not $ null cdLocationRevealedConnections)
+        "locationRevealedConnections"
+        cdLocationRevealedConnections
+    , pairWhen (cdPurchaseTrauma /= NoTrauma) "purchaseTrauma" cdPurchaseTrauma
+    , pairJust "grantedXp" cdGrantedXp
+    , pairWhen (not cdCanReplace) "canReplace" cdCanReplace
+    , pairWhen (not $ null cdDeckRestrictions) "deckRestrictions" cdDeckRestrictions
+    , pairWhen (not $ null cdBondedWith) "bondedWith" cdBondedWith
+    , pairWhen cdSkipPlayWindows "skipPlayWindows" cdSkipPlayWindows
+    , pairWhen cdBeforeEffect "beforeEffect" cdBeforeEffect
+    , pairWhen (not $ null cdCustomizations) "customizations" cdCustomizations
+    , pairJust "otherSide" cdOtherSide
+    , pairWhen (cdWhenDiscarded /= ToDiscard) "whenDiscarded" cdWhenDiscarded
+    , pairWhen
+        (cdCanCommitWhenNoIcons /= (null cdSkills && cdCardType == SkillType))
+        "canCommitWhenNoIcons"
+        cdCanCommitWhenNoIcons
+    , pairWhen cdCommitTrigger "commitTrigger" cdCommitTrigger
+    , pairWhen (not $ null cdMeta) "meta" cdMeta
+    , pairWhen (not $ null cdOptions) "options" cdOptions
+    , pairWhen (not $ null cdTags) "tags" cdTags
+    , pairWhen (not $ null cdOutOfPlayEffects) "outOfPlayEffects" cdOutOfPlayEffects
+    , pairJust "health" cdHealth
+    , pairJust "fight" cdFight
+    , pairJust "evade" cdEvade
+    , pairJust "healthDamage" cdHealthDamage
+    , pairJust "sanityDamage" cdSanityDamage
+    , pairWhen (not $ null cdAlternateSkills) "alternateSkills" cdAlternateSkills
+    , pairWhen (not $ null cdAlternateErrata) "alternateErrata" cdAlternateErrata
+    , pairJust "errata" cdErrata
+    ]
+ where
+  pairWhen :: (KeyValue e kv, ToJSON v) => Bool -> Key -> v -> [kv]
+  pairWhen b k v = [k .= v | b]
+  pairJust :: (KeyValue e kv, ToJSON v) => Key -> Maybe v -> [kv]
+  pairJust k = maybe [] (\v -> [k .= v])
 
 instance ToJSON CardDef where
   toJSON = object . cardDefKeyValues
@@ -583,7 +688,10 @@ instance FromJSON CardDef where
     cdStage <- o .:? "stage"
     cdSlots <- o .:? "slots" .!= mempty
     cdAlternateCardCodes <- o .:? "alternateCardCodes" .!= mempty
+    cdReplacementCardCode <- o .:? "replacementCardCode"
     cdArt <- o .: "art"
+    cdArtVariants <- o .:? "artVariants" .!= mempty
+    cdBackArtVariants <- o .:? "backArtVariants" .!= mempty
     cdLocationSymbol <- o .:? "locationSymbol"
     cdLocationRevealedSymbol <- o .:? "locationRevealedSymbol"
     cdLocationConnections <- o .:? "locationConnections" .!= mempty
@@ -602,6 +710,7 @@ instance FromJSON CardDef where
       o .:? "canCommitWhenNoIcons" .!= (null cdSkills && cdCardType == SkillType)
     cdCommitTrigger <- o .:? "commitTrigger" .!= False
     cdMeta <- o .:? "meta" .!= mempty
+    cdOptions <- o .:? "options" .!= []
     cdTags <- o .:? "tags" .!= []
     inHandEffects <- o .:? "cardInHandEffects" .!= False
     inDiscardEffects <- o .:? "cardInDiscardEffects" .!= False
@@ -618,5 +727,8 @@ instance FromJSON CardDef where
     cdEvade <- o .:? "evade"
     cdHealthDamage <- o .:? "healthDamage"
     cdSanityDamage <- o .:? "sanityDamage"
+    cdAlternateSkills <- o .:? "alternateSkills" .!= mempty
+    cdAlternateErrata <- o .:? "alternateErrata" .!= mempty
+    cdErrata <- o .:? "errata"
 
     pure CardDef {..}

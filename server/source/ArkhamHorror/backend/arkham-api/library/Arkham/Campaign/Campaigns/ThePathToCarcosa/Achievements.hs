@@ -14,7 +14,7 @@ Carcosa, so several of them observe cards ("Host of Insanity", the Lunatic
 Dianne Devine, the Secret Passage) that only exist in the Return-to setup.
 
 "Say My Name" (speak the name of Hastur aloud seven or more times) is tracked
-from the scenario-reference helper button that applies the warning's horror.
+from the scenario-reference helper button that assigns the warning's horror.
 -}
 module Arkham.Campaign.Campaigns.ThePathToCarcosa.Achievements (
   runCarcosaAchievements,
@@ -33,14 +33,18 @@ import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.ReturnToThePathToCarcosa.ReturnToTheLastKing qualified as Enemies
+import Arkham.Enemy.CardDefs.ReturnToThePathToCarcosa.ReturnToTheUnspeakableOath qualified as Enemies
+import Arkham.Enemy.CardDefs.ThePathToCarcosa.CurtainCall qualified as Enemies
+import Arkham.Enemy.CardDefs.ThePathToCarcosa.DimCarcosa qualified as Enemies
 import Arkham.Enemy.Types (Field (EnemyCard))
 import Arkham.Game.Base
 import Arkham.Game.Settings (activeUltimatumsAndBoons)
 import Arkham.Helpers.Campaign (stored)
 import Arkham.Helpers.Log (getHasRecord, getRecordCount, getRecordSet)
 import Arkham.Id
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.ReturnToThePathToCarcosa.ReturnToThePallidMask qualified as Locations
+import Arkham.Location.CardDefs.ThePathToCarcosa.EchoesOfThePast qualified as Locations
 import Arkham.Matcher
 import Arkham.Message
 import Arkham.Prelude
@@ -48,25 +52,20 @@ import Arkham.Projection
 import Arkham.Source (Source (..))
 import Arkham.Target
 import Arkham.Token (Token (..))
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.ThePathToCarcosa.DimCarcosa qualified as Treacheries
 import Arkham.UltimatumsAndBoons.Types
 import Data.Aeson.Key qualified as Key
 
 runCarcosaAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runCarcosaAchievements msg = whenEligibleCampaign $ case msg of
   -- "Say My Name": speak HASTUR aloud seven or more times after heeding
-  -- Daniel's warning. The UI button records this by placing the warning's
-  -- horror from CampaignSource; keep the count in achievement-only store, not
-  -- the public campaign log.
-  PlaceTokens CampaignSource (InvestigatorTarget _) Horror n | n > 0 -> do
-    whenM (getHasRecord YouHeadedDanielsWarning) do
-      c <- storedInt spokenHasturKey
-      setStore spokenHasturKey (c + n)
-      when (c + n >= 7) do
-        earn SayMyName
-
+  -- Daniel's warning. The UI button records this by assigning the warning's
+  -- horror from CampaignSource; we count the speaking, not where the horror
+  -- lands. Keep the count in achievement-only store, not the public campaign
+  -- log. The PlaceTokens arm is the pre-#5465 button, kept for older clients.
+  InvestigatorAssignDamage _ CampaignSource _ 0 n | n > 0 -> countSpokenHastur n
+  PlaceTokens CampaignSource (InvestigatorTarget _) Horror n | n > 0 -> countSpokenHastur n
   -- "First Steps": each VIP interviewed in The Last King checks off their
   -- box (the resolution inserts every interviewed VIP's asset card code into
   -- VIPsInterviewed in a single write); the API layer accumulates the
@@ -129,10 +128,7 @@ runCarcosaAchievements msg = whenEligibleCampaign $ case msg of
     -- "Fair Warning": defeat the Royal Emissary three times during Curtain
     -- Call. The Third Act keeps respawning it, so the defeats accumulate.
     when (cardDef == Enemies.royalEmissary) $ whenCurtainCall do
-      n <- storedInt royalEmissaryDefeatsKey
-      setStore royalEmissaryDefeatsKey (n + 1)
-      when (n + 1 >= 3) do
-        earn FairWarning
+      bumpCounter royalEmissaryDefeatsKey 1
 
     -- "Crashing the Party": defeat the Lunatic version of Dianne Devine (the
     -- Return-to enemy that carries the Lunatic trait) in The Last King.
@@ -190,6 +186,13 @@ runCarcosaAchievements msg = whenEligibleCampaign $ case msg of
     whenEchoesOfThePast do
       whenM (selectAny $ locationIs Locations.hiddenLibrary <> RevealedLocation <> LocationWithoutClues) do
         earn ForPryingEyes
+
+  {- Deferred threshold checks: 'bumpCounter' does its arithmetic when the message
+  is processed, so the counter only reads its new value here.
+  -}
+  CounterBumped k
+    | k == royalEmissaryDefeatsKey -> whenM ((>= 3) <$> storedInt k) $ earn FairWarning
+    | k == spokenHasturKey -> whenM ((>= 7) <$> storedInt k) $ earn SayMyName
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => ThePathToCarcosaAchievement -> m ()
@@ -205,21 +208,21 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ ThePathToCarcosaAchievement GetBackHere
   when (maybe False (`elem` eligible) mCampaignId) body
 
-whenScenarioActive :: (HasGame m, Tracing m) => m () -> m ()
+whenScenarioActive :: HasGame m => m () -> m ()
 whenScenarioActive body = whenM (isJust <$> selectOne TheScenario) body
 
-whenScenarioIn :: (HasGame m, Tracing m) => [ScenarioId] -> m () -> m ()
+whenScenarioIn :: HasGame m => [ScenarioId] -> m () -> m ()
 whenScenarioIn sids body = do
   mSid <- selectOne TheScenario
   when (maybe False (`elem` sids) mSid) body
 
-whenCurtainCall :: (HasGame m, Tracing m) => m () -> m ()
+whenCurtainCall :: HasGame m => m () -> m ()
 whenCurtainCall = whenScenarioIn ["03043", "52014"]
 
-whenEchoesOfThePast :: (HasGame m, Tracing m) => m () -> m ()
+whenEchoesOfThePast :: HasGame m => m () -> m ()
 whenEchoesOfThePast = whenScenarioIn ["03120", "52028"]
 
-whenBlackStarsRise :: (HasGame m, Tracing m) => m () -> m ()
+whenBlackStarsRise :: HasGame m => m () -> m ()
 whenBlackStarsRise = whenScenarioIn ["03274", "52054"]
 
 -- VIP bystander asset card code (as recorded in VIPsInterviewed) ->
@@ -247,6 +250,10 @@ possessionTreacheries =
   , Treacheries.possessionMurderous
   ]
 
+countSpokenHastur :: (HasGame m, HasQueue Message m) => Int -> m ()
+countSpokenHastur n =
+  whenM (getHasRecord YouHeadedDanielsWarning) $ bumpCounter spokenHasturKey n
+
 -- Campaign store plumbing. Writes go through the queue ('SetGlobal' is handled
 -- by the campaign runner); reads see all previously processed writes.
 
@@ -261,8 +268,8 @@ spokenHasturKey = "carcosaAchSpokenHastur"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k

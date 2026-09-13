@@ -5,6 +5,7 @@ import Arkham.Asset.Uses as X hiding (Civilian, Key, Lead)
 import Arkham.Calculation as X
 import Arkham.CampaignLogKey as X
 import Arkham.Card.CardDef as X
+import Arkham.Card.CardOption as X
 import Arkham.Card.CardType as X
 import Arkham.Card.Cost as X
 import Arkham.ClassSymbol as X
@@ -15,7 +16,7 @@ import Arkham.GameValue as X
 import Arkham.Matcher as X
 import Arkham.Name as X
 import Arkham.Prelude as X
-import Arkham.Trait as X hiding (Blight, Corruption, Evidence, Expedition, Mutation, Possessed, Supply)
+import Arkham.Trait as X hiding (Blight, Corruption, Evidence, Expedition, Possessed, Supply, Mutation)
 
 import Arkham.Card.CardCode (CardCode)
 import Arkham.SkillType (SkillIcon)
@@ -35,3 +36,10 @@ slot s def = def {cdSlots = s : cdSlots def}
 
 alternateCardCodes :: [CardCode] -> CardDef -> CardDef
 alternateCardCodes codes def = def {cdAlternateCardCodes = codes}
+
+otherSideIs :: CardCode -> CardDef -> CardDef
+otherSideIs ccode def =
+  def
+    { cdDoubleSided = False
+    , cdOtherSide = Just ccode
+    }

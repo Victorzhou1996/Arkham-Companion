@@ -33,18 +33,19 @@ const isHost = computed(() =>
   || localStorage.getItem(`gameHost_${props.gameId}`) === 'true'
 )
 const allClaimed = computed(() => openSeats.value.length === 0)
-const hasJoinedPendingGame = computed(() =>
-  props.playerId !== null
-  && props.game.gameState.tag === 'IsPending'
-  && props.game.gameState.contents.includes(props.playerId)
+const investigators = computed(() => Object.values(props.game.investigators))
+const pendingPlayerIds = computed(() =>
+  props.game.gameState.tag === 'IsPending' ? props.game.gameState.contents : []
 )
+
 const hasPlayerClaimed = computed(() =>
   isHost.value
   || myClaimed.value !== null
-  || hasJoinedPendingGame.value
-  || (props.playerId !== null && props.playerId in props.game.investigators)
+  || (props.playerId !== null && (
+    investigators.value.some((investigator) => investigator.playerId === props.playerId)
+    || pendingPlayerIds.value.includes(props.playerId)
+  ))
 )
-const investigators = computed(() => Object.values(props.game.investigators))
 
 const claimSeatUrl = computed(() => {
   const resolved = router.resolve({ name: 'ClaimSeat', params: { gameId: props.gameId } })

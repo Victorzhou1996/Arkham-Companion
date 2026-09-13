@@ -235,6 +235,27 @@ investigateAbility entity idx cost criteria =
     { abilityCriteria = criteria <> exists (YourLocation <> InvestigatableLocation)
     }
 
+{- | Like 'investigateAbility', but the "can this location be investigated" check is
+pinned to a specific location rather than to the investigator's current location.
+Needed for the basic investigate action printed on a location, so that effects which
+let you investigate a remote location (Beguile) aren't blocked by a CannotInvestigate
+effect (Locked Door) on the location you happen to be standing in. See #5333.
+-}
+investigateAbilityAt
+  :: (Sourceable a, HasCardCode a) => a -> LocationMatcher -> Int -> Cost -> Criterion -> Ability
+investigateAbilityAt entity matcher idx cost criteria =
+  (mkAbility entity idx (investigateAction cost))
+    { abilityCriteria = criteria <> exists (matcher <> InvestigatableLocation)
+    }
+
+withInvestigationTargets :: LocationMatcher -> Ability -> Ability
+withInvestigationTargets matcher =
+  delayAdditionalCostsWhen criterion
+    . restrict criterion
+    . (abilityMetadataL ?~ InvestigateTargets matcher)
+ where
+  criterion = exists $ matcher <> InvestigatableLocation
+
 investigateAbilityWith
   :: (Sourceable a, HasCardCode a) => a -> Int -> SkillType -> Cost -> Criterion -> Ability
 investigateAbilityWith entity idx stype cost criteria =
@@ -436,7 +457,7 @@ applyAbilityCriteriaModifiers c modifiers = foldr applyCriterionModifier c modif
     OnLocation _ -> True
     _ -> False
   replaceEngagementCheck = \case
-    EnemyIsEngagedWith _ -> AnyInPlayEnemy
+    EnemyIsEngagedWith _ -> AnyEnemy
     other -> other
   handleEnemyCriterion = \case
     EnemyExists em -> EnemyExists $ over biplate (transform replaceEngagementCheck) em
@@ -468,6 +489,7 @@ applyCostModifier (ActionCost n) (ActionCostModifier m) =
 applyCostModifier (ActionCost _) (ActionCostSetToModifier m) = ActionCost m
 applyCostModifier (Costs xs) modifier = Costs $ map (`applyCostModifier` modifier) xs
 applyCostModifier (NonBlankedCost x) modifier = NonBlankedCost $ x `applyCostModifier` modifier
+applyCostModifier (SourcedCost s x) modifier = SourcedCost s $ x `applyCostModifier` modifier
 applyCostModifier cost _ = cost
 
 defaultAbilityWindow :: AbilityType -> WindowMatcher

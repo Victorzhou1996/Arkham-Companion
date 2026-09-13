@@ -9,18 +9,19 @@ import router from './router'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExpeditedssl } from "@fortawesome/free-brands-svg-icons";
-import { faBan, faCircleExclamation, faGhost, faLocationDot, faSearch, faList, faImage, faAngleDown, faUndo, faTrash, faEye, faCopy, faExternalLink, faRefresh, faBook, faChevronRight, faBars, faTimes, faShieldHeart, faWrench, faPaperclip, faArrowLeft, faArrowUp, faStore, faTrophy, faTriangleExclamation, faShuffle } from '@fortawesome/free-solid-svg-icons'
+import { faGear, faLayerGroup, faBan, faCircleExclamation, faGhost, faLocationDot, faSearch, faList, faImage, faAngleDown, faUndo, faTrash, faEye, faCopy, faExternalLink, faRefresh, faBook, faChevronRight, faBars, faTimes, faShieldHeart, faWrench, faPaperclip, faArrowLeft, faArrowUp, faStore, faTriangleExclamation, faShuffle, faTrophy, faDownload, faCheckDouble, faFlask, faBug, faPen, faThumbsUp } from '@fortawesome/free-solid-svg-icons'
 import * as VueI18n from 'vue-i18n'
 import { loadLocaleMessages, normalizeLocale } from '@/locales/messages'
+import { preferredLanguage } from '@/locales/language'
 import { initializeCardImagePreferences } from '@/cardImagePreferences'
 import mitt from 'mitt';
 
-library.add(faBan, faLocationDot, faCircleExclamation, faGhost, faSearch, faList, faImage, faAngleDown, faExpeditedssl, faUndo, faTrash, faEye, faCopy, faExternalLink, faRefresh, faBook, faChevronRight, faBars, faTimes, faShieldHeart, faWrench, faPaperclip, faArrowLeft, faArrowUp, faStore, faTrophy, faTriangleExclamation, faShuffle)
+library.add(faBan, faLocationDot, faCircleExclamation, faGhost, faSearch, faList, faImage, faAngleDown, faExpeditedssl, faUndo, faTrash, faEye, faCopy, faExternalLink, faRefresh, faBook, faChevronRight, faBars, faTimes, faShieldHeart, faWrench, faPaperclip, faArrowLeft, faArrowUp, faStore, faTriangleExclamation, faShuffle, faTrophy, faGear, faLayerGroup, faDownload, faCheckDouble, faFlask, faBug, faPen, faThumbsUp)
 
 async function bootstrap() {
   initializeCardImagePreferences()
   const language = localStorage.getItem('language')
-  const naviLanguage = (navigator.language || 'en').split('-')[0]
+  const naviLanguage = preferredLanguage(navigator.language || 'en')
   const currentLanguage = language ?? naviLanguage
   const currentLocale = normalizeLocale(currentLanguage)
   if (!language) { localStorage.setItem('language', currentLanguage) }
@@ -30,7 +31,7 @@ async function bootstrap() {
   loadedMessages[current.locale] = current.messages
 
   const i18n = VueI18n.createI18n({
-    locale: currentLanguage, // set locale
+    locale: currentLocale, // set locale
     fallbackLocale: 'en', // set fallback locale
     legacy: false,
     warnHtmlMessage: false,
@@ -47,6 +48,12 @@ async function bootstrap() {
   app.use(FloatingVue, {
     themes: {
       'stack-indicator-popover': {
+        $extend: 'dropdown',
+      },
+      'chaos-bag-stats-popover': {
+        $extend: 'dropdown',
+      },
+      'cards-under-popover': {
         $extend: 'dropdown',
       },
     },

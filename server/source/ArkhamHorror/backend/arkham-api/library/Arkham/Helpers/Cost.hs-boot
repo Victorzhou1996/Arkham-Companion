@@ -6,11 +6,21 @@ import Arkham.Cost
 import Arkham.Id
 import Arkham.Prelude
 import Arkham.Source
-import Arkham.Tracing
+import Arkham.Target
 import Arkham.Window (Window)
 
+getAdditionalActionCost :: HasGame m => InvestigatorId -> Target -> Action -> m Cost
+
+getCanAffordAdditionalActionCost
+  :: (HasCallStack, HasGame m, Sourceable source)
+  => InvestigatorId
+  -> source
+  -> Target
+  -> Action
+  -> m Bool
+
 getCanAffordCost
-  :: (HasCallStack, HasGame m, Tracing m, Sourceable source)
+  :: (HasCallStack, HasGame m, Sourceable source)
   => InvestigatorId
   -> source
   -> [Action]

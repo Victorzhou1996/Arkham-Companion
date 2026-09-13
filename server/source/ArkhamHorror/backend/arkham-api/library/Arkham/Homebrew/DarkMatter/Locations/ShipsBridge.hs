@@ -1,0 +1,36 @@
+module Arkham.Homebrew.DarkMatter.Locations.ShipsBridge (shipsBridge) where
+
+import Arkham.Ability
+import Arkham.GameValue
+import Arkham.Helpers.GameValue (perPlayer)
+import Arkham.Helpers.Modifiers (ModifierType (..), modifySelectWhen)
+import Arkham.Homebrew.DarkMatter.CardDefs.Locations qualified as Cards
+import Arkham.Homebrew.DarkMatter.Helpers (scanEventAt)
+import Arkham.Location.Import.Lifted
+import Arkham.Matcher
+
+newtype ShipsBridge = ShipsBridge LocationAttrs
+  deriving anyclass IsLocation
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+shipsBridge :: LocationCard ShipsBridge
+shipsBridge = symbolLabel $ location ShipsBridge Cards.shipsBridge 3 (PerPlayer 1)
+
+instance HasModifiersFor ShipsBridge where
+  getModifiersFor (ShipsBridge a) =
+    modifySelectWhen a (not a.revealed) (InvestigatorAt $ locationIs Cards.messHall) [CannotEnter a.id]
+
+instance HasAbilities ShipsBridge where
+  getAbilities (ShipsBridge a) =
+    extendRevealed1 a
+      $ restricted a 1 (thisExists a LocationWithoutClues)
+      $ forced
+      $ CampaignEvent #after (Just You) (scanEventAt a.id)
+
+instance RunMessage ShipsBridge where
+  runMessage msg l@(ShipsBridge attrs) = runQueueT $ case msg of
+    UseThisAbility _ (isSource attrs -> True) 1 -> do
+      n <- perPlayer 1
+      placeClues (attrs.ability 1) attrs n
+      pure l
+    _ -> ShipsBridge <$> liftRunMessage msg attrs

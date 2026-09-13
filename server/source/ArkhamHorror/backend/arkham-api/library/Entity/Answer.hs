@@ -4,6 +4,7 @@ module Entity.Answer where
 
 import Import.NoFoundation hiding (get)
 
+import Api.Arkham.Types.MultiplayerVariant (MultiplayerVariant (Solo))
 import Arkham.Campaign.Option
 import Arkham.CampaignLog
 import Arkham.CampaignLogKey
@@ -15,6 +16,7 @@ import Arkham.Campaigns.TheInnsmouthConspiracy.Memory
 import Arkham.Card
 import Arkham.Classes.Entity
 import Arkham.Cost
+import Arkham.Custom.Overlay (DeckOverlay, applyOverlay, decklistCustomCards)
 import Arkham.Decklist
 import Arkham.Entities
 import Arkham.Game
@@ -27,10 +29,13 @@ import Arkham.Token
 import Arkham.Window qualified as Window
 import Control.Exception (evaluate, try)
 import Data.Aeson
+import Data.Aeson.Types qualified as Aeson
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
 import Data.These
+import Data.Time.Clock (getCurrentTime)
 import Data.UUID (UUID)
+import Database.Persist qualified as P
 import Foundation
 import Json
 
@@ -41,21 +46,8 @@ data Answer
   | AmountsAnswer AmountsResponse
   | StandaloneSettingsAnswer [StandaloneSetting]
   | CampaignSettingsAnswer CampaignSettings
-  | DeckAnswer {deckId :: ArkhamDeckId, playerId :: PlayerId}
+  | DeckAnswer {deckId :: ArkhamDeckId, playerId :: PlayerId, overlay :: Maybe DeckOverlay}
   | DeckListAnswer {deckList :: ArkhamDBDecklist, playerId :: PlayerId}
-  | {- | Trigger for the server to answer this seat's parked question via the AI
-    decision engine. Wire shape: @{ "tag": "AiAnswer", "playerId": <uuid> }@.
-    Resolved in 'Api.Handler.Arkham.Games.Shared.updateGame'; see the
-    'handleAnswerPure' note below for why it is not handled here.
-    -}
-    AiAnswer {playerId :: PlayerId}
-  | {- | Trigger for the server to commit a single card from this seat's parked
-    /assist/ skill-test window (another investigator is performing the test)
-    via the AI decision engine. Wire shape:
-    @{ "tag": "AiAssist", "playerId": <uuid> }@. Resolved in
-    'Api.Handler.Arkham.Games.Shared.updateGame' (see 'handleAnswerPure').
-    -}
-    AiAssist {playerId :: PlayerId}
   | PickDestinyAnswer [DestinyDrawing]
   | CampaignSpecificAnswer Text Value
   | ScenarioSpecificAnswer Text Value
@@ -68,6 +60,16 @@ data Answer
       }
   | CampaignStepAnswer CS.CampaignStep
   | CampaignStepAnswerFor PlayerId Bool CS.CampaignStep
+
+  | -- Between-scenario roster changes, all answered from the continuation screen.
+    RetireInvestigatorAnswer {investigatorId :: InvestigatorId}
+  | RejoinInvestigatorAnswer {investigatorId :: InvestigatorId}
+  | {- | Lay your own cards over an investigator's deck for the rest of the
+    campaign. Answered from the same screen, and like the roster changes it
+    leaves the continuation question standing to be answered after.
+    -}
+    ApplyOverlayAnswer {investigatorId :: InvestigatorId, overlay :: Maybe DeckOverlay}
+  | JoinCampaignAnswer
   deriving stock (Show, Generic)
   deriving anyclass FromJSON
 
@@ -310,14 +312,17 @@ answerPlayer = \case
   CampaignSettingsAnswer _ -> Nothing
   CampaignSpecificAnswer {} -> Nothing
   ScenarioSpecificAnswer {} -> Nothing
-  DeckAnswer _ pid -> Just pid
+  DeckAnswer _ pid _ -> Just pid
   DeckListAnswer _ pid -> Just pid
-  AiAnswer pid -> Just pid
-  AiAssist pid -> Just pid
   PickDestinyAnswer _ -> Nothing
   ExchangeAmountsAnswer {} -> Nothing
   CampaignStepAnswer _ -> Nothing
   CampaignStepAnswerFor pid _ _ -> Just pid
+
+  ApplyOverlayAnswer {} -> Nothing
+  RetireInvestigatorAnswer _ -> Nothing
+  RejoinInvestigatorAnswer _ -> Nothing
+  JoinCampaignAnswer -> Nothing
 
 playerInvestigator :: Entities -> PlayerId -> InvestigatorId
 playerInvestigator Entities {..} pid = case find ((== pid) . attr investigatorPlayerId) (toList entitiesInvestigators) of
@@ -331,6 +336,10 @@ handled = pure . Handled
 
 unhandled :: Applicative m => Text -> m Reply
 unhandled = pure . Unhandled
+
+-- | A scenario is played by one to four investigators.
+maxInvestigators :: Int
+maxInvestigators = 4
 
 unwrapQuestion :: Question Message -> Question Message
 unwrapQuestion = \case
@@ -355,6 +364,41 @@ handleCampaignStepAnswer gameMode k = case gameMode of
   That s -> case s.step of
     Just (CS.ContinueCampaignStep {}) -> handled [NextScenarioCampaignStep (Just k)]
     _ -> handled []
+
+{- | Is the table sitting on the /campaign's/ continuation screen?
+
+A scenario can raise a continuation of its own mid-scenario (Fortune and Folly's
+checkpoint), which looks identical from the question alone. Players only join or
+leave between scenarios, so those answers must not be accepted there.
+-}
+atCampaignContinuation :: Game -> Bool
+atCampaignContinuation g = case gameMode g of
+  That _ -> False
+  This c -> isContinuation c.step
+  These c s -> case s.step of
+    Just (CS.ContinueCampaignStep {}) -> False
+    Just (CS.ScenarioStepWithOptions {}) -> False
+    _ -> isContinuation c.step
+ where
+  isContinuation = \case
+    CS.ContinueCampaignStep {} -> True
+    CS.StandaloneScenarioStep _ (CS.ContinueCampaignStep {}) -> True
+    _ -> False
+
+isContinueCampaignAsk :: Game -> PlayerId -> Bool
+isContinueCampaignAsk g pid = case unwrapQuestion <$> Map.lookup pid (gameQuestion g) of
+  Just ContinueCampaign -> True
+  _ -> False
+
+{- | Why this seat may not play @iid@, if it may not.
+
+Only a seat joining mid-campaign is restricted: the rules let a new player pick
+only an investigator nobody has used during this campaign.
+-}
+joinDeckRejection :: Game -> PlayerId -> InvestigatorId -> Maybe Text
+joinDeckRejection g pid iid = case unwrapQuestion <$> Map.lookup pid (gameQuestion g) of
+  Just (ChooseJoinDeck used) | iid `elem` used -> Just "That investigator has already played in this campaign"
+  _ -> Nothing
 
 {- | The messages that start this seat's deck-setup sub-flow.
 
@@ -385,20 +429,103 @@ reAskOthers game playerId
   | isJust (barrierSeat playerId game) = []
   | otherwise =
       let question' = Map.delete playerId (gameQuestion game)
-       in [AskMap question' | not (Map.null question')]
+          -- keep a retained ask retained; re-parking it bare would make the flag
+          -- survive exactly one answer and then drop the remaining seats
+          retain = if gameRetainedQuestion game then Retain else id
+       in [retain (AskMap question') | not (Map.null question')]
+
+{- | Put a user's built cards into the registry so a decklist naming them
+resolves. See "Api.Handler.Arkham.CustomCards".
+-}
+registerDeckOwnerCustomCards :: UserId -> DB ()
+registerDeckOwnerCustomCards userId = do
+  rows <- selectList [ArkhamCustomCardUserId ==. userId] []
+  registerCustomCards $ Map.fromList do
+    Entity _ row <- rows
+    def <- maybeToList $ Aeson.parseMaybe parseJSON (arkhamCustomCardDef row)
+    pure (cdCardCode def, CustomCard def (arkhamCustomCardArt row))
 
 handleAnswer :: Game -> PlayerId -> Answer -> DB Reply
 handleAnswer game playerId = \case
-  DeckAnswer deckId _ -> do
+  DeckAnswer deckId _ mOverlay -> do
     deck <- get404 deckId
-    let investigatorId = investigator_code $ arkhamDeckList deck
-    update (coerce playerId) [ArkhamPlayerInvestigatorId =. coerce investigatorId]
-    handled $ deckChosen game playerId (arkhamDeckList deck)
+    -- The deck may be laid over with cards only its owner has, so their library
+    -- has to be resolvable before the list is read.
+    registerDeckOwnerCustomCards (arkhamDeckUserId deck)
+    -- An overlay chosen here is for this game only; the deck's own overlay is
+    -- the one that sticks.
+    reply <-
+      loadChosenDeck game playerId
+        $ maybe id applyOverlay mOverlay (arkhamDeckPlayList deck)
+    -- Only a deck that was actually seated counts as used; a rejected mid-campaign
+    -- join must not reorder the decks page.
+    case reply of
+      Handled _ -> touchDeck deckId
+      Unhandled _ -> pure ()
+    pure reply
+  ApplyOverlayAnswer iid mOverlay
+    | not (isContinueCampaignAsk game playerId) -> unhandled "Wrong question type"
+    | not (atCampaignContinuation game) ->
+        unhandled "A deck can only be laid over between scenarios"
+    | iid `Map.notMember` entitiesInvestigators (gameEntities game) -> unhandled "Unknown investigator"
+    | otherwise -> case mOverlay of
+        Nothing -> handled []
+        Just o -> do
+          -- The overlay names cards only its owner has built.
+          P.get (coerce playerId) >>= \case
+            Just seat -> registerDeckOwnerCustomCards (arkhamPlayerUserId seat)
+            Nothing -> pure ()
+          handled [ApplyDeckOverlay iid o]
   DeckListAnswer dl _ -> do
-    let investigatorId = investigator_code dl
-    update (coerce playerId) [ArkhamPlayerInvestigatorId =. coerce investigatorId]
-    handled $ deckChosen game playerId dl
+    -- 'DB' is rank-1 polymorphic, so the registration has to be applied here
+    -- rather than passed as a function.
+    P.get (coerce playerId) >>= \case
+      Just seat -> registerDeckOwnerCustomCards (arkhamPlayerUserId seat)
+      Nothing -> pure ()
+    loadChosenDeck game playerId dl
+  JoinCampaignAnswer
+    | not (isContinueCampaignAsk game playerId) -> unhandled "Wrong question type"
+    | not (atCampaignContinuation game) -> unhandled "Players can only join between scenarios"
+    | Map.size (entitiesInvestigators (gameEntities game)) >= maxInvestigators ->
+        unhandled "A campaign is played by at most four investigators"
+    | otherwise ->
+        P.get (coerce playerId) >>= \case
+          Nothing -> unhandled "Unknown player"
+          Just seat -> do
+            let gameId = arkhamPlayerArkhamGameId seat
+            variant <- fmap arkhamGameMultiplayerVariant <$> P.get gameId
+            seats <- P.count [ArkhamPlayerArkhamGameId P.==. gameId]
+            -- Solo runs every seat off one user, so it can always take another. A
+            -- one-seat WithFriends game becomes multihanded solo when its player
+            -- adds a second hand ('updateGame' persists the switch); with more seats
+            -- each belongs to its own user (UniquePlayer userId gameId), so only the
+            -- invite link can add one.
+            if variant == Just Solo || seats == 1
+              then do
+                pid <- insert $ ArkhamPlayer (arkhamPlayerUserId seat) gameId "00000"
+                handled [JoinCampaign (PlayerId $ coerce pid)]
+              else unhandled "A new player joins this game with its invite link"
   other -> liftIO $ handleAnswerPure game playerId other
+
+{- | Mark a deck as just taken into a game. This is the only record of a deck
+being used -- nothing else links a game back to the 'ArkhamDeck' row it was
+seated from -- and it is what the decks page orders by.
+-}
+touchDeck :: ArkhamDeckId -> DB ()
+touchDeck deckId = do
+  now <- liftIO getCurrentTime
+  update deckId [ArkhamDeckLastUsedAt =. Just now]
+
+-- | Seat @playerId@'s chosen deck, unless a mid-campaign join may not play it.
+loadChosenDeck :: Game -> PlayerId -> ArkhamDBDecklist -> DB Reply
+loadChosenDeck game playerId dl = case joinDeckRejection game playerId dl.investigator of
+  Just reason -> unhandled reason
+  Nothing -> do
+    update (coerce playerId) [ArkhamPlayerInvestigatorId =. coerce (investigator_code dl)]
+    -- Record the deck's custom cards on the game itself; the process registry
+    -- they resolved against is rebuilt from the game, and other clients read
+    -- their art and defs from there.
+    handled $ map DebugRegisterCustomCard (decklistCustomCards dl) <> deckChosen game playerId dl
 
 {- | Like 'handleAnswer' but with no DB access. Returns 'Unhandled' for
 'DeckAnswer' / 'DeckListAnswer', which require updating an 'ArkhamPlayer'
@@ -408,15 +535,23 @@ handleAnswerPure :: Game -> PlayerId -> Answer -> IO Reply
 handleAnswerPure game@Game {..} playerId = \case
   DeckAnswer {} -> unhandled "DeckAnswer requires database access"
   DeckListAnswer {} -> unhandled "DeckListAnswer requires database access"
-  -- AiAnswer is resolved upstream in updateGame (it runs the AI decision
-  -- engine over the parked game and recurses with the concrete answer).
-  -- Keeping the call out of this module avoids an Entity.Answer <-> Ai.Decision
-  -- import cycle. Reaching here means no server-side AI resolution ran.
-  AiAnswer {} -> unhandled "AiAnswer must be resolved by the server (updateGame)"
-  -- AiAssist is likewise resolved upstream in updateGame (it runs the assist
-  -- decision engine over the parked game and recurses with the concrete commit
-  -- answer). Reaching here means no server-side AI resolution ran.
-  AiAssist {} -> unhandled "AiAssist must be resolved by the server (updateGame)"
+  JoinCampaignAnswer -> unhandled "JoinCampaignAnswer requires database access"
+  RetireInvestigatorAnswer iid
+    | not (isContinueCampaignAsk game playerId) -> unhandled "Wrong question type"
+    | not (atCampaignContinuation game) -> unhandled "Investigators can only leave between scenarios"
+    | iid `Map.notMember` entitiesInvestigators gameEntities -> unhandled "Unknown investigator"
+    | Map.size (entitiesInvestigators gameEntities) <= 1 ->
+        unhandled "The last investigator cannot leave"
+    | otherwise -> handled [LeaveCampaign iid]
+  ApplyOverlayAnswer {} -> unhandled "ApplyOverlayAnswer requires database access"
+  RejoinInvestigatorAnswer iid
+    | not (isContinueCampaignAsk game playerId) -> unhandled "Wrong question type"
+    | not (atCampaignContinuation game) -> unhandled "Investigators can only rejoin between scenarios"
+    | Map.size (entitiesInvestigators gameEntities) >= maxInvestigators ->
+        unhandled "A campaign is played by at most four investigators"
+    | iid `Map.notMember` gameRetiredInvestigators ->
+        unhandled "That investigator has not left the campaign"
+    | otherwise -> handled [UnretireInvestigator iid]
   StandaloneSettingsAnswer settings' -> do
     let standaloneCampaignLog = makeStandaloneCampaignLog settings'
     handled [SetCampaignLog standaloneCampaignLog]
@@ -517,6 +652,7 @@ handleAnswerPure game@Game {..} playerId = \case
         -- skip the stale AskMap so it doesn't clobber the regenerated one.
         UpdateGlobalSetting {} | inFastWindow -> handled [message]
         UpdateCardSetting {} | inFastWindow -> handled [message]
+        SetCardSilenced {} | inFastWindow -> handled [message]
         SetAsIfRuling {} | inFastWindow -> handled [message]
         _ -> handled [message, AskMap gameQuestion]
       else handled [message]
@@ -550,10 +686,30 @@ handleAnswerPure game@Game {..} playerId = \case
                   -- (Unreachable while ChooseDeck -- a barrier's only question today --
                   -- is answered via DeckAnswer; needed once phase 2/3 put
                   -- ChooseUpgradeDeck / Read, which answer through here, in a barrier.)
-                  let question'
+                  --
+                  -- A Retain-published ask is the third case: it is neither rebuilt
+                  -- by the queue nor barriered, and its seats hold baked message
+                  -- lists rather than a re-enumerable set of choices, so nothing is
+                  -- stale about re-parking them -- dropping them just destroys the
+                  -- messages (#4787). Every seat survives, this one included if it
+                  -- still has choices left.
+                  let retained = gameRetainedQuestion
+                      others
                         | isJust (barrierSeat playerId game) = mempty
+                        | retained = Map.delete playerId gameQuestion
                         | otherwise = Map.filter isDeckQuestion $ Map.delete playerId gameQuestion
-                  handled $ msgs <> [AskMap question' | not (Map.null question')]
+                  if retained
+                    then do
+                      -- Fold this seat's own re-ask into the same map. Emitting it as a
+                      -- separate `Ask` would park it ahead of the other seats, serialising
+                      -- a question whose whole point is that the table resolves it in an
+                      -- order of its choosing.
+                      let (ran, reask) = case reverse msgs of
+                            (Ask pid reasked : rest) | pid == playerId -> (reverse rest, Just reasked)
+                            _ -> (msgs, Nothing)
+                          question' = maybe others (\reasked -> Map.insert playerId reasked others) reask
+                      handled $ ran <> [Retain (AskMap question') | not (Map.null question')]
+                    else handled $ msgs <> [AskMap others | not (Map.null others)]
           )
           $ Map.lookup playerId gameQuestion
  where
@@ -599,6 +755,9 @@ handleAnswerPure game@Game {..} playerId = \case
     Read t (LeadInvestigatorMustDecide qs) mcs -> case qs !!? qrChoice response of
       Nothing -> [Ask playerId $ f $ Read t (LeadInvestigatorMustDecide qs) mcs]
       Just msg -> [uiToRun msg]
+    ChooseOneWizard flavor qs confirm back -> case qs !!? qrChoice response of
+      Nothing -> [Ask playerId $ f $ ChooseOneWizard flavor qs confirm back]
+      Just WizardChoice {messages} -> [Run messages]
     ChooseOne qs -> case qs !!? qrChoice response of
       Nothing -> [Ask playerId $ f $ ChooseOne qs]
       Just msg -> [uiToRun msg]

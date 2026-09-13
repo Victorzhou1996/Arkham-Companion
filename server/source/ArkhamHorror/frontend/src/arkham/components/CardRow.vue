@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import type { Game } from '@/arkham/types/Game';
 import type { Card as ArkhamCard, CardContents } from '@/arkham/types/Card';
+import type { Source } from '@/arkham/types/Source';
 import * as CardT from '@/arkham/types/Card';
 import Card from '@/arkham/components/Card.vue';
 import Draggable from '@/components/Draggable.vue';
-import { useDebug } from '@/arkham/debug';
+import { useDebug } from '@/arkham/debug'
+import * as DebugMove from '@/arkham/debugCardMove';
 import { computed } from 'vue';
 import * as ArkhamGame from '@/arkham/types/Game';
 
@@ -20,9 +22,34 @@ const props = withDefaults(defineProps<{
 }>(), { isDiscards: false, revealed: false })
 
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
+function sourceMatchesCard(source: Source, cardId: string): boolean {
+  switch (source.sourceTag) {
+    case 'ProxySource':
+      return sourceMatchesCard(source.source, cardId) || sourceMatchesCard(source.originalSource, cardId)
+    case 'IndexedSource':
+      return source.contents ? sourceMatchesCard(source.contents[1], cardId) : false
+    case 'AbilitySource':
+      return sourceMatchesCard(source.contents[0], cardId)
+    case 'UseAbilitySource':
+      return sourceMatchesCard(source.contents[1], cardId)
+    case 'PaymentSource':
+      return sourceMatchesCard(source.contents, cardId)
+    case 'BothSource':
+      return sourceMatchesCard(source.contents[0], cardId) || sourceMatchesCard(source.contents[1], cardId)
+    case 'OtherSource':
+      return source.contents === cardId || (source.tag === 'AssetSource' && props.game.assets[source.contents ?? '']?.cardId === cardId)
+    default:
+      return false
+  }
+}
+
 function isCardInChoices(card: ArkhamCard | CardContents): boolean {
   const cardId = CardT.toCardContents(card).id
-  return choices.value.some(choice => choice.tag === 'TargetLabel' && cardId === choice.target.contents)
+  return choices.value.some(choice => {
+    if (choice.tag === 'TargetLabel') return cardId === choice.target.contents
+    if (choice.tag === 'AbilityLabel') return sourceMatchesCard(choice.ability.source, cardId)
+    return false
+  })
 }
 
 const emit = defineEmits<{
@@ -39,6 +66,7 @@ function startDrag(event: DragEvent, card: (CardContents | CardT.Card)) {
     event.dataTransfer.effectAllowed = 'copy'
     const cardId = CardT.toCardContents(card).id
     event.dataTransfer.setData('text/plain', JSON.stringify({ "tag": "CardTarget", "contents": cardId }))
+    DebugMove.beginCardDrag(cardId)
   }
 }
 </script>

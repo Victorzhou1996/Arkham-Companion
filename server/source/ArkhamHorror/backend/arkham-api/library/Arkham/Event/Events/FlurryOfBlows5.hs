@@ -27,13 +27,13 @@ instance RunMessage FlurryOfBlows5 where
         <> AssetWithPerformableAbility #fight [IgnoreActionCost]
       when (n - 1 > 0) do
         chooseOneM iid $ cardI18n $ scope "flurryOfBlows5" do
-          labeled' "repeatEffect" $ doStep (n - 1) msg'
+          labeled "repeatEffect" $ doStep (n - 1) msg'
           labeledI "done" nothing
       pure e
     HandleTargetChoice iid (isSource attrs -> True) (AssetTarget aid) -> do
       abilities <-
         map ((`applyAbilityModifiers` [IgnoreActionCost]) . doesNotProvokeAttacksOfOpportunity)
-          <$> select (PerformableAbility [IgnoreActionCost] <> #fight <> AbilityOnAsset (AssetWithId aid))
+          <$> select (#fight <> AbilityOnAsset (AssetWithId aid) <> PerformableAbility [IgnoreActionCost])
       chooseOrRunOneM iid $ for_ abilities \ab -> abilityLabeled iid ab nothing
       pure e
     _ -> FlurryOfBlows5 <$> liftRunMessage msg attrs

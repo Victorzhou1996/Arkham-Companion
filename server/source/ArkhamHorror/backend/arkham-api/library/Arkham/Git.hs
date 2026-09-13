@@ -40,7 +40,9 @@ gitHash =
           gitHash' = do
             envHash <- lookupEnv "GIT_SHA1"
             cliHash <- gitHashCli
-            pure $ fromMaybe (fail "No git sha found") $ cliHash <|> envHash
+            case fmap strip envHash <|> cliHash of
+              Just hash | not (null hash) -> pure hash
+              _ -> fail "No git sha found; set GIT_SHA1 when building without a Git checkout"
           in
           runIO gitHash' >>= TH.lift
        )

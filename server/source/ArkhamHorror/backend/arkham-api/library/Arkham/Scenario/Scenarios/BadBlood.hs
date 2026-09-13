@@ -1,12 +1,12 @@
 module Arkham.Scenario.Scenarios.BadBlood (badBlood) where
 
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.BadBlood qualified as Acts
+import Arkham.Agenda.CardDefs.BadBlood qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Card
 import Arkham.Classes.HasGame
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.BadBlood qualified as Enemies
 import Arkham.Event.Cards qualified as Events
 import Arkham.Exception
 import {-# SOURCE #-} Arkham.GameEnv (findCard)
@@ -16,7 +16,8 @@ import Arkham.Helpers.SkillTest (getSkillTestInvestigator, withSkillTest)
 import Arkham.Helpers.Xp
 import Arkham.I18n
 import Arkham.Id
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Locations
+import Arkham.Location.CardDefs.TheForgottenAge.ThreadsOfFate qualified as Locations
 import Arkham.Location.Types (Field (..), Location, locationPlacedChaosTokens)
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
@@ -27,8 +28,7 @@ import Arkham.Scenario.Import.Lifted
 import Arkham.Scenarios.BadBlood.Helpers
 import Arkham.Scenarios.BadBlood.Meta
 import Arkham.Token (Token (Memory), countTokens)
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Treacheries
 import Arkham.Window qualified as Window
 import Arkham.Xp
 
@@ -78,7 +78,7 @@ instance HasChaosTokenValue BadBlood where
     ElderThing -> pure $ toChaosTokenValue attrs ElderThing 6 8
     otherFace -> getChaosTokenValue iid otherFace attrs
 
-tokenMemoryValue :: (HasGame m, Tracing m) => InvestigatorId -> ChaosTokenFace -> m Int
+tokenMemoryValue :: HasGame m => InvestigatorId -> ChaosTokenFace -> m Int
 tokenMemoryValue lead = \case
   AutoFail -> pure 6
   ElderSign -> pure 6
@@ -224,7 +224,7 @@ instance RunMessage BadBlood where
       pure s
     ResolveChaosToken _ ElderThing _ -> do
       whenJustM (selectOne agnesBaker) \agnes ->
-        chooseAmount' agnes "elderThingDamage" "$damage" 0 3 attrs
+        chooseAmount agnes "elderThingDamage" "$damage" 0 3 attrs
       pure s
     ResolveAmounts _ (getChoiceAmount "$damage" -> n) (isTarget attrs -> True) | n > 0 -> do
       whenJustM (selectOne agnesBaker) \agnes -> assignDamage agnes ElderThing n
@@ -250,14 +250,14 @@ instance RunMessage BadBlood where
             hasAdvancedDarkMemory <- isJust <$> findCard (`cardMatch` cardIs Events.darkMemoryAdvanced)
             when (hasHeirloom || hasAdvancedDarkMemory) do
               chooseOneM agnes do
-                questionLabeled' "chooseSwap"
-                when hasHeirloom $ labeled' "upgradeHeirloomOfHyperborea" do
+                questionLabeled "chooseSwap"
+                when hasHeirloom $ labeled "upgradeHeirloomOfHyperborea" do
                   removeCampaignCardFromDeck agnes Assets.heirloomOfHyperborea
                   addCampaignCardToDeck agnes DoNotShuffleIn Assets.heirloomOfHyperboreaAdvanced
-                when hasAdvancedDarkMemory $ labeled' "downgradeDarkMemory" do
+                when hasAdvancedDarkMemory $ labeled "downgradeDarkMemory" do
                   removeCampaignCardFromDeck agnes Events.darkMemoryAdvanced
                   addCampaignCardToDeck agnes DoNotShuffleIn Events.darkMemory
-                labeled' "doNotSwap" nothing
+                labeled "doNotSwap" nothing
           endOfScenario
         Resolution 2 -> do
           resolutionWithXp "resolution2" $ gainXpWithMemories attrs
@@ -267,11 +267,11 @@ instance RunMessage BadBlood where
               isJust <$> findCard (`cardMatch` cardIs Assets.heirloomOfHyperboreaAdvanced)
             when (hasDarkMemory || hasAdvancedHeirloom) do
               chooseOrRunOneM agnes do
-                questionLabeled' "mustSwap"
-                when hasDarkMemory $ labeled' "upgradeDarkMemory" do
+                questionLabeled "mustSwap"
+                when hasDarkMemory $ labeled "upgradeDarkMemory" do
                   removeCampaignCardFromDeck agnes Events.darkMemory
                   addCampaignCardToDeck agnes DoNotShuffleIn Events.darkMemoryAdvanced
-                when hasAdvancedHeirloom $ labeled' "downgradeHeirloomOfHyperborea" do
+                when hasAdvancedHeirloom $ labeled "downgradeHeirloomOfHyperborea" do
                   removeCampaignCardFromDeck agnes Assets.heirloomOfHyperboreaAdvanced
                   addCampaignCardToDeck agnes DoNotShuffleIn Assets.heirloomOfHyperborea
           endOfScenario

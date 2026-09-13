@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { displayTabooList } from '@/arkham/taboo';
-import { ref, computed, inject, onMounted, watch } from 'vue';
-import { fetchDeck, fetchDecks, newDeck, upgradeDeck } from '@/arkham/api';
-import { imgsrc, localizeArkhamDBBaseUrl, processArkhamBuildDeck } from '@/arkham/helpers';
+import { ref, computed, inject, onMounted, onUnmounted, unref, watch, type Ref } from 'vue';
+import { fetchDeck, fetchDecks, fetchGame, fetchGameStep, newDeck, upgradeDeck } from '@/arkham/api';
+import { localizeArkhamDBBaseUrl, processArkhamBuildDeck } from '@/arkham/helpers';
+import { portraitImage } from '@/arkham/cardImages';
 import { ArkhamDbDecklist, Deck, deckMetaValue } from '@/arkham/types/Deck';
 import { Game } from '@/arkham/types/Game';
 import { Investigator } from '@/arkham/types/Investigator';
@@ -25,7 +26,7 @@ export interface Props {
 
 const { t } = useI18n()
 const props = defineProps<Props>()
-const solo = inject('solo', false)
+const solo = inject<boolean | Ref<boolean>>('solo', false)
 
 function isChooseUpgradeDeckQuestion(question: ArkhamQuestion | undefined): boolean {
   if (!question) return false
@@ -38,7 +39,7 @@ const upgradeQuestionEntry = computed(() => {
   const ownEntry = entries.find(([questionId]) => questionId === props.playerId)
     ?? entries.find(([investigatorId]) => props.game.investigators[investigatorId]?.playerId === props.playerId)
 
-  return ownEntry ?? (solo ? entries[0] : undefined) ?? null
+  return ownEntry ?? (unref(solo) ? entries[0] : undefined) ?? null
 })
 
 const upgradeQuestionInvestigatorId = computed(() => {
@@ -53,9 +54,56 @@ const questionLabel = computed(() => {
 const model = defineModel()
 const fetching = ref(false)
 const submitError = ref<string | null>(null)
-const emit = defineEmits<{ choose: [value: number] }>()
+const emit = defineEmits<{ choose: [value: number]; update: [game: Game] }>()
 const choose = (idx: number) => emit('choose', idx)
 const waiting = ref(false)
+let waitingPoll: ReturnType<typeof setTimeout> | null = null
+let disposed = false
+
+function hasUpgradeQuestions(game: Game): boolean {
+  return Object.values(game.question).some(isChooseUpgradeDeckQuestion)
+}
+
+// Last step we pulled the full game for; null means "not probed yet", so the
+// first tick resyncs once. Probing the step first keeps this off the expensive
+// game endpoint for every tick where nobody has answered anything.
+let waitingStep: number | null = null
+
+async function pollWaitingGame() {
+  if (disposed || !waiting.value) return
+  try {
+    const step = await fetchGameStep(props.game.id)
+    if (disposed || !waiting.value) return
+    if (step !== waitingStep) {
+      waitingStep = step
+      const { game } = await fetchGame(props.game.id)
+      if (disposed || !waiting.value) return
+      emit('update', game)
+      if (!hasUpgradeQuestions(game)) {
+        waiting.value = false
+        waitingPoll = null
+        return
+      }
+    }
+    waitingPoll = setTimeout(pollWaitingGame, 1000 + Math.floor(Math.random() * 500))
+  } catch {
+    if (!disposed && waiting.value) waitingPoll = setTimeout(pollWaitingGame, 2000)
+  }
+}
+
+function waitForOtherPlayers() {
+  if (disposed) return
+  waiting.value = true
+  if (waitingPoll === null) {
+    waitingStep = null
+    waitingPoll = setTimeout(pollWaitingGame, 500)
+  }
+}
+
+onUnmounted(() => {
+  disposed = true
+  if (waitingPoll !== null) clearTimeout(waitingPoll)
+})
 const deck = ref<string | null>(null)
 const deckUrl = ref<string | null>(null)
 const deckList = ref<ArkhamDbDecklist | null>(null)
@@ -76,7 +124,7 @@ const investigator = computed(() => {
     return i.playerId === props.playerId
   })
 })
-const investigatorId = computed(() => !solo && deckInvestigator.value ? `c${deckInvestigator.value}` : investigator.value?.id)
+const investigatorId = computed(() => !unref(solo) && deckInvestigator.value ? `c${deckInvestigator.value}` : investigator.value?.id)
 const originalInvestigatorId = computed(() => upgradeQuestionInvestigatorId.value ?? investigator.value?.id)
 const xp = computed(() => {
   const inv = investigator.value
@@ -625,6 +673,7 @@ function addedCardCodes(list: ArkhamDbDecklist | null): string[] {
 
   return Object.entries(list.slots).flatMap(([rawCode, count]) => {
     const code = normalizeCardCode(rawCode)
+    // The random basic weakness placeholder is stripped by UpgradeDeck, never "added".
     if (code === '01000') return []
     return count > (owned.get(code) ?? 0) ? [code] : []
   })
@@ -679,6 +728,7 @@ function hasCustomizationXpChanges(list: ArkhamDbDecklist): boolean {
  * upgrade window for good -- the whole of #5257. Confirm instead of silently consuming it.
  * Only when XP is actually unspent and neither cards nor customization XP changed. */
 const pendingNoChangeUpgrade = ref(false)
+
 const unspentXp = computed(() => xp.value ?? 0)
 
 function wouldChangeNothing(): boolean {
@@ -711,8 +761,8 @@ async function upgrade(force = false) {
         nextDeckList ? undefined : deckUrl.value ?? undefined,
         nextDeckList,
       )
-      if(!solo) {
-        waiting.value = true
+      if(!unref(solo)) {
+        waitForOtherPlayers()
       }
       deckUrl.value = null
       deck.value = null
@@ -731,7 +781,7 @@ async function skip() {
   submitError.value = null
   try {
     await upgradeDeck(props.game.id, investigatorId.value)
-    if(!solo) waiting.value = true
+    if(!unref(solo)) waitForOtherPlayers()
     skipping.value = false
   } catch (e) {
     skipping.value = false
@@ -770,7 +820,7 @@ const tabooList = function (investigator: Investigator) {
 
     <div v-if="!waiting" class="panel">
       <template v-if="question && investigator && !isChooseUpgradeDeckQuestion(question)">
-        <img v-if="investigatorId" class="portrait" :src="imgsrc(`portraits/${investigatorId.replace('c', '')}.jpg`)" />
+        <img v-if="investigatorId" class="portrait" :src="portraitImage(investigatorId)" />
         <div v-if="question && playerId == investigator.playerId" class="content question-pane">
           <h3 v-if="questionLabel" class="question-label">{{ questionLabel }}</h3>
           <Question :game="game" :playerId="playerId" @choose="choose" />
@@ -783,7 +833,7 @@ const tabooList = function (investigator: Investigator) {
       </template>
       <template v-else>
         <template v-if="investigatorId && killedInvestigators.includes(investigatorId)">
-          <img class="portrait killed" :src="imgsrc(`portraits/${investigatorId.replace('c', '')}.jpg`)" />
+          <img class="portrait killed" :src="portraitImage(investigatorId)" />
           <div class="content">
             <p class="killed-prompt">{{ $t('upgrade.killed') }}</p>
             <p v-if="error" class="error">{{ error }}</p>
@@ -805,7 +855,7 @@ const tabooList = function (investigator: Investigator) {
           </div>
         </template>
         <template v-else>
-          <img v-if="investigatorId" class="portrait" :src="imgsrc(`portraits/${investigatorId.replace('c', '')}.jpg`)" />
+          <img v-if="investigatorId" class="portrait" :src="portraitImage(investigatorId)" />
           <div class="content">
             <p v-if="error" class="error">{{ error }}</p>
             <p v-if="loadError" class="error">{{ loadError }}</p>
@@ -1326,4 +1376,12 @@ button.skip {
 .breakdowns {
   width: min(1100px, 92vw);
 }
+
+
+
+
+
+
+
+
 </style>

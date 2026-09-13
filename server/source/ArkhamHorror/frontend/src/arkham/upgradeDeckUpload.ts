@@ -34,7 +34,7 @@ export function isUsableDecklist(data: unknown): boolean {
   if (typeof source.investigator_code !== 'string' || source.investigator_code.length === 0) return false
   if (!numericSlots(source.slots)) return false
 
-  const investigatorName = outer.investigator_name ?? outer.investigatorName
+  const investigatorName = source.investigator_name ?? outer.investigator_name ?? outer.investigatorName
   return investigatorName == null || typeof investigatorName === 'string'
 }
 
@@ -47,16 +47,19 @@ function normalizeUploadedDecklist(data: unknown): ArkhamDbDecklist | null {
   if (sideSlots !== undefined && !numericSlots(sideSlots)) return null
 
   const investigatorCode = source.investigator_code as string
+  const investigatorName = source.investigator_name ?? outer.investigator_name ?? outer.investigatorName
   const normalized: ArkhamDbDecklist = {
+    ...source,
     id: outer.id == null ? '' : String(outer.id),
     url: typeof outer.url === 'string' ? outer.url : null,
     name: typeof outer.name === 'string' ? outer.name : '',
     investigator_code: investigatorCode,
-    investigator_name: typeof outer.investigator_name === 'string'
-      ? outer.investigator_name
-      : (typeof outer.investigatorName === 'string' ? outer.investigatorName : investigatorCode),
+    investigator_name: typeof investigatorName === 'string' ? investigatorName : '',
     slots: source.slots as Record<string, number>,
   }
+
+  // Let the server fill the real name instead of persisting a card code as the name.
+  if (typeof investigatorName !== 'string') delete (normalized as { investigator_name?: string }).investigator_name
 
   if (sideSlots !== undefined) normalized.sideSlots = sideSlots as Record<string, number>
   if (typeof source.taboo_id === 'number' || source.taboo_id === null) normalized.taboo_id = source.taboo_id
@@ -67,11 +70,13 @@ function normalizeUploadedDecklist(data: unknown): ArkhamDbDecklist | null {
   return normalized
 }
 
-/* Parallel investigators store the selected front in meta. */
+/* The investigator the deck is actually for: a parallel/alternate front lives in meta, which
+ * ArkhamDB stores as a json STRING and arkham.build as an object. Matches NewDeck.vue and the
+ * server's decklistInvestigatorId. */
 function uploadedInvestigatorCode(deck: ArkhamDbDecklist): string {
   const meta = (() => {
     if (deck.meta == null) return null
-    if (typeof deck.meta !== 'string') return deck.meta
+    if (typeof deck.meta !== 'string') return deck.meta as Record<string, unknown>
     try {
       return JSON.parse(deck.meta || '{}') as Record<string, unknown>
     } catch {

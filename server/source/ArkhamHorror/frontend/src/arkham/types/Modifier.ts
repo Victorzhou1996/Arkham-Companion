@@ -49,6 +49,8 @@ export type ModifierType
   | CannotDiscoverCluesAt
   | CannotBeDamaged
   | DamageDealt
+  | HealthModifier
+  | SanityModifier
   | DiscoveredClues
   | SkillTestResultValueModifier
   | AutomaticallyFailIfSucceedByAtLeast
@@ -64,6 +66,7 @@ export type ModifierType
   | UseEncounterDeck
   | CannotCommitCards
   | DoNotDrawConnection
+  | FewerSlots
   | Difficulty
   | ScenarioModifier
   | RevealAnotherChaosToken
@@ -72,6 +75,9 @@ export type ModifierType
   | HandSizeCardCount
   | HandSize
   | ScenarioModifierValue
+  | MetaModifier
+  | AsIfInHand
+  | AsIfInHandFor
 
 export type BaseSkillOf = {
   tag: "BaseSkillOf"
@@ -105,6 +111,11 @@ export type HandSize = {
 export type ScenarioModifierValue = {
   tag: "ScenarioModifierValue"
   contents: [string, any]
+}
+
+export type MetaModifier = {
+  tag: "MetaModifier"
+  contents: unknown
 }
 
 export type HandSizeCardCount = {
@@ -142,6 +153,11 @@ export type DoNotDrawConnection = {
   contents: [string, string]
 }
 
+export type FewerSlots = {
+  tag: "FewerSlots"
+  contents: [string, number]
+}
+
 export type DiscoveredClues = {
   tag: "DiscoveredClues"
   contents: number
@@ -159,6 +175,16 @@ export type AutomaticallyFailIfSucceedByAtLeast = {
 
 export type DamageDealt = {
   tag: "DamageDealt"
+  contents: number
+}
+
+export type HealthModifier = {
+  tag: "HealthModifier"
+  contents: number
+}
+
+export type SanityModifier = {
+  tag: "SanityModifier"
   contents: number
 }
 
@@ -235,6 +261,16 @@ export type Hollow = {
   contents: string
 }
 
+export type AsIfInHand = {
+  tag: "AsIfInHand"
+  contents: Card
+}
+
+export type AsIfInHandFor = {
+  tag: "AsIfInHandFor" | "AsIfInHandForPlay"
+  contents: unknown
+}
+
 export type OtherModifier = {
   tag: "OtherModifier"
   contents: string
@@ -249,6 +285,7 @@ type UIModifierType =
   | 'Locus'
   | 'Ethereal'
   | 'Explosion'
+  | 'OnFire'
   | 'Oversized'
   | { tag: 'ImportantToScenario', contents: string }
   | { tag: 'OverlayCheckmark', top: number, left: number }
@@ -313,6 +350,11 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
       tag: JsonDecoder.literal('HandSize'),
       contents: JsonDecoder.number()
     }, 'HandSize'),
+  JsonDecoder.object<MetaModifier>(
+    {
+      tag: JsonDecoder.literal('MetaModifier'),
+      contents: JsonDecoder.succeed()
+    }, 'MetaModifier'),
   JsonDecoder.object<DiscoveredClues>(
     {
       tag: JsonDecoder.literal('DiscoveredClues'),
@@ -353,6 +395,16 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
       tag: JsonDecoder.literal('DamageDealt'),
       contents: JsonDecoder.number()
     }, 'DamageDealt'),
+  JsonDecoder.object<HealthModifier>(
+    {
+      tag: JsonDecoder.literal('HealthModifier'),
+      contents: JsonDecoder.number()
+    }, 'HealthModifier'),
+  JsonDecoder.object<SanityModifier>(
+    {
+      tag: JsonDecoder.literal('SanityModifier'),
+      contents: JsonDecoder.number()
+    }, 'SanityModifier'),
   JsonDecoder.object<AddSkillValue>(
     {
       tag: JsonDecoder.literal('AddSkillValue'),
@@ -432,6 +484,32 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
       tag: JsonDecoder.literal('DoNotDrawConnection'),
       contents: JsonDecoder.tuple([JsonDecoder.string(), JsonDecoder.string()], 'DoNotDrawConnection')
     }, 'DoNotDrawConnection'),
+  JsonDecoder.object<FewerSlots>(
+    {
+      tag: JsonDecoder.literal('FewerSlots'),
+      contents: JsonDecoder.tuple([JsonDecoder.string(), JsonDecoder.number()], 'FewerSlots')
+    }, 'FewerSlots'),
+  JsonDecoder.object<AsIfInHand>(
+    {
+      tag: JsonDecoder.literal('AsIfInHand'),
+      contents: cardDecoder,
+    }, 'AsIfInHand'),
+  JsonDecoder.object<AsIfInHandFor>(
+    {
+      tag: JsonDecoder.literal('AsIfInHandFor'),
+      contents: JsonDecoder.oneOf<unknown>([
+        JsonDecoder.string(),
+        JsonDecoder.tuple([JsonDecoder.succeed(), JsonDecoder.string()], 'AsIfInHandForContents'),
+      ], 'AsIfInHandForContents'),
+    }, 'AsIfInHandFor'),
+  JsonDecoder.object<AsIfInHandFor>(
+    {
+      tag: JsonDecoder.literal('AsIfInHandForPlay'),
+      contents: JsonDecoder.oneOf<unknown>([
+        JsonDecoder.string(),
+        JsonDecoder.tuple([JsonDecoder.succeed(), JsonDecoder.string()], 'AsIfInHandForPlayContents'),
+      ], 'AsIfInHandForPlayContents'),
+    }, 'AsIfInHandForPlay'),
   JsonDecoder.object<UIModifier>(
     {
       tag: JsonDecoder.literal('UIModifier'),
@@ -439,6 +517,7 @@ const modifierTypeDecoder = JsonDecoder.oneOf<ModifierType>([
         JsonDecoder.object({ tag: JsonDecoder.literal('Locus') }, 'Locus').map(() => "Locus"),
         JsonDecoder.object({ tag: JsonDecoder.literal('Ethereal') }, 'Ethereal').map(() => "Ethereal"),
         JsonDecoder.object({ tag: JsonDecoder.literal('Explosion') }, 'Explosion').map(() => "Explosion"),
+        JsonDecoder.object({ tag: JsonDecoder.literal('OnFire') }, 'OnFire').map(() => "OnFire"),
         JsonDecoder.object({ tag: JsonDecoder.literal('Oversized') }, 'Oversized').map(() => "Oversized"),
         JsonDecoder.object({ tag: JsonDecoder.literal('ImportantToScenario'), contents: JsonDecoder.string() }, 'ImportantToScenario'),
         JsonDecoder.object({

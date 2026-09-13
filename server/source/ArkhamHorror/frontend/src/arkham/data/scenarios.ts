@@ -1,0 +1,33 @@
+import nightOfTheZealot from '@/arkham/data/nightOfTheZealot.json'
+import { homebrewScenarios } from '@/arkham/homebrewData'
+import theDunwichLegacy from '@/arkham/data/theDunwichLegacy.json'
+import thePathToCarcosa from '@/arkham/data/thePathToCarcosa.json'
+import theForgottenAge from '@/arkham/data/theForgottenAge.json'
+import theCircleUndone from '@/arkham/data/theCircleUndone.json'
+import theDreamEaters from '@/arkham/data/theDreamEaters.json'
+import theInnsmouthConspiracy from '@/arkham/data/theInnsmouthConspiracy.json'
+import edgeOfTheEarth from '@/arkham/data/edgeOfTheEarth.json'
+import theScarletKeys from '@/arkham/data/theScarletKeys.json'
+import theFeastOfHemlockVale from '@/arkham/data/theFeastOfHemlockVale.json'
+import theDrownedCity from '@/arkham/data/theDrownedCity.json'
+import brethrenOfAsh from '@/arkham/data/brethrenOfAsh.json'
+import childrenOfBlood from '@/arkham/data/childrenOfBlood.json'
+import sideStories from '@/arkham/data/side-stories.json'
+
+export default
+  [ ...nightOfTheZealot
+  , ...theDunwichLegacy
+  , ...thePathToCarcosa
+  , ...theForgottenAge
+  , ...theCircleUndone
+  , ...theDreamEaters
+  , ...theInnsmouthConspiracy
+  , ...edgeOfTheEarth
+  , ...theScarletKeys
+  , ...theFeastOfHemlockVale
+  , ...theDrownedCity
+  , ...brethrenOfAsh
+  , ...childrenOfBlood
+  , ...sideStories
+    , ...homebrewScenarios
+]

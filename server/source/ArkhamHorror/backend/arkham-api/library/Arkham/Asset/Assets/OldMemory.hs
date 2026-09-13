@@ -7,7 +7,7 @@ import Arkham.Card
 import Arkham.GameValue
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
-import Arkham.Scenarios.FateOfTheVale.Helpers (scenarioI18n)
+import Arkham.Scenarios.TheFeastOfHemlockVale.FateOfTheVale.Helpers (scenarioI18n)
 import Arkham.Window (Window, getBatchId, windowType)
 import Arkham.Window qualified as Window
 
@@ -56,7 +56,7 @@ instance RunMessage OldMemory where
       investigators <- select Anyone
       highlightCards [card]
       scenarioI18n $ chooseOneM iid do
-        labeled' "oldMemory.chooseInvestigator" do
+        labeled "oldMemory.chooseInvestigator" do
           chooseOneM iid $ targets investigators \iid' -> do
             push $ ObtainCard (toCardId card)
             highlightCards ([] :: [Card])
@@ -64,7 +64,7 @@ instance RunMessage OldMemory where
               MythosDraw -> drawCard iid' card
               ScenarioDraw -> scenarioSpecific "drawFromAbyss" (iid', card)
               Reveal -> scenarioSpecific "drawFromAbyss" (iid', card)
-        labeled' "oldMemory.cancelRevelation" do
+        labeled "oldMemory.cancelRevelation" do
           highlightCards ([] :: [Card])
           removeCardFromGame card
       pure a

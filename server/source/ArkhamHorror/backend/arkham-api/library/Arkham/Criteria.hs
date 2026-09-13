@@ -182,10 +182,11 @@ data Criterion
   | EventExists EventMatcher
   | ExcludeWindowAssetExists AssetMatcher
   | EventWindowInvestigatorIs InvestigatorMatcher
-  | -- | True when the card being played in the current `PlayCard` window has an
-    -- actual resource cost greater than 0 (accounting for cost modifiers and
-    -- treating X-cost cards as potentially > 0). Used to suppress cost-reduction
-    -- reactions on cards that already cost 0.
+  | {- | True when the card being played in the current `PlayCard` window has an
+    actual resource cost greater than 0 (accounting for cost modifiers and
+    treating X-cost cards as potentially > 0). Used to suppress cost-reduction
+    reactions on cards that already cost 0.
+    -}
     PlayedCardHasNonZeroCost
   | AgendaExists AgendaMatcher
   | AbilityExists AbilityMatcher
@@ -324,6 +325,11 @@ data Criterion
   | IfCostsAreIgnored Criterion
   | IgnoreModifiersFrom Source Criterion
   | IfCriteria Criterion Criterion Criterion
+  | {- | True when the investigator being asked has turned on this option for the
+    card the ability's source belongs to. Options are declared per card in
+    @cdOptions@; see "Arkham.Card.CardOption". Prefer 'whenOption'.
+    -}
+    CardOptionSet Text
   deriving stock (Show, Eq, Ord, Data)
 
 instance Plated Criterion
@@ -367,14 +373,25 @@ enemyExists = EnemyCriteria . EnemyExists
 
 thisEnemy :: EnemyMatcher -> Criterion
 thisEnemy = EnemyCriteria . ThisEnemy
+
 atYourLocation :: InvestigatorMatcher -> Criterion
 atYourLocation matcher = exists (AtYourLocation <> matcher)
+
+class InPlay a where
+  asInPlay :: a -> a
+
+anyInPlay :: (Exists a, InPlay a) => a -> Criterion
+anyInPlay = exists . asInPlay
+
+noneInPlay :: (Exists a, InPlay a) => a -> Criterion
+noneInPlay = notExists . asInPlay
 
 class Exists a where
   exists :: a -> Criterion
 
 thisIs :: (Exists matcher, Be a matcher, Semigroup matcher) => a -> matcher -> Criterion
 thisIs a matcher = exists (be a <> matcher)
+
 any_ :: (Exists a, OneOf a) => [a] -> Criterion
 any_ = exists . oneOf
 
@@ -429,6 +446,10 @@ instance Exists TreacheryMatcher where
 instance Exists EnemyMatcher where
   exists = enemyExists
 
+instance InPlay EnemyMatcher where
+  -- Enemy queries are in-play by default now, so this is the identity.
+  asInPlay = id
+
 instance Exists ExtendedCardMatcher where
   exists = ExtendedCardExists
 
@@ -469,8 +490,7 @@ data EnemyCriterion
 
 canFightAtAnyLocation :: Criterion
 canFightAtAnyLocation =
-  EnemyCriteria (ThisEnemy $ CanBeAttackedBy You <> EnemyOneOf [not_ AloofEnemy, EnemyIsEngagedWith Anyone])
-    <> CanAttack
+  EnemyCriteria (ThisEnemy $ CanBeAttackedBy You) <> CanAttack <> aloofFightRestriction
 
 canEvadeAtAnyLocation :: Criterion
 canEvadeAtAnyLocation = EnemyCriteria (ThisEnemy EnemyWithEvade)
@@ -493,18 +513,66 @@ canFightCriteria = canFightCriteriaObeyAloof True
 canFightIgnoreAloof :: Criterion
 canFightIgnoreAloof = canFightCriteriaObeyAloof False
 
+{- | Whether a fight should also offer targets that are merely attackable /as if/
+they were enemies (Mist-Pylons, Key Loci). Those are not enemies, so they only
+fit a fight that is not narrowed to some enemy property.
+
+A @CanFightEnemyWithOverride@ matcher /replaces/ the standard fight criteria
+rather than narrowing the enemy set, so look through it: an override that only
+restates the standard restrictions is still an unrestricted fight. That is how
+Longbow (3) and British Bull Dog (2) spell "ignore Aloof".
+-}
+fightOffersAsIfEnemyTargets :: EnemyMatcher -> Bool
+fightOffersAsIfEnemyTargets = \case
+  CanFightEnemyWithOverride (CriteriaOverride c) -> standardFightCriterion c
+  m -> coveredByAnyInPlayEnemy m
+ where
+  standardFightCriterion = \case
+    NoRestriction -> True
+    Criteria cs -> all standardFightCriterion cs
+    AnyCriterion cs -> any standardFightCriterion cs
+    OnSameLocation -> True
+    CanAttack -> True
+    EnemyCriteria (ThisEnemy m) -> standardFightMatcher m
+    _ -> False
+  -- the as-if-enemy selects already scope to your location, and "you may attack
+  -- it" is the default permission check, so neither clause narrows anything here
+  standardFightMatcher = \case
+    EnemyMatchAll ms -> all standardFightMatcher ms
+    EnemyOneOf ms -> any standardFightMatcher ms
+    EnemyAt YourLocation -> True
+    CanBeAttackedBy You -> True
+    m -> coveredByAnyInPlayEnemy m
+
 require :: Bool -> Criterion
 require True = NoRestriction
 require False = Never
+
+{- | Apply @c@ only when the controller has turned on the named card option; with
+the option off the ability is unrestricted. The inverse (a restriction that
+applies only when the option is /off/) is @IfCriteria (CardOptionSet k)
+NoRestriction c@.
+-}
+whenOption :: Text -> Criterion -> Criterion
+whenOption k c = IfCriteria (CardOptionSet k) c NoRestriction
 
 prohibit :: Bool -> Criterion
 prohibit = require . not
 
 canFightCriteriaObeyAloof :: Bool -> Criterion
 canFightCriteriaObeyAloof obeyAloof =
-  OnSameLocation <> EnemyCriteria (ThisEnemy $ wrapAloof $ CanBeAttackedBy You) <> CanAttack
- where
-  wrapAloof = if obeyAloof then (<> EnemyOneOf [not_ AloofEnemy, EnemyIsEngagedWith Anyone]) else id
+  OnSameLocation
+    <> EnemyCriteria (ThisEnemy $ CanBeAttackedBy You)
+    <> CanAttack
+    <> (if obeyAloof then aloofFightRestriction else NoRestriction)
+
+-- an aloof enemy is only attackable while engaged, unless the attacker ignores the keyword
+aloofFightRestriction :: Criterion
+aloofFightRestriction =
+  oneOf
+    [ EnemyCriteria (ThisEnemy $ EnemyOneOf [not_ AloofEnemy, EnemyIsEngagedWith Anyone])
+    , InvestigatorExists (You <> InvestigatorWithModifier IgnoreAloof)
+    ]
 
 canDamageEnemyAt :: Sourceable source => source -> LocationMatcher -> Criterion
 canDamageEnemyAt source locationMatcher = canDamageEnemyAtMatch source locationMatcher AnyEnemy
@@ -520,6 +588,7 @@ canDamageEnemyAtMatch (toSource -> source) locationMatcher enemyMatcher =
           , exists (LocationWithExposableConcealedCard source <> locationMatcher)
           ]
       else exists (EnemyAt locationMatcher <> EnemyCanBeDamagedBySource source <> enemyMatcher)
+
 {- | "There is something here I can attack": a fightable enemy, or a concealed
 mini-card, which may be attacked as if it were an engaged enemy to expose it.
 -}

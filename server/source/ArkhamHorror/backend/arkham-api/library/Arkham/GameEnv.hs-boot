@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
+
 module Arkham.GameEnv where
 
 import Arkham.Prelude
@@ -14,9 +15,9 @@ import Arkham.Distance
 import {-# SOURCE #-} Arkham.Game
 import Arkham.Game.Settings
 import Arkham.GameT
-import Arkham.Investigator.Types (InvestigatorAttrs)
 import Arkham.History
 import Arkham.Id
+import Arkham.Investigator.Types (InvestigatorAttrs)
 import {-# SOURCE #-} Arkham.Message
 import Arkham.Modifier
 import Arkham.Phase
@@ -24,9 +25,7 @@ import Arkham.Random
 import Arkham.SkillTest.Base
 import {-# SOURCE #-} Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Window
-import OpenTelemetry.Trace.Monad (MonadTracer)
 
 withActiveInvestigator
   :: HasGame m => InvestigatorId -> ReaderT Game m a -> m a
@@ -41,6 +40,7 @@ withoutModifiersFrom :: HasGame m => InvestigatorId -> ReaderT Game m a -> m a
 getAllModifiers :: HasGame m => m (Map Target [Modifier])
 getActiveAbilities :: HasGame m => m [Ability]
 getPhase :: HasGame m => m Phase
+getMythosPhaseStep :: HasGame m => m (Maybe MythosPhaseStep)
 getEnemyPhaseStep :: HasGame m => m (Maybe EnemyPhaseStep)
 getCurrentBatchId :: HasGame m => m (Maybe BatchId)
 getWindowDepth :: HasGame m => m Int
@@ -48,10 +48,11 @@ getDepthLock :: HasGame m => m Int
 getSkillTest :: HasGame m => m (Maybe SkillTest)
 getSkillTestId :: HasGame m => m (Maybe SkillTestId)
 getActiveCosts :: HasGame m => m [ActiveCost]
-getDistance :: (HasGame m, Tracing m) => LocationId -> LocationId -> m (Maybe Distance)
+getDistance :: HasGame m => LocationId -> LocationId -> m (Maybe Distance)
 getAllAbilities :: HasGame m => m [Ability]
 getWindowStack :: HasGame m => m [[Window]]
 getCurrentWindowTick :: HasGame m => m (Maybe Int)
+getWindowTick :: HasGame m => m Int
 getEntryTicks :: HasGame m => m (Map CardId Int)
 getActionCanBeUndone :: HasGame m => m Bool
 getGameInAction :: HasGame m => m Bool
@@ -61,10 +62,13 @@ getHistory :: HasGame m => HistoryType -> InvestigatorId -> m History
 getHistoryField :: HasGame m => HistoryType -> InvestigatorId -> HistoryField k -> m k
 getJustSkillTest :: (HasGame m, HasCallStack) => m SkillTest
 getCard :: (HasCallStack, HasGame m) => CardId -> m Card
+getCardMaybe :: HasGame m => CardId -> m (Maybe Card)
 findCard :: HasGame m => (Card -> Bool) -> m (Maybe Card)
 findAllCards :: HasGame m => (Card -> Bool) -> m [Card]
 getSettings :: HasGame m => m Settings
+getAsIfIgnored :: HasGame m => InvestigatorId -> m Bool
 getAllPlayers :: HasGame m => m [PlayerId]
+getRetiredInvestigators :: HasGame m => m [InvestigatorId]
 getActivePlayer :: HasGame m => m PlayerId
 getCardUses :: HasGame m => CardCode -> m [InvestigatorId]
 getAllCardUses :: HasGame m => m [CardDef]
@@ -74,7 +78,6 @@ runWithEnv
      , HasStdGen env
      , HasGameLogger m
      , MonadReader env m
-     , MonadTracer m
      )
   => GameT a
   -> m a
@@ -82,7 +85,7 @@ getTurnOrder :: HasGame m => m [InvestigatorId]
 withInvestigatorEdit
   :: HasGame m => InvestigatorId -> (InvestigatorAttrs -> InvestigatorAttrs) -> ReaderT Game m a -> m a
 withActiveInvestigatorAdjust
-  :: (HasGame m, Tracing m) => InvestigatorId -> ReaderT Game m a -> m a
+  :: HasGame m => InvestigatorId -> ReaderT Game m a -> m a
 
 instance CardGen GameT
 instance MonadRandom GameT

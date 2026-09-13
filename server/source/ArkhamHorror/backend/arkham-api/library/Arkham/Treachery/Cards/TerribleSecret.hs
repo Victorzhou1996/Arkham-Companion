@@ -5,7 +5,7 @@ import Arkham.I18n
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Message.Lifted.Choose
 import Arkham.Projection
-import Arkham.Treachery.Cards qualified as Cards
+import Arkham.Treachery.CardDefs.TheCircleUndone qualified as Cards
 import Arkham.Treachery.Import.Lifted
 
 newtype TerribleSecret = TerribleSecret TreacheryAttrs
@@ -22,7 +22,7 @@ instance RunMessage TerribleSecret where
       if null cardsUnderneath
         then shuffleIntoDeck iid attrs
         else focusCards cardsUnderneath do
-          cardI18n $ scope "terribleSecret" $ chooseUpToNM' iid (length cardsUnderneath) "keepRemainingCards" do
+          cardI18n $ scope "terribleSecret" $ chooseUpToNM iid (length cardsUnderneath) "keepRemainingCards" do
             for_ cardsUnderneath \pc -> do
               for_ (preview _PlayerCard pc) \c -> targeting c (addToDiscard iid [c])
           unfocusCards

@@ -7,6 +7,9 @@ import { fetchInvestigators, newDeck, validateDeck } from '@/arkham/api'
 import ArkhamDbDeck from '@/arkham/components/ArkhamDbDeck.vue';
 import { ArkhamDbDecklist, deckMetaAlternateFront } from '@/arkham/types/Deck';
 import { useCardStore } from '@/stores/cards'
+import { normalizeArkhamBuildDeckCodes } from '@/arkham/arkhamBuildImport'
+import { libraryCard, loadLibrary } from '@/arkham/customCardLibrary'
+import { arkhamBuildCustomCardCode } from '@/arkham/customCards'
 
 const { t } = useI18n()
 
@@ -31,6 +34,13 @@ interface UnimplementedCardError {
 
 function validationErrorsFromResponse(err: unknown): string[] {
   const response = err as { response?: { data?: unknown } }
+  // No response object at all means the request never completed -- it timed out,
+  // the connection dropped, or something blocked it. That is not the server
+  // telling us anything about the deck, so it must not be reported as one.
+  if (!response.response) {
+    requestFailed.value = true
+    return []
+  }
   const payload = response.response?.data
   if (!Array.isArray(payload)) {
     if (payload && typeof payload === 'object' && 'message' in payload) {
@@ -46,6 +56,13 @@ function validationErrorsFromResponse(err: unknown): string[] {
     const key = normalizeCode(code)
     const hit = cardByCode.value.get(key)
     if (hit) return hit.xp ? `${hit.name.title} (${hit.xp})` : hit.name.title
+    /* Not an official card, so try the custom library before giving up on the
+     * name. The code arrives either as this app's own derived code or as the
+     * arkham.build id the deck was built against, which derives to it. A def
+     * stores its code with the leading `c` that `normalizeCode` strips. */
+    const custom =
+      libraryCard(`c${key}`) ?? libraryCard(`c${arkhamBuildCustomCardCode(key)}`)
+    if (custom) return `${custom.def.name.title} (custom)`
     return `Unknown card: ${code}`
   })
 }
@@ -57,6 +74,7 @@ interface ArkhamDBCard {
 }
 
 const errors = ref<string[]>([])
+const requestFailed = ref(false)
 const valid = ref(false)
 const saveDeck = computed(() => props.alwaysSave ? true : saveDeckToggle.value)
 const saveDeckToggle = ref(true)
@@ -85,7 +103,11 @@ function loadDeckFromFile(e: Event) {
     const reader = new FileReader()
     reader.onloadend = (e1: ProgressEvent<FileReader>) => {
       if(!e1?.target?.result) return
-      let data = JSON.parse(e1.target.result.toString())
+      // A file downloaded straight from arkham.build has the same shape its
+      // share API returns, including bare-UUID custom card codes, which need
+      // the same rewrite `processArkhamBuildDeck` applies to a fetched deck --
+      // this path bypasses that function entirely, so it has to be done here.
+      let data = normalizeArkhamBuildDeckCodes(JSON.parse(e1.target.result.toString()))
       deckList.value = data
       investigator.value = null
       investigatorError.value = null
@@ -119,6 +141,7 @@ watch(deckList, loadDeck)
 async function loadDeck() {
   valid.value = false
   errors.value = []
+  requestFailed.value = false
   investigator.value = null
   investigatorError.value = null
 
@@ -152,17 +175,22 @@ const cardByCode = computed(() => {
 async function runValidations() {
   valid.value = false
   errors.value = []
+  requestFailed.value = false
   try {
     if (!deckList.value) return
     await validateDeck(deckList.value)
     valid.value = true
   } catch (err: unknown) {
+    // The custom library is what names a custom card in the error list, and
+    // this page never needed it before now.
+    await loadLibrary()
     errors.value = validationErrorsFromResponse(err)
   }
 }
 
 async function createDeck() {
   errors.value = []
+  requestFailed.value = false
   if (!valid.value || !deckList.value) return
 
   if (!saveDeck.value) {
@@ -187,6 +215,7 @@ async function createDeck() {
     deck.value = null
     emit('newDeck', created)
   } catch (err: unknown) {
+    await loadLibrary()
     errors.value = validationErrorsFromResponse(err)
   }
 }
@@ -214,6 +243,9 @@ async function createDeck() {
     </div>
     <div class="errors" v-if="investigatorError">
       {{investigatorError}}
+    </div>
+    <div class="errors" v-if="requestFailed">
+      {{ t('newDeck.requestFailed') }}
     </div>
     <div class="errors" v-if="errors.length > 0">
       <p>{{ t('newDeck.unimplementedError') }}</p>
@@ -388,7 +420,7 @@ async function createDeck() {
     }
 
     &:active:not(:disabled) {
-      transform: translateY(0);
+      transform: translateY(0) scale(0.97);
     }
 
     &:disabled {

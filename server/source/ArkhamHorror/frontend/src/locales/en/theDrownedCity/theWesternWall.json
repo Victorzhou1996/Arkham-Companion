@@ -1,4 +1,85 @@
 {
+  "intro": {
+    "title": "The Western Wall",
+    "checkCampaignLog": "Check your Campaign Log.",
+    "headedWest": "If the expedition headed west, proceed to _The Western Wall 1_.",
+    "headedEast": "If the expedition headed east, skip to _The Western Wall 2_.",
+    "westernWall1": "_The Western Wall 1_: It becomes increasingly clear as you proceed westward that the beach you are walking along is the top of an ancient ring wall. Fathoms below, the wall forms a sheer drop to a round plaza on the ocean floor. With some planning, you could descend safely to the ocean floor by moving from pocket to pocket of trapped air in the old ruins. If you’re careful, you may just be able to reach the sea floor alive.",
+    "westernWall2": "_The Western Wall 2_: The unsteady foundations of the ancient city shudder as R’lyeh continues to rise. Collapsing layers of crumbling masonry and exposed hallways form a treacherous path up to the surface. In order to safely ascend, you will need to climb the sheer face of the ancient wall by moving from pocket to pocket of trapped air. Knowing the dangers of pressure sickness, you can’t simply float to the top. If you’re careful, you may just be able to reach the surface alive.",
+    "resolveDoNoHarm": "If an investigator has the Do No Harm Task, they resolve their respective story to the right.",
+    "proceedToWesternSetup": "Proceed to _Setup (v.I) - Western Expedition_.",
+    "proceedToEasternSetup": "Proceed to _Setup (v.II) - Eastern Expedition_.",
+    "doNoHarm": {
+      "title": "Task: Do No Harm",
+      "instructions": "_Read only if you have the “Do No Harm” Task:_",
+      "body": "As you prepare to traverse the wall, you spot a body lying prone on the black sand. It is a man in a tattered patchwork cloak. Pushing aside questions of how he got here, you approach and take his pulse. He is still alive, though heavily wounded. Yellow pus oozes from round sucker marks on his neck, arms, and chest. You bandage his wounds as best you can, then wake him with some smelling salts. His eyes flutter open and he rasps one word: “Mother.” You look to the others. This man clearly needs help.",
+      "choose": "You must decide (choose one):",
+      "bringAlong": "“Bring him along. We can still save him.” After setting up this scenario, place 1 doom on the agenda. In your Campaign Log, record _the expedition helped the pilgrim_.",
+      "leaveBehind": "“Leave him behind.” When you reveal the starting location in the next scenario, do not place clues on that location. In your Campaign Log, record _the expedition left the pilgrim behind_."
+    },
+    "label": {
+      "doNoHarm": {
+        "bringAlong": "“Bring him along. We can still save him.”",
+        "leaveBehind": "“Leave him behind.”"
+      }
+    }
+  },
+  "setup": {
+    "west": {
+      "title": "Setup (v.I) — Western Expedition",
+      "setLocationsAside": "Set Obsidian Foundations, Drowned Shanty, Sunken Stairway, Shattered Ruins {'{'}runeV{'}'}, and Undersea Vault {'{'}runeZ{'}'} aside, out of play.",
+      "placeUpperWalkways": "Shuffle the five remaining Walkway locations with the set-aside Drowned Shanty, Sunken Stairway, and Shattered Ruins {'{'}runeV{'}'}. Put six of them into play on levels 2–4 below Western Wall, unrevealed side faceup.",
+      "buildActDeck": "Build the act deck using act 1a—“Descend into the Abyss.” Remove the other act from the game.",
+      "chooseExpeditionAsset": "In player order, each player may choose 1 _Item_ asset from the _Expedition_ encounter set to begin in play under their control. This set is indicated by the following icon:<section class='encounter-sets'><img src='{setImgPath}/tdc_expedition.png' /></section>",
+      "placeBottomWalkways": "Shuffle the two remaining Walkway locations with the set-aside Obsidian Foundations so you do not know which is which and put them into play on level 5, unrevealed side faceup.",
+      "floodLevels": "Increase the flood level of each location on levels 2–5.",
+      "fullyFloodLevels": "Increase the flood level of levels 4 and 5 so that they are fully flooded."
+    },
+    "east": {
+      "title": "Setup (v.II) — Western Expedition",
+      "setLocationsAside": "Set Western Wall, Drowned Shanty, Sunken Stairway, Shattered Ruins {'{'}runeV{'}'}, and Undersea Vault {'{'}runeZ{'}'} aside, out of play.",
+      "placeUpperWalkways": "Shuffle the five remaining Walkway locations with the set-aside Drowned Shanty, Sunken Stairway, and Shattered Ruins {'{'}runeV{'}'}. Put six of them into play on levels 2–4 below Obsidian Foundations, unrevealed side faceup.",
+      "buildActDeck": "Build the act deck using act 1a—“Ascend the Wall.” Remove the other act from the game.",
+      "chooseExpeditionAsset": "In player order, each player may choose 1 earned _Artifact_ asset or 1 _Item_ asset from the _Expedition_ encounter set to begin in play under their control. This set is indicated by the following icon:<section class='encounter-sets'><img src='{setImgPath}/tdc_expedition.png' /></section>",
+      "placeBottomWalkways": "Shuffle the two remaining Walkway locations with the set-aside Western Wall so you do not know which is which and put them into play on level 5, unrevealed side faceup.",
+      "floodLevels": "Increase the flood level of each location on levels 1–4.",
+      "fullyFloodLevels": "Increase the flood level of levels 1 and 2 so that they are fully flooded."
+    },
+    "gatherSets": "Gather all cards from the following encounter sets: _The Western Wall_, _Cosmic Legacy_, _Deep Ones_, _Flood_, _R’lyeh_, _Star Spawn_, _The Inescapable_, _Undersea Creatures_, and _Agents of Cthulhu_. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/the-western-wall.png' /><img src='{setImgPath}/cosmic-legacy.png' /><img src='{setImgPath}/tdc_deep-ones.png' /><img src='{setImgPath}/flood.png' /><img src='{setImgPath}/rlyeh.png' /><img src='{setImgPath}/star-spawn.png' /><img src='{setImgPath}/the-inescapable.png' /><img src='{setImgPath}/undersea-creatures.png' /><img src='{setImgPath}/agents-of-cthulhu.png' /></section>",
+    "gatherLocations": "Gather each location in _The Western Wall_ encounter set.",
+    "placeWesternWall": "Put Western Wall into play on Level 1 as shown.",
+    "placeObsidianFoundations": "Put Obsidian Foundations into play on Level 1 as shown.",
+    "removeWalkways": "Gather each other Walkway location and remove two from the game at random.",
+    "beginAtWesternWall": "Each investigator begins play at Western Wall.",
+    "beginAtObsidianFoundations": "Each investigator begins play at Obsidian Foundations.",
+    "setCardsAside": "Set the Inescapable enemy, the Hunting Parasite weakness, and the double-sided Seafloor Frieze {'{'}runeW{'}'} treachery aside, out of play.",
+    "setAsideCoralStarSpawn": "Search the _Star Spawn_ encounter set for the Coral Star Spawn enemy and set it aside, out of play. Remove each other card in the _Star Spawn_ encounter set from the game.",
+    "addFloodTokens": "Add the flood tokens to the token pool.",
+    "buildEncounterDeck": "Shuffle the remaining encounter cards to build the encounter deck.",
+    "readyToBegin": "You are now ready to begin."
+  },
+  "label": {
+    "chooseExpeditionAssetQuestion": "Choose an asset to begin in play under your control.",
+    "noExpeditionAsset": "Do not take an Artifact or Expedition asset."
+  },
+  "sunkenStairway": {
+    "label": {
+      "above": "Put Undersea Vault in the row above Sunken Stairway.",
+      "below": "Put Undersea Vault in the row below Sunken Stairway."
+    }
+  },
+  "rules": {
+    "locationAdjacency": {
+      "title": "Location Adjacency in The Western Wall",
+      "body": "<p class='basic'>During this scenario, locations are arranged in a set pattern of 5 levels.</p><ul><li>The position of each location has its own level from 1–5, beginning at Western Wall at level 1 and descending to the bottommost locations at level 5.</li><li>Any card effects that refer to a location’s level refer to its numbered row, as shown in the location placement diagram.</li><li>During this scenario, each location is connected to each location in the row above it and the row below it. Locations in the same row are not connected to one another.</li></ul>"
+    }
+  },
+  "specialRules": [
+    {
+      "title": "@:theDrownedCity.theWesternWall.rules.locationAdjacency.title",
+      "body": "@:theDrownedCity.theWesternWall.rules.locationAdjacency.body"
+    }
+  ],
   "tokens": {
     "easyStandard": {
       "skull": "-X. X is your location's level.",
@@ -15,17 +96,40 @@
   },
   "resolutions": {
     "xp": { "bonus": "as the expedition presses on" },
+    "label": {
+      "resolution3": {
+        "drownedQuarter": "Proceed to _The Drowned Quarter_.",
+        "apiary": "Proceed to _The Apiary_."
+      }
+    },
     "resolution1": {
       "title": "Resolution 1",
-      "body": "<p>_Resolution 1_: The ocean floor is a dreamlike phantasmagoria of sinister flora and nightmarish creatures. A mutated lanternfish that could only be described as antediluvian swims placidly through a forest of deep water seagrass. Another deep sea creature with glowing eyes and a jagged maw swims straight at you, but turns away at the last moment from the shimmering field that keeps the water at bay.</p>"
+      "body": "<p>_Resolution 1_: The ocean floor is a dreamlike phantasmagoria of sinister flora and nightmarish creatures. A mutated lanternfish that could only be described as antediluvian swims placidly through a forest of deep water seagrass. Another deep sea creature with glowing eyes and a jagged maw swims straight at you, but turns away at the last moment from the shimmering field that keeps the water at bay.</p><ul><li>In your Campaign Log, cross out “The Western Wall” on the R’lyeh map.</li><li>If an investigator has the Do No Harm Task, they resolve their respective story on this page.</li><li>Each investigator earns experience equal to the victory X value of each card in the victory display.</li><li>Skip to _Resolution 3_.</li></ul>"
     },
     "resolution2": {
       "title": "Resolution 2",
-      "body": "<p>_Resolution 2_: A tremor shakes the ancient city, knocking you down. Ruby curses as you steady yourself on a fallen pillar. The city of R’lyeh continues to rise. Eventually, the tremors subside. Ruby stands next to you and looks out at the perfect circle of the black water bay. “Damn,” she says. “I made a bet with Andy we’d get back first.” You sigh and lead the way back to the Cassandra. It will be good to return.</p>"
+      "body": "<p>_Resolution 2_: A tremor shakes the ancient city, knocking you down. Ruby curses as you steady yourself on a fallen pillar. The city of R’lyeh continues to rise. Eventually, the tremors subside. Ruby stands next to you and looks out at the perfect circle of the black water bay. “Damn,” she says. “I made a bet with Andy we’d get back first. But that softie wouldn’t dare collect if I pretend I broke my leg, don’t you think?” You sigh and lead the way back to the Cassandra, leaving Ruby to bandage her right calf. It will be good to return.</p><ul><li>In your Campaign Log, cross out “The Western Wall” on the R’lyeh map.</li><li>If an investigator has the *Do No Harm* Task, they resolve their respective story on this page.</li><li>Each investigator earns experience equal to the victory X value of each card in the victory display.</li><li>Proceed to _Sepulchre of the Sleeper_.</li></ul>"
     },
     "noResolution": {
       "title": "No Resolution",
-      "body": "<p>_If no resolution was reached_: The flooded paths claim you. The weight of the ocean presses in, and the ancient city swallows another expedition whole.</p>"
+      "body": "<p>_If no resolution was reached (each investigator was defeated)_: With the rest of the expedition’s help, you limp to your destination, taking refuge in intermittent pockets of air in the crumbling ruins. Nightmarish shapes flit to and fro in the dark ocean beyond the wall. The creatures that live in and around R’lyeh’s foundation are warped and strange; you have a feeling you will be seeing them again soon, in your own nightmares.</p><ul><li>In your Campaign Log, cross out “The Western Wall” on the R’lyeh map.</li><li>If an investigator has the Do No Harm Task, they resolve their respective story on this page.</li><li>Each investigator earns experience equal to the victory X value of each card in the victory display.</li><li>Check your Campaign Log.<ul><li>If the expedition headed west, skip to _Resolution 3_.</li><li>If the expedition headed east, proceed to _Sepulchre of the Sleeper_.</li></ul></li></ul>"
+    },
+    "doNoHarmResolution": {
+      "title": "Task: Do No Harm",
+      "instructions": "_Read only if you have the “Do No Harm” Task:_",
+      "checkCampaignLog": "Check your Campaign Log.",
+      "helpedThePilgrim": "If the expedition helped the pilgrim, proceed to Task 1.",
+      "otherwise": "Otherwise, skip to Task 2.",
+      "task1": "_Task 1:_ The man’s condition swiftly deteriorates. By the end of your dangerous trek, he is coughing up rancid yellow phlegm. Just as you clear the treacherous paths, he doubles over with a scream and claws at his chest and face. Small holes appear in the skin around his neck and shoulder, then split open like rotten fruit as a torrent of wriggling worm-like parasites pour out. Each worm’s mouth is filled with small serrated teeth that drip the same vile yellow bile issuing from the victim’s body. Whatever remained of the man slowly rises to stand, like a vile puppet, to stretch one gory hand out toward you. A rubbery worm slithers out of his arm and trembles, as if tasting the air.",
+      "task1HuntingParasite": "Find the set-aside Hunting Parasite weakness and permanently add it to your deck. This card does not count toward your investigator’s deck size.",
+      "task1Progress": "You tried your best to help the victim. Mark 2 progress under “Do No Harm” in your Campaign Log.",
+      "task2": "_Task 2:_ Even after clearing the wall, you can’t stop thinking about the man you abandoned. The memory of his pleading eyes, his wheezing cough, will forever haunt your dreams. Could you have saved him? Or at least provided his passing some dignity?",
+      "task2Trauma": "You abandoned someone in need. Suffer 1 mental trauma.",
+      "task2Progress": "Erase 1 progress under “Do No Harm” in your Campaign Log."
+    },
+    "resolution3": {
+      "title": "Resolution 3",
+      "body": "<p>_Resolution 3_: An ancient dome shimmers enticingly on the sea floor. As you marvel at the strange sights, a chunk of obsidian loosens and falls from up above onto the seafloor dome. Rather than shatter, the dome ripples, pliant, as the rock falls through with a thunderous crash. Something in the center projects a barrier that repels water, but allows solid things to pass through.</p><p>Whatever strange technology is in the dome, Tillinghast will likely be interested in it. However, you could also proceed into R’lyeh: a round door in the base of the wall, contained under the same shimmering field as the dome, beckons you into the city.</p><ul><li>The investigators must decide (choose one):<ul><li>To uncover the secrets of the seafloor dome, proceed to _The Drowned Quarter_.</li><li>To continue into R’lyeh’s underground, proceed to _The Apiary_.</li></ul></li></ul>"
     }
   }
 }

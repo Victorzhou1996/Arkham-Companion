@@ -2,6 +2,7 @@ module Arkham.Campaigns.TheForgottenAge.Helpers where
 
 import Arkham.Ability
 import Arkham.Calculation
+import Arkham.Campaigns.TheForgottenAge.Key
 import Arkham.Campaigns.TheForgottenAge.Meta
 import Arkham.Campaigns.TheForgottenAge.Supply
 import Arkham.Card
@@ -11,7 +12,8 @@ import Arkham.Classes.HasQueue (push)
 import Arkham.Classes.Query
 import Arkham.Deck
 import Arkham.Draw.Types
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.ReturnToTheForgottenAge.ReturnToTheDoomOfEztli qualified as Enemies
+import Arkham.Enemy.CardDefs.TheForgottenAge.TheDoomOfEztli qualified as Enemies
 import Arkham.Enemy.Creation (EnemyCreation)
 import Arkham.Helpers.Card
 import Arkham.Helpers.Location (getLocationOf, toConnections)
@@ -34,9 +36,11 @@ import Arkham.Message (
  )
 import Arkham.Message.Lifted
 import Arkham.Message.Lifted.Choose
+import Arkham.Message.Lifted.Log (incrementRecordCount)
 import Arkham.Message.Lifted.Move
 import Arkham.Message.Type
 import Arkham.Modifier (ModifierType (..))
+import Arkham.Name (toTitle)
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Question (Question (..), UI (..))
@@ -48,106 +52,157 @@ import Arkham.SkillType (SkillType)
 import Arkham.Source
 import Arkham.Target
 import Arkham.Text (Tooltip (..))
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.ReturnToTheForgottenAge.ReturnToTheDepthsOfYoth qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheForgottenAge.Poison qualified as Treacheries
 import Arkham.Window (Result (..), mkAfter)
 import Arkham.Window qualified as Window
 
 pickSupply :: ReverseQueue m => InvestigatorId -> Supply -> m ()
 pickSupply iid s = push $ PickSupply iid s
 
-getHasSupply :: (HasGame m, Tracing m) => InvestigatorId -> Supply -> m Bool
+getHasSupply :: HasGame m => InvestigatorId -> Supply -> m Bool
 getHasSupply iid s = (> 0) <$> getSupplyCount iid s
 
-getSupplyCount :: (HasGame m, Tracing m) => InvestigatorId -> Supply -> m Int
+getSupplyCount :: HasGame m => InvestigatorId -> Supply -> m Int
 getSupplyCount iid s = fieldMap InvestigatorSupplies (length . filter (== s)) iid
 
-getAnyHasSupply :: (HasGame m, Tracing m) => Supply -> m Bool
+getAnyHasSupply :: HasGame m => Supply -> m Bool
 getAnyHasSupply = fmap notNull . getInvestigatorsWithSupply
 
-unlessAnyHasSupply :: (HasGame m, Tracing m) => Supply -> m () -> m ()
+unlessAnyHasSupply :: HasGame m => Supply -> m () -> m ()
 unlessAnyHasSupply s = unlessM (getAnyHasSupply s)
 
-getInvestigatorsWithSupply :: (HasGame m, Tracing m) => Supply -> m [InvestigatorId]
+getInvestigatorsWithSupply :: HasGame m => Supply -> m [InvestigatorId]
 getInvestigatorsWithSupply s = getInvestigators >>= filterM (`getHasSupply` s)
 
-getInvestigatorsWithoutSupply :: (HasGame m, Tracing m) => Supply -> m [InvestigatorId]
+getInvestigatorsWithoutSupply :: HasGame m => Supply -> m [InvestigatorId]
 getInvestigatorsWithoutSupply s = getInvestigators >>= filterM (fmap not . (`getHasSupply` s))
 
-getTotalVengeanceInVictoryDisplay :: forall m. (HasCallStack, HasGame m, Tracing m) => m Int
-getTotalVengeanceInVictoryDisplay = do
-  n <- getVengeanceInVictoryDisplay
-  locationVengeance <- fmap getSum . toVengeance =<< select (RevealedLocation <> LocationWithoutClues)
-  pure $ n + locationVengeance
- where
-  toVengeance :: ConvertToCard c => [c] -> m (Sum Int)
-  toVengeance = fmap (mconcat . map Sum . catMaybes) . traverse getVengeancePoints
+-- | The i18n key naming the vengeance tally in the campaign log breakdown.
+vengeanceTally :: Text
+vengeanceTally = "$upgrade.tally.vengeance"
 
-getVengeanceInVictoryDisplay :: forall m. (HasCallStack, HasGame m, Tracing m) => m Int
-getVengeanceInVictoryDisplay = do
+{- | Label for a vengeance source that isn't a card, under the campaign scope so
+it resolves the same from any scenario.
+-}
+vengeanceLabel :: Text -> Text
+vengeanceLabel k = campaignI18n $ scope "vengeance" $ ikey' k
+
+cardTallyLabel :: (ConvertToCard c, HasGame m) => c -> m Text
+cardTallyLabel c = toTitle . RevealedCard <$> convertToCard c
+
+{- | Collapse repeated labels into one row. A location can be counted both by
+'InVictoryDisplayForCountingVengeance' and by the revealed/clue-free rule, and
+the same card can be in the victory display twice; the total is unchanged.
+-}
+mergeTallyEntries :: [(Text, Int)] -> [(Text, Int)]
+mergeTallyEntries entries =
+  [(k, sum [n | (k', n) <- entries, k' == k]) | k <- nub (map fst entries)]
+
+{- | Per-source attribution for the vengeance currently in the victory display.
+'getVengeanceInVictoryDisplay' is the sum of these, so the campaign log can
+never disagree with the recorded tally.
+-}
+getVengeanceEntries :: forall m. (HasCallStack, HasGame m) => m [(Text, Int)]
+getVengeanceEntries = do
   victoryDisplay <- getVictoryDisplay
-  let
-    isVengeanceCard = \case
-      VengeanceCard _ -> True
-      _ -> False
-    inVictoryDisplay' =
-      sum $ map (fromMaybe 0 . cdVengeancePoints . toCardDef) victoryDisplay
-    vengeanceCards = count isVengeanceCard victoryDisplay
-  locationsWithModifier <-
-    getSum
-      <$> selectAgg
-        (Sum . fromMaybe 0)
-        LocationVengeance
-        (LocationWithModifier InVictoryDisplayForCountingVengeance)
-  pure $ inVictoryDisplay' + locationsWithModifier + vengeanceCards
+  cardEntries <- for victoryDisplay \card -> do
+    let printed = fromMaybe 0 $ cdVengeancePoints $ toCardDef card
+    let bonus = case card of
+          VengeanceCard _ -> 1
+          _ -> 0
+    (,printed + bonus) <$> cardTallyLabel card
+  locationEntries <-
+    traverse toLocationEntry
+      =<< select (LocationWithModifier InVictoryDisplayForCountingVengeance)
+  pure $ mergeTallyEntries $ filter ((> 0) . snd) (cardEntries <> locationEntries)
+ where
+  toLocationEntry lid = do
+    n <- fieldMap LocationVengeance (fromMaybe 0) lid
+    (,n) <$> cardTallyLabel lid
 
-getExplorationDeck :: (HasGame m, Tracing m) => m [Card]
+{- | 'getVengeanceEntries' plus the revealed, clue-free locations that count at
+the end of the scenario.
+-}
+getTotalVengeanceEntries :: forall m. (HasCallStack, HasGame m) => m [(Text, Int)]
+getTotalVengeanceEntries = do
+  entries <- getVengeanceEntries
+  locations <- select (RevealedLocation <> LocationWithoutClues)
+  locationEntries <- for locations \lid -> do
+    n <- fromMaybe 0 <$> getVengeancePoints lid
+    (,n) <$> cardTallyLabel lid
+  pure $ mergeTallyEntries $ entries <> filter ((> 0) . snd) locationEntries
+
+getTotalVengeanceInVictoryDisplay :: (HasCallStack, HasGame m) => m Int
+getTotalVengeanceInVictoryDisplay = sum . map snd <$> getTotalVengeanceEntries
+
+getVengeanceInVictoryDisplay :: (HasCallStack, HasGame m) => m Int
+getVengeanceInVictoryDisplay = sum . map snd <$> getVengeanceEntries
+
+{- | Add Yig's Fury from a source that isn't a card in the victory display, and
+report it so the campaign log shows where it came from.
+-}
+addVengeance :: ReverseQueue m => Text -> Int -> m ()
+addVengeance from n = when (n /= 0) do
+  incrementRecordCount YigsFury n
+  reportTally vengeanceTally from n
+
+{- | Add the vengeance in the victory display to Yig's Fury, reporting each
+contributing card so the campaign log can attribute the tally.
+-}
+recordVengeance :: ReverseQueue m => m ()
+recordVengeance = do
+  entries <- getTotalVengeanceEntries
+  incrementRecordCount YigsFury (sum $ map snd entries)
+  for_ entries \(from, n) -> reportTally vengeanceTally from n
+
+getExplorationDeck :: HasGame m => m [Card]
 getExplorationDeck = scenarioFieldMap ScenarioDecks (findWithDefault [] ExplorationDeck)
 
 setExplorationDeck :: ReverseQueue m => [Card] -> m ()
 setExplorationDeck = setScenarioDeck ExplorationDeck
 
-getSetAsidePoisonedCount :: (HasGame m, Tracing m) => m Int
+getSetAsidePoisonedCount :: HasGame m => m Int
 getSetAsidePoisonedCount = do
   n <- selectCount $ InDeckOf Anyone <> basic (cardIs Treacheries.poisoned)
   pure $ 4 - n
 
-getIsPoisoned :: (HasGame m, Tracing m) => InvestigatorId -> m Bool
+getIsPoisoned :: HasGame m => InvestigatorId -> m Bool
 getIsPoisoned iid = selectAny $ treacheryIs Treacheries.poisoned <> treacheryInThreatAreaOf iid
 
-unlessPoisoned :: (HasGame m, Tracing m) => InvestigatorId -> m () -> m ()
+unlessPoisoned :: HasGame m => InvestigatorId -> m () -> m ()
 unlessPoisoned iid body = do
   ok <- not <$> getIsPoisoned iid
   when ok body
 
-whenPoisoned :: (HasGame m, Tracing m) => InvestigatorId -> m () -> m ()
+whenPoisoned :: HasGame m => InvestigatorId -> m () -> m ()
 whenPoisoned iid body = do
   ok <- getIsPoisoned iid
   when ok body
 
-eachUnpoisoned :: (HasGame m, Tracing m) => (InvestigatorId -> m ()) -> m ()
+eachUnpoisoned :: HasGame m => (InvestigatorId -> m ()) -> m ()
 eachUnpoisoned body = do
   unpoisoned <- getUnpoisoned
   for_ unpoisoned body
 
-eachPoisoned :: (HasGame m, Tracing m) => (InvestigatorId -> m ()) -> m ()
+eachPoisoned :: HasGame m => (InvestigatorId -> m ()) -> m ()
 eachPoisoned body = do
   poisoned <- getPoisoned
   for_ poisoned body
 
-getPoisoned :: (HasGame m, Tracing m) => m [InvestigatorId]
+getPoisoned :: HasGame m => m [InvestigatorId]
 getPoisoned = do
   inResolution <- getInResolution
   let wrapper = if inResolution then IncludeEliminated else id
   select $ wrapper $ HasMatchingTreachery $ treacheryIs Treacheries.poisoned
 
-getUnpoisoned :: (HasGame m, Tracing m) => m [InvestigatorId]
+getUnpoisoned :: HasGame m => m [InvestigatorId]
 getUnpoisoned = do
   inResolution <- getInResolution
   let wrapper = if inResolution then IncludeEliminated else id
   select $ wrapper $ NotInvestigator $ HasMatchingTreachery $ treacheryIs Treacheries.poisoned
 
-getSetAsidePoisoned :: (HasGame m, Tracing m) => m Card
+getSetAsidePoisoned :: HasGame m => m Card
 getSetAsidePoisoned =
   fromJustNote "not enough poison cards"
     . find ((== Treacheries.poisoned) . toCardDef)
@@ -278,7 +333,7 @@ explore iid source cardMatcher exploreRule matchCount = do
               | lid <- locations
               ]
 
-getVengeancePoints :: (HasCallStack, ConvertToCard c, HasGame m, Tracing m) => c -> m (Maybe Int)
+getVengeancePoints :: (HasCallStack, ConvertToCard c, HasGame m) => c -> m (Maybe Int)
 getVengeancePoints c = do
   card <- convertToCard c
   mods <- getModifiers card

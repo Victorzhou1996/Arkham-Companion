@@ -3,7 +3,8 @@ import type { CardContents } from '@/arkham/types/Card';
 import * as CardT from '@/arkham/types/Card';
 import gsap from 'gsap';
 import { computed, inject, Ref, ref, ComputedRef, reactive, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useDebug } from '@/arkham/debug';
+import { useDebug } from '@/arkham/debug'
+import * as DebugMove from '@/arkham/debugCardMove';
 import { Game } from '@/arkham/types/Game';
 import { toCardContents } from '@/arkham/types/Card';
 import { imgsrc } from '@/arkham/helpers';
@@ -18,6 +19,8 @@ import EventView from '@/arkham/components/Event.vue';
 import Skill from '@/arkham/components/Skill.vue';
 import HandCard from '@/arkham/components/HandCard.vue';
 import CardRow from '@/arkham/components/CardRow.vue';
+import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
+import CustomCardPicker from '@/arkham/components/debug/CustomCardPicker.vue';
 import Investigator from '@/arkham/components/Investigator.vue';
 import ChoiceModal from '@/arkham/components/ChoiceModal.vue';
 import { TarotCard, tarotCardImage } from '@/arkham/types/TarotCard';
@@ -27,11 +30,16 @@ import Draw from '@/arkham/components/Draw.vue'
 import { IsMobile } from '@/arkham/isMobile';
 import { Modifier } from '@/arkham/types/Modifier';
 import { Enemy } from '@/arkham/types/Enemy';
-import { XMarkIcon } from '@heroicons/vue/20/solid';
+import type { Source } from '@/arkham/types/Source';
+import { XMarkIcon, EyeSlashIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/vue/20/solid';
 import * as Api from '@/arkham/api';
 import type { CardDef } from '@/arkham/types/CardDef';
 import { fullName } from '@/arkham/types/Name';
 import { isCthulhuBoardEnemy } from '@/arkham/components/TheDrownedCity/cthulhuBoard'
+import { storeToRefs } from 'pinia';
+import { useSettings } from '@/stores/settings';
+import { useCardStore } from '@/stores/cards';
+import { getGameLocalStorageItem, setGameLocalStorageItem } from '@/arkham/localStorage';
 const { t } = useI18n();
 
 interface RefWrapper<T> {
@@ -50,8 +58,8 @@ const solo = inject<Ref<boolean>>('solo')
 const showOtherPlayersHands = inject<Ref<boolean>>('showOtherPlayersHands')
 
 const investigatorId = computed(() => props.investigator.id)
-const ENCOUNTER_BACK = imgsrc("encounter_back.jpg")
-const PLAYER_BACK = imgsrc("player_back.jpg")
+const ENCOUNTER_BACK = imgsrc("backs/back_encounter.jpg")
+const PLAYER_BACK = imgsrc("backs/back_player.jpg")
 
 function backForEnemy(enemy: Enemy) {
   const card = props.game.cards[enemy.cardId]
@@ -70,10 +78,220 @@ const assets = computed(() => {
   return xs
 })
 
+const settings = useSettings()
+const cardStore = useCardStore()
+
+// Cards whose whole text resolved at deck creation or during setup. They stay
+// in play, but once setup is over they only take up room, so the setting tucks
+// them into a stack beside the play area.
+const INERT_CARD_TAGS = ['no-gameplay-effect', 'setup-only']
+
+const inertCardCodes = computed(() =>
+  new Set(
+    cardStore.cards
+      .filter(c => c.tags?.some(tag => INERT_CARD_TAGS.includes(tag)))
+      .map(c => c.cardCode)
+  )
+)
+
+// Cards that only go quiet once their once-per-game ability has been spent, so
+// the tag alone is not enough — Short Supply is live until its forced ability
+// fires on your first turn.
+const hideWhenUsedCardCodes = computed(() =>
+  new Set(
+    cardStore.cards
+      .filter(c => c.tags?.includes('hide-when-used'))
+      .map(c => c.cardCode)
+  )
+)
+
+const spentCardCodes = computed(() => new Set(props.investigator.usedAbilityCardCodes))
+
+const tuckInertCards = computed(() => settings.hideInertCards && !props.game.inSetup)
+
+// Per-player overrides on top of the tags, dragged in and out of the stack and
+// remembered for this game only. `shown` exists so a tagged card can be dragged
+// back out and stay out.
+const hiddenKey = computed(() => `hiddenCards:${investigatorId.value}`)
+const shownKey = computed(() => `shownCards:${investigatorId.value}`)
+
+function loadIds(key: string): string[] {
+  try {
+    const raw = getGameLocalStorageItem(props.game.id, key)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter(x => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+const manuallyHidden = ref<string[]>(loadIds(hiddenKey.value))
+const manuallyShown = ref<string[]>(loadIds(shownKey.value))
+
+watch(manuallyHidden, v => setGameLocalStorageItem(props.game.id, hiddenKey.value, JSON.stringify(v)))
+watch(manuallyShown, v => setGameLocalStorageItem(props.game.id, shownKey.value, JSON.stringify(v)))
+
+function isCardHidden(entity: { id: string, cardCode: string }) {
+  if (manuallyShown.value.includes(entity.id)) return false
+  if (manuallyHidden.value.includes(entity.id)) return true
+  if (inertCardCodes.value.has(entity.cardCode)) return true
+  return hideWhenUsedCardCodes.value.has(entity.cardCode) && spentCardCodes.value.has(entity.cardCode)
+}
+
+// Permanent weaknesses in the threat area (Indebted, Damned) are tucked away by
+// the same tags, so they are draggable in and out of the stack like the assets.
+const tuckableCardCodes = computed(
+  () => new Set([...inertCardCodes.value, ...hideWhenUsedCardCodes.value])
+)
+
+const threatTreacheries = computed(() =>
+  props.investigator.treacheries.map(id => props.game.treacheries[id]).filter(Boolean)
+)
+
+const visibleAssets = computed(() =>
+  tuckInertCards.value ? assets.value.filter(a => !isCardHidden(a)) : assets.value
+)
+
+// Played with every matching slot full: the engine holds the asset Unplaced
+// while it asks which one to discard. It is not in `investigator.assets`, so it
+// has to be read off the asset table.
+const pendingAssets = computed(() =>
+  Object.values(props.game.assets).filter((a) =>
+    a.placement.tag === 'OtherPlacement' &&
+    a.placement.contents === 'Unplaced' &&
+    a.controller === investigatorId.value &&
+    a.slots.length > 0
+  )
+)
+
+const visibleTreacheries = computed(() =>
+  tuckInertCards.value ? threatTreacheries.value.filter(t => !isCardHidden(t)) : threatTreacheries.value
+)
+
+// One list so the popover order and the drag-out index line up across both
+// entity kinds.
+const hiddenEntries = computed(() => {
+  if (!tuckInertCards.value) return []
+  return [
+    ...assets.value.filter(isCardHidden).map(a => ({ tag: 'AssetTarget', id: a.id, cardId: a.cardId })),
+    ...threatTreacheries.value.filter(isCardHidden).map(t => ({ tag: 'TreacheryTarget', id: t.id, cardId: t.cardId })),
+  ].filter(e => props.game.cards[e.cardId])
+})
+
+const inertCards = computed(() => hiddenEntries.value.map(e => props.game.cards[e.cardId]))
+
+function tuckableFromDrag(event: DragEvent) {
+  const data = event.dataTransfer?.getData('text/plain')
+  if (!data) return null
+  try {
+    const json = JSON.parse(data)
+    if (json.tag === 'AssetTarget') {
+      const asset = props.game.assets[json.contents]
+      return asset?.permanent ? asset : null
+    }
+    if (json.tag === 'TreacheryTarget') {
+      const treachery = props.game.treacheries[json.contents]
+      return treachery && tuckableCardCodes.value.has(treachery.cardCode) ? treachery : null
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function ownsCard(id: string) {
+  return props.investigator.assets.includes(id) || props.investigator.treacheries.includes(id)
+}
+
+// Dropped onto the pill or into its open popover.
+function hideDraggedAsset(event: DragEvent) {
+  const card = tuckableFromDrag(event)
+  if (!card || !ownsCard(card.id)) return
+  manuallyShown.value = manuallyShown.value.filter(id => id !== card.id)
+  if (!isCardHidden(card) && !manuallyHidden.value.includes(card.id)) {
+    manuallyHidden.value = [...manuallyHidden.value, card.id]
+  }
+}
+
+// Dragged out of the popover and dropped back on the play area.
+function startHiddenCardDrag(event: DragEvent, index: number) {
+  const entry = hiddenEntries.value[index]
+  if (!entry || !event.dataTransfer) return
+  event.dataTransfer.effectAllowed = 'copyMove'
+  event.dataTransfer.setData('text/plain', JSON.stringify({ tag: entry.tag, contents: entry.id }))
+}
+
+function showDraggedAsset(event: DragEvent) {
+  const card = tuckableFromDrag(event)
+  if (!card || !ownsCard(card.id)) return
+  manuallyHidden.value = manuallyHidden.value.filter(id => id !== card.id)
+  if (isCardHidden(card) && !manuallyShown.value.includes(card.id)) {
+    manuallyShown.value = [...manuallyShown.value, card.id]
+  }
+}
+
+// Silencing drops a card's free triggers and reactions from the windows it
+// would otherwise interrupt; forced abilities still fire. Unlike the stack
+// itself it is real game state (`cardSilenced` in PerCardSettings), because the
+// engine is the one that has to stop offering the ability.
+const controlsInvestigator = computed(() => props.playerId === props.investigator.playerId)
+
+const perCardSettings = computed(() => props.investigator.settings.perCardSettings ?? {})
+
+const isSilenced = (cardCode: string) => perCardSettings.value[cardCode]?.cardSilenced === true
+
+function setSilenced(cardCode: string, silenced: boolean) {
+  if (!controlsInvestigator.value || isSilenced(cardCode) === silenced) return
+  Api.setCardSilenced(props.game.id, investigatorId.value, cardCode, silenced)
+}
+
+const silenceCodeOf = (card: CardT.Card | CardContents) => toCardContents(card).cardCode
+const cardIsSilenced = (card: CardT.Card | CardContents) => isSilenced(silenceCodeOf(card))
+
+function toggleSilenced(card: CardT.Card | CardContents) {
+  setSilenced(silenceCodeOf(card), !cardIsSilenced(card))
+}
+
+// A card is only silenced for as long as it is hidden, so dragging one back out
+// of the stack — or losing it from play — turns its triggers back on. Left
+// alone while the stack is off entirely, so toggling the view setting doesn't
+// throw the choices away, and held off until the card defs land, since the
+// inert tags they carry are half of what decides the stack's contents.
+const hiddenCardCodes = computed(() => new Set(inertCards.value.map(silenceCodeOf)))
+
+const reconcileSilenced = computed(
+  () => tuckInertCards.value && controlsInvestigator.value && cardStore.loaded
+)
+
+watch([hiddenCardCodes, perCardSettings, reconcileSilenced], () => {
+  if (!reconcileSilenced.value) return
+  for (const [cardCode, setting] of Object.entries(perCardSettings.value)) {
+    if (setting.cardSilenced && !hiddenCardCodes.value.has(cardCode)) setSilenced(cardCode, false)
+  }
+}, { immediate: true })
+
 const currentTreacheries = computed(() => {
   return Object.
     values(props.game.treacheries).
     filter((t) => t.placement.tag === 'Limbo' && t.drawnBy === investigatorId.value && (props.playerId === props.investigator.playerId || !t.peril))
+})
+
+// Enemies mid-spawn are Unplaced (no location yet). Show them like a resolving
+// treachery. Keep the active enemy visible while a choice is being submitted:
+// the client clears the current question before the next one arrives, which
+// otherwise makes multi-step revelation effects briefly remove and re-add it.
+const spawningEnemies = computed(() => {
+  const hasQuestion = Boolean(props.game.question[props.investigator.playerId])
+  const activeCardId = props.game.activeCard ? CardT.cardId(props.game.activeCard) : null
+  const isResolvingActiveCard =
+    props.game.activeInvestigatorId === investigatorId.value && activeCardId !== null
+
+  return Object.values(props.game.enemies).filter(
+    (e) =>
+      e.placement.tag === 'OtherPlacement' &&
+      e.placement.contents === 'Unplaced' &&
+      (hasQuestion || (isResolvingActiveCard && activeCardId === e.cardId))
+  )
 })
 
 const stories = computed(() =>
@@ -91,8 +309,30 @@ const engagedEnemies = computed(() =>
   )
 )
 
+/* Lost Quantum places encounter cards face down in a threat area. Those cards
+ * become enemy/asset/treachery entities placed FacedownInThreatArea, which is an
+ * out-of-play, hidden placement — so they appear in none of the investigator's
+ * entity lists and have to be read off the placement directly. Nobody knows what
+ * they are until they are drawn, so they render as encounter backs for everyone. */
+const facedownThreatCards = computed(() =>
+  [
+    ...Object.values(props.game.enemies),
+    ...Object.values(props.game.assets),
+    ...Object.values(props.game.treacheries),
+  ].filter((e) =>
+    e.placement.tag === "FacedownInThreatArea" && e.placement.contents === investigatorId.value
+  )
+)
+
+const facedownThreatCardImage = (cardId: string) => {
+  if (!debug.active) return ENCOUNTER_BACK
+  const card = props.game.cards[cardId]
+  return card ? imgsrc(CardT.cardImage({ ...toCardContents(card), facedown: false })) : ENCOUNTER_BACK
+}
+
 const hasThreatArea = computed(() =>
   stories.value.length > 0 || engagedEnemies.value.length > 0 || props.investigator.treacheries.length > 0
+    || facedownThreatCards.value.length > 0
 )
 
 const inHandEnemies = computed(() =>
@@ -222,8 +462,112 @@ const committedIdSet = computed(() => new Set((props.game.skillTest?.committedCa
 const playerHand = computed(() =>
   props.investigator.hand.filter(card => !committedIdSet.value.has(toCardContents(card).id))
 )
+const handCardIdSet = computed(() => new Set(playerHand.value.map(card => toCardContents(card).id)))
+
+function asIfInHandCardId(contents: unknown): string | null {
+  if (typeof contents === 'string') return contents
+  if (Array.isArray(contents)) {
+    const cardId = [...contents].reverse().find((value): value is string => typeof value === 'string')
+    return cardId ?? null
+  }
+  return null
+}
+
+function sourceCard(source: Source): CardT.Card | null {
+  switch (source.sourceTag) {
+    case 'ProxySource':
+      return sourceCard(source.source)
+    case 'IndexedSource':
+      return source.contents ? sourceCard(source.contents[1]) : null
+    case 'AbilitySource':
+      return sourceCard(source.contents[0])
+    case 'UseAbilitySource':
+      return sourceCard(source.contents[1])
+    case 'PaymentSource':
+      return sourceCard(source.contents)
+    case 'BothSource':
+      return sourceCard(source.contents[0]) ?? sourceCard(source.contents[1])
+    case 'TarotSource':
+      return null
+    case 'OtherSource': {
+      const id = source.contents
+      if (!id) return null
+      switch (source.tag) {
+        case 'AssetSource':
+          return props.game.cards[props.game.assets[id]?.cardId]
+        case 'EventSource':
+          return props.game.cards[props.game.events[id]?.cardId]
+        case 'SkillSource':
+          return props.game.cards[props.game.skills[id]?.cardId]
+        case 'TreacherySource':
+          return props.game.cards[props.game.treacheries[id]?.cardId]
+        case 'CardIdSource':
+          return props.game.cards[id]
+        default:
+          return null
+      }
+    }
+  }
+}
+
+const asIfInHandCards = computed<CardT.Card[]>(() => {
+  const cards: CardT.Card[] = []
+  const seen = new Set<string>()
+
+  for (const [target, modifiers] of props.game.modifiers) {
+    if (target.tag !== 'InvestigatorTarget' || target.contents !== props.investigator.id) continue
+
+    for (const modifier of modifiers) {
+      const modifierType = modifier.type
+      if (modifierType.tag === 'AsIfInHand') {
+        const card = modifierType.contents
+        const cardId = toCardContents(card).id
+        if (!handCardIdSet.value.has(cardId) && !seen.has(cardId)) {
+          cards.push(card)
+          seen.add(cardId)
+        }
+      } else if (modifierType.tag === 'AsIfInHandFor' || modifierType.tag === 'AsIfInHandForPlay') {
+        const cardId = asIfInHandCardId(modifierType.contents)
+        if (!cardId || handCardIdSet.value.has(cardId) || seen.has(cardId)) continue
+        const card = props.game.cards[cardId] ?? modifier.card
+        if (card) {
+          cards.push(card)
+          seen.add(cardId)
+        }
+      }
+    }
+  }
+
+  return cards
+})
+
+const asIfInHandPhantomCards = computed<CardT.Card[]>(() => {
+  const cards: CardT.Card[] = []
+  const seen = new Set<string>()
+  const playableIds = new Set(asIfInHandCards.value.map(card => toCardContents(card).id))
+
+  for (const [target, modifiers] of props.game.modifiers) {
+    if (target.tag !== 'InvestigatorTarget' || target.contents !== props.investigator.id) continue
+
+    for (const modifier of modifiers) {
+      const modifierType = modifier.type
+      if (modifierType.tag !== 'AsIfInHand' && modifierType.tag !== 'AsIfInHandFor' && modifierType.tag !== 'AsIfInHandForPlay') continue
+
+      const card = sourceCard(modifier.source) ?? modifier.card
+      if (!card) continue
+      const cardId = toCardContents(card).id
+      if (playableIds.has(cardId) || seen.has(cardId)) continue
+      cards.push(card)
+      seen.add(cardId)
+    }
+  }
+
+  return cards
+})
 
 const showDebugAddCard = ref(false)
+const showCustomCardPicker = ref(false)
+const { customCardsEnabled } = storeToRefs(settings)
 const debugPlayerCards = ref<CardDef[]>([])
 const debugCardSearch = ref('')
 const debugAddCardError = ref<string | null>(null)
@@ -266,6 +610,8 @@ const campaignCardPrefixes: Record<string, string[]> = {
 
 const playerCardTypes = new Set(['AssetType', 'EventType', 'SkillType', 'PlayerTreacheryType', 'PlayerEnemyType'])
 const debugCardTypes = new Set([...playerCardTypes, 'InvestigatorType'])
+const standaloneSideStoryPlayerCardPrefixes = ['70', '71', '72', '81', '82', '83', '84', '85', '86', '87', '88', '89']
+const standaloneSideStoryPlayerCardCodes = new Set(['90045a', '90045b', '90073', '90074', '90075', '90076'])
 
 const currentCampaignPlayerCardCodes = computed(() => new Set([
   ...Object.values(props.game.campaign?.storyCards ?? {}).flat().map(CardT.asCardCode),
@@ -327,8 +673,18 @@ function isCurrentCampaignPlayerCard(card: CardDef) {
   return currentCampaignPrefixes().some((prefix) => cardCode.startsWith(prefix))
 }
 
+function isStandaloneSideStoryPlayerCard(card: CardDef) {
+  if (card.encounterSet == null || !playerCardTypes.has(card.cardType)) return false
+
+  const cardCode = card.cardCode.replace(/^c/, '')
+  return standaloneSideStoryPlayerCardCodes.has(cardCode)
+    || standaloneSideStoryPlayerCardPrefixes.some((prefix) => cardCode.startsWith(prefix))
+}
+
 function isDebugPlayerCard(card: CardDef) {
-  return (card.encounterSet == null && debugCardTypes.has(card.cardType)) || isCurrentCampaignPlayerCard(card)
+  return (card.encounterSet == null && debugCardTypes.has(card.cardType))
+    || isCurrentCampaignPlayerCard(card)
+    || isStandaloneSideStoryPlayerCard(card)
 }
 
 async function openDebugAddCard() {
@@ -371,7 +727,36 @@ async function debugAddCardToHand(card: CardDef) {
 const debug = useDebug()
 const events = computed(() => props.investigator.events.map((e) => props.game.events[e]).filter(e => e))
 const skills = computed(() => props.investigator.skills.map((e) => props.game.skills[e]).filter(e => e))
-const emptySlots = computed(() => props.investigator.slots.filter((s) => s.empty))
+const emptySlots = computed(() => {
+  const fewer: Record<string, number> = {}
+  for (const m of props.investigator.modifiers ?? []) {
+    if (m.type.tag === 'FewerSlots') {
+      const [slotType, n] = m.type.contents
+      fewer[slotType] = (fewer[slotType] ?? 0) + n
+    }
+  }
+
+  return props.investigator.slots.filter((s) => {
+    if (!s.empty) return false
+    const remaining = fewer[s.tag] ?? 0
+    if (remaining > 0) {
+      fewer[s.tag] = remaining - 1
+      return false
+    }
+    return true
+  })
+})
+type DebugSlotType = 'HeadSlot' | 'HandSlot' | 'BodySlot' | 'AccessorySlot' | 'ArcaneSlot' | 'TarotSlot' | 'AllySlot'
+const debugSlotTypes: { type: DebugSlotType; label: string; icon: string }[] = [
+  { type: 'HandSlot', label: 'Hand', icon: 'slots/hand.png' },
+  { type: 'ArcaneSlot', label: 'Arcane', icon: 'slots/arcane.png' },
+  { type: 'AllySlot', label: 'Ally', icon: 'slots/ally.png' },
+  { type: 'AccessorySlot', label: 'Accessory', icon: 'slots/accessory.png' },
+  { type: 'BodySlot', label: 'Body', icon: 'slots/body.png' },
+  { type: 'HeadSlot', label: 'Head', icon: 'slots/head.png' },
+  { type: 'TarotSlot', label: 'Tarot', icon: 'slots/tarot.png' },
+]
+const showDebugSlotMenu = ref(false)
 const { isMobile } = IsMobile();
 
 const slotImg = (slot: Arkham.Slot) => {
@@ -400,6 +785,7 @@ function isHtmlElement(el: Element): el is HTMLElement { return el instanceof HT
 
 function onBeforeEnter(el: Element) {
   if (!isHtmlElement(el)) return
+  if (el.hasAttribute('data-card-movement')) return
   if (el.classList.contains('committed-skills')) return
   const idx = el.dataset.index
   if (!idx || !rectMap.has(idx)) return
@@ -409,6 +795,7 @@ function onBeforeEnter(el: Element) {
 
 function onEnter(el: Element, done: () => void) {
   if (!isHtmlElement(el)) return
+  if (el.hasAttribute('data-card-movement')) { done(); return }
   if (el.classList.contains('committed-skills')) { el.removeAttribute('style'); done(); return }
 
   const idx = el.dataset.index
@@ -447,6 +834,7 @@ function onEnter(el: Element, done: () => void) {
 
 function onLeave(el: Element, done: () => void) {
   if (!isHtmlElement(el)) return
+  if (el.hasAttribute('data-card-movement')) { done(); return }
   if (el.classList.contains('committed-skills')) { done(); return }
   const idx = el.dataset.index
   if (!idx) { done(); return }
@@ -470,7 +858,7 @@ function onDropHand(event: DragEvent) {
     if (data) {
       const json = JSON.parse(data)
       if (json.tag === "CardTarget") {
-        debug.send(props.game.id, {tag: 'DebugAddToHand', contents: [id.value, json.contents]})
+        DebugMove.debugMoveCard(props.game.id, json.contents, DebugMove.toHand(id.value))
       }
     }
   }
@@ -485,6 +873,7 @@ function startHandDrag(event: DragEvent, card: (CardContents | CardT.Card)) {
     event.dataTransfer.effectAllowed = 'copy'
     const cardId = CardT.toCardContents(card).id
     event.dataTransfer.setData('text/plain', JSON.stringify({ "tag": "CardTarget", "contents": cardId }))
+    DebugMove.beginCardDrag(cardId)
   }
 }
 
@@ -496,9 +885,22 @@ function onDrop(event: DragEvent) {
       const json = JSON.parse(data)
       if (json.tag === "CardTarget") {
         debug.send(props.game.id, {tag: 'PutCardIntoPlayById', contents: [props.investigator.id, json.contents, null, { tag: 'NoPayment' }, []]})
+      } else if (json.tag === "AssetTarget" || json.tag === "TreacheryTarget") {
+        showDraggedAsset(event)
       }
     }
   }
+}
+
+function debugAddSlot(slotType: DebugSlotType) {
+  debug.send(props.game.id, {
+    tag: 'AddSlot',
+    contents: [
+      props.investigator.id,
+      slotType,
+      { tag: 'Slot', source: { tag: 'GameSource' }, assets: [] },
+    ],
+  })
 }
 
 const playAreaCollapsed = ref(false)
@@ -540,7 +942,9 @@ function toggleHandAreaMarginBottom(event: Event) {
     handAreaMarginBottom.value = handCardExposedHeight_MAX;
     handAreaPointerEvents.value = 'auto'
   }
-  else if(!target.closest('.in-hand')){
+  else if (target.closest('.in-hand, .abilities')) {
+    return
+  } else {
     handAreaMarginBottom.value = handCardExposedHeight_MIN;
     handAreaPointerEvents.value = 'none'
   }
@@ -556,118 +960,215 @@ function closeHand() {
 <template>
   <div class="player-cards">
     <button class="in-play-toggle" @click="playAreaCollapsed = !playAreaCollapsed"></button>
-    <transition name="grow">
-      <section
-        class="in-play"
-        :class="{ 'in-play--collapsed': playAreaCollapsed }"
-        @drop="onDrop($event)"
-        @dragover.prevent="dragover($event)"
-        @dragenter.prevent
-      >
-        <transition-group @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter">
-          <Story
-            v-for="story in stories"
-            :key="story.id"
-            :story="story"
-            :game="game"
-            :data-index="story.cardId"
-            :playerId="playerId"
-            @choose="$emit('choose', $event)"
-          />
+    <div class="in-play-row">
+      <transition name="grow">
+        <section
+          class="in-play"
+          :class="{ 'in-play--collapsed': playAreaCollapsed }"
+          @drop="onDrop($event)"
+          @dragover.prevent="dragover($event)"
+          @dragenter.prevent
+        >
+          <transition-group @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter">
+            <EnemyView
+              v-for="enemy in spawningEnemies"
+              :key="enemy.id"
+              :enemy="enemy"
+              :game="game"
+              :data-index="enemy.cardId"
+              :playerId="playerId"
+              class="spawning-enemy"
+              @choose="$emit('choose', $event)"
+            />
 
-          <EnemyView
-            v-for="enemy in engagedEnemies"
-            :key="enemy.id"
-            :enemy="enemy"
-            :game="game"
-            :data-index="enemy.cardId"
-            :playerId="playerId"
-            @choose="$emit('choose', $event)"
-          />
+            <Story
+              v-for="story in stories"
+              :key="story.id"
+              :story="story"
+              :game="game"
+              :data-index="story.cardId"
+              :playerId="playerId"
+              @choose="$emit('choose', $event)"
+            />
 
-          <Treachery
-            v-for="treacheryId in investigator.treacheries"
-            :key="treacheryId"
-            :treachery="game.treacheries[treacheryId]"
-            :game="game"
-            :data-index="game.treacheries[treacheryId].cardId"
-            :playerId="playerId"
-            @choose="$emit('choose', $event)"
-          />
+            <EnemyView
+              v-for="enemy in engagedEnemies"
+              :key="enemy.id"
+              data-card-movement="enemy"
+              :enemy="enemy"
+              :style="{ viewTransitionName: `enemy-${enemy.id}` }"
+              :game="game"
+              :data-index="enemy.cardId"
+              :playerId="playerId"
+              @choose="$emit('choose', $event)"
+            />
 
-          <div v-if="hasThreatArea" :key="'threat-divider'" class="threat-divider" />
+            <Treachery
+              v-for="treachery in visibleTreacheries"
+              :key="treachery.id"
+              :treachery="treachery"
+              :game="game"
+              :data-index="treachery.cardId"
+              :playerId="playerId"
+              :tuckable="tuckInertCards && tuckableCardCodes.has(treachery.cardCode)"
+              @choose="$emit('choose', $event)"
+            />
 
-          <template v-if="tarotCards.length > 0">
-            <div v-for="tarotCard in tarotCards" :key="tarotCard.arcana" :data-index="tarotCard.arcana">
-              <img :src="imgsrc(`tarot/${tarotCardImage(tarotCard)}`)" class="card tarot-card" :class="{ [tarotCard.facing]: true, 'can-interact': tarotCardAbility(tarotCard) !== -1 }" @click="$emit('choose', tarotCardAbility(tarotCard))"/>
+            <div
+              v-for="facedown in facedownThreatCards"
+              :key="facedown.id"
+              class="card-container"
+              :data-index="facedown.cardId"
+            >
+              <img class="card" :src="facedownThreatCardImage(facedown.cardId)" />
             </div>
-          </template>
 
-          <img
-            v-if="investigatorId === 'c89001'"
-            class="card"
-            @click="realityAcid = realityAcid === '89005' ? '89005b' : '89005'"
-            :src="imgsrc(`cards/${realityAcid}.avif`)"
-          />
+            <div v-if="hasThreatArea" :key="'threat-divider'" class="threat-divider" />
 
-          <Treachery
-            v-for="treachery in currentTreacheries"
-            :key="treachery.id"
-            :treachery="treachery"
-            :game="game"
-            :data-index="treachery.cardId"
-            :playerId="playerId"
-            @choose="$emit('choose', $event)"
-          />
+            <template v-if="tarotCards.length > 0">
+              <div v-for="tarotCard in tarotCards" :key="tarotCard.arcana" :data-index="tarotCard.arcana">
+                <img :src="imgsrc(`tarot/${tarotCardImage(tarotCard)}`)" class="card tarot-card" :class="{ [tarotCard.facing]: true, 'can-interact': tarotCardAbility(tarotCard) !== -1 }" @click="$emit('choose', tarotCardAbility(tarotCard))"/>
+              </div>
+            </template>
 
-          <Skill
-            v-for="skill in skills"
-            :skill="skill"
-            :game="game"
-            :playerId="playerId"
-            :key="skill.id"
-            :data-index="skill.cardId"
-            @choose="$emit('choose', $event)"
-            @showCards="doShowCards"
-          />
-          <EventView
-            v-for="event in events"
-            :event="event"
-            :game="game"
-            :playerId="playerId"
-            :key="event.id"
-            :data-index="event.cardId"
-            @choose="$emit('choose', $event)"
-            @showCards="doShowCards"
-          />
+            <img
+              v-if="investigatorId === 'c89001'"
+              class="card"
+              @click="realityAcid = realityAcid === '89005' ? '89005b' : '89005'"
+              :src="imgsrc(`cards/${realityAcid}.avif`)"
+            />
 
-          <ScarletKey
-            v-for="skId in investigator.scarletKeys"
-            :scarletKey="game.scarletKeys[skId]"
-            :game="game"
-            :playerId="playerId"
-            :investigator-id="investigator.id"
-            :key="skId"
-            @choose="$emit('choose', $event)"
-          />
-          <Asset
-            v-for="asset in assets"
-            :asset="asset"
-            :game="game"
-            :playerId="playerId"
-            :key="asset.id"
-            :data-index="asset.cardId"
-            @choose="$emit('choose', $event)"
-            @showCards="doShowCards"
-          />
+            <Treachery
+              v-for="treachery in currentTreacheries"
+              :key="treachery.id"
+              :treachery="treachery"
+              :game="game"
+              :data-index="treachery.cardId"
+              :playerId="playerId"
+              @choose="$emit('choose', $event)"
+            />
 
-          <div v-for="(slot, idx) in emptySlots" :key="idx" class="slot" :data-index="`${slot.tag}${idx}`">
-            <img :src="slotImg(slot)" />
-          </div>
+            <Skill
+              v-for="skill in skills"
+              :skill="skill"
+              :game="game"
+              :playerId="playerId"
+              :key="skill.id"
+              :data-index="skill.cardId"
+              @choose="$emit('choose', $event)"
+              @showCards="doShowCards"
+            />
+            <EventView
+              v-for="event in events"
+              :event="event"
+              :game="game"
+              :playerId="playerId"
+              :key="event.id"
+              :data-index="event.cardId"
+              @choose="$emit('choose', $event)"
+              @showCards="doShowCards"
+            />
 
-        </transition-group>
-      </section>
-    </transition>
+            <ScarletKey
+              v-for="skId in investigator.scarletKeys"
+              :scarletKey="game.scarletKeys[skId]"
+              :game="game"
+              :playerId="playerId"
+              :investigator-id="investigator.id"
+              :key="skId"
+              @choose="$emit('choose', $event)"
+            />
+            <Asset
+              v-for="asset in pendingAssets"
+              :asset="asset"
+              :game="game"
+              :playerId="playerId"
+              :key="asset.id"
+              :data-index="asset.cardId"
+              pending
+              @choose="$emit('choose', $event)"
+              @showCards="doShowCards"
+            />
+
+            <div v-if="pendingAssets.length > 0" :key="'pending-divider'" class="pending-divider" />
+
+            <Asset
+              v-for="asset in visibleAssets"
+              :asset="asset"
+              :game="game"
+              :playerId="playerId"
+              :key="asset.id"
+              :data-index="asset.cardId"
+              :discardToMakeRoom="pendingAssets.length > 0"
+              @choose="$emit('choose', $event)"
+              @showCards="doShowCards"
+            />
+
+            <div v-for="(slot, idx) in emptySlots" :key="idx" class="slot" :data-index="`${slot.tag}${idx}`">
+              <img :src="slotImg(slot)" />
+            </div>
+
+            <div v-if="debug.active" key="debug-add-slots" class="debug-add-slots" :class="{ expanded: showDebugSlotMenu }">
+              <button
+                type="button"
+                class="debug-add-slots-toggle"
+                :aria-expanded="showDebugSlotMenu"
+                @click="showDebugSlotMenu = !showDebugSlotMenu"
+              >
+                <span>Add Slot</span>
+                <span>{{ showDebugSlotMenu ? '−' : '+' }}</span>
+              </button>
+              <div v-if="showDebugSlotMenu" class="debug-add-slots-menu">
+                <button
+                  v-for="slot in debugSlotTypes"
+                  :key="slot.type"
+                  type="button"
+                  :title="`Add ${slot.label} Slot`"
+                  @click="debugAddSlot(slot.type)"
+                >
+                  <img :src="imgsrc(slot.icon)" />
+                  <span>{{ slot.label }}</span>
+                </button>
+              </div>
+            </div>
+
+          </transition-group>
+        </section>
+      </transition>
+      <CardsUnderIndicator
+        v-if="tuckInertCards && !playAreaCollapsed"
+        class="inert-stack"
+        vertical
+        droppable
+        draggableCards
+        label="Hidden"
+        placement="left"
+        allowInPlayAbilities
+        autoShowWhenOnlyChoice
+        :cards="inertCards"
+        :game="game"
+        :playerId="playerId"
+        @choose="$emit('choose', $event)"
+        @cardsDrop="hideDraggedAsset"
+        @cardDragStart="startHiddenCardDrag"
+      >
+        <template #icon><EyeSlashIcon /></template>
+        <template v-if="controlsInvestigator" #cardOverlay="{ card }">
+          <button
+            type="button"
+            class="silence-toggle"
+            :class="{ 'silence-toggle--on': cardIsSilenced(card) }"
+            :aria-pressed="cardIsSilenced(card)"
+            :aria-label="cardIsSilenced(card) ? t('player.unsilenceCard') : t('player.silenceCard')"
+            v-tooltip="cardIsSilenced(card) ? t('player.unsilenceCard') : t('player.silenceCard')"
+            @click.stop.prevent="toggleSilenced(card)"
+          >
+            <SpeakerXMarkIcon v-if="cardIsSilenced(card)" />
+            <SpeakerWaveIcon v-else />
+          </button>
+        </template>
+      </CardsUnderIndicator>
+    </div>
 
     <ChoiceModal
       v-if="playerId === investigator.playerId"
@@ -710,6 +1211,13 @@ function closeHand() {
       </div>
     </div>
 
+    <CustomCardPicker
+      v-if="debug.active && customCardsEnabled && showCustomCardPicker"
+      :game="game"
+      :investigatorId="investigator.id"
+      @close="showCustomCardPicker = false"
+    />
+
     <div class="player">
       <div v-if="hunchDeck" class="hunch-deck">
         <div class="top-of-deck">
@@ -724,12 +1232,12 @@ function closeHand() {
           <img
             v-else
             class="deck card"
-            :src="imgsrc('player_back.jpg')"
+            :src="imgsrc('backs/back_player.jpg')"
             width="150px"
           />
           <span class="deck-size">{{hunchDeck.length}}</span>
         </div>
-        <button v-if="debug" @click="showHunchDeck">{{ $t('player.viewDeck') }}</button>
+        <button v-if="debug.active" @click="showHunchDeck">{{ $t('player.viewDeck') }}</button>
       </div>
 
       <div class="investigator-and-deck">
@@ -756,12 +1264,36 @@ function closeHand() {
           @dragover.prevent="dragover($event)"
           @dragenter.prevent
           >
+          <div v-if="asIfInHandCards.length > 0" class="special-hand-card-stack">
+            <span
+              v-for="card in asIfInHandPhantomCards"
+              :key="toCardContents(card).id"
+              class="phantom-hand-card-frame"
+            >
+              <img
+                class="card phantom-hand-card"
+                :src="imgsrc(CardT.cardImage(card))"
+                :data-image="imgsrc(CardT.cardImage(card))"
+              />
+            </span>
+            <CardsUnderIndicator
+              key="as-if-in-hand-cards"
+              class="special-hand-cards"
+              :cards="asIfInHandCards"
+              label="Out of play cards playable as if in hand"
+              placement="top"
+              :game="game"
+              :playerId="playerId"
+              @choose="$emit('choose', $event)"
+            />
+          </div>
           <HandCard
             v-for="card in playerHand"
             :card="card"
             :game="game"
             :playerId="playerId"
             :ownerId="investigator.id"
+            :mobileHandOpen="handAreaPointerEvents === 'auto'"
             :key="toCardContents(card).id"
             @choose="$emit('choose', $event)"
             :draggable="debug.active"
@@ -799,6 +1331,7 @@ function closeHand() {
         </transition-group>
         <div class="hand-debug-actions" v-if="debug.active">
           <button type="button" @click="openDebugAddCard">+ Card to hand</button>
+          <button v-if="customCardsEnabled" type="button" @click="showCustomCardPicker = true">+ Custom card</button>
         </div>
         <div v-if="investigator.handSize" class="hand-size" :class="handSizeClasses" :current-length="totalHandSize">{{ t('handSize') }}: {{totalHandSize}}/{{investigator.handSize}}</div>
       </div>
@@ -828,12 +1361,36 @@ function closeHand() {
         @dragenter.prevent
         :style="{ pointerEvents: `${handAreaPointerEvents}`, flex: 1 }"
         >
+        <div v-if="asIfInHandCards.length > 0" class="special-hand-card-stack">
+          <span
+            v-for="card in asIfInHandPhantomCards"
+            :key="toCardContents(card).id"
+            class="phantom-hand-card-frame"
+          >
+            <img
+              class="card phantom-hand-card"
+              :src="imgsrc(CardT.cardImage(card))"
+              :data-image="imgsrc(CardT.cardImage(card))"
+            />
+          </span>
+          <CardsUnderIndicator
+            key="as-if-in-hand-cards"
+            class="special-hand-cards"
+            :cards="asIfInHandCards"
+            label="Out of play cards playable as if in hand"
+            placement="top"
+            :game="game"
+            :playerId="playerId"
+            @choose="$emit('choose', $event)"
+          />
+        </div>
         <HandCard
           v-for="card in playerHand"
           :card="card"
           :game="game"
           :playerId="playerId"
           :ownerId="investigator.id"
+          :mobileHandOpen="handAreaPointerEvents === 'auto'"
           :key="toCardContents(card).id"
           @choose="$emit('choose', $event)"
           :draggable="debug.active"
@@ -860,6 +1417,7 @@ function closeHand() {
             :data-index="treachery.cardId"
             :playerId="playerId"
             :isInHand="true"
+            :mobileHandOpen="handAreaPointerEvents === 'auto'"
             @choose="$emit('choose', $event)"
           />
           <div class="card-container" v-else>
@@ -946,6 +1504,70 @@ function closeHand() {
   }
 }
 
+.in-play-row {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.in-play-row > .in-play {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Pinned to the right edge of the play area, so it stays put while the assets
+   themselves scroll horizontally underneath. Carries the same background and
+   top/bottom rules as .in-play so it reads as part of that strip rather than a
+   control floating beside it. */
+.inert-stack {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  flex-shrink: 0;
+  padding: 10px 10px 10px 5px;
+  background: var(--background-dark);
+  border-top: 1px solid var(--background);
+  border-bottom: 1px solid var(--background);
+}
+
+/* Overlaid on each card in the Hidden popover. Muted grey while the card still
+   speaks, teal once it is silenced — the same "you changed a default" teal the
+   card-options gear uses, never the magenta that means the game wants you. */
+.silence-toggle {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: var(--z-index-3);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62);
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.silence-toggle :deep(svg) {
+  width: 13px;
+  height: 13px;
+}
+
+.silence-toggle:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+.silence-toggle--on {
+  color: var(--highlight);
+  border-color: color-mix(in srgb, var(--highlight) 60%, transparent);
+  background: color-mix(in srgb, var(--highlight) 22%, rgba(0, 0, 0, 0.72));
+}
+
 .in-play {
   display: flex;
   flex-wrap: nowrap;
@@ -962,12 +1584,19 @@ function closeHand() {
     flex-shrink: 0;
   }
 
-  .threat-divider {
+  .threat-divider,
+  .pending-divider {
     width: 2px;
     align-self: stretch;
     margin: 0 8px;
     background: rgba(255, 255, 255, 0.15);
     border-radius: 1px;
+  }
+
+  .spawning-enemy {
+    border-radius: 8px;
+    box-shadow: 0 0 12px 3px var(--important);
+    margin-right: 8px;
   }
 
   &.in-play--collapsed {
@@ -984,6 +1613,76 @@ function closeHand() {
   display: flex;
   gap: 5px;
   overflow-x: auto;
+}
+
+.special-hand-card-stack {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-top: 3px;
+  min-width: var(--card-width);
+}
+
+.phantom-hand-card-frame {
+  position: relative;
+  display: block;
+  width: var(--card-width);
+  min-width: var(--card-width);
+  line-height: 0;
+}
+
+.phantom-hand-card-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(160, 185, 210, 0.38);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.phantom-hand-card {
+  width: var(--card-width);
+  min-width: var(--card-width);
+  border-radius: 6px;
+  opacity: 0.45;
+  filter: saturate(0.45) contrast(0.9) drop-shadow(0 0 7px rgba(120, 170, 220, 0.28));
+  mask-image: linear-gradient(to bottom, black 68%, rgba(0, 0, 0, 0.22));
+}
+
+.phantom-hand-card:hover {
+  opacity: 0.72;
+  filter: saturate(0.65) contrast(0.98) drop-shadow(0 0 9px rgba(120, 170, 220, 0.42));
+}
+
+.special-hand-cards {
+  align-self: center;
+}
+
+.special-hand-cards:deep(.cards-under-indicator) {
+  height: 18px;
+  min-width: 30px;
+  padding: 0 5px;
+  gap: 3px;
+  border-style: dashed;
+  border-color: rgba(160, 185, 210, 0.38);
+  background: rgba(10, 18, 28, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 7px rgba(110, 160, 210, 0.18);
+}
+
+.special-hand-cards:deep(.cards-under-indicator--highlighted) {
+  border-color: color-mix(in srgb, var(--select) 78%, white 8%);
+  background: color-mix(in srgb, var(--select) 26%, rgba(10, 18, 28, 0.72));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--select) 42%, transparent);
+}
+
+.special-hand-cards:deep(.cards-under-indicator__icon) {
+  transform: scale(0.78);
+}
+
+.special-hand-cards:deep(.cards-under-indicator__count) {
+  font-size: 0.62rem;
 }
 
 .hand-move,
@@ -1087,6 +1786,64 @@ function closeHand() {
   img {
     width: calc(var(--card-width) / 2);
     filter: invert(75%);
+  }
+}
+
+.debug-add-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: var(--card-width);
+
+  &.expanded {
+    width: min(calc(var(--card-width) * 2.4), 320px);
+  }
+
+  button {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.42);
+    color: white;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--select);
+    }
+  }
+}
+
+.debug-add-slots-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.debug-add-slots-menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+
+  button {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    img {
+      width: 22px;
+      filter: invert(75%);
+    }
   }
 }
 
@@ -1228,7 +1985,7 @@ function closeHand() {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-index-1000);
+  z-index: var(--z-index-max);
 }
 
 .debug-add-card-modal {

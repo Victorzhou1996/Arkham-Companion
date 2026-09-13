@@ -8,6 +8,8 @@ type TargetContents = string | { face: string, id: string } | { ability: Ability
 export type Target = {
   tag: string
   contents?: TargetContents
+  // LabeledTarget only: the label text and the wrapped target's tag; contents
+  // holds the wrapped target's contents.
   label?: string
   innerTag?: string
 }
@@ -42,6 +44,13 @@ export const targetDecoder: JsonDecoder.Decoder<Target> = JsonDecoder.lazy(() =>
       },
       'ProxyTarget'
     ),
+    JsonDecoder.object(
+      {
+        tag: JsonDecoder.literal('LabeledTarget'),
+        contents: JsonDecoder.tuple([JsonDecoder.string(), targetDecoder], 'LabeledTargetContents'),
+      },
+      'LabeledTarget'
+    ).map(({ contents: [label, inner] }) => ({ tag: 'LabeledTarget' as const, label, innerTag: inner.tag, contents: inner.contents })),
     JsonDecoder.object<Target>(
       {
         tag: JsonDecoder.string(),
