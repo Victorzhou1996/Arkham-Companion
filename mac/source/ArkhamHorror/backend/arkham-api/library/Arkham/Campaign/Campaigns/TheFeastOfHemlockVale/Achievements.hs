@@ -45,7 +45,13 @@ import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale.FateOfTheVale qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale.TheForest qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale.TheLongestNight qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale.TheLostSister qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale.TheSilentHeath qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale.TheThingInTheDepths qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale.TheTwistedHollow qualified as Enemies
 import Arkham.Enemy.Types qualified as Enemy
 import Arkham.Game.Base
 import Arkham.Game.Settings (activeUltimatumsAndBoons)
@@ -62,13 +68,12 @@ import Arkham.Scenario.Types (Field (ScenarioTokens, ScenarioVictoryDisplay))
 import Arkham.Source
 import Arkham.Target
 import Arkham.Token
-import Arkham.Tracing
 import Arkham.Trait qualified as Trait
 import Arkham.UltimatumsAndBoons.Types
 import Data.Aeson.Key qualified as Key
 
 runHemlockValeAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runHemlockValeAchievements msg = whenEligibleCampaign $ case msg of
   {- Endings. Every one records its own outcome, so the record IS the ending; the
   set is banked in the campaign store and reported to the API layer, which
@@ -86,18 +91,12 @@ runHemlockValeAchievements msg = whenEligibleCampaign $ case msg of
   Record key -> do
     when (key == toCampaignLogKey TheInvestigatorsSacrificedThemselvesForTheVale) do
       earn HighDive
-    for_ (lookup key endingItems) \item -> do
-      endings <- nub . (item :) <$> storedTexts endingsSeenKey
-      setStore endingsSeenKey endings
-      achievementProgress (TheFeastOfHemlockValeAchievement Unshattered) endings
+    for_ (lookup key endingItems) (insertGlobal endingsSeenKey)
 
     {- "Dancing Queen": share a dance with four different residents during The
     Second Evening. Each dance is its own campaign-log record, so the set of
     records IS the set of partners. -}
-    when (key `elem` danceRecords) do
-      partners <- nub . (tshow key :) <$> storedTexts dancePartnersKey
-      setStore dancePartnersKey partners
-      when (length partners >= 4) $ earn DancingQueen
+    when (key `elem` danceRecords) $ insertGlobal dancePartnersKey (tshow key)
 
   {- "Let's Do the Time Warp!": Lambs to the Slaughter's objective sends the
   prelude to Resolution 3, whose replay branch crosses out "the investigators
@@ -176,10 +175,7 @@ runHemlockValeAchievements msg = whenEligibleCampaign $ case msg of
   -}
   Flip _ _ (EnemyTarget eid) -> whenScenarioIs theLostSisterId do
     cardDef <- fieldMap Enemy.EnemyCard toCardDef eid
-    when (cardDef `elem` limulusHybrids) do
-      n <- storedInt limulusFlipsKey
-      setStore limulusFlipsKey (n + 1)
-      when (n + 1 >= 8) $ earn HereCrabbyCrabby
+    when (cardDef `elem` limulusHybrids) $ bumpCounter limulusFlipsKey 1
 
   {- "A Different Kind of Sting Ops" bookkeeping: the Brood Queen only ever
   reaches the table by being pulled out of the set-aside pile.
@@ -304,6 +300,21 @@ runHemlockValeAchievements msg = whenEligibleCampaign $ case msg of
 
     -- "Hemlock Expertise": win on Expert.
     when (difficulty == Just Expert) $ earn HemlockExpertise
+
+  {- Deferred threshold checks. 'bumpCounter'/'insertGlobal' do their arithmetic
+  when the message is processed, so the stored value only reads back correctly here.
+  -}
+  CounterBumped k | k == limulusFlipsKey -> whenM ((>= 8) <$> storedInt k) $ earn HereCrabbyCrabby
+  GlobalInserted k
+    | k == endingsSeenKey -> do
+        endings <- storedTexts k
+        achievementProgress (TheFeastOfHemlockValeAchievement Unshattered) endings
+    | k == dancePartnersKey -> do
+        partners <- storedTexts k
+        when (length partners >= 4) $ earn DancingQueen
+    | k == bestFriendsKey -> do
+        reached <- storedTexts k
+        achievementProgress (TheFeastOfHemlockValeAchievement BestFriendsForever) reached
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => TheFeastOfHemlockValeAchievement -> m ()
@@ -349,7 +360,7 @@ theLongestNightStep = ScenarioStep theLongestNightId
 {- | The day/time meta, defaulting rather than throwing: the campaign builds it at
 its prologue, so it is absent before then (and in the test harness).
 -}
-hemlockValeMeta :: (HasGame m, Tracing m) => m TheFeastOfHemlockValeMeta
+hemlockValeMeta :: HasGame m => m TheFeastOfHemlockValeMeta
 hemlockValeMeta =
   selectOne TheCampaign
     >>= maybe (pure initMeta) (fieldMap CampaignMeta (toResultDefault initMeta))
@@ -425,12 +436,10 @@ Only the five residents "Best Friends Forever!" names have an item; the others
 have their own achievements instead.
 -}
 reportBestFriend
-  :: (HasGame m, HasQueue Message m, Tracing m) => CampaignLogKey -> Int -> m ()
+  :: (HasGame m, HasQueue Message m) => CampaignLogKey -> Int -> m ()
 reportBestFriend key level = when (level >= 6) do
-  for_ (find ((== key) . relationshipKey . fst) bestFriends) \(_, item) -> do
-    reached <- nub . (item :) <$> storedTexts bestFriendsKey
-    setStore bestFriendsKey reached
-    achievementProgress (TheFeastOfHemlockValeAchievement BestFriendsForever) reached
+  for_ (find ((== key) . relationshipKey . fst) bestFriends) \(_, item) ->
+    insertGlobal bestFriendsKey item
 
 {- | The five residents "Best Friends Forever!" wants at Relationship Level 6,
 paired with their 'achievementChecklist' item keys.
@@ -453,7 +462,7 @@ cosmicEmissaries =
   , Enemies.cosmicEmissaryThePhantasm
   ]
 
-inVictoryDisplay :: (HasGame m, Tracing m) => CardDef -> m Bool
+inVictoryDisplay :: HasGame m => CardDef -> m Bool
 inVictoryDisplay def = selectAny $ VictoryDisplayCardMatch $ basic $ cardIs def
 
 {- | Each ending of the campaign paired with its 'achievementChecklist' item key.
@@ -472,7 +481,7 @@ endingItems =
   , (toCampaignLogKey TheInvestigatorsBecameTheTrueFeastOfHemlockVale, "BecameTheTrueFeast")
   ]
 
-whenScenarioIs :: (HasGame m, Tracing m) => ScenarioId -> m () -> m ()
+whenScenarioIs :: HasGame m => ScenarioId -> m () -> m ()
 whenScenarioIs sid body = do
   mSid <- selectOne TheScenario
   when (mSid == Just sid) body
@@ -502,13 +511,13 @@ playedLongestNightKey = "hemlockAchPlayedLongestNight"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedTexts :: (HasCallStack, HasGame m, Tracing m) => Text -> m [Text]
+storedTexts :: (HasCallStack, HasGame m) => Text -> m [Text]
 storedTexts k = fromMaybe [] <$> stored k
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k
 
 {- | Each resident whose Relationship Level is an achievement in its own right,

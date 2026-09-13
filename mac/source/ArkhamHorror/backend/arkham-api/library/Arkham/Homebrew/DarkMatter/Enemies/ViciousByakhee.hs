@@ -1,0 +1,36 @@
+module Arkham.Homebrew.DarkMatter.Enemies.ViciousByakhee (viciousByakhee) where
+
+import Arkham.Ability
+import Arkham.Enemy.Import.Lifted
+import Arkham.Homebrew.DarkMatter.CardDefs.Enemies qualified as Cards
+import Arkham.Homebrew.DarkMatter.Traits (pattern Brain)
+import Arkham.Matcher
+import Arkham.Trait (Trait (MiGo))
+
+newtype ViciousByakhee = ViciousByakhee EnemyAttrs
+  deriving anyclass (IsEnemy, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+viciousByakhee :: EnemyCard ViciousByakhee
+viciousByakhee =
+  enemy ViciousByakhee Cards.viciousByakhee
+    & setSpawnAt (LocationWithTitle "Entrance Tunnel")
+
+instance HasAbilities ViciousByakhee where
+  getAbilities (ViciousByakhee a) =
+    extend1 a
+      $ restricted a 1 (thisExists a ReadyEnemy)
+      $ forced
+      $ PhaseBegins #when #enemy
+
+instance RunMessage ViciousByakhee where
+  runMessage msg e@(ViciousByakhee attrs) = runQueueT $ case msg of
+    UseThisAbility _ (isSource attrs -> True) 1 -> do
+      migos <- select $ EnemyWithTrait MiGo <> EnemyAt (locationWithEnemy attrs)
+      for_ migos $ nonAttackEnemyDamage Nothing (attrs.ability 1) 2
+      -- `DealDamage` is enemy-only; an asset needs `dealAssetDamage` to be
+      -- damaged and checked for defeat.
+      brains <- select $ AssetWithTrait Brain <> AssetAt (locationWithEnemy attrs)
+      for_ brains \aid -> dealAssetDamage aid (attrs.ability 1) 2
+      pure e
+    _ -> ViciousByakhee <$> liftRunMessage msg attrs

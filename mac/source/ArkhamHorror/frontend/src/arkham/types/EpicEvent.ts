@@ -1,5 +1,4 @@
 import * as JsonDecoder from 'ts.data.json';
-import { withDefault } from '@/arkham/parser';
 
 // "Epic Multiplayer" event aggregate types.
 //
@@ -22,6 +21,12 @@ export interface GroupPlayerInfo {
   investigatorId: string | null
 }
 
+export interface ReplicateTarget {
+  target: unknown
+  cardCode: string
+  kind: 'location' | 'investigator' | 'enemy'
+}
+
 export interface GroupDigest {
   ordinal: number
   name: string
@@ -30,11 +35,8 @@ export interface GroupDigest {
   investigatorCount: number
   seatCount: number
   youAreSeated: boolean
-  // Stage (1/2/3) of this group's current act, and the clues currently on it.
-  // Null when the group has no active act (not started / between acts).
-  actStage: number | null
-  actClues: number | null
   players: GroupPlayerInfo[]
+  replicateTargets: ReplicateTarget[]
 }
 
 export interface EventDetails {
@@ -45,6 +47,7 @@ export interface EventDetails {
   createdAt: string
   sharedState: SharedEventState
   totalInvestigators: number
+  playWithBlobElse: boolean
   groups: GroupDigest[]
 }
 
@@ -65,6 +68,7 @@ export interface CreateEventPost {
   scenarioId: string
   difficulty: string
   includeTarotReadings: boolean
+  playWithBlobElse: boolean
   // Minutes for the shared countdown; 0 means "no time limit".
   timeLimitMinutes: number
   groups: CreateEventGroup[]
@@ -87,10 +91,9 @@ export const TIMER_STARTED_AT = 'timer-started-at'
 // Total investigators across all groups; the shared-clue requirement scales off it.
 export const TOTAL_INVESTIGATORS = 'total-investigators'
 
-// Shared CUMULATIVE clue progress per act stage. The counter `act-progress:<stage>`
-// exists (seeded to 0) only for acts that advance on a GLOBAL clue threshold
-// (The Blob's acts 1 & 3, not act 2). Within-cycle progress is `value mod threshold`
-// where `threshold = 2 * total-investigators`.
+// Shared clue progress per act stage. The Blob's Epic Act 1 is the only act with
+// a global clue threshold; its pool resets when the organizer resolves an advance.
+// The threshold is `2 * total-investigators`.
 export function actProgressKey(stage: number): string {
   return `act-progress:${stage}`
 }
@@ -103,24 +106,24 @@ export function actProgressValue(state: SharedEventState, stage: number): number
   return counterValue(state, actProgressKey(stage))
 }
 
-// `pending-act-advance:<stage>` is set to 1 when the shared clue pool EXCEEDS the
-// threshold and the organizer must choose which groups spend (an exact-match pool
-// auto-resolves with no flag).
-export const PENDING_ACT_ADVANCE = 'pending-act-advance'
+// `awaiting-organizer:<stage>` gates a shared act advance: when the pooled clues
+// reaches the threshold the backend sets it to 1 and waits for the organizer to
+// choose which groups supply the exact required spend.
+export const AWAITING_ORGANIZER = 'awaiting-organizer'
 
-export function pendingActAdvanceKey(stage: number): string {
-  return `${PENDING_ACT_ADVANCE}:${stage}`
+export function awaitingOrganizerKey(stage: number): string {
+  return `${AWAITING_ORGANIZER}:${stage}`
 }
 
-export function pendingActAdvance(state: SharedEventState, stage: number): number {
-  return counterValue(state, pendingActAdvanceKey(stage))
+export function awaitingOrganizer(state: SharedEventState, stage: number): number {
+  return counterValue(state, awaitingOrganizerKey(stage))
 }
 
 // The act stage currently awaiting organizer allocation, if any: the first
-// `pending-act-advance:<stage>` counter that is set. Lets surfaces detect a pending
-// advance without already knowing the stage.
-export function activePendingAdvanceStage(state: SharedEventState): number | null {
-  const prefix = `${PENDING_ACT_ADVANCE}:`
+// `awaiting-organizer:<stage>` counter that is set. Lets the dashboard detect it
+// without already knowing the stage.
+export function activeAwaitingStage(state: SharedEventState): number | null {
+  const prefix = `${AWAITING_ORGANIZER}:`
   for (const [key, value] of Object.entries(state.sharedCounters)) {
     if (value > 0 && key.startsWith(prefix)) {
       const stage = Number(key.slice(prefix.length))
@@ -128,6 +131,32 @@ export function activePendingAdvanceStage(state: SharedEventState): number | nul
     }
   }
   return null
+}
+
+// `act-contribution:<stage>:<ordinal>` is how many clues each group contributed to
+// the shared pool for that act stage — the per-group cap the organizer allocates from.
+export const ACT_CONTRIBUTION = 'act-contribution'
+
+export function actContributionKey(stage: number, ordinal: number): string {
+  return `${ACT_CONTRIBUTION}:${stage}:${ordinal}`
+}
+
+export function actContribution(state: SharedEventState, stage: number, ordinal: number): number {
+  return counterValue(state, actContributionKey(stage, ordinal))
+}
+
+// `act-spend:<stage>:<ordinal>` is how many of a group's contributed clues the
+// organizer allocated to spend toward the threshold (written at resolve time). The
+// remaining-on-act pool is contribution − spend, so spent clues drop off the act
+// once the organizer allocates.
+export const ACT_SPEND = 'act-spend'
+
+export function actSpendKey(stage: number, ordinal: number): string {
+  return `${ACT_SPEND}:${stage}:${ordinal}`
+}
+
+export function actSpend(state: SharedEventState, stage: number, ordinal: number): number {
+  return counterValue(state, actSpendKey(stage, ordinal))
 }
 
 export function emptySharedState(): SharedEventState {
@@ -166,6 +195,18 @@ export const groupPlayerInfoDecoder = JsonDecoder.object<GroupPlayerInfo>(
   'GroupPlayerInfo',
 )
 
+export const replicateTargetDecoder = JsonDecoder.object<ReplicateTarget>(
+  {
+    target: JsonDecoder.succeed(),
+    cardCode: JsonDecoder.string(),
+    kind: JsonDecoder.oneOf(
+      [JsonDecoder.isExactly('location'), JsonDecoder.isExactly('investigator'), JsonDecoder.isExactly('enemy')],
+      'ReplicateTarget.kind',
+    ),
+  },
+  'ReplicateTarget',
+)
+
 export const groupDigestDecoder = JsonDecoder.object<GroupDigest>(
   {
     ordinal: JsonDecoder.number(),
@@ -175,10 +216,8 @@ export const groupDigestDecoder = JsonDecoder.object<GroupDigest>(
     investigatorCount: JsonDecoder.number(),
     seatCount: JsonDecoder.number(),
     youAreSeated: JsonDecoder.boolean(),
-    // Tolerant while the backend rolls these out: absent/null -> null.
-    actStage: withDefault<number | null, null>(null, JsonDecoder.number()),
-    actClues: withDefault<number | null, null>(null, JsonDecoder.number()),
     players: JsonDecoder.array(groupPlayerInfoDecoder, 'GroupPlayerInfo[]'),
+    replicateTargets: JsonDecoder.array(replicateTargetDecoder, 'ReplicateTarget[]'),
   },
   'GroupDigest',
 )
@@ -192,6 +231,7 @@ export const eventDetailsDecoder = JsonDecoder.object<EventDetails>(
     createdAt: JsonDecoder.string(),
     sharedState: sharedEventStateDecoder,
     totalInvestigators: JsonDecoder.number(),
+    playWithBlobElse: JsonDecoder.boolean(),
     groups: JsonDecoder.array(groupDigestDecoder, 'GroupDigest[]'),
   },
   'EventDetails',

@@ -13,12 +13,11 @@ import Arkham.Message
 import Arkham.Prelude
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Window (Window (..))
 import Arkham.Window qualified as Window
 
 matchChaosToken
-  :: (HasGame m, Tracing m) => InvestigatorId -> ChaosToken -> Matcher.ChaosTokenMatcher -> m Bool
+  :: HasGame m => InvestigatorId -> ChaosToken -> Matcher.ChaosTokenMatcher -> m Bool
 matchChaosToken _ = (<=~>)
 
 cancelChaosToken :: HasQueue Message m => ChaosToken -> m ()
@@ -53,8 +52,20 @@ getModifiedChaosTokenFace token = do
   applyModifier [f'] (ForcedChaosTokenChange f fs) | f == f' = fs
   applyModifier fs _ = fs
 
+{- | Whether the effects printed on a revealed symbol are suppressed, either
+because the token is being ignored outright or because something is resolving
+in its place (see The Black Cat (5)). Scenario and investigator handlers for
+@PassedSkillTest@/@FailedSkillTest@ keyed on a 'ChaosTokenTarget' must check
+this before resolving.
+-}
+chaosTokenSymbolEffectsIgnored :: HasGame m => ChaosToken -> m Bool
+chaosTokenSymbolEffectsIgnored token = do
+  modifiers' <- foldMapM getModifiers [toTarget token.face, toTarget token]
+  pure
+    $ any (`elem` modifiers') [IgnoreChaosTokenEffects, IgnoreChaosToken, IgnoreChaosTokenSymbolEffects]
+
 chaosTokenEffect
-  :: (HasGame m, Tracing m, Sourceable source) => source -> ChaosToken -> ModifierType -> m Message
+  :: (HasGame m, Sourceable source) => source -> ChaosToken -> ModifierType -> m Message
 chaosTokenEffect (toSource -> source) token modifier = do
   ems <- effectModifiers source [modifier]
   pure $ CreateChaosTokenEffect ems source token

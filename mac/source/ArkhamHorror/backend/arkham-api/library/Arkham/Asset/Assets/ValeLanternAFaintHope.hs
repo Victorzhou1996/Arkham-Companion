@@ -11,7 +11,9 @@ import Arkham.I18n
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Move
-import Arkham.Scenarios.TheTwistedHollow.Helpers (placeValeLanternAtNearestLocation)
+import Arkham.Scenarios.TheFeastOfHemlockVale.TheTwistedHollow.Helpers (
+  placeValeLanternAtNearestLocation,
+ )
 import Arkham.Trait (Trait (Dark))
 import Arkham.Window qualified as Window
 
@@ -45,7 +47,7 @@ instance RunMessage ValeLanternAFaintHope where
         lookAtRevealed iid (attrs.ability 1) loc
         whenM (getCanMoveTo iid (attrs.ability 1) loc) do
           chooseOneM iid $ withI18n do
-            labeled' "move" do
+            labeled "move" do
               createCardEffect Cards.valeLanternAFaintHope (effectMetaTarget loc) attrs iid
               moveTo (attrs.ability 1) iid loc
             skip_

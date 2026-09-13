@@ -1,15 +1,16 @@
 module Arkham.Event.Events.Refine (refine) where
 
 import Arkham.Card
-import Arkham.Message.Lifted.Choose
 import Arkham.Card.PlayerCard
 import Arkham.Event.Cards qualified as Cards
 import Arkham.Event.Import.Lifted
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.Customization
+import Arkham.Homebrew.Defs (allTraits)
 import Arkham.Matcher
 import Arkham.Name hiding (labeled)
 import Arkham.PlayerCard
+import Arkham.Trait (displayTrait)
 import Data.Function (on)
 import Data.List (nubBy)
 
@@ -38,7 +39,9 @@ instance RunMessage Refine where
                   (keys customizations)
           chooseOneM iid do
             for_ availableCustomizations \customization -> do
-              labeled (tshow customization) do
+              -- The printed name, not the constructor: `label.name` is "{name}",
+              -- so interpolating the constructor showed "EldritchInk".
+              i18nKeyLabeled (customizationKey customization) do
                 forTarget attrs $ IncreaseCustomization iid card.cardCode customization []
         _ -> pure ()
       pure e
@@ -53,11 +56,11 @@ instance RunMessage Refine where
               CustomizationTraitChoice -> do
                 chooseOneDropDown
                   iid
-                  [ ( tshow trait
+                  [ ( displayTrait trait
                     , ForTarget (toTarget attrs)
                         $ IncreaseCustomization iid cardCode customization (ChosenTrait trait : choices)
                     )
-                  | trait <- [minBound ..]
+                  | trait <- allTraits
                   ]
               CustomizationCardChoice matcher -> do
                 chooseOneDropDown

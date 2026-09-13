@@ -26,6 +26,7 @@ import Arkham.Enemy.Runner as X (
   getEnemyMetaDefault,
   healthL,
   is,
+  lastKnownLocationL,
   placementL,
   preyIsBearer,
   preyIsOnlyBearer,
@@ -41,6 +42,7 @@ import Arkham.Enemy.Runner as X (
   setPreyIsBearer,
   setPreyIsOnlyBearer,
   setSpawnAt,
+  setSpawnAtFirst,
   spawnAtL,
   surgeIfUnableToSpawnL,
   tokensL,
@@ -57,6 +59,8 @@ import Arkham.Message as X (
   Message (..),
   StoryMode (..),
   pattern AbilityIsSkillTest,
+  pattern AddChaosToken,
+  pattern AddChaosTokenForGame,
   pattern AfterEnemyAttack,
   pattern AfterEvadeEnemy,
   pattern AfterRevealChaosTokens,
@@ -300,7 +304,6 @@ import Arkham.Matcher hiding (AssetDefeated, DealtDamage, EnemyAttacks, EnemyEva
 import Arkham.Modifier
 import Arkham.Name
 import Arkham.Queue
-import Arkham.Tracing
 import Arkham.Window qualified as Window
 import Control.Monad.Trans
 
@@ -316,7 +319,7 @@ insteadOfDefeat asEnemy body = whenM (beingDefeated asEnemy) do
 
 -- See: The Spectral Watcher
 insteadOfDefeatWithWindows
-  :: (HasQueue Message m, Tracing m, HasGame m, ToId enemy EnemyId, CardGen m)
+  :: (HasQueue Message m, HasGame m, ToId enemy EnemyId, CardGen m)
   => enemy -> QueueT Message (QueueT Message m) () -> QueueT Message m ()
 insteadOfDefeatWithWindows e body = whenBeingDefeated e \miid defeatedBy -> do
   cancelEnemyDefeat e

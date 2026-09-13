@@ -8,7 +8,7 @@ import { Token } from '@/arkham/types/Token'
 import { DestinyDrawing } from '@/arkham/types/Question'
 import { StandaloneSetting } from '@/arkham/types/StandaloneSetting'
 import { CampaignLogSettings, Key, CampaignOption } from '@/arkham/types/CampaignSettings'
-import { AiQuestion } from '@/arkham/types/AiQuestion'
+import { CustomCard, customCardDecoder } from '@/arkham/customCards'
 import { Achievement, achievementDecoder } from '@/arkham/types/Achievement'
 import {
   CreateEventPost,
@@ -19,6 +19,7 @@ import {
 } from '@/arkham/types/EpicEvent'
 import * as NewGame from '@/arkham/types/NewGame'
 import * as JsonDecoder from 'ts.data.json'
+import { registerArtVariants } from '@/arkham/artVariants'
 
 interface FetchData {
   playerId: string
@@ -40,10 +41,22 @@ export const fetchJoinGame = async (gameId: string): Promise<Game> => {
 }
 
 export const fetchGame = async (gameId: string, spectate = false): Promise<FetchData> => {
-  const { data } = await api.get(`arkham/games/${gameId}${spectate ? '/spectate' : ''}`)
+  const { data } = await api.get(`arkham/games/${gameId}${spectate ? '/spectate' : ''}`, {
+    // Game GETs are also used to recover from missed websocket transitions.
+    // A cache hit here can leave setup on an already-answered question.
+    params: { _: Date.now() },
+  })
   const { playerId, game, multiplayerMode, eventId } = data
   const gameData = await gameDecoder.decodePromise(game)
   return { playerId, game: gameData, multiplayerMode, eventId: eventId ?? null }
+}
+
+/* The "did anything happen?" probe: a single Int column, no game JSON, no lock.
+ * fetchGame is the most expensive endpoint we have, so a poller asks this first
+ * and only pays for the whole game when the step actually moved. */
+export const fetchGameStep = async (gameId: string): Promise<number> => {
+  const { data } = await api.get(`arkham/games/${gameId}/step`, { params: { _: Date.now() } })
+  return data.step
 }
 
 export const fetchGameReplay = async (gameId: string, step: number): Promise<FetchReplay> => {
@@ -115,10 +128,235 @@ export const fetchDeck = async (deckId: string): Promise<Deck> => {
   return deckDecoder.decodePromise(data)
 }
 
-export const fetchCards = async (includeEncounter = false): Promise<CardDef[]> => {
-  const query = includeEncounter ? '?includeEncounter' : ''
+export type CardPoolMode = 'player' | 'campaign' | 'both'
+
+export const fetchCards = async (cardPool: CardPoolMode | boolean = 'player'): Promise<CardDef[]> => {
+  const mode: CardPoolMode = cardPool === true ? 'both' : cardPool === false ? 'player' : cardPool
+  const query = mode === 'player' ? "" : `?includeEncounter&cardPool=${mode}`
   const { data } = await api.get(`arkham/cards${query}`)
-  return JsonDecoder.array(cardDefDecoder, 'ArkhamCardDef[]').decodePromise(data)
+  const cards = await JsonDecoder.array(cardDefDecoder, 'ArkhamCardDef[]').decodePromise(data)
+  registerArtVariants(cards)
+  return cards
+}
+
+export const fetchHomebrewCards = async (): Promise<CardDef[]> => {
+  const { data } = await api.get('arkham/homebrew/cards')
+  const cards = await JsonDecoder.array(cardDefDecoder, 'ArkhamHomebrewCardDef[]').decodePromise(data)
+  registerArtVariants(cards)
+  return cards
+}
+
+export const setDeckOverlay = async (deckId: string, overlay: any): Promise<void> => {
+  await api.put(`arkham/decks/${deckId}/overlay`, overlay)
+}
+
+export const removeDeckOverlay = async (deckId: string): Promise<void> => {
+  await api.delete(`arkham/decks/${deckId}/overlay`)
+}
+
+export const fetchTraits = async (): Promise<[string, string][]> => {
+  const { data } = await api.get('arkham/traits')
+  return data
+}
+
+export type StoredCustomCard = {
+  id: string
+  setId: string
+  cardCode: string
+  def: any
+  art: string | null
+  updatedAt: string
+}
+
+/* A set is what a card belongs to: the unit you build, export, and hand to
+ * someone else. Every card has one. */
+export type StoredCustomCardSet = {
+  id: string
+  name: string
+  // The pack id an imported set came from, so re-importing that pack replaces
+  // this set rather than making a second copy of it. Null for a set made here.
+  sourceCode: string | null
+  cardCount: number
+  updatedAt: string
+  /* The marketplace listing this set came from and still follows. All three go
+   * null the moment the set is edited, which is what stops it updating. */
+  publishedCardSetId: string | null
+  subscribedVersion: number | null
+  latestVersion: number | null
+}
+
+export const fetchCustomCardSets = async (): Promise<StoredCustomCardSet[]> => {
+  const { data } = await api.get('arkham/custom-card-sets')
+  return data
+}
+
+export const createCustomCardSet = async (name: string): Promise<StoredCustomCardSet> => {
+  const { data } = await api.post('arkham/custom-card-sets', { name })
+  return data
+}
+
+export const renameCustomCardSet = async (id: string, name: string): Promise<StoredCustomCardSet> => {
+  const { data } = await api.put(`arkham/custom-card-sets/${id}`, { name })
+  return data
+}
+
+// Takes the set's cards with it.
+export const deleteCustomCardSet = async (id: string): Promise<void> => {
+  await api.delete(`arkham/custom-card-sets/${id}`)
+}
+
+/* One call, one set: whatever the set held before is replaced by exactly these
+ * cards, so importing a corrected pack cannot leave the cards it dropped
+ * behind. Matched to an existing set by `sourceCode` when there is one, by
+ * name otherwise. */
+export const importCustomCardSet = async (payload: {
+  name: string
+  sourceCode: string | null
+  cards: { def: any; art: string | null }[]
+}): Promise<{ set: StoredCustomCardSet; cards: StoredCustomCard[] }> => {
+  const { data } = await api.post('arkham/custom-card-sets/import', payload)
+  return { set: data.set, cards: data.cards.map(toStoredCustomCard) }
+}
+
+/* ------------------------------------------------------------ marketplace ---
+
+   Published sets: a set its author has put up, and other people's copies
+   following it. A copy stops following as soon as it is edited, so "subscribed"
+   is a fact about the server's records rather than a switch anyone sets. */
+
+export type PublishedCardSet = {
+  id: string
+  name: string
+  author: string
+  mine: boolean
+  latestVersion: number
+  cardCount: number
+  // What the author said about the newest version, if they said anything.
+  note: string | null
+  // The first few cards, so a listing can show what is in the set.
+  preview: { def: any; art: string | null }[]
+  likes: number
+  liked: boolean
+  updatedAt: string
+  // The version your own copy is on, if you have one that still follows this.
+  subscribedVersion: number | null
+}
+
+/* One set in full: its listing plus every card in the version. The listing comes
+ * along so a page showing one set needs one request. */
+export type PublishedCardSetVersion = {
+  listing: PublishedCardSet
+  version: number
+  name: string
+  note: string | null
+  cards: { def: any; art: string | null }[]
+  createdAt: string
+}
+
+export const fetchPublishedCardSets = async (): Promise<PublishedCardSet[]> => {
+  const { data } = await api.get('arkham/published-card-sets')
+  return data
+}
+
+export const fetchPublishedCardSet = async (
+  id: string,
+  version?: number,
+): Promise<PublishedCardSetVersion> => {
+  const query = version === undefined ? '' : `?version=${version}`
+  const { data } = await api.get(`arkham/published-card-sets/${id}${query}`)
+  return data
+}
+
+/* Publish the set as it stands. Each call is a new version, and the version is
+ * kept whole, so a copy of it can be taken again later however the set changes. */
+export const publishCustomCardSet = async (
+  id: string,
+  note: string | null,
+): Promise<PublishedCardSet> => {
+  const { data } = await api.post(`arkham/custom-card-sets/${id}/publish`, { note })
+  return data
+}
+
+export const unpublishCardSet = async (id: string): Promise<void> => {
+  await api.delete(`arkham/published-card-sets/${id}`)
+}
+
+/* Take a published set into your collection and follow it from then on. The
+ * import happens on the server, so the cards never round-trip through here. */
+export const subscribeToCardSet = async (
+  id: string,
+  version?: number,
+): Promise<PublishedCardSet> => {
+  const { data } = await api.post(`arkham/published-card-sets/${id}/subscribe`, {
+    version: version ?? null,
+  })
+  return data
+}
+
+/* Liking is a row existing, so these are idempotent: liking twice is liking, and
+ * unliking something you never liked is already true. Both hand back the listing
+ * with its new count. */
+export const likeCardSet = async (id: string): Promise<PublishedCardSet> => {
+  const { data } = await api.post(`arkham/published-card-sets/${id}/like`, {})
+  return data
+}
+
+export const unlikeCardSet = async (id: string): Promise<PublishedCardSet> => {
+  const { data } = await api.delete(`arkham/published-card-sets/${id}/like`)
+  return data
+}
+
+// Bring a subscribed set up to the newest published version.
+export const syncCustomCardSet = async (id: string): Promise<PublishedCardSet> => {
+  const { data } = await api.post(`arkham/custom-card-sets/${id}/sync`, {})
+  return data
+}
+
+/* A card row names its set the way the entity spells the field; `setId` is what
+ * it is called here. */
+const toStoredCustomCard = (row: any): StoredCustomCard => ({
+  id: row.id,
+  setId: row.customCardSetId,
+  cardCode: row.cardCode,
+  def: row.def,
+  art: row.art,
+  updatedAt: row.updatedAt,
+})
+
+export const fetchCustomCardLibrary = async (): Promise<StoredCustomCard[]> => {
+  const { data } = await api.get('arkham/custom-cards')
+  return data.map(toStoredCustomCard)
+}
+
+export const saveCustomCard = async (card: {
+  setId: string
+  def: any
+  art: string | null
+}): Promise<StoredCustomCard> => {
+  const { data } = await api.post('arkham/custom-cards', card)
+  return toStoredCustomCard(data)
+}
+
+export const deleteCustomCard = async (id: string): Promise<void> => {
+  await api.delete(`arkham/custom-cards/${id}`)
+}
+
+/* Art is uploaded rather than inlined: a data URI would ride in the def, and
+ * from there into every game that uses the card. */
+export const uploadCustomCardArt = async (file: File | Blob, filename = 'art.webp'): Promise<string> => {
+  const body = new FormData()
+  body.append('file', file, filename)
+  /* The client defaults to application/json; a multipart body has to carry its
+   * own boundary, which the browser only adds when the header is left unset. */
+  const { data } = await api.post('arkham/custom-cards/art', body, {
+    headers: { 'Content-Type': undefined },
+  })
+  return data
+}
+
+export const fetchCustomCards = async (gameId: string): Promise<CustomCard[]> => {
+  const { data } = await api.get(`arkham/games/${gameId}/custom-cards`)
+  return JsonDecoder.array(customCardDecoder, 'ArkhamCustomCard[]').decodePromise(data)
 }
 
 export const fetchCard = async (cardCode: string): Promise<CardDef> => {
@@ -141,8 +379,18 @@ export const newDeck = async (
   return deckDecoder.decodePromise(data)
 }
 
-export const validateDeck = (deckList: ArkhamDbDecklist): Promise<void> =>
-  api.post('arkham/decks/validate', deckList)
+/* Validation reads nothing and writes nothing, so a request that produced no
+ * response at all is safe to send again. Worth doing because a browser that
+ * loses a request mid-flight will not retry a POST on its own -- Firefox on
+ * HTTP/3 hangs here rather than falling back (see terraform's http3_enabled). */
+export const validateDeck = async (deckList: ArkhamDbDecklist): Promise<void> => {
+  try {
+    await api.post('arkham/decks/validate', deckList, { timeout: 15000 })
+  } catch (err) {
+    if ((err as { response?: unknown }).response) throw err
+    await api.post('arkham/decks/validate', deckList, { timeout: 15000 })
+  }
+}
 
 export const fetchDeckList = async (url: string): Promise<ArkhamDbDecklist> => {
   const { data } = await api.post('arkham/decks/fetch', { url })
@@ -269,6 +517,23 @@ export const exchangeTokens = (
     amount,
   })
 
+export const retireInvestigator = (gameId: string, investigatorId: string): Promise<void> =>
+  api.put(`arkham/games/${gameId}`, { tag: 'RetireInvestigatorAnswer', investigatorId })
+
+export const rejoinInvestigator = (gameId: string, investigatorId: string): Promise<void> =>
+  api.put(`arkham/games/${gameId}`, { tag: 'RejoinInvestigatorAnswer', investigatorId })
+
+// Lays custom cards over an investigator's campaign deck between scenarios.
+export const applyInvestigatorOverlay = (
+  gameId: string,
+  investigatorId: string,
+  overlay: unknown,
+): Promise<void> =>
+  api.put(`arkham/games/${gameId}`, { tag: 'ApplyOverlayAnswer', investigatorId, overlay })
+
+export const joinCampaign = (gameId: string): Promise<void> =>
+  api.put(`arkham/games/${gameId}`, { tag: 'JoinCampaignAnswer' })
+
 export const setDestiny = (gameId: string, drawings: DestinyDrawing[]): Promise<void> =>
   api.put(`arkham/games/${gameId}`, { tag: 'PickDestinyAnswer', contents: drawings })
 
@@ -287,6 +552,23 @@ export const setLocationOffset = (
 
 export const resetLocationOffsets = (gameId: string): Promise<void> =>
   updateGameRaw(gameId, { tag: 'ResetLocationOffsets' })
+
+export const setCardOption = (
+  gameId: string,
+  investigatorId: string,
+  cardCode: string,
+  key: string,
+  value: boolean | string,
+): Promise<void> =>
+  updateGameRaw(gameId, { tag: 'SetCardOption', contents: [investigatorId, cardCode, key, value] })
+
+export const setCardSilenced = (
+  gameId: string,
+  investigatorId: string,
+  cardCode: string,
+  silenced: boolean,
+): Promise<void> =>
+  updateGameRaw(gameId, { tag: 'SetCardSilenced', contents: [investigatorId, cardCode, silenced] })
 
 export interface PlayabilityResponse {
   cardId: string
@@ -314,13 +596,11 @@ export const newGame = async (
   includeTarotReadings: boolean,
   options: NewGame.CampaignOption[],
   strictAsIfAt?: boolean,
-  // Per-seat AI configuration, parallel to `deckIds` and indexed by seat. Omitted
-  // (the default) preserves today's all-human behavior; entries may be `null` for
-  // human seats. Only sent for Solo/multihanded games (see NewCampaign.start).
-  aiPlayers?: (NewGame.AiSlotConfig | null)[],
-  achievementsEnabled = true,
   // Ultimatums and Boons variant tags (e.g. "BoonOfHades"). Omitted = none.
   ultimatumsAndBoons?: string[],
+  // Achievement tracking (only meaningful for campaigns with an achievement
+  // catalog); backend defaults to true when omitted.
+  achievementsEnabled = true,
   undoMode: NewGame.UndoMode = 'full',
 ): Promise<Game> => {
   const { data } = await api.post('arkham/games', {
@@ -335,7 +615,6 @@ export const newGame = async (
     options,
     strictAsIfAt,
     asIfRuling: strictAsIfAt == null ? undefined : strictAsIfAt ? 'chapter2' : 'chapter1',
-    aiPlayers,
     achievementsEnabled,
     ultimatumsAndBoons,
     undoMode,
@@ -367,28 +646,34 @@ export const joinGame = async (gameId: string): Promise<Game> => {
   return gameDecoder.decodePromise(data)
 }
 
-export const undoChoice = (gameId: string, debug: boolean): Promise<void> => {
-  if (debug) {
-    return api.put(`arkham/games/${gameId}/undo?debug`)
-  } else {
-    return api.put(`arkham/games/${gameId}/undo`)
-  }
-}
+// The axios instance has no default timeout, so a request that never answers
+// never settles either. Undo holds a client-side lock for its round trip, and a
+// promise that never settles leaves that lock -- and the Undo button -- stuck for
+// the life of the page. Bound it: a rejected undo is recoverable, a hung one is
+// not. Multi-step undos fold N patches, so they get more room than a single step.
+const UNDO_TIMEOUT_MS = 30000
+const UNDO_MULTI_TIMEOUT_MS = 60000
+
+const undoRequest = (path: string, timeout: number): Promise<void> =>
+  api.put(path, null, { timeout })
+
+export const undoChoice = (gameId: string, debug: boolean): Promise<void> =>
+  undoRequest(`arkham/games/${gameId}/undo${debug ? '?debug' : ''}`, UNDO_TIMEOUT_MS)
 
 export const undoScenarioChoice = (gameId: string): Promise<void> =>
-  api.put(`arkham/games/${gameId}/undo/scenario`)
+  undoRequest(`arkham/games/${gameId}/undo/scenario`, UNDO_MULTI_TIMEOUT_MS)
 
 export const undoAction = (gameId: string): Promise<void> =>
-  api.put(`arkham/games/${gameId}/undo/action`)
+  undoRequest(`arkham/games/${gameId}/undo/action`, UNDO_MULTI_TIMEOUT_MS)
 
 export const undoTurn = (gameId: string): Promise<void> =>
-  api.put(`arkham/games/${gameId}/undo/turn`)
+  undoRequest(`arkham/games/${gameId}/undo/turn`, UNDO_MULTI_TIMEOUT_MS)
 
 export const undoPhase = (gameId: string): Promise<void> =>
-  api.put(`arkham/games/${gameId}/undo/phase`)
+  undoRequest(`arkham/games/${gameId}/undo/phase`, UNDO_MULTI_TIMEOUT_MS)
 
 export const undoRound = (gameId: string): Promise<void> =>
-  api.put(`arkham/games/${gameId}/undo/round`)
+  undoRequest(`arkham/games/${gameId}/undo/round`, UNDO_MULTI_TIMEOUT_MS)
 
 export const importGame = async (
   formData: FormData,
@@ -408,14 +693,6 @@ export const fetchOpenSeats = async (gameId: string): Promise<string[]> => {
 
 export const claimSeat = async (gameId: string, investigatorId: string): Promise<void> => {
   await api.post(`arkham/games/${gameId}/claim-seat`, { investigatorId })
-}
-
-// Dev-only "AI asks questions": a snapshot of the AI's pending questions. The
-// shared `api` axios instance handles auth/baseURL; the payload is already in
-// the AiQuestion shape so we return it as-is (mirrors fetchOpenSeats).
-export const fetchAiQuestions = async (gameId: string): Promise<AiQuestion[]> => {
-  const { data } = await api.get(`arkham/games/${gameId}/ai-questions`)
-  return data as AiQuestion[]
 }
 
 // "Epic Multiplayer" events ---------------------------------------------------
@@ -452,7 +729,7 @@ export const eventTimeUp = async (eventId: string): Promise<void> => {
 
 // Organizer resolves an over-threshold shared act advance for `stage`, choosing how
 // many clues each group spends. `allocation` entries are { ordinal, spend }. The
-// backend resets the shared pool + clears the pending flag, then broadcasts the
+// backend clears the awaiting-organizer gate + resets the pool, then broadcasts the
 // updated shared state over the event ws.
 export const resolveEventAdvance = async (
   eventId: string,
@@ -460,6 +737,23 @@ export const resolveEventAdvance = async (
   allocation: { ordinal: number; spend: number }[],
 ): Promise<void> => {
   await api.post(`arkham/events/${eventId}/resolve-advance`, { stage, allocation })
+}
+
+export const swapMainStreetInvestigators = async (
+  eventId: string,
+  firstGroupOrdinal: number,
+  secondGroupOrdinal: number,
+): Promise<void> => {
+  await api.post(`arkham/events/${eventId}/swap-main-street`, { firstGroupOrdinal, secondGroupOrdinal })
+}
+
+export const replicateAberration = async (
+  eventId: string,
+  groupOrdinal: number,
+  cardCode: string,
+  target: unknown,
+): Promise<void> => {
+  await api.post(`arkham/events/${eventId}/replicate`, { groupOrdinal, cardCode, target })
 }
 
 export const deleteEvent = async (eventId: string): Promise<void> => {

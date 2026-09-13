@@ -171,6 +171,12 @@ const tokenChoices = computed(() => props.game.scenario?.chaosBag.choice)
 const damageAssignmentTokens = computed(() => ArkhamGame.damageAssignmentTokens(props.game, props.playerId))
 
 const requiresModal = computed(() => {
+  // Nothing inside the modal renders without a question, and undo/step transitions
+  // clear the question while focused cards, tokens and search results still hold
+  // the old state -- without this the modal stays up completely empty.
+  if (!question.value) {
+    return false
+  }
   // Damage/horror assignment is done by clicking cards; show the pending tokens
   // on the investigator instead of popping the choice modal.
   if (damageAssignmentTokens.value) {
@@ -232,6 +238,14 @@ const title = computed(() => {
     return t("Story")
   }
 
+  if (question.value && question.value.tag === QuestionType.CHOOSE_ONE_WIZARD) {
+    if (question.value.flavorText.title) {
+      return handleEmbeddedI18n(question.value.flavorText.title, t)
+    }
+
+    return t("Choose")
+  }
+
   if (question.value && question.value.tag === QuestionType.DROP_DOWN) {
     return t("Choose one")
   }
@@ -243,6 +257,17 @@ const title = computed(() => {
       return te(titleKey.slice(1)) ? titleKey : amountsLabel.value
     } else {
       return amountsLabel.value
+    }
+  }
+
+  // A labelled question can name its own heading by adding a sibling of its
+  // "$...label..." key under "title" -- otherwise every one of them says "Choose".
+  if (body.value?.startsWith("$")) {
+    const titleKey = body.value.replace(".label.", ".title.")
+    // The key can carry i18n vars ("$a.label.b var=i:1"); `te` needs the key alone.
+    const bareKey = titleKey.slice(1).split(' ')[0]
+    if (titleKey !== body.value && te(bareKey)) {
+      return titleKey
     }
   }
 
@@ -681,5 +706,14 @@ const title = computed(() => {
 .choice-modal-wrapper .body {
   text-align: center;
   margin: 0;
+}
+
+/* The card pool picker's panels carry the framing, so its lede stays plain text. */
+.choice-modal-wrapper:has(.card-pool-picker) .body {
+  padding: 2px 2px 0;
+  border: 0;
+  background: none;
+  color: #e7dcc2;
+  font-size: 1.05em;
 }
 </style>

@@ -23,10 +23,11 @@ covertOpsInTheShadows =
 
 theNecronomiconDrakeTranslation :: CardDef
 theNecronomiconDrakeTranslation =
-  (weakness "12012" ("The Necronomicon" <:> "Drake Translation"))
-    { cdCardTraits = setFromList [Item, Tome]
-    , cdSlots = [#arcane]
-    }
+  signature "12010"
+    $ (weakness "12012" ("The Necronomicon" <:> "Drake Translation"))
+      { cdCardTraits = setFromList [Item, Tome, Cursed]
+      , cdSlots = [#arcane]
+      }
 
 isabellesTwin45sLoadedWithVengeance :: CardDef
 isabellesTwin45sLoadedWithVengeance =
@@ -52,6 +53,7 @@ endurance =
   (asset "12017" "Endurance" 2 Guardian)
     { cdSkills = [#combat, #agility]
     , cdCardTraits = setFromList [Talent]
+    , cdErrata = Just "This card should have a wild skill icon."
     }
 
 loganHastingsBountyHunter :: CardDef
@@ -274,6 +276,9 @@ huntersInstinct =
     , cdCardTraits = setFromList [Talent]
     , cdLimits = [LimitPerInvestigator 1]
     , cdUses = uses Supply 3
+    , cdErrata =
+        Just
+          "This card’s keyword line should read “If there are no supplies on Hunter’s Instinct, discard it.”"
     }
 
 jumpsuit :: CardDef
@@ -356,4 +361,5 @@ collector =
       { cdCardTraits = singleton Talent
       , cdEncounterSet = Just QueenOfAsh
       , cdEncounterSetQuantity = Just 2
+      , cdTags = [noGameplayEffectTag]
       }

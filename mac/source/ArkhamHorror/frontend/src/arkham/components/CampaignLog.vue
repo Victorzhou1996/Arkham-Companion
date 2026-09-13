@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import * as Arkham from '@/arkham/types/Game'
-import { LogContents, LogKey, formatKey, logContentsDecoder } from '@/arkham/types/Log'
+import { LogContents, LogKey, formatKey, homebrewScopeFromCampaignId, logContentsDecoder } from '@/arkham/types/Log'
 import { toCapitalizedWords, formatContent } from '@/arkham/helpers'
 import { cardArt } from '@/arkham/cardImages'
 import { computed, ref, onMounted, onUnmounted, watch, nextTick, type Component } from 'vue'
@@ -15,7 +15,10 @@ import KeysStatus from '@/arkham/components/TheScarletKeys/KeysStatus.vue'
 import WorldMap from '@/arkham/components/TheScarletKeys/WorldMap.vue'
 import Supplies from '@/arkham/components/Supplies.vue'
 import XpBreakdown from '@/arkham/components/XpBreakdown.vue'
-import type { XpBreakdownStep } from '@/arkham/types/Xp'
+import { type XpBreakdown as XpBreakdownType, type XpBreakdownStep, xpBreakdownDecoder } from '@/arkham/types/Xp'
+import { type TokenFace, tokenFaceDecoder } from '@/arkham/types/ChaosToken'
+import { type ChaosBagChange, type RecordCountChange, chaosBagChangeDecoder, recordCountChangeDecoder } from '@/arkham/types/Campaign'
+import * as JsonDecoder from 'ts.data.json'
 import InvestigatorRow from '@/arkham/components/InvestigatorRow.vue'
 import CampaignLogSection from '@/arkham/components/CampaignLogSection.vue'
 import CampaignLogSpecialRules from '@/arkham/components/CampaignLogSpecialRules.vue'
@@ -108,6 +111,9 @@ const campaignDefinition = computed<CampaignDefinition | null>(() => {
   return (campaignJSON as CampaignDefinition[]).find((c) => c.id === campaignId) ?? null
 })
 
+// Scope for homebrew keys recorded before their campaign added a scope prefix.
+const homebrewScope = computed(() => homebrewScopeFromCampaignId(props.game.campaign?.id))
+
 const additionalLogSections = computed(() => campaignDefinition.value?.additional ?? [])
 const additionalTabId = (index: number): `additional:${number}` => `additional:${index}`
 const isAdditionalTab = (tab: LogTab): tab is `additional:${number}` => tab.startsWith('additional:')
@@ -158,11 +164,43 @@ const otherCampaignAttrs = computed(() => props.game.campaign?.meta?.otherCampai
 
 // decode the counterpart log if present (Dream Eaters A/B split)
 const otherLog = ref<LogContents | null>(null)
-if (props.game.campaign?.meta?.otherCampaignAttrs?.log) {
+if (otherCampaignAttrs.value?.log) {
   logContentsDecoder
-    .decodePromise(props.game.campaign.meta.otherCampaignAttrs.log)
+    .decodePromise(otherCampaignAttrs.value.log)
     .then(res => { otherLog.value = res })
     .catch(() => { otherLog.value = null })
+}
+
+const otherXpBreakdown = ref<XpBreakdownType | null>(null)
+if (otherCampaignAttrs.value?.xpBreakdown) {
+  xpBreakdownDecoder
+    .decodePromise(otherCampaignAttrs.value.xpBreakdown)
+    .then(res => { otherXpBreakdown.value = res })
+    .catch(() => { otherXpBreakdown.value = null })
+}
+
+const otherChaosBag = ref<TokenFace[] | null>(null)
+if (otherCampaignAttrs.value?.chaosBag) {
+  JsonDecoder.array(tokenFaceDecoder, 'TokenFace[]')
+    .decodePromise(otherCampaignAttrs.value.chaosBag)
+    .then(res => { otherChaosBag.value = res })
+    .catch(() => { otherChaosBag.value = null })
+}
+
+const otherChaosBagHistory = ref<ChaosBagChange[] | null>(null)
+if (otherCampaignAttrs.value?.chaosBagHistory) {
+  JsonDecoder.array(chaosBagChangeDecoder, 'ChaosBagChange[]')
+    .decodePromise(otherCampaignAttrs.value.chaosBagHistory)
+    .then(res => { otherChaosBagHistory.value = res })
+    .catch(() => { otherChaosBagHistory.value = null })
+}
+
+const otherRecordCountHistory = ref<RecordCountChange[] | null>(null)
+if (otherCampaignAttrs.value?.recordCountHistory) {
+  JsonDecoder.array(recordCountChangeDecoder, 'RecordCountChange[]')
+    .decodePromise(otherCampaignAttrs.value.recordCountHistory)
+    .then(res => { otherRecordCountHistory.value = res })
+    .catch(() => { otherRecordCountHistory.value = null })
 }
 
 // A mapping of title → LogContents. When there is no split, we expose just the main one.
@@ -190,11 +228,11 @@ watch(logTitles, (titles) => {
 const selectedLog = computed<LogContents>(() => logMap.value[selectedTitle.value] ?? mainLog.value)
 
 // --- Investigators shown depend on which half is selected -----------------------
-const investigators = computed(() => {
-  const mainTitle = dreamModeTitle.value ?? logTitles.value[0]
-  const showingMain = selectedTitle.value === mainTitle
-  return showingMain ? Object.values(props.game.investigators) : Object.values(props.game.otherInvestigators)
-})
+const showingMain = computed(() => selectedTitle.value === (dreamModeTitle.value ?? logTitles.value[0]))
+
+const investigators = computed(() =>
+  showingMain.value ? Object.values(props.game.investigators) : Object.values(props.game.otherInvestigators)
+)
 
 // --- Remembered (scenario-only) -------------------------------------------------
 const remembered = computed(() => {
@@ -291,10 +329,14 @@ watch(additionalLogSections, (sections) => {
 
 const allGameInvestigators = computed(() => ({
   ...props.game.investigators,
+  ...props.game.otherInvestigators,
   ...props.game.killedInvestigators,
 }))
 
 const breakdowns = computed<XpBreakdownStep[]>(() => {
+  if (!showingMain.value) {
+    return otherXpBreakdown.value ?? []
+  }
   if (props.game.campaign?.xpBreakdown) {
     return props.game.campaign.xpBreakdown
   }
@@ -355,7 +397,7 @@ const recorded = computed(() => {
     .filter((c) => !isSection(c))
     .filter((c) => !(c.tag === 'TheDrownedCityKey' && TDC_ARTIFACT_KEYS.has(String((c as any).contents))))
     .filter((c) => !(c.tag === 'TheDrownedCityKey' && TDC_TASK_KEYS.has(String((c as any).contents))))
-    .map(formatKey)
+    .map((k: LogKey) => formatKey(k, homebrewScope.value))
 })
 
 type SectionModel = {
@@ -521,7 +563,17 @@ const recordedCounts = computed(() =>
 )
 
 const partners = computed(() => (selectedLog.value as any).partners ?? {})
-const chaosBag = computed(() => props.game.campaign?.chaosBag ?? [])
+const chaosBag = computed(() =>
+  showingMain.value ? (props.game.campaign?.chaosBag ?? []) : (otherChaosBag.value ?? [])
+)
+
+const chaosBagHistory = computed<ChaosBagChange[]>(() =>
+  showingMain.value ? (props.game.campaign?.chaosBagHistory ?? []) : (otherChaosBagHistory.value ?? [])
+)
+
+const recordCountHistory = computed<RecordCountChange[]>(() =>
+  showingMain.value ? (props.game.campaign?.recordCountHistory ?? []) : (otherRecordCountHistory.value ?? [])
+)
 const hasSupplies = computed(() => Object.values(investigators.value).some(i => i.supplies.length > 0))
 
 // --- Investigator log sections --------------------------------------------------
@@ -538,7 +590,7 @@ const investigatorRecorded = (log: LogContents) =>
   (log.recorded ?? [])
     .filter(r => !['Teachings1', 'Teachings2', 'Teachings3'].includes(r.tag))
     .filter(r => !isSection(r))
-    .map(formatKey)
+    .map((k: LogKey) => formatKey(k, homebrewScope.value))
 
 const investigatorRecordedCounts = (log: LogContents) =>
   (log.recordedCounts ?? []).filter(([k]) => !isSection(k))
@@ -800,6 +852,24 @@ watch(
           <h1>{{ game.name }}</h1>
         </div>
 
+        <div v-if="logTitles.length > 1" class="options campaign-side-options">
+          <div
+            v-for="title in logTitles"
+            :key="title"
+            class="log-title-option"
+            :class="{ checked: title === selectedTitle }"
+          >
+            <input
+              name="log"
+              type="radio"
+              v-model="selectedTitle"
+              :value="title"
+              :id="`log${title}`"
+            />
+            <label :for="`log${title}`">{{ title }}</label>
+          </div>
+        </div>
+
         <nav class="log-tabs">
           <button
             type="button"
@@ -898,24 +968,6 @@ watch(
         />
 
         <div class="log-categories">
-          <div v-if="logTitles.length > 1" class="options">
-            <div
-              v-for="title in logTitles"
-              :key="title"
-              class="log-title-option"
-              :class="{ checked: title === selectedTitle }"
-            >
-              <input
-                name="log"
-                type="radio"
-                v-model="selectedTitle"
-                :value="title"
-                :id="`log${title}`"
-              />
-              <label :for="`log${title}`">{{ title }}</label>
-            </div>
-          </div>
-
           <div v-if="hasSupplies" class="supplies-container">
             <h2>{{ t('theForgottenAge.supplies.title') }}</h2>
             <div class="supplies-content">
@@ -952,7 +1004,16 @@ watch(
 
           <CampaignLogChaosBag
             v-if="chaosBag.length > 0"
+            :game="game"
             :chaosBag="chaosBag"
+            :history="chaosBagHistory"
+          />
+
+          <CampaignLogUltimatumsAndBoons
+            v-if="ultimatumsAndBoons.length > 0"
+            :entries="ultimatumsAndBoons"
+            :enabled="ultimatumsAndBoonsEnabled"
+            :rolled="game.settings.settingsRolledUltimatumOrBoon"
           />
 
           <CampaignLogUltimatumsAndBoons
@@ -1003,9 +1064,12 @@ watch(
 
           <!-- Campaign recorded sets + counts -->
           <CampaignLogRecordedSets
+            :game="game"
             :entries="(Object.entries(recordedSets) as [string, any[]][]).filter(([k]) => !k.toLowerCase().includes('discoveredglyph'))"
             :counts="recordedCounts"
+            :countHistory="recordCountHistory"
             :displayRecordValue="displayRecordValue"
+            :homebrewScope="homebrewScope"
           />
 
           <CampaignLogPartners
@@ -1107,7 +1171,7 @@ watch(
 }
 
 .back-to-top:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.97);
 }
 
 .back-to-top:focus-visible {
@@ -1233,6 +1297,11 @@ h1 {
 .options {
   display: flex;
   gap: 8px;
+}
+
+/* sits above the tab nav — it switches which campaign every tab describes */
+.campaign-side-options {
+  margin-bottom: 16px;
 }
 
 .log-title-option {

@@ -25,7 +25,8 @@ module Arkham.Campaign.Campaigns.TheInnsmouthConspiracy.Achievements (
 ) where
 
 import Arkham.Achievement
-import Arkham.Act.Cards qualified as Acts
+import Arkham.Act.CardDefs.TheInnsmouthConspiracy.HorrorInHighGear qualified as Acts
+import Arkham.Act.CardDefs.TheInnsmouthConspiracy.TheVanishingOfElinaHarper qualified as Acts
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Asset
 import Arkham.Campaign.Types (campaignDifficulty)
@@ -39,7 +40,9 @@ import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.IntoTheMaelstrom qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.TheLairOfDagon qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.ThePitOfDespair qualified as Enemies
 import Arkham.Enemy.Types qualified as Enemy
 import Arkham.Game.Base
 import Arkham.Game.Settings (activeUltimatumsAndBoons)
@@ -48,7 +51,7 @@ import Arkham.Helpers.Log (getRecordSet)
 import Arkham.Helpers.Scenario (scenarioFieldMap)
 import Arkham.Id
 import Arkham.Investigator.Types qualified as Investigator
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.TheInnsmouthConspiracy.HorrorInHighGear qualified as Locations
 import Arkham.Location.Types qualified as Location
 import Arkham.Matcher
 import Arkham.Message
@@ -57,16 +60,15 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Scenario.Types (Field (ScenarioMeta))
 import Arkham.ScenarioLogKey (ScenarioCountKey (Barriers))
-import Arkham.Scenarios.InTooDeep.Helpers qualified as InTooDeep
+import Arkham.Scenarios.TheInnsmouthConspiracy.InTooDeep.Helpers qualified as InTooDeep
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Trait (Trait (DeepOne, Vehicle))
 import Arkham.UltimatumsAndBoons.Types
 import Data.Aeson.Key qualified as Key
 import Data.Map.Strict qualified as Map
 
 runInnsmouthConspiracyAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runInnsmouthConspiracyAchievements msg = whenEligibleCampaign $ case msg of
   -- Enemy defeats. The campaign sees Defeated before the enemy processes it, and
   -- the message already carries the enemy's traits, so nothing has to be looked
@@ -77,17 +79,11 @@ runInnsmouthConspiracyAchievements msg = whenEligibleCampaign $ case msg of
     -- produces another Defeated.
     whenScenarioIs thePitOfDespairId do
       cardDef <- fieldMap Enemy.EnemyCard toCardDef eid
-      when (cardDef == Enemies.theAmalgam) do
-        n <- storedInt amalgamDefeatsKey
-        setStore amalgamDefeatsKey (n + 1)
-        when (n + 1 >= 5) $ earn WouldYouJustDieAlready
+      when (cardDef == Enemies.theAmalgam) $ bumpCounter amalgamDefeatsKey 1
 
     -- "Gone Fishing" (20 in a campaign) and, by its absence at the epilogue,
     -- "Bigger Fish to Fry". Both are campaign-wide tallies, so no scenario gate.
-    when (DeepOne `elem` traits) do
-      n <- storedInt deepOnesDefeatedKey
-      setStore deepOnesDefeatedKey (n + 1)
-      when (n + 1 >= 20) $ earn GoneFishing
+    when (DeepOne `elem` traits) $ bumpCounter deepOnesDefeatedKey 1
 
   {- "Elementary, Dear Dawson": The Search for Agent Harper asks the lead to name
   the suspect and then the hideout as it advances, and defers a DoStep 1 for each
@@ -98,11 +94,7 @@ runInnsmouthConspiracyAchievements msg = whenEligibleCampaign $ case msg of
   -}
   DoStep 1 (AdvanceAct aid _ _)
     | unActId aid == toCardCode Acts.theSearchForAgentHarper ->
-        whenScenarioIs theVanishingOfElinaHarperId do
-          n <- storedInt correctGuessesKey
-          setStore correctGuessesKey (n + 1)
-          when (n + 1 >= 2) $ earn ElementaryDearDawson
-
+        whenScenarioIs theVanishingOfElinaHarperId $ bumpCounter correctGuessesKey 1
   {- "Ain't Nothin Gonna Break My Stride": every barrier destroyed. The barrier
   counts live in In Too Deep's scenario meta, which the scenario updates when it
   processes this same message — i.e. after the campaign has already seen it — so
@@ -227,6 +219,15 @@ runInnsmouthConspiracyAchievements msg = whenEligibleCampaign $ case msg of
     achievementProgress (TheInnsmouthConspiracyAchievement YouWakeUpInARoom)
       $ found
       <> ["TheHorribleTruth" | length found == length memoryItems]
+
+  {- Deferred threshold checks: 'bumpCounter' does its arithmetic when the message
+  is processed, so the counter only reads its new value here -- a read-modify-write
+  would lose bumps when several Deep Ones are defeated simultaneously.
+  -}
+  CounterBumped k
+    | k == amalgamDefeatsKey -> whenM ((>= 5) <$> storedInt k) $ earn WouldYouJustDieAlready
+    | k == deepOnesDefeatedKey -> whenM ((>= 20) <$> storedInt k) $ earn GoneFishing
+    | k == correctGuessesKey -> whenM ((>= 2) <$> storedInt k) $ earn ElementaryDearDawson
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => TheInnsmouthConspiracyAchievement -> m ()
@@ -242,7 +243,7 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ TheInnsmouthConspiracyAchievement GoneFishing
   when (maybe False (`elem` eligible) mCampaignId) body
 
-whenScenarioIs :: (HasGame m, Tracing m) => ScenarioId -> m () -> m ()
+whenScenarioIs :: HasGame m => ScenarioId -> m () -> m ()
 whenScenarioIs sid body = do
   mSid <- selectOne TheScenario
   when (mSid == Just sid) body
@@ -276,12 +277,12 @@ awakenedGods =
 relics :: [CardDef]
 relics = [Assets.wavewornIdol, Assets.awakenedMantle, Assets.headdressOfYhaNthlei]
 
-isLongWayAround :: (HasGame m, Tracing m) => LocationId -> m Bool
+isLongWayAround :: HasGame m => LocationId -> m Bool
 isLongWayAround lid = do
   cardDef <- fieldMap Location.LocationCard toCardDef lid
   pure $ cardDef == Locations.longWayAround
 
-hasDivingSuit :: (HasGame m, Tracing m) => InvestigatorId -> m Bool
+hasDivingSuit :: HasGame m => InvestigatorId -> m Bool
 hasDivingSuit iid =
   selectAny $ assetIs Assets.divingSuit <> AssetControlledBy (InvestigatorWithId iid)
 
@@ -289,7 +290,7 @@ hasDivingSuit iid =
 controller. Only the other two are looked up: this one is not in play yet.
 -}
 checkFullBuild
-  :: (HasGame m, HasQueue Message m, Tracing m) => InvestigatorId -> CardDef -> m ()
+  :: (HasGame m, HasQueue Message m) => InvestigatorId -> CardDef -> m ()
 checkFullBuild iid cardDef = when (cardDef `elem` relics) do
   let others = filter (/= cardDef) relics
   whenM (allM (\def -> selectAny $ assetIs def <> AssetControlledBy (InvestigatorWithId iid)) others) do
@@ -342,8 +343,8 @@ lairOfDagonUndisturbedKey = "ticAchLairOfDagonUndisturbed"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k

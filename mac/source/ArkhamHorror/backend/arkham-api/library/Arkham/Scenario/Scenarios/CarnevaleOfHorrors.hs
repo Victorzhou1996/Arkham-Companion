@@ -1,18 +1,18 @@
 module Arkham.Scenario.Scenarios.CarnevaleOfHorrors (carnevaleOfHorrors) where
 
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.CarnevaleOfHorrors qualified as Acts
+import Arkham.Agenda.CardDefs.CarnevaleOfHorrors qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Attack
 import Arkham.CampaignLogKey
 import Arkham.Card
 import Arkham.Direction
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.CarnevaleOfHorrors qualified as Enemies
 import Arkham.Helpers.FlavorText
 import Arkham.Helpers.Location
 import Arkham.Helpers.Query
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.CarnevaleOfHorrors qualified as Locations
 import Arkham.Matcher hiding (RevealLocation)
 import Arkham.Message (pattern DealAssetDamage)
 import Arkham.Message.Lifted.Choose
@@ -253,7 +253,7 @@ instance RunMessage CarnevaleOfHorrors where
       pure s
     ChooseOneRewardByEachPlayer rewards@(_ : _) (currentInvestigatorId : rest) -> do
       chooseOneM currentInvestigatorId do
-        labeled' "doNotAddMask" $ push $ ChooseOneRewardByEachPlayer rewards rest
+        labeled "doNotAddMask" $ push $ ChooseOneRewardByEachPlayer rewards rest
         for_ rewards \reward -> do
           cardLabeled reward do
             addCampaignCardToDeck currentInvestigatorId DoNotShuffleIn reward

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, inject, Ref } from 'vue'
+import { computed, inject, onMounted, Ref, ref, watch } from 'vue'
 import { CardContents, type Card } from '@/arkham/types/Card'
 import type { Game } from '@/arkham/types/Game'
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
@@ -15,17 +15,36 @@ import {
 import * as ArkhamGame from '@/arkham/types/Game'
 import { IsMobile } from '@/arkham/isMobile'
 import { useDbCardStore } from '@/stores/dbCards'
+import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
+import { useDebug } from '@/arkham/debug'
+import { useCardStore } from '@/stores/cards'
 
 export interface Props {
   game: Game
   card: Card
   playerId: string
   ownerId: string
+  mobileHandOpen?: boolean
 }
 
 const props = defineProps<Props>()
+const debug = useDebug()
+const cardStore = useCardStore()
+
+onMounted(() => {
+  if (!cardStore.loaded) cardStore.fetchCards()
+})
 
 const { isMobile } = IsMobile()
+const cardFrame = ref<HTMLElement | null>(null)
+const showAbilities = ref(false)
+
+watch(
+  () => props.mobileHandOpen,
+  (open) => {
+    if (open === false) showAbilities.value = false
+  },
+)
 const dbCards = useDbCardStore()
 const investigator = computed(() =>
   Object.values(props.game.investigators).find((i) => i.playerId === props.playerId),
@@ -115,11 +134,24 @@ const triggerModeAbilities = computed(() =>
 )
 
 const classObject = computed(() => {
-  return { 'card--can-interact': cardAction.value !== -1 }
+  return {
+    'card--can-interact': cardAction.value !== -1 || (isMobile.value && abilities.value.length > 0),
+  }
 })
 
+function handleCardClick() {
+  if (isMobile.value && abilities.value.length > 0) {
+    showAbilities.value = true
+    return
+  }
+
+  if (cardAction.value !== -1) emit('choose', cardAction.value)
+}
+
+const emit = defineEmits<{ choose: [value: number] }>()
+
 const cardBack = computed(() => {
-  return imgsrc('player_back.jpg')
+  return imgsrc('backs/back_player.jpg')
 })
 
 const image = computed(() => {
@@ -135,6 +167,17 @@ const supportsPlayTriggerMode = computed(() =>
       && ArkhamGame.activeQuestionIsResponseWindow(props.game, props.playerId),
   ),
 )
+
+const cardDef = computed(() =>
+  cardStore.cards.find((c) => c.cardCode === cardContents.value.cardCode),
+)
+const canDebugCustomize = computed(
+  () => debug.active && (cardDef.value?.customizations?.length ?? 0) > 0,
+)
+
+function debugCustomize() {
+  debug.send(props.game.id, { tag: 'DebugCustomize', contents: [props.ownerId, id.value] })
+}
 
 /*
 const painted = computed(() => {
@@ -262,27 +305,29 @@ function oilPaintEffect(canvas, radius, intensity) {
     :data-index="id"
     v-if="solo || showOtherPlayersHands || investigatorId == ownerId || revealed"
   >
-    <AbilityButton
-      v-if="isMobile"
-      v-for="ability in abilities"
-      :key="ability.index"
-      :ability="ability.contents"
-      :data-image="image"
-      :game="game"
-      @click="$emit('choose', ability.index)"
-    />
-
     <img
+      ref="cardFrame"
       :class="classObject"
       class="card in-hand"
       :src="image"
       :data-card-code="cardContents.cardCode"
       :data-customizations="JSON.stringify(cardContents.customizations)"
+      :data-chained="cardContents.chained || undefined"
       :data-playability-game-id="cardAction === -1 ? game.id : undefined"
       :data-playability-investigator-id="cardAction === -1 ? investigatorId : undefined"
       :data-playability-card-id="cardAction === -1 ? id : undefined"
-      @click="$emit('choose', cardAction)"
+      @click="handleCardClick"
     />
+
+    <button
+      v-if="canDebugCustomize"
+      class="debug-customize"
+      type="button"
+      title="Debug customize"
+      @click.stop="debugCustomize"
+    >
+      <font-awesome-icon icon="bug" />
+    </button>
 
     <AbilityButton
       v-if="!isMobile"
@@ -303,6 +348,17 @@ function oilPaintEffect(canvas, radius, intensity) {
       :include-play-mode="supportsPlayTriggerMode"
       current-abilities-only
     />
+
+    <AbilitiesMenu
+      v-if="isMobile && abilities.length > 0"
+      v-model="showAbilities"
+      :game="game"
+      :abilities="abilities"
+      :frame="cardFrame"
+      :play-action="cardAction !== -1 ? cardAction : undefined"
+      position="top"
+      @choose="$emit('choose', $event)"
+    />
   </div>
   <div class="card-container" v-else>
     <img class="card in-hand" :src="cardBack" />
@@ -322,8 +378,31 @@ function oilPaintEffect(canvas, radius, intensity) {
 }
 
 .card-container {
-  position: relative;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.debug-customize {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: var(--z-index-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #111;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.debug-customize:hover {
+  background: #fff;
 }
 </style>

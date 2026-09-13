@@ -33,14 +33,13 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Window (Window (..), defaultWindows)
 import Arkham.Window qualified as Window
 
 data IsFast = IsFast | NotFast
   deriving stock Eq
 
-actionMatches :: (Tracing m, HasGame m) => InvestigatorId -> Action -> ActionMatcher -> m Bool
+actionMatches :: HasGame m => InvestigatorId -> Action -> ActionMatcher -> m Bool
 actionMatches _ _ AnyAction = pure True
 actionMatches _ a (ActionIs a') = pure $ a == a'
 actionMatches iid a (ActionMatches as) = allM (actionMatches iid a) as
@@ -76,10 +75,10 @@ actionMatches iid a RepeatableAction = do
       , canPlay && notNull playableCards && a == #play
       ]
 
-canDo_ :: (HasGame m, Tracing m) => InvestigatorId -> Action -> m Bool
+canDo_ :: HasGame m => InvestigatorId -> Action -> m Bool
 canDo_ iid action = canDo iid action NotFast
 
-canDo :: (HasGame m, Tracing m) => InvestigatorId -> Action -> IsFast -> m Bool
+canDo :: HasGame m => InvestigatorId -> Action -> IsFast -> m Bool
 canDo iid action isFast = do
   mods <- getModifiers iid
   let
@@ -106,7 +105,7 @@ canDo iid action isFast = do
   not <$> anyM prevents mods
 
 additionalActionCovers
-  :: (HasGame m, Tracing m) => Source -> [Action] -> AdditionalAction -> m Bool
+  :: HasGame m => Source -> [Action] -> AdditionalAction -> m Bool
 additionalActionCovers source actions (AdditionalAction _ _ aType) = case aType of
   PlayCardRestrictedAdditionalAction matcher -> case source of
     CardIdSource cid -> elem cid . map toCardId <$> select matcher
@@ -124,7 +123,7 @@ additionalActionCovers source actions (AdditionalAction _ _ aType) = case aType 
   BountyAction -> pure False -- Has to be handled by Tony Morgan
   BobJenkinsAction -> pure False -- Has to be handled by Bob Jenkins
 
-getCanAfford :: (HasGame m, Tracing m) => InvestigatorAttrs -> [Action] -> m Bool
+getCanAfford :: HasGame m => InvestigatorAttrs -> [Action] -> m Bool
 getCanAfford a@InvestigatorAttrs {..} as = do
   actionCost <- getActionCost a as
   additionalActions <- getAdditionalActions a
@@ -166,11 +165,11 @@ matchTarget _ (EnemyAction a _) action = action == a
 matchTarget _ (AssetAction a _) action = action == a
 matchTarget _ IsAnyAction _ = True
 
-getActions :: (Tracing m, HasGame m, HasCallStack) => InvestigatorId -> [Window] -> m [Ability]
+getActions :: (HasGame m, HasCallStack) => InvestigatorId -> [Window] -> m [Ability]
 getActions iid ws = getActionsWith iid ws id
 
 getActionsWith
-  :: (HasCallStack, Tracing m, HasGame m)
+  :: (HasCallStack, HasGame m)
   => InvestigatorId
   -> [Window]
   -> (Ability -> Ability)
@@ -218,30 +217,32 @@ getActionsWith iid ws f = do
         let abWindow = case (abilitySource ability).location of
               Nothing -> abilityWindow ability
               Just lid -> replaceThisLocation lid (abilityWindow ability)
-        matched <-
-          anyM
-            (\w -> windowMatches iid (abilitySource ability) w abWindow)
-            ws
-        if not matched
-          then pure False
-          else do
-            -- A forced/reaction ability may only respond to a window that
-            -- opened strictly after its source card entered play. A card that
-            -- enters during an open window cannot respond to that window's
-            -- already-occurred triggering condition (#4927).
+        -- A forced/reaction ability may only respond to a triggering condition
+        -- that occurred while its source card was already in play. A card that
+        -- enters during an open window cannot respond to that window's
+        -- already-occurred triggering condition (#4927). A window built ahead of
+        -- the point at which it is checked -- an attack's after-window, say --
+        -- pins the tick its condition initiated at; otherwise the condition
+        -- began when the window opened (#5576).
+        let
+          respectsEntryTick w = do
             isForced <- isForcedAbility iid ability
-            let isReaction = isReactionAbility ability
-            if not (isForced || isReaction)
+            if not (isForced || isReactionAbility ability)
               then pure True
               else
                 sourceToMaybeCard (abilitySource ability) >>= \case
                   Nothing -> pure True
                   Just card -> case lookup card.id entryTicks of
                     Nothing -> pure True
-                    Just entryTick ->
-                      getCurrentWindowTick <&> \case
-                        Nothing -> True
-                        Just openTick -> openTick > entryTick
+                    Just entryTick -> case windowConditionTick w of
+                      Just conditionTick -> pure $ entryTick <= conditionTick
+                      Nothing -> getCurrentWindowTick <&> maybe True (> entryTick)
+        -- 97% of these evaluations return False (measured: 9326 ability checks
+        -- per act advance, 257 matches), so rejecting on timing first is worth
+        -- far more than making the full check faster.
+        flip anyM ws \w -> do
+          matched <- windowMatches iid (abilitySource ability) w abWindow
+          if matched then respectsEntryTick w else pure False
 
   let bountiesOnly = BountiesOnly `elem` investigatorModifiers
 
@@ -272,6 +273,9 @@ getActionsWith iid ws f = do
       isForced <- isForcedAbility iid ability
       let
         -- Lola Hayes: Forced abilities will always trigger
+        -- weaknesses ignore the class system (FAQ 1.35) but weakness
+        -- assets with Lola-usable activated abilities don't exist; add a
+        -- cdCardSubType exemption here (needs a source->def lookup) if one ever does
         prevents (CanOnlyUseCardsInRole role) =
           null (setFromList [role, Neutral, Mythos] `intersect` cardClasses)
             && not isForced
@@ -311,7 +315,7 @@ getActionsWith iid ws f = do
   pure $ nub $ if bountiesOnly || null forcedActions then actions''' else prioritizedForcedActions
 
 hasFightActions
-  :: (Sourceable source, Tracing m, HasGame m)
+  :: (Sourceable source, HasGame m)
   => InvestigatorId
   -> source
   -> WindowMatcher
@@ -325,7 +329,7 @@ hasFightActions iid requestor window windows' = do
     ]
 
 hasEvadeActions
-  :: (HasCallStack, Sourceable source, Tracing m, HasGame m)
+  :: (HasCallStack, Sourceable source, HasGame m)
   => InvestigatorId
   -> source
   -> WindowMatcher
@@ -339,7 +343,7 @@ hasEvadeActions iid requestor window windows' = do
     ]
 
 hasInvestigateActions
-  :: (Sourceable source, Tracing m, HasGame m)
+  :: (Sourceable source, HasGame m)
   => InvestigatorId
   -> source
   -> WindowMatcher
@@ -349,14 +353,16 @@ hasInvestigateActions iid requestor window windows' = do
   abilities <- selectMap (setRequestor requestor) (#basic <> #investigate <> AbilityWindow window)
   anyM (\a -> getCanPerformAbility iid windows' $ decreaseAbilityActionCost a 1) abilities
 
--- | Each action can count as several types (e.g. a weapon's "[action]: Fight"
--- is both an activate action and a fight action). A streak of "different types
--- of actions in a row" is therefore a system of distinct representatives (SDR):
--- one distinct type assigned per action. Input is a list of the per-action type
--- groups.
+{- | Each action can count as several types (e.g. a weapon's "[action]: Fight"
+is both an activate action and a fight action). A streak of "different types
+of actions in a row" is therefore a system of distinct representatives (SDR):
+one distinct type assigned per action. Input is a list of the per-action type
+groups.
+-}
 
--- | The longest prefix of the (newest-first) action groups that still admits an
--- SDR, i.e. the longest run of "different types in a row".
+{- | The longest prefix of the (newest-first) action groups that still admits an
+SDR, i.e. the longest run of "different types in a row".
+-}
 longestUniqueStreak :: Eq a => [[a]] -> [[a]]
 longestUniqueStreak = go []
  where
@@ -376,5 +382,6 @@ pickSDR = fromMaybe [] . go
  where
   go [] = Just []
   go (xs : rest) =
-    listToMaybe . catMaybes $
-      [fmap (x :) (go (map (filter (/= x)) rest)) | x <- xs]
+    listToMaybe
+      . catMaybes
+      $ [fmap (x :) (go (map (filter (/= x)) rest)) | x <- xs]

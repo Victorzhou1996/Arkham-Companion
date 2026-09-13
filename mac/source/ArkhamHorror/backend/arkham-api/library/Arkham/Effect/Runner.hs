@@ -50,7 +50,8 @@ instance RunMessage EffectAttrs where
         pushWhen (isEndOfWindow a (EffectScenarioSetupWindow scenarioId)) (DisableEffect effectId)
       pure a
     Begin p | isEndOfWindow a (EffectUntilEndOfNextPhaseWindowFor p) -> do
-      pure $ a {effectWindow = Just $ EffectUntilEndOfPhaseWindowFor p}
+      pure
+        $ advanceEffectWindow (EffectUntilEndOfNextPhaseWindowFor p) (EffectUntilEndOfPhaseWindowFor p) a
     EndPhase | isEndOfWindow a EffectPhaseWindow -> do
       a <$ push (DisableEffect effectId)
     EndPhase -> do
@@ -62,7 +63,7 @@ instance RunMessage EffectAttrs where
         $ (DisableEffect effectId)
       pure a
     BeginTurn iid | isEndOfWindow a (EffectEndOfNextTurnWindow iid) -> do
-      pure $ a {effectWindow = Just $ EffectTurnWindow iid}
+      pure $ advanceEffectWindow (EffectEndOfNextTurnWindow iid) (EffectTurnWindow iid) a
     BeginTurn iid | isEndOfWindow a (EffectNextTurnWindow iid) -> do
       a <$ push (DisableEffect effectId)
     EndTurn iid | isEndOfWindow a (EffectTurnWindow iid) -> do
@@ -123,6 +124,8 @@ instance RunMessage EffectAttrs where
       a <$ push (DisableEffect effectId)
     ResolvedCard _ card | isEndOfWindow a (EffectCardResolutionWindow $ toCardId card) -> do
       a <$ push (Priority $ DisableEffect effectId)
+    Discarded _ _ card | isEndOfWindow a (EffectUntilCardDiscarded $ toCardId card) -> do
+      a <$ push (DisableEffect effectId)
     ResolvedAbility ab | isEndOfWindow a (EffectAbilityWindow ab.ref) -> do
       a <$ push (DisableEffect effectId)
     Do (TakeResources iid _ _ _) | isEndOfWindow a (EffectGainResourcesWindow iid) -> do

@@ -54,7 +54,6 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Timing qualified as Timing
 import Arkham.Token qualified as Token
-import Arkham.Tracing
 import Arkham.Window (mkAfter, mkWhen, mkWindow)
 import Arkham.Window qualified as Window
 import Arkham.Zone qualified as Zone
@@ -64,7 +63,7 @@ import Data.Aeson.Lens (_Bool)
 import Data.IntMap.Strict qualified as IntMap
 import Data.Map.Strict qualified as Map
 
-defeated :: (HasGame m, Tracing m) => AssetAttrs -> Source -> m (Maybe DefeatedBy)
+defeated :: HasGame m => AssetAttrs -> Source -> m (Maybe DefeatedBy)
 defeated AssetAttrs {assetId, assetAssignedHealthDamage, assetAssignedSanityDamage} source = do
   canBeDefeated <- withoutModifier assetId CannotBeDefeated
   remainingHealth <- field AssetRemainingHealth assetId
@@ -87,9 +86,18 @@ instance RunMessage Asset where
         ReturnLocationToGame _ -> Asset <$> runMessage msg a
         _ -> pure x
       else do
-        inPlay <- elem (toId x) <$> select AnyAsset
-        modifiers' <- if inPlay then getModifiers (toTarget x) else pure []
-        let msg' = if any (`elem` modifiers') [Blank, BlankExceptForcedAbilities] then Blanked msg else msg
+        -- Same operands, cheap one first: getModifiers reads the preloaded
+        -- modifier map, while `select AnyAsset` builds and scans the whole
+        -- in-play asset list. This runs for every asset on every message, so
+        -- test the rare condition (a Blank modifier) before confirming the
+        -- asset is in play.
+        modifiers' <- getModifiers (toTarget x)
+        msg' <-
+          if any (`elem` modifiers') [Blank, BlankExceptForcedAbilities]
+            then do
+              inPlay <- elem (toId x) <$> select AnyAsset
+              pure $ if inPlay then Blanked msg else msg
+            else pure msg
         Asset <$> runMessage msg' a
 
 instance RunMessage AssetAttrs where
@@ -172,6 +180,16 @@ instance RunMessage AssetAttrs where
           damageEffect = case source of
             EnemyAttackSource _ -> AttackDamageEffect
             _ -> NonAttackDamageEffect
+        -- FAQ (2.12): damage/horror dealt to an asset you control is also dealt to
+        -- you, so the controller's aggregate take windows go up alongside the
+        -- asset's. The soak path raises these in Arkham.Investigator.Runner.Damage
+        -- instead; damage dealt straight to an asset only passes through here.
+        let
+          takeWindows mk = case a.controller of
+            Nothing -> []
+            Just iid ->
+              [mk (Window.TakeDamage source damageEffect (toTarget iid) damage') | damage' > 0]
+                <> [mk (Window.TakeHorror source (toTarget iid) horror') | horror' > 0]
         when (damage' > 0 || horror' > 0) do
           pushAll
             $ [PlaceDamage source (toTarget a) damage' | damage' > 0]
@@ -186,6 +204,7 @@ instance RunMessage AssetAttrs where
                    <> [ mkWhen (Window.WouldTakeDamageOrHorror source (toTarget a) damage' horror')
                       | damage' > 0 || horror' > 0
                       ]
+                   <> takeWindows mkWhen
                , checkDefeated source aid
                , CheckWindows
                    $ [ mkAfter (Window.DealtDamage source damageEffect (toTarget a) damage')
@@ -197,6 +216,7 @@ instance RunMessage AssetAttrs where
                    <> [ mkWhen (Window.WouldTakeDamageOrHorror source (toTarget a) damage' horror')
                       | damage' > 0 || horror' > 0
                       ]
+                   <> takeWindows mkAfter
                ]
       pure a
     Msg.AssignAssetDamageWithCheck aid source damage horror doCheck | aid == assetId -> do
@@ -613,7 +633,11 @@ instance RunMessage AssetAttrs where
       pushAll [RemoveFromPlay $ toSource a, ObtainCard a.cardId]
       pure a
     Discard mInvestigator source target | a `isTarget` target -> do
-      cannotLeavePlay <- a `hasModifier` CannotLeavePlay
+      -- A card that cannot leave play and then prints its own way out --
+      -- "it cannot leave play except using the ability below" -- is the one
+      -- thing allowed to discard it, so a discard it sources itself is let
+      -- through. Everything else is still stopped.
+      cannotLeavePlay <- if isSource a source then pure False else a `hasModifier` CannotLeavePlay
       if cannotLeavePlay
         then pure a
         else do
@@ -665,6 +689,13 @@ instance RunMessage AssetAttrs where
       pure a
     RemovedFromPlay (isSource a -> True) -> do
       pure $ a & placementL .~ OutOfPlay Zone.RemovedZone
+    -- An asset placed directly on a location leaves play with it. An asset in an
+    -- investigator's play area, in a vehicle, or attached to another entity only
+    -- reaches the location through that host and leaves play when the host does,
+    -- #5426.
+    RemovedLocation lid | isDirectlyAtLocation lid a.placement -> do
+      push $ toDiscard GameSource a
+      pure a
     PlaceKey (isTarget a -> True) k -> do
       pure $ a & (keysL %~ insertSet k)
     HealAllDamage (isTarget a -> True) source | assetDamage a > 0 -> do
@@ -712,7 +743,12 @@ instance RunMessage AssetAttrs where
     ReplacedInvestigatorAsset iid aid | aid == assetId -> do
       pure $ a & placementL .~ InPlayArea iid & controllerL ?~ iid
     AddToVictory _ (AssetTarget aid) | aid == assetId -> do
-      pure $ a & placementL .~ OutOfPlay Zone.VictoryDisplayZone & controllerL .~ Nothing
+      -- leaving play removes every token, doom included (#5680)
+      pure
+        $ a
+        & (placementL .~ OutOfPlay Zone.VictoryDisplayZone)
+        & (controllerL .~ Nothing)
+        & (tokensL .~ mempty)
     AddToScenarioDeck key target | isTarget a target -> do
       pushAll
         [RemoveFromGame (toTarget a), AddCardToScenarioDeck key (toCard a)]
@@ -727,6 +763,8 @@ instance RunMessage AssetAttrs where
         _ -> False
 
       pure a
+    CardIsEnteringPlay _ card ->
+      pure $ a & cardsUnderneathL %~ filter (/= card)
     CardEnteredPlay _ card ->
       pure $ a & cardsUnderneathL %~ filter (/= card)
     Exhaust ea | a `isTarget` ea.target -> do

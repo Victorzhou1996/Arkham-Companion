@@ -4,6 +4,7 @@ import Arkham.Actions
 import Arkham.Criteria (evadeOverride, fightOverride)
 import Arkham.Event.Cards.Import
 import Arkham.ForMovement
+import Arkham.Modifier (ModifierType (CannotReceiveModifiersFromPlayerSources))
 
 decoyTrap :: CardDef
 decoyTrap =
@@ -13,6 +14,7 @@ decoyTrap =
       , cdSkills = [#agility, #combat, #wild]
       , cdLimits = [LimitPerTraitPerLocation Trap 1]
       , cdCriteria = Just $ exists $ YourLocation <> LocationCanHaveAttachments
+      , cdErrata = Just "This card’s ability should read “Evade that enemy. You get +1 skill value for this evasion.”"
       }
 
 glassing :: CardDef
@@ -23,6 +25,7 @@ glassing =
       , cdSkills = [#agility, #intellect, #wild]
       , cdLimits = [LimitPerTraitPerLocation Trap 1]
       , cdCriteria = Just $ exists $ YourLocation <> LocationCanHaveAttachments
+      , cdErrata = Just "This card’s ability should read “Investigate attached location. You get +1 skill value for this investigation.”"
       }
 
 guerrillaTactics :: CardDef
@@ -35,8 +38,12 @@ guerrillaTactics =
         Just
           $ exists
           $ oneOf
-            [ fightOverride $ EnemyAt (orConnected NotForMovement YourLocation)
-            , evadeOverride $ EnemyAt (orConnected NotForMovement YourLocation)
+            [ fightOverride
+                $ EnemyAt (orConnected NotForMovement YourLocation)
+                <> EnemyWithoutModifier CannotReceiveModifiersFromPlayerSources
+            , evadeOverride
+                $ EnemyAt (orConnected NotForMovement YourLocation)
+                <> EnemyWithoutModifier CannotReceiveModifiersFromPlayerSources
             ]
     , cdOverrideActionPlayableIfCriteriaMet = True
     }
@@ -56,6 +63,7 @@ lieInWait =
       , cdSkills = [#combat, #wild, #willpower]
       , cdLimits = [LimitPerTraitPerLocation Trap 1]
       , cdCriteria = Just $ exists $ YourLocation <> LocationCanHaveAttachments
+      , cdErrata = Just "This card’s ability should read “If you succeed, you may discard Lie in Wait for this attack to deal +1 damage.”"
       }
 
 stalkPrey :: CardDef
@@ -85,8 +93,12 @@ guerrillaTactics2 =
         Just
           $ exists
           $ oneOf
-            [ fightOverride $ EnemyAt (orConnected NotForMovement YourLocation)
-            , evadeOverride $ EnemyAt (orConnected NotForMovement YourLocation)
+            [ fightOverride
+                $ EnemyAt (orConnected NotForMovement YourLocation)
+                <> EnemyWithoutModifier CannotReceiveModifiersFromPlayerSources
+            , evadeOverride
+                $ EnemyAt (orConnected NotForMovement YourLocation)
+                <> EnemyWithoutModifier CannotReceiveModifiersFromPlayerSources
             ]
     , cdOverrideActionPlayableIfCriteriaMet = True
     , cdLevel = Just 2

@@ -1,12 +1,12 @@
 module Arkham.Scenario.Scenarios.ReadOrDie (readOrDie, ReadOrDie (..)) where
 
-import Arkham.Id
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.ReadOrDie qualified as Acts
+import Arkham.Agenda.CardDefs.ReadOrDie qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Card
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.ReadOrDie qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDunwichLegacy.ExtracurricularActivity qualified as Enemies
 import Arkham.Exception
 import Arkham.Helpers
 import Arkham.Helpers.Campaign (getOwner)
@@ -16,8 +16,9 @@ import Arkham.Helpers.Query
 import Arkham.Helpers.SkillTest (getSkillTestAction, getSkillTestTargetedEnemy)
 import Arkham.Helpers.Xp (getInitialVictory)
 import Arkham.I18n
+import Arkham.Id
 import Arkham.Investigator.Types (Field (..))
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.TheDunwichLegacy.ExtracurricularActivity qualified as Locations
 import Arkham.Matcher hiding (assetAt, enemyAt)
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Move
@@ -131,7 +132,8 @@ instance RunMessage ReadOrDie where
         flavor $ scope "investigatorSetup" do
           h "title"
           p "body"
-        tomes <- fieldMap InvestigatorDeck (map toCard . filter (`cardMatch` nonWeaknessTomeAsset) . unDeck) daisy
+        tomes <-
+          fieldMap InvestigatorDeck (map toCard . filter (`cardMatch` nonWeaknessTomeAsset) . unDeck) daisy
         push $ SetAsideCards tomes
       pure s
     StandaloneSetup -> do
@@ -215,11 +217,13 @@ instance RunMessage ReadOrDie where
         -- order locations by distance from the Orne Library (farthest first),
         -- randomizing within ties.
         ordered <-
-          concat <$> traverse shuffle
-            [ [dormitories, facultyOffices]
-            , [scienceBuilding, studentUnion, administrationBuilding]
-            , [humanitiesBuilding]
-            ]
+          concat
+            <$> traverse
+              shuffle
+              [ [dormitories, facultyOffices]
+              , [scienceBuilding, studentUnion, administrationBuilding]
+              , [humanitiesBuilding]
+              ]
         let (perLocation, rest) = splitAt (length ordered) tomes
         for_ (zip ordered perLocation) \(lid, card) -> placeUnderneath lid [card]
         unless (null rest) $ placeUnderneath orneLibrary rest
@@ -264,16 +268,16 @@ instance RunMessage ReadOrDie where
             hasToteBag <- hasInPool daisy Assets.daisysToteBag
             hasAdvancedNecronomicon <- hasInPool daisy Assets.theNecronomiconAdvanced
             chooseOneM daisy do
-              questionLabeled' "maySwapSignatureCards"
+              questionLabeled "maySwapSignatureCards"
               when hasToteBag do
-                labeled' "upgradeDaisysToteBag" do
+                labeled "upgradeDaisysToteBag" do
                   removeCampaignCardFromDeck daisy Assets.daisysToteBag
                   addCampaignCardToDeck daisy DoNotShuffleIn Assets.daisysToteBagAdvanced
               when hasAdvancedNecronomicon do
-                labeled' "downgradeTheNecronomicon" do
+                labeled "downgradeTheNecronomicon" do
                   removeCampaignCardFromDeck daisy Assets.theNecronomiconAdvanced
                   addCampaignCardToDeck daisy DoNotShuffleIn Assets.theNecronomicon
-              labeled' "doNotSwap" nothing
+              labeled "doNotSwap" nothing
           endOfScenario
         Resolution 2 -> do
           resolutionWithXp "resolution2" $ gainXpWithTomeBonus attrs
@@ -282,13 +286,13 @@ instance RunMessage ReadOrDie where
             hasAdvancedToteBag <- hasInPool daisy Assets.daisysToteBagAdvanced
             when (hasNecronomicon || hasAdvancedToteBag) do
               chooseOrRunOneM daisy do
-                questionLabeled' "mustSwapSignatureCards"
+                questionLabeled "mustSwapSignatureCards"
                 when hasNecronomicon do
-                  labeled' "upgradeTheNecronomicon" do
+                  labeled "upgradeTheNecronomicon" do
                     removeCampaignCardFromDeck daisy Assets.theNecronomicon
                     addCampaignCardToDeck daisy DoNotShuffleIn Assets.theNecronomiconAdvanced
                 when hasAdvancedToteBag do
-                  labeled' "downgradeDaisysToteBag" do
+                  labeled "downgradeDaisysToteBag" do
                     removeCampaignCardFromDeck daisy Assets.daisysToteBagAdvanced
                     addCampaignCardToDeck daisy DoNotShuffleIn Assets.daisysToteBag
           endOfScenario

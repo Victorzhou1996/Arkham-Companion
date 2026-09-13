@@ -15,7 +15,6 @@ import Arkham.Message.Lifted.Choose
 import Arkham.Modifier
 import Arkham.Projection
 import Arkham.Taboo
-import Arkham.Tracing
 import Arkham.Window (defaultWindows)
 
 newtype EonChart4 = EonChart4 AssetAttrs
@@ -34,12 +33,15 @@ instance HasAbilities EonChart4 where
     actions = [#move, #investigate, #evade]
     matcher =
       oneOf
-        [ exists $ PerformableAbility [ActionCostModifier (-1)] <> mapOneOf AbilityIsAction actions
+        [ exists
+            $ NotAbility (AbilityOnCard $ cardsAre [Cards.eonChart1, Cards.eonChart4])
+            <> mapOneOf AbilityIsAction actions
+            <> PerformableAbility [ActionCostModifier (-1)]
         , PlayableCardExists (UnpaidCost NoAction) $ basic (mapOneOf CardWithAction actions)
         ]
 
 getAvailable
-  :: (Tracing m, HasGame m) => InvestigatorId -> AssetAttrs -> [Action] -> m ([Card], [Ability])
+  :: HasGame m => InvestigatorId -> AssetAttrs -> [Action] -> m ([Card], [Ability])
 getAvailable iid attrs canDoActions = do
   playableCards <-
     if tabooed TabooList20 attrs
@@ -51,11 +53,13 @@ getAvailable iid attrs canDoActions = do
   let abilityF = if tabooed TabooList20 attrs then (<> BasicAbility) else id
   abilities <-
     select
-      (abilityF $ PerformableAbility [ActionCostModifier (-1)] <> oneOf (map AbilityIsAction canDoActions))
+      $ abilityF
+      $ oneOf (map AbilityIsAction canDoActions)
+      <> PerformableAbility [ActionCostModifier (-1)]
   pure (playableCards, abilities)
 
 getAvailableActionTypes
-  :: (Tracing m, HasGame m) => InvestigatorId -> AssetAttrs -> [Action] -> m [Action]
+  :: HasGame m => InvestigatorId -> AssetAttrs -> [Action] -> m [Action]
 getAvailableActionTypes iid attrs canDoActions = do
   (cards, abilities) <- getAvailable iid attrs canDoActions
   let cActions = nub $ concatMap (.actions) cards
@@ -75,7 +79,7 @@ chooseAction :: ReverseQueue m => InvestigatorId -> AssetAttrs -> Message -> [Ac
 chooseAction iid attrs msg canDoActions = do
   actions' <- getAvailableActionTypes iid attrs canDoActions
   chooseOrRunOneM iid do
-    when (#move `elem` actions') $ (cardI18n $ labeled' "eonChart4.move") $ forAction #move msg
+    when (#move `elem` actions') $ (cardI18n $ labeled "eonChart4.move") $ forAction #move msg
     when (#evade `elem` actions') $ labeledI "evade" $ forAction #evade msg
     when (#investigate `elem` actions') $ labeledI "investigate" $ forAction #investigate msg
 

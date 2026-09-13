@@ -117,6 +117,7 @@ instance Entity Asset where
   overAttrs f (Asset a) = Asset $ overAttrs f a
 
 data SomeAssetCard = forall a. IsAsset a => SomeAssetCard (AssetCard a)
+
 someAssetCardCodes :: SomeAssetCard -> [(CardCode, SomeAssetCard)]
 someAssetCardCodes (SomeAssetCard CardBuilder {..}) =
   [ ( code
@@ -297,6 +298,7 @@ data AssetAttrs = AssetAttrs
   , assetFlipped :: Bool
   , assetTaboo :: Maybe TabooList
   , assetMutated :: Maybe Text -- for art display
+  , assetChained :: Maybe Text -- for art display (customization sheet only currently)
   , assetDriver :: Maybe InvestigatorId
   , assetVisible :: Bool
   , assetResolved :: Bool
@@ -440,7 +442,7 @@ instance HasCardCode (With AssetAttrs meta) where
   toCardCode (With x _) = assetCardCode x
 
 instance HasCardDef AssetAttrs where
-  toCardDef a = case lookup (assetCardCode a) allAssetCards of
+  toCardDef a = case lookup (assetCardCode a) allAssetCards <|> lookupCustomCardDef (assetCardCode a) of
     Just def -> def
     Nothing -> error $ "missing card def for asset " <> show (assetCardCode a)
 
@@ -506,6 +508,7 @@ assetWith f cardDef g =
             , assetFlipped = False
             , assetTaboo = Nothing
             , assetMutated = Nothing
+            , assetChained = Nothing
             , assetDriver = Nothing
             , assetVisible = True
             , assetResolved = False
@@ -585,13 +588,14 @@ allyWith f cardDef (health, sanity) g =
 discardWhenNoUses :: AssetAttrs -> AssetAttrs
 discardWhenNoUses = whenNoUsesL ?~ DiscardWhenNoUses
 
-setMeta :: ToJSON a => a -> AssetAttrs -> AssetAttrs
-setMeta a = metaL .~ toJSON a
+setMeta :: (ToJSON a, Entity asset, EntityAttrs asset ~ AssetAttrs) => a -> asset -> asset
+setMeta a = overAttrs (metaL .~ toJSON a)
 
 getAssetMeta :: FromJSON a => AssetAttrs -> Maybe a
 getAssetMeta attrs = case fromJSON attrs.meta of
   Error _ -> Nothing
   Success v' -> Just v'
+
 getAssetMetaDefault :: FromJSON a => a -> AssetAttrs -> a
 getAssetMetaDefault def = fromMaybe def . getAssetMeta
 
@@ -665,6 +669,7 @@ instance FromJSON AssetAttrs where
     assetFlipped <- o .: "flipped"
     assetTaboo <- o .: "taboo"
     assetMutated <- o .: "mutated"
+    assetChained <- o .:? "chained" .!= Nothing
     assetDriver <- o .: "driver"
     assetVisible <- o .:? "visible" .!= True
     assetResolved <- o .:? "visible" .!= True

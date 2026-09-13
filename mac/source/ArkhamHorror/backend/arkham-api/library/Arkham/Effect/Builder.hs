@@ -26,7 +26,6 @@ import Arkham.Queue
 import Arkham.SkillType
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Control.Monad.State.Strict
 
 newtype EffectBuilderT m a = EffectBuilderT {runEffectBuilder :: StateT EffectBuilder m a}
@@ -47,8 +46,8 @@ effectWithSource
 effectWithSource source target body = withSource source $ effect target body
 
 instance WithEffect GameT
-instance WithEffect m => WithEffect (QueueT Message m)
-instance WithEffect m => WithEffect (StateT s m)
+instance WithEffect (QueueT Message m)
+instance WithEffect (StateT s m)
 
 withSource :: Sourceable source => source -> ((?source :: source, Sourceable source) => b) -> b
 withSource source inner = let ?source = source in inner
@@ -88,7 +87,7 @@ instance (Monad m, a ~ ()) => Duration (EffectBuilderT m a) where
     enableOn window
     removeOn window
 
-apply :: (HasGame m, Tracing m) => ModifierType -> EffectBuilderT m ()
+apply :: HasGame m => ModifierType -> EffectBuilderT m ()
 apply modKind = EffectBuilderT $ do
   b <- get
   meta <- addModifier b
@@ -101,13 +100,13 @@ apply modKind = EffectBuilderT $ do
         Just $ EffectModifiers $ mods <> mods'
       _ -> Just $ EffectModifiers mods
 
-damageDealt :: (HasGame m, Tracing m) => Int -> EffectBuilderT m ()
+damageDealt :: HasGame m => Int -> EffectBuilderT m ()
 damageDealt n = apply $ DamageDealt n
 
-combat :: (HasGame m, Tracing m) => GameCalculation -> EffectBuilderT m ()
+combat :: HasGame m => GameCalculation -> EffectBuilderT m ()
 combat = modifySkill #combat
 
-modifySkill :: (HasGame m, Tracing m) => SkillType -> GameCalculation -> EffectBuilderT m ()
+modifySkill :: HasGame m => SkillType -> GameCalculation -> EffectBuilderT m ()
 modifySkill sKind calc = apply $ CalculatedSkillModifier sKind calc
 
 class IfLocation a where

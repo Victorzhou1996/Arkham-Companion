@@ -8,7 +8,7 @@
 An "event" owns N group games (each an ordinary 'ArkhamGame', reached through
 the existing @/games/:id@ endpoints) plus the shared state. Milestone 1 wires
 creation, a read-only dashboard payload, the per-event websocket feed, and a
-single shared counter (countermeasures) adjustable by any member.
+shared counters, organizer coordination, and live group/event synchronization.
 -}
 module Api.Handler.Arkham.Events (
   getApiV1ArkhamEventsR,
@@ -19,44 +19,66 @@ module Api.Handler.Arkham.Events (
   postApiV1ArkhamEventTimeUpR,
   postApiV1ArkhamEventReadyR,
   postApiV1ArkhamEventResolveAdvanceR,
+  postApiV1ArkhamEventReplicateR,
+  postApiV1ArkhamEventSwapMainStreetR,
 ) where
 
 import Api.Arkham.Epic (applyEpicDeltasLocked, modifySharedStateLocked)
 import Api.Arkham.Helpers
 import Api.Arkham.Types.MultiplayerVariant (MultiplayerVariant (WithFriends))
-import Api.Handler.Arkham.Games.Shared (broadcastSharedToEvent, deleteEventRoom, deleteRoom, getEventGroupActClues, getEventGroupGameIds, propagateShared, runMessagesInGroup, runMessagesInGroupWhen, streamRoom)
-import Arkham.Act.Sequence qualified as AS
-import Arkham.Act.Types (actSequence)
-import Arkham.Agenda.Cards qualified as Agendas
+import Api.Handler.Arkham.Games.Shared (
+  broadcastSharedToEvent,
+  deleteEventRoom,
+  deleteRoom,
+  getEventGroupContributions,
+  getEventGroupGameIds,
+  propagateShared,
+  runMessagesInGroupWhen,
+  settleOrganizerAdvance,
+  streamRoom,
+  swapMainStreetInvestigators,
+  websocketConnectionOptions,
+ )
+import Arkham.Agenda.CardDefs.TheBlobThatAteEverything qualified as Agendas
 import Arkham.Agenda.Sequence qualified as Agenda
 import Arkham.Agenda.Types (agendaSequence)
-import Arkham.Card.CardCode (CardCode (..))
+import Arkham.Card.CardCode (CardCode (..), HasCardCode (toCardCode))
+import Arkham.Classes.Entity (attr, toAttrs)
 import Arkham.Difficulty (Difficulty)
-import Arkham.Entities (entitiesActs, entitiesAgendas)
+import Arkham.Entities (Entities (..), entitiesAgendas)
 import Arkham.Epic.Types
-import Arkham.Classes.Entity (attr)
-import Arkham.Game (Game, gameEntities, gameGameState, newScenario, setInitialScenarioMeta)
-import Arkham.Message (Message (AdvanceToAgenda, ResolveEpicActAdvance))
-import Arkham.Source (Source (GameSource))
+import Arkham.Game (
+  Game,
+  gameEntities,
+  gameGameState,
+  gameMode,
+  newScenario,
+  setInitialScenarioMeta,
+ )
 import Arkham.Game.State (GameState)
 import Arkham.Game.Utils (gameInvestigators)
 import Arkham.Id (InvestigatorId, PlayerId (..), ScenarioId)
 import Arkham.Investigator.Types (Investigator, investigatorPlayerId)
-import Control.Concurrent.MVar (modifyMVar_)
+import Arkham.Message (Message (AdvanceToAgenda, ScenarioSpecific))
+import Arkham.Scenario.Types (Scenario, getMetaKeyDefault)
+import Arkham.Source (Source (GameSource))
+import Arkham.Target (Target (..))
 import Control.Monad.Random.Class (getRandom)
 import Data.Bits (shiftL, (.|.))
 import Data.Map.Strict qualified as Map
+import Data.Text qualified as T
+import Data.These (These (..))
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Traversable (for)
 import Data.UUID qualified as UUID
 import Data.UUID.V4 (nextRandom)
-import Database.Esqueleto.Experimental hiding (update, (=.))
+import Database.Esqueleto.Experimental hiding (isNothing, update, (=.))
 import Database.Persist qualified as P
 import Entity.Arkham.Step (ActionDiff (..), ArkhamStep (..), Choice (..))
 import Import hiding (on, (==.))
 import UnliftIO.Exception (catch)
-import Yesod.WebSockets (WebSocketsT, webSockets)
+import Yesod.WebSockets (WebSocketsT, webSocketsOptions)
 
 -- Request bodies --------------------------------------------------------------
 
@@ -72,9 +94,11 @@ data CreateEventPost = CreateEventPost
   , scenarioId :: ScenarioId
   , difficulty :: Difficulty
   , includeTarotReadings :: Bool
+  , playWithBlobElse :: Maybe Bool
   , timeLimitMinutes :: Maybe Int
-  -- ^ optional Epic time limit (default 180); when elapsed, still-playing groups
-  -- are forced to agenda 3b.
+  {- ^ optional Epic time limit (default 180); when elapsed, still-playing groups
+  are forced to agenda 3b.
+  -}
   , groups :: [CreateEventGroupPost]
   }
   deriving stock (Show, Generic)
@@ -87,7 +111,7 @@ data CounterPost = CounterPost
   deriving stock (Show, Generic)
   deriving anyclass FromJSON
 
--- | One group's spend in an organizer-resolved act-clue advance.
+-- | One group's organizer-allocated spend toward a stage advance.
 data AllocationEntry = AllocationEntry
   { ordinal :: Int
   , spend :: Int
@@ -95,10 +119,31 @@ data AllocationEntry = AllocationEntry
   deriving stock (Show, Generic)
   deriving anyclass FromJSON
 
--- | The organizer's full allocation for a stage's shared act-clue advance.
+{- | Body of @POST events/{id}/resolve-advance@: the organizer's per-group spend
+allocation for a stage awaiting resolution.
+-}
 data ResolveAdvancePost = ResolveAdvancePost
   { stage :: Int
   , allocation :: [AllocationEntry]
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass FromJSON
+
+{- | An organizer-triggered Replicate opportunity. The organizer chooses one of
+the nine physical cards and the entity/location spotted in a group; the
+group's engine presents the printed countermeasure cancellation prompt.
+-}
+data MainStreetSwapPost = MainStreetSwapPost
+  { firstGroupOrdinal :: Int
+  , secondGroupOrdinal :: Int
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass FromJSON
+
+data ReplicatePost = ReplicatePost
+  { groupOrdinal :: Int
+  , cardCode :: CardCode
+  , target :: Target
   }
   deriving stock (Show, Generic)
   deriving anyclass FromJSON
@@ -113,6 +158,14 @@ data GroupPlayerInfo = GroupPlayerInfo
   deriving stock (Show, Generic)
   deriving anyclass ToJSON
 
+data ReplicateTarget = ReplicateTarget
+  { target :: Target
+  , cardCode :: CardCode
+  , kind :: Text
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass ToJSON
+
 data GroupDigest = GroupDigest
   { ordinal :: Int
   , name :: Text
@@ -123,15 +176,13 @@ data GroupDigest = GroupDigest
   , seatCount :: Int
   -- ^ total seats; investigatorCount < seatCount means the lobby has open seats
   , youAreSeated :: Bool
-  -- ^ whether the requesting user holds a seat in this group (so an organizer who
-  -- also plays can drop into it).
+  {- ^ whether the requesting user holds a seat in this group (so an organizer who
+  also plays can drop into it).
+  -}
   , players :: [GroupPlayerInfo]
   -- ^ seated players (username + chosen investigator) for the dashboard.
-  , actStage :: Maybe Int
-  -- ^ the group's current act stage (the act deck's stage), so the organizer UI
-  -- can build the shared act-clue advance allocation. Nothing before setup.
-  , actClues :: Maybe Int
-  -- ^ clues currently on that act.
+  , replicateTargets :: [ReplicateTarget]
+  -- ^ in-play locations, investigators, and enemies the organizer can nominate.
   }
   deriving stock (Show, Generic)
   deriving anyclass ToJSON
@@ -145,6 +196,7 @@ data EventDetails = EventDetails
   , totalInvestigators :: Int
   , createdAt :: UTCTime
   -- ^ event start; the time-limit countdown runs from here.
+  , playWithBlobElse :: Bool
   , groups :: [GroupDigest]
   }
   deriving stock (Show, Generic)
@@ -171,8 +223,9 @@ requireEventMember userId eid = do
     Just (Entity _ m) -> pure (arkhamEpicMemberRole m)
     Nothing -> permissionDenied "You are not a member of this event"
 
--- | A user may hold both Organizer and GroupPlayer rows, so check for an
--- Organizer row directly rather than trusting the first membership found.
+{- | A user may hold both Organizer and GroupPlayer rows, so check for an
+Organizer row directly rather than trusting the first membership found.
+-}
 requireOrganizer :: UserId -> ArkhamEpicEventId -> Handler ()
 requireOrganizer userId eid = do
   isOrganizer <-
@@ -182,7 +235,7 @@ requireOrganizer userId eid = do
         , ArkhamEpicMemberUserId P.==. userId
         , ArkhamEpicMemberRole P.==. Organizer
         ]
-  unless isOrganizer $ permissionDenied "Only the organizer can delete this event"
+  unless isOrganizer $ permissionDenied "Only the event organizer may perform this action"
 
 -- Handlers --------------------------------------------------------------------
 
@@ -230,7 +283,14 @@ postApiV1ArkhamEventsR = do
   -- Create each group's game up front (own transaction per game, mirroring the
   -- normal game-creation path).
   groupGames <- for (zip [0 :: Int ..] groups) \(ordx, grp) -> do
-    gid <- createGroupGame grp.name scenarioId difficulty includeTarotReadings grp.playerCount
+    gid <-
+      createGroupGame
+        grp.name
+        scenarioId
+        difficulty
+        includeTarotReadings
+        (fromMaybe False playWithBlobElse)
+        grp.playerCount
     pure (ordx, grp, gid)
 
   eid <- runDB do
@@ -258,13 +318,15 @@ postApiV1ArkhamEventsR = do
 getApiV1ArkhamEventR :: ArkhamEpicEventId -> Handler EventDetails
 getApiV1ArkhamEventR eid = do
   userId <- getRequestUserId
-  webSockets $ eventStream eid
+  wsOptions <- websocketConnectionOptions
+  webSocketsOptions wsOptions $ eventStream eid
   void $ requireEventMember userId eid
   buildEventDetails userId eid
 
--- | Delete an event and all of its group games (organizer only). Deleting each
--- group's 'ArkhamGame' cascades its players/steps/logs and the epic-group row;
--- deleting the event cascades members and shared-state steps.
+{- | Delete an event and all of its group games (organizer only). Deleting each
+group's 'ArkhamGame' cascades its players/steps/logs and the epic-group row;
+deleting the event cascades members and shared-state steps.
+-}
 deleteApiV1ArkhamEventR :: ArkhamEpicEventId -> Handler ()
 deleteApiV1ArkhamEventR eid = do
   userId <- getRequestUserId
@@ -280,23 +342,22 @@ deleteApiV1ArkhamEventR eid = do
   for_ gameIds deleteRoom
   deleteEventRoom eid
 
-{- | Adjust a shared counter. Any member may do so; the mutation is recorded as a
-delta on the locked event row and broadcast to the event feed and every
-group's own game stream.
+{- | Organizer correction for the one user-adjustable Blob pool. Internal keys
+(health, act gates/generations, timer state) are never writable through the
+public endpoint; they are owned by engine/coordinator transitions.
 -}
 postApiV1ArkhamEventCounterR :: ArkhamEpicEventId -> Handler ()
 postApiV1ArkhamEventCounterR eid = do
   userId <- getRequestUserId
-  void $ requireEventMember userId eid
+  requireOrganizer userId eid
   CounterPost {..} <- requireCheckJsonBody
   case sharedKeyFromText key of
-    Nothing -> invalidArgs ["Unknown shared key: " <> key]
-    Just sharedKey -> do
+    Just Countermeasures -> do
       did <- UUID.toText <$> liftIO nextRandom
-      let delta = SharedDelta {sharedDeltaId = did, sharedDeltaKey = sharedKey, sharedDeltaAmount = amount}
+      let delta = SharedDelta {sharedDeltaId = did, sharedDeltaKey = Countermeasures, sharedDeltaAmount = amount}
       newState <- runDB $ applyEpicDeltasLocked eid Nothing Nothing [delta]
-      -- Update every client's shared store and sync all groups' boards.
       propagateShared eid Nothing newState
+    _ -> invalidArgs ["Only the countermeasures pool may be adjusted manually"]
 
 {- | The Epic time limit has elapsed: force every still-playing group to agenda
 3b ("face the consequences"). The frontend posts here when its (createdAt +
@@ -322,14 +383,10 @@ postApiV1ArkhamEventTimeUpR :: ArkhamEpicEventId -> Handler ()
 postApiV1ArkhamEventTimeUpR eid = do
   userId <- getRequestUserId
   void $ requireEventMember userId eid
-  gameIds <- getEventGroupGameIds eid
-  for_ gameIds \gid ->
-    runMessagesInGroupWhen
-      (not . agendaAtOrPastStage 3)
-      [AdvanceToAgenda 1 Agendas.theAnomalyConsumes Agenda.B GameSource]
-      gid
-      `catch` \(e :: SomeException) ->
-        $(logWarn) $ "Epic time-up advance failed for " <> tshow gid <> ": " <> tshow e
+  event <- runDB (P.get eid) >>= maybe notFound pure
+  elapsed <- eventTimeElapsed event
+  unless elapsed $ invalidArgs ["The event time limit has not elapsed"]
+  forceEventTimeUp eid
 
 {- | Start-of-game barrier: mark the caller's group ready (idempotent, by group
 ordinal bit). When EVERY group is ready, the time-limit timer starts (records the
@@ -360,22 +417,24 @@ postApiV1ArkhamEventReadyR eid = do
       let
         mask' = sharedCounter GroupsReadyMask s .|. (1 `shiftL` ordinal)
         s' = setSharedCounter GroupsReadyMask mask' s
-      in
+       in
         if mask' == fullMask && sharedCounter TimerStartedAt s == 0
           then setSharedCounter TimerStartedAt nowEpoch s'
           else s'
     broadcastSharedToEvent eid newState
 
-{- | The organizer resolves an EXCESS shared act-clue advance (set by the
-coordinator when a stage's shared pool overshot 2 * sharedTotalInvestigators):
-they choose how many clues each group spends toward the threshold; the remainder
-on each act is distributed to that group's investigators.
+{- | Organizer-mediated excess-clue distribution on a shared act advance. The
+coordinator has gated the stage with @AwaitingOrganizer stage == 1@; the organizer
+allocates how many of each group's contributed clues are spent toward the
+threshold. 200 with empty body — the result is pushed over the websocket.
 
-Validates that the spends sum to exactly the threshold and that no group spends
-more than the clues on its own stage-@stage@ act (nor a negative amount). Pushes
-'ResolveEpicActAdvance' to each allocated group, then directly resets the shared
-pool to 0 AND clears the pending flag (a single direct-set — the server owns the
-pool; the per-group handler must not touch it), and broadcasts the new state.
+Validation is server-side from the current shared state: every @spend@ in
+@[0, that group's contribution]@ and @sum spend == 2 * sharedTotalInvestigators@.
+The authoritative consume (write per-group 'ActSpend', reset the pool, bump the
+generation, clear the gate) + the replica mirror + the global undo floor + the
+overlay-lifting broadcast all happen in 'settleOrganizerAdvance', which is atomic
+and idempotent against a double-submit. NO gameplay message is injected into any
+group; the parked act reads its own 'ActSpend' from its mirrored replica.
 -}
 postApiV1ArkhamEventResolveAdvanceR :: ArkhamEpicEventId -> Handler ()
 postApiV1ArkhamEventResolveAdvanceR eid = do
@@ -386,47 +445,93 @@ postApiV1ArkhamEventResolveAdvanceR eid = do
   case mEvent of
     Nothing -> notFound
     Just event -> do
-      let threshold = 2 * sharedTotalInvestigators (arkhamEpicEventSharedState event)
-      groupClues <- getEventGroupActClues eid stage
       let
-        cluesByOrdinal = Map.fromList [(ordinal, clues) | (ordinal, _gid, clues) <- groupClues]
-        gameByOrdinal = Map.fromList [(ordinal, gid) | (ordinal, gid, _clues) <- groupClues]
-        totalSpend = sum [entry.spend | entry <- allocation]
-        invalidEntry entry =
-          entry.spend < 0
-            || entry.spend > Map.findWithDefault 0 entry.ordinal cluesByOrdinal
+        shared0 = arkhamEpicEventSharedState event
+        threshold = 2 * sharedTotalInvestigators shared0
+      when (sharedCounter (AwaitingOrganizer stage) shared0 /= 1)
+        $ invalidArgs ["No advance awaiting organizer for this stage"]
+      contributions <- getEventGroupContributions eid stage
+      let
+        contribMap = Map.fromList contributions
+        -- Aggregate by ordinal so duplicate entries can't defeat a per-group cap.
+        spendByOrdinal = Map.fromListWith (+) [(entry.ordinal, entry.spend) | entry <- allocation]
+        totalSpend = sum (Map.elems spendByOrdinal)
+        invalidGroup (ordinal, spend) = spend < 0 || spend > Map.findWithDefault 0 ordinal contribMap
       when (totalSpend /= threshold)
         $ invalidArgs ["Allocation must spend exactly " <> tshow threshold <> " clues"]
-      when (any invalidEntry allocation)
-        $ invalidArgs ["A group's spend is negative or exceeds the clues on its act"]
-      for_ allocation \entry ->
-        for_ (Map.lookup entry.ordinal gameByOrdinal) \gid ->
-          runMessagesInGroup [ResolveEpicActAdvance stage entry.spend] gid
-      newState <-
-        runDB
-          $ modifySharedStateLocked
-            eid
-            (setSharedCounter (SharedActProgress stage) 0 . setSharedCounter (PendingActAdvance stage) 0)
-      broadcastSharedToEvent eid newState
+      when (any invalidGroup (Map.toList spendByOrdinal))
+        $ invalidArgs ["A group's spend is negative or exceeds its contribution"]
+      settleOrganizerAdvance eid stage spendByOrdinal
 
--- | Whether any agenda currently in play in the group's game is at or past
--- @stage@. Used as the in-lock idempotency guard for the time-up forcing: a group
--- already at agenda stage 3 (forced previously, or advanced there in normal play)
--- is left untouched.
+{- | Offer a Replicating Aberration spawn to one group. This deliberately runs
+through that game's message queue instead of directly changing JSON: the
+investigators receive a persisted choice to spend a shared countermeasure,
+all resulting shared deltas use the normal Epic transaction seam, and the
+group's websocket receives the resulting question/board state.
+-}
+postApiV1ArkhamEventReplicateR :: ArkhamEpicEventId -> Handler ()
+postApiV1ArkhamEventReplicateR eid = do
+  userId <- getRequestUserId
+  requireOrganizer userId eid
+  ReplicatePost {..} <- requireCheckJsonBody
+  unless (unCardCode cardCode `elem` ["89010" <> T.singleton suffix | suffix <- ['a' .. 'i']])
+    $ invalidArgs ["Only Replicating Aberration cards may be spawned"]
+  mGameId <- runDB do
+    mGroup <-
+      P.selectFirst
+        [ ArkhamEpicGroupArkhamEpicEventId P.==. eid
+        , ArkhamEpicGroupOrdinal P.==. groupOrdinal
+        ]
+        []
+    pure $ mGroup >>= arkhamEpicGroupArkhamGameId . entityVal
+  gameId <- maybe (invalidArgs ["Unknown event group"]) pure mGameId
+  rawGame <- runDB $ P.getJust gameId
+  unless (gameUsesBlobElse $ arkhamGameCurrentData rawGame)
+    $ permissionDenied "Replicating Aberrations require The Blob That Ate Everything ELSE!"
+  runMessagesInGroupWhen
+    (const True)
+    [ScenarioSpecific "blobRequestAberration" (toJSON (cardCode, target))]
+    gameId
+
+postApiV1ArkhamEventSwapMainStreetR :: ArkhamEpicEventId -> Handler ()
+postApiV1ArkhamEventSwapMainStreetR eid = do
+  userId <- getRequestUserId
+  requireOrganizer userId eid
+  MainStreetSwapPost {..} <- requireCheckJsonBody
+  when (firstGroupOrdinal == secondGroupOrdinal)
+    $ invalidArgs ["Investigators must be in different groups"]
+  swapMainStreetInvestigators eid firstGroupOrdinal secondGroupOrdinal
+
+{- | Whether any agenda currently in play in the group's game is at or past
+@stage@. Used as the in-lock idempotency guard for the time-up forcing: a group
+already at agenda stage 3 (forced previously, or advanced there in normal play)
+is left untouched.
+-}
+eventTimeElapsed :: ArkhamEpicEvent -> Handler Bool
+eventTimeElapsed event = do
+  nowEpoch <- floor . utcTimeToPOSIXSeconds <$> liftIO getCurrentTime
+  let
+    shared = arkhamEpicEventSharedState event
+    limitSeconds = sharedCounter TimeLimitMinutes shared * 60
+    startedAt = sharedCounter TimerStartedAt shared
+  pure $ limitSeconds > 0 && startedAt > 0 && nowEpoch >= startedAt + limitSeconds
+
+forceEventTimeUp :: ArkhamEpicEventId -> Handler ()
+forceEventTimeUp eid = do
+  gameIds <- getEventGroupGameIds eid
+  for_ gameIds \gid ->
+    runMessagesInGroupWhen
+      (not . agendaAtOrPastStage 3)
+      [AdvanceToAgenda 1 Agendas.theAnomalyConsumes Agenda.B GameSource]
+      gid
+      `catch` \(e :: SomeException) ->
+        $(logWarn) $ "Epic time-up advance failed for " <> tshow gid <> ": " <> tshow e
+
 agendaAtOrPastStage :: Int -> Game -> Bool
 agendaAtOrPastStage stage game =
   any
     (\ag -> Agenda.agendaSequenceStep (attr agendaSequence ag) >= stage)
     (toList (entitiesAgendas (gameEntities game)))
-
--- | The current act's (stage, clues) in a group's game, for the dashboard /
--- organizer allocation UI. Acts in play is normally a singleton; takes the first.
-currentActStageClues :: Game -> Maybe (Int, Int)
-currentActStageClues game =
-  case toList (entitiesActs (gameEntities game)) of
-    [] -> Nothing
-    (act : _) ->
-      Just (AS.unActStep (AS.actStep (attr actSequence act)), attr (.clues) act)
 
 -- Helpers ---------------------------------------------------------------------
 
@@ -436,6 +541,7 @@ buildEventDetails userId eid = do
   case mEvent of
     Nothing -> notFound
     Just event -> do
+      whenM (eventTimeElapsed event) $ forceEventTimeUp eid
       groupRows <- runDB $ select do
         grp <- from $ table @ArkhamEpicGroup
         where_ $ grp.arkhamEpicEventId ==. val eid
@@ -461,6 +567,7 @@ buildEventDetails userId eid = do
               then Just Organizer
               else arkhamEpicMemberRole . entityVal <$> mRole
       digests <- traverse (mkGroupDigest userId) groupRows
+      playWithBlobElse <- or <$> traverse groupUsesBlobElse groupRows
       pure
         EventDetails
           { id = eid
@@ -470,8 +577,25 @@ buildEventDetails userId eid = do
           , sharedState = arkhamEpicEventSharedState event
           , totalInvestigators = arkhamEpicEventTotalInvestigators event
           , createdAt = arkhamEpicEventCreatedAt event
+          , playWithBlobElse = playWithBlobElse
           , groups = digests
           }
+
+scenarioUsesBlobElse :: Scenario -> Bool
+scenarioUsesBlobElse = getMetaKeyDefault "blobThatAteEverythingElse" False . toAttrs
+
+gameUsesBlobElse :: Game -> Bool
+gameUsesBlobElse game = case gameMode game of
+  That scenario -> scenarioUsesBlobElse scenario
+  These _ scenario -> scenarioUsesBlobElse scenario
+  This _ -> False
+
+groupUsesBlobElse :: Entity ArkhamEpicGroup -> Handler Bool
+groupUsesBlobElse (Entity _ grp) = case arkhamEpicGroupArkhamGameId grp of
+  Nothing -> pure False
+  Just gid -> do
+    mGame <- runDB $ P.get gid
+    pure $ maybe False (gameUsesBlobElse . arkhamGameCurrentData) mGame
 
 mkGroupDigest :: UserId -> Entity ArkhamEpicGroup -> Handler GroupDigest
 mkGroupDigest userId (Entity _ grp) = case arkhamEpicGroupArkhamGameId grp of
@@ -486,8 +610,7 @@ mkGroupDigest userId (Entity _ grp) = case arkhamEpicGroupArkhamGameId grp of
         , seatCount = seats
         , youAreSeated = False
         , players = []
-        , actStage = Nothing
-        , actClues = Nothing
+        , replicateTargets = []
         }
   Just gid -> do
     mGame <- runDB $ P.get gid
@@ -496,8 +619,8 @@ mkGroupDigest userId (Entity _ grp) = case arkhamEpicGroupArkhamGameId grp of
       (p :& u) <-
         from
           $ table @ArkhamPlayer
-            `innerJoin` table @User
-          `on` (\(p :& u) -> p.userId ==. u.id)
+          `innerJoin` table @User
+            `on` (\(p :& u) -> p.userId ==. u.id)
       where_ $ p.arkhamGameId ==. val gid
       pure (p.id, u.username)
     let
@@ -509,7 +632,21 @@ mkGroupDigest userId (Entity _ grp) = case arkhamEpicGroupArkhamGameId grp of
         [ GroupPlayerInfo {username = un, investigatorId = Map.lookup (PlayerId (coerce pid)) invByPlayer}
         | (Value pid, Value un) <- playerRows
         ]
-      mActInfo = currentActStageClues . arkhamGameCurrentData =<< mGame
+      replicateTargets = case mGame of
+        Just rawGame
+          | gameUsesBlobElse (arkhamGameCurrentData rawGame) ->
+              let game = arkhamGameCurrentData rawGame
+                  entities = gameEntities game
+               in [ ReplicateTarget (LocationTarget lid) (toCardCode l) "location"
+                  | (lid, l) <- Map.toList $ entitiesLocations entities
+                  ]
+                    <> [ ReplicateTarget (InvestigatorTarget iid) (toCardCode i) "investigator"
+                       | (iid, i) <- Map.toList $ entitiesInvestigators entities
+                       ]
+                    <> [ ReplicateTarget (EnemyTarget eid) (toCardCode e) "enemy"
+                       | (eid, e) <- Map.toList $ entitiesEnemies entities
+                       ]
+        _ -> []
     pure
       GroupDigest
         { ordinal = ordx
@@ -520,8 +657,7 @@ mkGroupDigest userId (Entity _ grp) = case arkhamEpicGroupArkhamGameId grp of
         , seatCount = seats
         , youAreSeated = seated
         , players = players
-        , actStage = fst <$> mActInfo
-        , actClues = snd <$> mActInfo
+        , replicateTargets = replicateTargets
         }
  where
   ordx = arkhamEpicGroupOrdinal grp
@@ -535,8 +671,8 @@ once its seats fill — exactly the normal multiplayer flow, one lobby per group
 The organizer is NOT auto-seated (they may join a group like anyone else).
 -}
 createGroupGame
-  :: Text -> ScenarioId -> Difficulty -> Bool -> Int -> Handler ArkhamGameId
-createGroupGame gameName scenarioId difficulty includeTarotReadings playerCount = do
+  :: Text -> ScenarioId -> Difficulty -> Bool -> Bool -> Int -> Handler ArkhamGameId
+createGroupGame gameName scenarioId difficulty includeTarotReadings playWithBlobElse playerCount = do
   newGameSeed <- liftIO getRandom
   now <- liftIO getCurrentTime
   let
@@ -544,7 +680,9 @@ createGroupGame gameName scenarioId difficulty includeTarotReadings playerCount 
     -- Flag the group's scenario as Epic Multiplayer so it picks its epic setup
     -- branch at Setup time (the join path runs setup with no event context).
     game =
-      setInitialScenarioMeta "epicMultiplayer" True
+      (if playWithBlobElse then setInitialScenarioMeta "variant" ("else" :: Text) else id)
+        $ setInitialScenarioMeta "blobThatAteEverythingElse" playWithBlobElse
+        $ setInitialScenarioMeta "epicMultiplayer" True
         $ newScenario scenarioId newGameSeed seats difficulty includeTarotReadings
     ag = ArkhamGame gameName game 0 WithFriends now now
   runDB do
@@ -552,28 +690,24 @@ createGroupGame gameName scenarioId difficulty includeTarotReadings playerCount 
     P.insert_ $ ArkhamStep gameId (Choice mempty [] False) 0 (ActionDiff [])
     pure gameId
 
--- | Initial shared counters for an event, by scenario. Frozen at event start
--- (scales by the total investigator count across all groups).
+{- | Initial shared counters for an event, by scenario. Frozen at event start
+(scales by the total investigator count across all groups).
+-}
 epicScenarioSeeds :: ScenarioId -> Int -> [(SharedKey, Int)]
 epicScenarioSeeds scenarioId total
   | scenarioId == "85001" =
       -- The Blob That Ate Everything: countermeasures = ceil(total/2); Subject
-      -- 8L-08 (epic, card 85037) global health = 15 x total. Act 1/3 shared clue
-      -- progress is seeded at 0 so the keys exist in shared state from the start
-      -- (lets the UI display "clues X / 2*total" for the active clue-threshold act
-      -- before any clues are contributed).
+      -- 8L-08 (epic, card 85037) global health = 15 x total. Epic Act 1's shared
+      -- clue progress is seeded at 0 so the UI can show its threshold immediately.
       [ (Countermeasures, (total + 1) `div` 2)
       , (SharedEnemyHealth (CardCode "85037"), 15 * total)
       , (SharedActProgress 1, 0)
-      , (SharedActProgress 3, 0)
       ]
   | otherwise = []
 
 -- | The per-event websocket: a read-only feed of shared-state updates.
 eventStream :: ArkhamEpicEventId -> WebSocketsT Handler ()
-eventStream eid = do
-  room <- lift $ getEventRoom eid
-  streamRoom (eventChannel eid) room do
-    roomsVar <- lift $ getsYesod appEventRooms
-    liftIO $ modifyMVar_ roomsVar $ pure . Map.delete eid
-    lift $ removeChannel (eventChannel eid)
+eventStream eid =
+  -- Releases the room and its Redis subscription together, but only once the
+  -- last subscriber has actually gone; see 'releaseRoomIfEmpty'.
+  streamRoom (joinEventRoom eid) (void $ releaseEventRoomIfEmpty eid)

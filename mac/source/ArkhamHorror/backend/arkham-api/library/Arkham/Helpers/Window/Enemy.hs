@@ -5,17 +5,16 @@
 
 module Arkham.Helpers.Window.Enemy where
 
-import {-# SOURCE #-} Arkham.Game ()
 import Arkham.Attack.Types
 import Arkham.Classes.HasGame
 import Arkham.Classes.Query
+import {-# SOURCE #-} Arkham.Game ()
 import Arkham.Id
 import Arkham.Matcher
 import Arkham.Matcher qualified as Matcher
 import Arkham.Prelude
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Window
 import Arkham.Window qualified as Window
 import Arkham.Zone
@@ -65,6 +64,15 @@ attackingInvestigator =
     (windowType -> Window.FailAttackEnemy iid _ _) -> Just iid
     _ -> Nothing
 
+evadingInvestigator :: HasCallStack => [Window] -> InvestigatorId
+evadingInvestigator =
+  fromMaybe (error "missing investigator") . asum . map \case
+    (windowType -> Window.AttemptToEvadeEnemy _ iid _) -> Just iid
+    (windowType -> Window.EnemyEvaded iid _) -> Just iid
+    (windowType -> Window.EnemyWouldBeEvaded iid _) -> Just iid
+    (windowType -> Window.SuccessfulEvadeEnemy iid _ _ _) -> Just iid
+    _ -> Nothing
+
 attackSource :: HasCallStack => [Window] -> Source
 attackSource =
   fromMaybe (error "missing enemy") . asum . map \case
@@ -75,6 +83,7 @@ evadedEnemy :: HasCallStack => [Window] -> EnemyId
 evadedEnemy =
   fromMaybe (error "missing enemy") . asum . map \case
     (windowType -> Window.EnemyEvaded _ eid) -> Just eid
+    (windowType -> Window.EnemyWouldBeEvaded _ eid) -> Just eid
     (windowType -> Window.SuccessfulEvadeEnemy _ _ eid _) -> Just eid
     _ -> Nothing
 
@@ -84,6 +93,18 @@ spawnedEnemy =
     (windowType -> Window.EnemySpawns eid _) -> Just eid
     (windowType -> Window.EnemyAttemptsToSpawnAt eid _) -> Just eid
     _ -> Nothing
+
+{- | The investigator a triggered ability's @ThatInvestigator@ refers to: the one
+the window is *about*, which is not necessarily the one using the ability (a
+reaction to "an investigator at your location would discover clues" is used by
+the card's controller but is about the discoverer).
+-}
+getThatInvestigator :: [Window] -> Maybe InvestigatorId
+getThatInvestigator = \case
+  [] -> Nothing
+  ((windowType -> Window.WouldDiscoverClues who _ _ _ _) : _) -> Just who
+  ((windowType -> Window.DiscoverClues who _ _ _) : _) -> Just who
+  (_ : rest) -> getThatInvestigator rest
 
 getThatEnemy :: [Window] -> Maybe EnemyId
 getThatEnemy = \case
@@ -103,6 +124,10 @@ getAttackDetails = \case
 getEnemy :: [Window] -> EnemyId
 getEnemy = \case
   ((windowType -> Window.EnemySpawns eid _) : _) -> eid
+  ((windowType -> Window.EnemyEvaded _ eid) : _) -> eid
+  ((windowType -> Window.EnemyWouldBeEvaded _ eid) : _) -> eid
+  ((windowType -> Window.SuccessfulEvadeEnemy _ _ eid _) : _) -> eid
+  ((windowType -> Window.SuccessfulAttackEnemy _ _ eid _) : _) -> eid
   ((windowType -> Window.EnemyDefeated _ _ eid) : _) -> eid
   ((windowType -> Window.IfEnemyDefeated _ _ eid) : _) -> eid
   ((windowType -> Window.EnemyMoves eid _) : _) -> eid
@@ -141,6 +166,6 @@ damagedEnemyAmount = \case
   ((windowType -> Window.DealtDamage _ _ (EnemyTarget _) n) : _) -> n
   _ -> error "Expected DealtDamage window"
 
-enemyMatches :: (HasGame m, Tracing m) => EnemyId -> EnemyMatcher -> m Bool
+enemyMatches :: HasGame m => EnemyId -> EnemyMatcher -> m Bool
 enemyMatches _eid Matcher.AnyEnemy = pure True
 enemyMatches eid matcher = orM [matches eid matcher, matches eid (Matcher.OutOfPlayEnemy RemovedZone matcher)]

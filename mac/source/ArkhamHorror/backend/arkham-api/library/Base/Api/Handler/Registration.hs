@@ -49,6 +49,8 @@ starterDecks userId = map toDeck starterDecklists
       , arkhamDeckName = fromMaybe (investigator_name decklist) (decklist_name decklist)
       , arkhamDeckInvestigatorName = investigator_name decklist
       , arkhamDeckList = decklist
+      , arkhamDeckOverlay = Nothing
+      , arkhamDeckLastUsedAt = Nothing
       }
 
 starterDecklists :: [ArkhamDBDecklist]

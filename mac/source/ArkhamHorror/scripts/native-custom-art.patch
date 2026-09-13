@@ -1,0 +1,19 @@
+--- a/start.sh
++++ b/start.sh
+@@ -38,2 +38,3 @@
+ PGDATA_OS_PARENT="$(dirname "$PGDATA_OS")"
++export ARKHAM_CUSTOM_CARD_ART_DIR="${ARKHAM_CUSTOM_CARD_ART_DIR:-$PGDATA_OS_PARENT/custom-card-art}"
+ PGDATA_LOCAL="$DATA_DIR/pgdata"        # Legacy physical backup location from older builds
+@@ -1003,2 +1004,8 @@
++    # User-created art persists outside the replaceable application files.
++    location ^~ /img/custom/ {
++      alias "$ARKHAM_CUSTOM_CARD_ART_DIR/";
++      add_header X-Content-Type-Options nosniff always;
++      expires 1d;
++    }
+     # Non-arkham images (e.g. /img/icons/favicon.ico)
+     location /img/ {
+@@ -1603,2 +1610,3 @@
+     info "Starting backend API ..."
++    ensure_dir "$ARKHAM_CUSTOM_CARD_ART_DIR"
+     export DATABASE_URL="postgres://${PG_USER}@127.0.0.1:${PG_PORT}/${PG_DB}"

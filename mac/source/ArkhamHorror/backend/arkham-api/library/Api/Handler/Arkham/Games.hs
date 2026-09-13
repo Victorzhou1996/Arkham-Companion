@@ -6,22 +6,19 @@
 module Api.Handler.Arkham.Games (
   getApiV1ArkhamGameR,
   getApiV1ArkhamGameSpectateR,
+  getApiV1ArkhamGameStepR,
   getApiV1ArkhamGamesR,
   postApiV1ArkhamGamesR,
   putApiV1ArkhamGameR,
   deleteApiV1ArkhamGameR,
   putApiV1ArkhamGameRawR,
   postApiV1ArkhamGamePlayabilityR,
-  getApiV1ArkhamGameAiQuestionsR,
 ) where
 
 import Api.Arkham.Epic (lookupGameEvent)
 import Api.Arkham.Helpers
 import Api.Arkham.Types.MultiplayerVariant
 import Api.Handler.Arkham.Games.Shared
-import Arkham.Ai.Focus (Focus)
-import Arkham.Ai.Questions (AiQuestion, assessAiQuestions)
-import Arkham.Ai.State (AiPlayerState (..), defaultAiPlayerState)
 import Arkham.Campaign.Option
 import Arkham.Card
 import Arkham.Classes.HasQueue
@@ -38,13 +35,13 @@ import Arkham.Game.Settings (
   settingsUltimatumsAndBoons,
   settingsUndoMode,
  )
-import Arkham.UltimatumsAndBoons.Types (UltimatumOrBoon)
 import Arkham.GameEnv (getCard)
 import Arkham.Helpers.Playable (getPlayabilityChecks)
 import Arkham.Id
-import Arkham.Message (Message (HandleOption, RegisterAiPlayer))
+import Arkham.Message (Message (HandleOption))
 import Arkham.Queue
 import Arkham.Source
+import Arkham.UltimatumsAndBoons.Types (UltimatumOrBoon)
 import Arkham.Window (mkWhen)
 import Arkham.Window qualified as Window
 import Conduit
@@ -59,14 +56,36 @@ import Entity.Answer
 import Entity.Arkham.GameRaw
 import Entity.Arkham.Step
 import Import hiding (delete, exists, on, (==.))
-import OpenTelemetry.Eventlog (withSpan_)
-import OpenTelemetry.Trace.Monad (MonadTracer (..))
 import Yesod.WebSockets
+
+{- | Step counter only: one indexed Int column, no game JSON touched, no lock.
+
+The full game GET is the most expensive endpoint we have (whole game plus log),
+so nothing that merely wants to know "did anything happen?" should be hitting it
+on a timer. Poll this instead and fetch the game only when the step moved.
+-}
+getApiV1ArkhamGameStepR :: ArkhamGameId -> Handler GameStepJson
+getApiV1ArkhamGameStepR gameId = do
+  void getRequestUserId
+  steps <- runDB $ select do
+    games <- from $ table @ArkhamGame
+    where_ $ games.id ==. val gameId
+    pure games.step
+  case steps of
+    Value step : _ -> pure $ GameStepJson step
+    [] -> notFound
+
+newtype GameStepJson = GameStepJson
+  { step :: Int
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass ToJSON
 
 getApiV1ArkhamGameR :: ArkhamGameId -> Handler GetGameJson
 getApiV1ArkhamGameR gameId = do
   userId <- getRequestUserId
-  webSockets $ gameStream gameId
+  wsOptions <- websocketConnectionOptions
+  webSocketsOptions wsOptions $ gameStream gameId
   runDB do
     g <- get404 gameId
     gameLog <- getGameLog gameId Nothing
@@ -87,7 +106,8 @@ getApiV1ArkhamGameR gameId = do
 
 getApiV1ArkhamGameSpectateR :: ArkhamGameId -> Handler GetGameJson
 getApiV1ArkhamGameSpectateR gameId = do
-  webSockets $ gameStream gameId
+  wsOptions <- websocketConnectionOptions
+  webSocketsOptions wsOptions $ gameStream gameId
   runDB do
     g <- get404 gameId
     let Game {..} = g.currentData
@@ -104,51 +124,30 @@ getApiV1ArkhamGameSpectateR gameId = do
 getApiV1ArkhamGamesR :: Handler [GameDetailsEntry]
 getApiV1ArkhamGamesR = do
   userId <- getRequestUserId
-  -- withSpan_ wraps Yesod's HCContent control-flow exceptions, so it's
-  -- only safe over code paths that don't call notFound/notAuthenticated/etc.
-  -- getRequestUserId is the only HCContent-throwing call; everything below
-  -- is safe to trace.
-  withSpan_ "getApiV1ArkhamGamesR" do
-    games <- runDB $ select do
-      (players :& games) <-
-        distinct
-          $ from
-          $ table @ArkhamPlayer
-          `innerJoin` table @ArkhamGameRaw
-            `on` (\(players :& games) -> players.arkhamGameId ==. toBaseId games.id)
-      where_ $ players.userId ==. val userId
-      -- Epic Multiplayer group games are surfaced through their event (one
-      -- entry), not as standalone games in this list.
-      where_ $ notExists $ do
-        grp <- from $ table @ArkhamEpicGroup
-        where_ $ grp.arkhamGameId ==. just (toBaseId games.id)
-      orderBy [desc games.updatedAt]
-      pure games
-    let gameIds = map (coerce . entityKey) games :: [ArkhamGameId]
-    playerCounts <- runDB $ select do
-      p <- from $ table @ArkhamPlayer
-      where_ $ p.arkhamGameId `in_` valList gameIds
-      groupBy p.arkhamGameId
-      pure (p.arkhamGameId, countRows @Int)
-    let countMap = Map.fromList [(gid, n) | (Value gid, Value n) <- playerCounts]
-    pure $ map (\g -> toGameDetailsEntry g (fromMaybe 0 $ Map.lookup (coerce $ entityKey g) countMap)) games
-
--- | Per-seat AI configuration sent at game creation. Seats are matched to the
--- 'aiPlayers' list by index (a 'Nothing' entry, or an absent index, is a normal
--- human seat). JSON keys: @investigator@, @focus@, @responseDelayMs@.
-data AiSlotConfig = AiSlotConfig
-  { aiscInvestigator :: CardCode
-  , aiscFocus :: Maybe Focus
-  , aiscResponseDelayMs :: Maybe Int
-  }
-  deriving stock (Show, Generic)
-
-instance FromJSON AiSlotConfig where
-  parseJSON = withObject "AiSlotConfig" \o -> do
-    aiscInvestigator <- o .: "investigator"
-    aiscFocus <- o .:? "focus"
-    aiscResponseDelayMs <- o .:? "responseDelayMs"
-    pure AiSlotConfig {..}
+  games <- runDB $ select do
+    (players :& games) <-
+      distinct
+        $ from
+        $ table @ArkhamPlayer
+        `innerJoin` table @ArkhamGameRaw
+          `on` (\(players :& games) -> players.arkhamGameId ==. toBaseId games.id)
+    where_ $ players.userId ==. val userId
+    -- Epic Multiplayer group games are surfaced through their event (one
+    -- entry), not as standalone games in this list.
+    where_ $ notExists $ do
+      grp <- from $ table @ArkhamEpicGroup
+      where_ $ grp.arkhamGameId ==. just (toBaseId games.id)
+    orderBy [desc games.updatedAt]
+    pure games
+  let gameIds = map (coerce . entityKey) games :: [ArkhamGameId]
+  playerCounts <- runDB $ select do
+    p <- from $ table @ArkhamPlayer
+    where_ $ p.arkhamGameId `in_` valList gameIds
+    groupBy p.arkhamGameId
+    pure (p.arkhamGameId, countRows @Int)
+  let countMap = Map.fromList [(gid, n) | (Value gid, Value n) <- playerCounts]
+  pure
+    $ map (\g -> toGameDetailsEntry g (fromMaybe 0 $ Map.lookup (coerce $ entityKey g) countMap)) games
 
 data CreateGamePost = CreateGamePost
   { deckIds :: [Maybe ArkhamDeckId]
@@ -162,16 +161,15 @@ data CreateGamePost = CreateGamePost
   , options :: Set CampaignOption
   , strictAsIfAt :: Maybe Bool
   , asIfRuling :: Maybe AsIfRuling
-  , aiPlayers :: [Maybe AiSlotConfig]
   , achievementsEnabled :: Bool
   , ultimatumsAndBoons :: Set UltimatumOrBoon
   , undoMode :: UndoMode
   }
   deriving stock (Show, Generic)
 
--- | Hand-written so 'aiPlayers' can default to @[]@ when absent (existing
--- clients never send it). All other keys keep their previous (derived)
--- semantics: 'Maybe' fields optional, everything else required.
+{- | Hand-written so 'Maybe' fields stay optional and everything else stays
+required.
+-}
 instance FromJSON CreateGamePost where
   parseJSON = withObject "CreateGamePost" \o -> do
     deckIds <- o .: "deckIds"
@@ -185,7 +183,6 @@ instance FromJSON CreateGamePost where
     options <- o .: "options"
     strictAsIfAt <- o .:? "strictAsIfAt"
     asIfRuling <- o .:? "asIfRuling"
-    aiPlayers <- o .:? "aiPlayers" .!= []
     achievementsEnabled <- o .:? "achievementsEnabled" .!= True
     ultimatumsAndBoons <- o .:? "ultimatumsAndBoons" .!= mempty
     undoMode <- o .:? "undoMode" .!= FullUndo
@@ -224,35 +221,13 @@ postApiV1ArkhamGamesR = do
     ag = ArkhamGame campaignName game 0 multiplayerVariant now now
     repeatCount = if multiplayerVariant == WithFriends then 1 else playerCount
 
-  tracer <- getTracer
-
   runDB do
     gameId <- insert ag
-    -- Seats are indexed against aiPlayers. An AI slot binds its row to the chosen
-    -- investigator (e.g. "01001") and is registered + bundled-deck-loaded below;
-    -- absent/Nothing slots stay human ("00000", normal ChooseDeck flow). A
-    -- request without aiPlayers yields all-Nothing, i.e. today's behavior.
-    let seatConfigs = take repeatCount (aiPlayers <> repeat Nothing)
-    seats <- forM seatConfigs \mCfg -> do
-      let investigatorId = maybe "00000" (unCardCode . (.aiscInvestigator)) mCfg
-      pid <- insert $ ArkhamPlayer userId gameId investigatorId
-      pure (pid, mCfg)
-    let pids = map fst seats
+    pids <- replicateM repeatCount $ insert $ ArkhamPlayer userId gameId "00000"
     gameRef <- liftIO $ newIORef game
 
-    runGameApp (GameApp gameRef queueRef genRef (pure . const ()) tracer Nothing) do
+    runGameApp (GameApp gameRef queueRef genRef (pure . const ()) Nothing) do
       for_ pids \pid -> addPlayer (PlayerId $ coerce pid)
-      -- Register AI seats before StartCampaign. push prepends, so these land
-      -- ahead of the [StartCampaign] the final addPlayer queued; StartCampaign
-      -- then reads settingsAiPlayers to load each AI seat's bundled deck and drop
-      -- it from the deck prompt (see Arkham.Message.chooseDecksWithAi).
-      for_ seats \(pid, mCfg) -> for_ mCfg \cfg -> do
-        let aiState =
-              (defaultAiPlayerState cfg.aiscInvestigator)
-                { aiFocusOverride = cfg.aiscFocus
-                , aiResponseDelayMs = fromMaybe 1500 cfg.aiscResponseDelayMs
-                }
-        push $ RegisterAiPlayer (PlayerId $ coerce pid) aiState
       traverse_ (push . HandleOption) (toList options)
       runMessages (gameIdToText gameId) Nothing
 
@@ -321,26 +296,13 @@ postApiV1ArkhamGamePlayabilityR gameId = do
   gameRef <- newIORef gameJson
   queueRef <- newQueue []
   genRef <- newIORef $ mkStdGen gameJson.gameSeed
-  tracer <- getTracer
-  runGameApp (GameApp gameRef queueRef genRef (pure . const ()) tracer Nothing) do
+  runGameApp (GameApp gameRef queueRef genRef (pure . const ()) Nothing) do
     card <- getCard cid
     let duringTurnWindows = [mkWhen (Window.DuringTurn iid)]
     checks <- getPlayabilityChecks iid (toSource iid) (UnpaidCost NeedsAction) duringTurnWindows card
-    pure PlayabilityResponse
-      { cardId = cid
-      , cardCode = unCardCode (toCardCode card)
-      , checks
-      }
-
--- | Read-only, NON-BLOCKING advisory questions raised by enabled AI seats (e.g.
--- an AI investigator offering to move in and fight a teammate's tough engaged
--- enemy). Evaluated against a pure @ReaderT Game Identity@ snapshot — which is
--- both 'HasGame' and 'Tracing' — exactly like 'Arkham.Ai.Decision.decideAi'.
--- Never mutates game state; the frontend polls it and forwards a chosen
--- option's messages to the raw channel itself.
-getApiV1ArkhamGameAiQuestionsR :: ArkhamGameId -> Handler [AiQuestion]
-getApiV1ArkhamGameAiQuestionsR gameId = do
-  _ <- getRequestUserId
-  g <- runDB $ get404 gameId
-  let gameJson = g.currentData
-  pure $ runIdentity (runReaderT assessAiQuestions gameJson)
+    pure
+      PlayabilityResponse
+        { cardId = cid
+        , cardCode = unCardCode (toCardCode card)
+        , checks
+        }

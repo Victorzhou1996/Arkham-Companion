@@ -5,6 +5,7 @@ import { Card, cardDecoder} from '@/arkham/types/Card';
 import { SkillType, skillTypeDecoder} from '@/arkham/types/SkillType';
 import { Modifier, modifierDecoder } from '@/arkham/types/Modifier';
 import { Target, targetDecoder } from '@/arkham/types/Target';
+import { TokenFace, tokenFaceDecoder } from '@/arkham/types/ChaosToken';
 
 export type SkillTestStep
   = "DetermineSkillOfTestStep"
@@ -44,6 +45,48 @@ const baseValueDecoder = JsonDecoder.oneOf<SkillTestBaseValue>(
   'SkillTestBaseValue',
 );
 
+/** One distinct face in the chaos bag and what it is worth right now. */
+export type ChaosTokenValueEntry = {
+  face: TokenFace
+  count: number
+  /** null when the face auto fails or auto succeeds */
+  value: number | null
+  autoFail: boolean
+  autoSuccess: boolean
+  /** bless/curse/frost draw another token when revealed */
+  revealsAnother: boolean
+}
+
+export const chaosTokenValueEntryDecoder = JsonDecoder.object<ChaosTokenValueEntry>({
+  face: tokenFaceDecoder,
+  count: JsonDecoder.number(),
+  value: JsonDecoder.nullable(JsonDecoder.number()),
+  autoFail: JsonDecoder.boolean(),
+  autoSuccess: JsonDecoder.boolean(),
+  revealsAnother: JsonDecoder.boolean(),
+}, 'ChaosTokenValueEntry')
+
+/**
+ * Everything needed to answer "would the test succeed if the next token were X"
+ * without reimplementing the engine's success rule.
+ */
+export type SkillTestValueBreakdown = {
+  tokens: ChaosTokenValueEntry[]
+  /** as it stands before the next token is revealed; includes committed icons */
+  skillValue: number
+  difficulty: number
+  failTies: boolean
+  autoFailIfSucceedByAtLeast: number[]
+}
+
+export const skillTestValueBreakdownDecoder = JsonDecoder.object<SkillTestValueBreakdown>({
+  tokens: JsonDecoder.array(chaosTokenValueEntryDecoder, 'ChaosTokenValueEntry[]'),
+  skillValue: JsonDecoder.number(),
+  difficulty: JsonDecoder.number(),
+  failTies: JsonDecoder.boolean(),
+  autoFailIfSucceedByAtLeast: JsonDecoder.array(JsonDecoder.number(), 'number[]'),
+}, 'SkillTestValueBreakdown')
+
 export type SkillTest = {
   investigator: string;
   setAsideChaosTokens: ChaosToken[];
@@ -64,6 +107,7 @@ export type SkillTest = {
   baseValue: SkillTestBaseValue;
   result: null | { tag: string };
   modifiers?: Modifier[];
+  valueBreakdown?: SkillTestValueBreakdown;
 }
 
 export type SkillTestResults = {
@@ -112,6 +156,7 @@ export const skillTestDecoder = JsonDecoder.object<SkillTest>(
     baseValue: baseValueDecoder,
     result: JsonDecoder.nullable(JsonDecoder.object({ tag: JsonDecoder.string() }, 'SkillTestResult')),
     modifiers: v2Optional(JsonDecoder.array<Modifier>(modifierDecoder, 'Modifier[]')),
+    valueBreakdown: v2Optional(skillTestValueBreakdownDecoder),
   },
   'SkillTest',
 );

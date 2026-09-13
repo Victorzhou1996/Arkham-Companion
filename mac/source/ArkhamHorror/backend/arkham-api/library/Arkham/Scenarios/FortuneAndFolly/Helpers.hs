@@ -16,7 +16,8 @@ import Arkham.Id
 import Arkham.Message.Lifted
 import Arkham.Modifier
 import Arkham.Prelude
-import Arkham.Scenarios.DarkSideOfTheMoon.Helpers as X (
+import Arkham.Scenarios.FortuneAndFolly.PlayingCard as X
+import Arkham.Scenarios.TheDreamEaters.DarkSideOfTheMoon.Helpers as X (
   getAlarmLevel,
   getMaxAlarmLevel,
  )

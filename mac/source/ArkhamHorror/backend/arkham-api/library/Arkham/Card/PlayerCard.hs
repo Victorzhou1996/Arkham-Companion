@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Arkham.Card.PlayerCard where
 
 import Arkham.Asset.Cards
@@ -8,6 +6,7 @@ import Arkham.Card.CardDef
 import Arkham.Card.CardType
 import Arkham.Card.Class
 import Arkham.Card.Cost
+import Arkham.Card.CustomCard
 import Arkham.Card.Id
 import Arkham.Customization
 import Arkham.Enemy.Cards (allSpecialEnemyCards)
@@ -20,7 +19,6 @@ import Arkham.Prelude
 import Arkham.SkillType
 import {-# SOURCE #-} Arkham.Taboo
 import Arkham.Taboo.Types
-import Data.Aeson.TH
 import GHC.Records
 
 data PlayerCard = MkPlayerCard
@@ -31,6 +29,7 @@ data PlayerCard = MkPlayerCard
   , pcCustomizations :: Customizations
   , pcTabooList :: Maybe TabooList
   , pcMutated :: Maybe Text
+  , pcChained :: Maybe Text
   , pcMeta :: Maybe (Map Text [CardCode])
   , pcFacedown :: Maybe Bool
   }
@@ -87,12 +86,14 @@ instance HasCardDef PlayerCard where
       Just def -> def
       Nothing -> case lookup (pcCardCode c) InvestigatorCards.allInvestigatorCards of
         Just def -> def
-        Nothing ->
-          error
-            $ "missing card def for player card "
-            <> show (pcCardCode c)
-            <> "\n"
-            <> prettyCallStack callStack
+        Nothing -> case lookupCustomCardDef (pcCardCode c) of
+          Just def -> def
+          Nothing ->
+            error
+              $ "missing card def for player card "
+              <> show (pcCardCode c)
+              <> "\n"
+              <> prettyCallStack callStack
 
 instance Named PlayerCard where
   toName = toName . toCardDef
@@ -111,6 +112,7 @@ lookupPlayerCard cardDef cardId =
     , pcCustomizations = mempty
     , pcTabooList = Nothing
     , pcMutated = Nothing
+    , pcChained = Nothing
     , pcMeta = Nothing
     , pcFacedown = Nothing
     }
@@ -119,11 +121,16 @@ setPlayerCardOwner :: InvestigatorId -> PlayerCard -> PlayerCard
 setPlayerCardOwner iid pc = pc {pcOwner = Just iid}
 
 setTaboo :: Maybe TabooList -> PlayerCard -> PlayerCard
-setTaboo mtaboo pc = pc {pcTabooList = mtaboo, pcMutated = tabooMutated mtaboo pc}
+setTaboo mtaboo pc = pc {pcTabooList = mtaboo, pcMutated = tabooMutated mtaboo pc, pcChained = tabooChained mtaboo pc}
 
 tabooMutated :: Maybe TabooList -> PlayerCard -> Maybe Text
 tabooMutated Nothing _ = Nothing
 tabooMutated jtbl pc = asum $ map (tabooMutated' jtbl) (toCardDef pc).cardCodes
+
+tabooChained :: Maybe TabooList -> PlayerCard -> Maybe Text
+tabooChained (Just tbl) pc
+  | tbl >= TabooList21 && "09022" `elem` (toCardDef pc).cardCodes = Just "Chained21"
+tabooChained _ _ = Nothing
 
 tabooMutated' :: Maybe TabooList -> CardCode -> Maybe Text
 tabooMutated' = \case
@@ -251,4 +258,32 @@ tabooMutated25 = \case
   "11120" -> Just "Mutated25"
   pc -> tabooMutated24 pc
 
-$(deriveJSON (aesonOptions $ Just "pc") ''PlayerCard)
+instance ToJSON PlayerCard where
+  toJSON pc =
+    object
+      [ "id" .= pcId pc
+      , "owner" .= pcOwner pc
+      , "cardCode" .= pcCardCode pc
+      , "originalCardCode" .= pcOriginalCardCode pc
+      , "customizations" .= pcCustomizations pc
+      , "tabooList" .= pcTabooList pc
+      , "mutated" .= pcMutated pc
+      , "chained" .= pcChained pc
+      , "meta" .= pcMeta pc
+      , "facedown" .= pcFacedown pc
+      , "errata" .= cdErrata (toCardDef pc)
+      ]
+
+instance FromJSON PlayerCard where
+  parseJSON = withObject "PlayerCard" \o -> do
+    pcId <- o .: "id"
+    pcOwner <- o .:? "owner"
+    pcCardCode <- o .: "cardCode"
+    pcOriginalCardCode <- o .: "originalCardCode"
+    pcCustomizations <- o .: "customizations"
+    pcTabooList <- o .:? "tabooList"
+    pcMutated <- o .:? "mutated"
+    pcChained <- o .:? "chained"
+    pcMeta <- o .:? "meta"
+    pcFacedown <- o .:? "facedown"
+    pure MkPlayerCard {..}

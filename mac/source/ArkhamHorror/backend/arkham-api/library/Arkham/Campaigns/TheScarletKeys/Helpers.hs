@@ -25,7 +25,7 @@ import Arkham.Classes.Query
 import Arkham.Criteria
 import Arkham.Difficulty qualified as Difficulty
 import Arkham.Effect.Window
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheScarletKeys.RedCoterie qualified as Enemies
 import Arkham.Helpers.Campaign (getCampaignMeta, getCampaignStoryCards)
 import Arkham.Helpers.Modifiers (getModifiers)
 import Arkham.Helpers.Query (allInvestigators)
@@ -49,7 +49,6 @@ import Arkham.Scenario.Setup (ScenarioBuilderT, addToEncounterDeck)
 import Arkham.Scenario.Types
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Window qualified as Window
 import Arkham.Xp
 import Data.Map.Strict qualified as Map
@@ -146,7 +145,7 @@ exposed iid enemy c body = do
   checkAfter $ Window.CampaignEvent "exposed[enemy]" (Just iid) Null
 
 getCanExpose
-  :: (Tracing m, HasGame m, Sourceable source) => InvestigatorId -> source -> ConcealedCard -> m Bool
+  :: (HasGame m, Sourceable source) => InvestigatorId -> source -> ConcealedCard -> m Bool
 getCanExpose iid (toSource -> source) card = runValidT do
   imods <- lift $ getModifiers iid
   guard $ CannotExpose `notElem` imods
@@ -188,7 +187,7 @@ afterExposed c = CampaignEvent #after Nothing ekey
  where
   ekey = "exposed[" <> unCardCode (toCardCode c) <> "]"
 
-allConcealedMiniCards :: (HasGame m, Tracing m) => m [ConcealedCardId]
+allConcealedMiniCards :: HasGame m => m [ConcealedCardId]
 allConcealedMiniCards = concat <$> selectField LocationConcealedCards Anywhere
 
 placeConcealedCard :: ReverseQueue m => InvestigatorId -> ConcealedCardId -> Placement -> m ()
@@ -210,7 +209,7 @@ removeHollow c = do
   obtainCard c
   fetchCard c >>= scenarioSpecific "removedHollow"
 
-keysFor :: (Tracing m, HasGame m, HasCardCode a) => a -> m [CardDef]
+keysFor :: (HasGame m, HasCardCode a) => a -> m [CardDef]
 keysFor a = do
   statuses <- keyStatus <$> getCampaignMeta @TheScarletKeysMeta
   pure $ Map.assocs statuses & mapMaybe \(k, v) -> do
@@ -259,7 +258,7 @@ chooseBearer :: ReverseQueue m => CardDef -> m ()
 chooseBearer def = do
   investigators <- allInvestigators
   leadChooseOneM $ campaignI18n do
-    questionLabeled' "chooseBearer"
+    questionLabeled "chooseBearer"
     questionLabeledCard def
     portraits investigators $ setBearer def . KeyWithInvestigator
 

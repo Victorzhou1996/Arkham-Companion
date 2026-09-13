@@ -37,12 +37,12 @@ instance RunMessage MysteriousPhoto where
       abilities <-
         map (`applyAbilityModifiers` [IgnoreActionCost])
           <$> select
-            ( PerformableAbilityBy (InvestigatorWithId iid) [IgnoreActionCost]
-                <> #parley
+            ( #parley
                 <> AbilityOnEnemy (EnemyWithTrait Suspect)
+                <> PerformableAbilityBy (InvestigatorWithId iid) [IgnoreActionCost]
             )
       chooseOneM iid $ scenarioI18n do
-        labeled' "flipMysteriousPhoto" $ flipOverBy iid (attrs.ability 1) attrs
+        labeled "flipMysteriousPhoto" $ flipOverBy iid (attrs.ability 1) attrs
         for_ abilities \ab -> abilityLabeled iid ab nothing
       pure a
     UseThisAbility iid (isSource attrs -> True) n | n == 2 || n == 3 -> do

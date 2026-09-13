@@ -17,10 +17,9 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Story.Types (Field (..))
-import Arkham.Tracing
 import Arkham.Trait (Trait, toTraits)
 
-sourceTraits :: (HasCallStack, HasGame m, Tracing m) => Source -> m (Set Trait)
+sourceTraits :: (HasCallStack, HasGame m) => Source -> m (Set Trait)
 sourceTraits = \case
   PaymentSource s -> sourceTraits s
   UseAbilitySource _ s _ -> sourceTraits s
@@ -51,6 +50,7 @@ sourceTraits = \case
   EnemyAttackSource _ -> pure mempty
   EnemyDefeatSource _ -> pure mempty
   EnemyMatcherSource _ -> pure mempty
+  TreacheryMatcherSource _ -> pure mempty
   EnemySource eid -> fromMaybe mempty <$> fieldMay EnemyTraits eid
   EventSource eid -> fromMaybe mempty <$> fieldMay EventTraits eid
   GameSource -> pure mempty
@@ -63,7 +63,7 @@ sourceTraits = \case
   ScenarioSource -> pure mempty
   SkillSource sid -> fromMaybe mempty <$> fieldMay SkillTraits sid
   SkillTestSource {} -> pure mempty
-  StorySource _ -> pure mempty
+  StorySource sid -> maybe mempty toTraits <$> fieldMay StoryCard sid
   TarotSource _ -> pure mempty
   TestSource traits -> pure traits
   ThisCard -> error "can not get traits"
@@ -73,7 +73,7 @@ sourceTraits = \case
   ConcealedCardSource _ -> pure mempty
   UltimatumOrBoonSource _ -> pure mempty
 
-getSourceController :: (HasGame m, Tracing m) => Source -> m (Maybe InvestigatorId)
+getSourceController :: HasGame m => Source -> m (Maybe InvestigatorId)
 getSourceController = \case
   AbilitySource s _ -> getSourceController s
   UseAbilitySource iid _ _ -> pure $ Just iid
@@ -95,7 +95,7 @@ ability is additionally credited, so effects performed via a location/encounter 
 count for "you deal/heal/defeat" cards. See issue #4902.
 -}
 checkSourceOwner
-  :: (HasCallStack, HasGame m, Tracing m)
+  :: (HasCallStack, HasGame m)
   => Bool -> Matcher.InvestigatorMatcher -> Source -> m Bool
 checkSourceOwner creditUser whoMatcher = go
  where
@@ -147,7 +147,7 @@ checkSourceOwner creditUser whoMatcher = go
     PaymentSource s' -> go s'
     _ -> pure False
 
-sourceMatches :: (HasCallStack, HasGame m, Tracing m) => Source -> Matcher.SourceMatcher -> m Bool
+sourceMatches :: (HasCallStack, HasGame m) => Source -> Matcher.SourceMatcher -> m Bool
 sourceMatches s = \case
   Matcher.SourceIsCancelable sm -> case s of
     CardCostSource _ -> pure False
@@ -249,6 +249,7 @@ sourceMatches s = \case
         InvestigatorSource {} -> True
         LocationMatcherSource {} -> True
         EnemyMatcherSource {} -> True
+        TreacheryMatcherSource {} -> True
         LocationSource {} -> True
         IndexedSource _ s' -> go s'
         ProxySource (CardIdSource _) s' -> go s'
@@ -274,10 +275,20 @@ sourceMatches s = \case
     pure $ go s
   Matcher.SourceIsType t -> member t <$> sourceTypes s
   Matcher.EncounterCardSource ->
+    -- The basic action abilities (fight/evade/engage/move/investigate) are
+    -- anchored on the encounter card they target, so unwrapping them
+    -- unconditionally would classify an investigator's own basic attack as an
+    -- encounter card source (issue #5342 — Poltergeist's "or encounter cards"
+    -- clause let a basic fight damage it). Guard them out, exactly as
+    -- 'Matcher.ScenarioCardSource' below already does.
     let
       check = \case
-        AbilitySource source' _ -> check source'
-        UseAbilitySource _ source' _ -> check source'
+        -- Costs are paid under a 'PaymentSource' wrapper, so an encounter card's
+        -- own ability cost (Idle Hands' "take 2 damage") has to unwrap before it
+        -- can read as an encounter card source (issue #5545).
+        PaymentSource source' -> check source'
+        AbilitySource source' n | notPlayerAbilityIndex n -> check source'
+        UseAbilitySource _ source' n | notPlayerAbilityIndex n -> check source'
         AssetSource aid -> matches aid (Matcher.AssetCardMatch Matcher.IsEncounterCard <> Matcher.UncontrolledAsset)
         ActSource _ -> pure True
         AgendaSource _ -> pure True
@@ -346,15 +357,24 @@ sourceMatches s = \case
       AbilitySource s' _ -> sourceMatches s' Matcher.SourceIsPlayerCard
       UseAbilitySource _ s' _ -> sourceMatches s' Matcher.SourceIsPlayerCard
       _ -> pure False
-  Matcher.SourceWithCard cardMatcher -> do
-    mCard <- sourceCard s
-    pure $ case mCard of
-      Just c -> c `cardMatch` cardMatcher
-      Nothing -> False
+  Matcher.SourceWithCard cardMatcher -> sourceCardMatches s cardMatcher
   Matcher.SourceWithExtendedCard cardMatcher ->
     sourceCard s >>= maybe (pure False) (<=~> cardMatcher)
 
-sourceCard :: (HasGame m, Tracing m) => Source -> m (Maybe Card)
+-- Trait checks go through sourceTraits: a card def only carries the unrevealed
+-- side's traits, so a revealed Glyph location looks Glyph-less to cardMatch.
+sourceCardMatches :: HasGame m => Source -> Matcher.CardMatcher -> m Bool
+sourceCardMatches ThisCard _ = pure False
+sourceCardMatches s matcher = go matcher
+ where
+  go = \case
+    Matcher.CardWithTrait t -> member t <$> sourceTraits s
+    Matcher.CardMatches ms -> allM go ms
+    Matcher.CardWithOneOf ms -> anyM go ms
+    Matcher.NotCard m -> not <$> go m
+    m -> maybe False (`cardMatch` m) <$> sourceCard s
+
+sourceCard :: HasGame m => Source -> m (Maybe Card)
 sourceCard = \case
   AbilitySource source' _ -> sourceCard source'
   UseAbilitySource _ source' _ -> sourceCard source'
@@ -369,7 +389,7 @@ sourceCard = \case
   CardIdSource cid -> Just <$> getCard cid
   _ -> pure Nothing
 
-sourceTypes :: (HasCallStack, Tracing m, HasGame m) => Source -> m (Set CardType)
+sourceTypes :: (HasCallStack, HasGame m) => Source -> m (Set CardType)
 sourceTypes = \case
   PaymentSource s -> sourceTypes s
   UseAbilitySource _ s _ -> sourceTypes s

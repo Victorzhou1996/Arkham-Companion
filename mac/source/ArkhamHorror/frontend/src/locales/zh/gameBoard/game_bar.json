@@ -1,7 +1,6 @@
 {
   "closeLog": "关闭战役日志",
   "viewLog": "查看战役日志",
-
   "view": "查看",
   "shortcuts": "快捷键",
   "shortcutsTitle": "快捷键列表",
@@ -16,25 +15,18 @@
   "viewSettings": "查看设置",
   "viewSettingTitle": "{investigator}的设置",
   "viewSettingSkipTriggers": "跳过技能检定期间不影响结果的触发器",
-
   "viewChaosBag": "查看混乱袋",
   "chaosBag": "混乱袋",
   "add": "加入",
-
   "splitView": "拆分视图",
-
   "viewBonded": "查看绑定卡牌",
   "bonded": "绑定卡牌",
-
   "showOutOfPlay": "查看场外卡牌",
   "outOfPlay": "场外卡牌",
-
   "debug": "调试",
   "toggleDebug": "调试模式开关",
   "debugExport": "调试信息导出",
-
   "undo": "撤销",
-
   "fileABug": "提交错误报告",
   "fileBugPart1": "这会把当前游戏状态和你的描述保存到本服务器。",
   "fileBugPart2": "提交完成后，可以在顶部的Bug列表中查看。",
@@ -45,9 +37,7 @@
   "bugSubmittingContent": "正在把当前游戏状态保存到本服务器。",
   "bugSubmittingDone": "错误报告已提交。",
   "bugSubmittingFail": "错误报告提交失败",
-
   "toggleSidebar": "展开/收起侧边栏",
-
   "narration": {
     "title": "朗读",
     "autoRead": "自动朗读新内容",
@@ -90,5 +80,16 @@
       "chaosToken": "混乱标记 {name}",
       "chaosTokenMorph": "混乱标记从 {from} 变为 {to}"
     }
+  },
+  "chaosBagStats": {
+    "tokens": "{count} tokens",
+    "chanceOfSuccess": "chance of success",
+    "showOdds": "Show odds",
+    "skill": "Skill",
+    "difficulty": "Difficulty",
+    "reset": "Reset",
+    "autoFail": "auto fail",
+    "autoSuccess": "auto succeed",
+    "caveat": "Assumes one draw, expanding the extra draw that bless, curse and frost trigger. Card effects that reveal another token, the two-frost auto-fail, and draw-several-pick-one effects are not modeled."
   }
 }

@@ -17,6 +17,7 @@ export type Asset = {
   cardId: string;
   owner: string | null;
   controller: string | null;
+  slots: string[];
   health: number | null;
   sanity: number | null;
   assignedHealthDamage: number;
@@ -41,6 +42,7 @@ export type Asset = {
   spiritDeck?: Card[]
   modifiers?: Modifier[];
   mutated?: string;
+  chained?: string;
   placement: Placement
   rifleStatus?: 'Jammed' | 'NotJammed';
 }
@@ -51,6 +53,7 @@ export const assetDecoder = JsonDecoder.object<Asset>({
   cardId: JsonDecoder.string(),
   owner: JsonDecoder.nullable(JsonDecoder.string()),
   controller: JsonDecoder.nullable(JsonDecoder.string()),
+  slots: JsonDecoder.array<string>(JsonDecoder.string(), 'SlotType[]'),
   health: JsonDecoder.nullable(JsonDecoder.number()),
   tokens: tokensDecoder,
   sanity: JsonDecoder.nullable(JsonDecoder.number()),
@@ -75,6 +78,7 @@ export const assetDecoder = JsonDecoder.object<Asset>({
   spiritDeck: v2Optional(JsonDecoder.array<Card>(cardDecoder, 'Card[]')),
   modifiers: v2Optional(JsonDecoder.array<Modifier>(modifierDecoder, 'Modifier[]')),
   mutated: v2Optional(JsonDecoder.string()),
+  chained: v2Optional(JsonDecoder.string()),
   placement: placementDecoder,
   rifleStatus: v2Optional(JsonDecoder.oneOf<'Jammed' | 'NotJammed'>([
     JsonDecoder.isExactly('Jammed'),

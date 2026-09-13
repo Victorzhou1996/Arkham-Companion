@@ -6,6 +6,13 @@ import Prelude
 
 data Opts = Opts
   { dir :: FilePath
+  , only :: Maybe FilePath
+  , instancesOnly :: Bool
+  , homebrewContent :: Bool
+  , homebrewDefs :: Bool
+  , buildersFor :: Maybe String
+  , defsFor :: Maybe String
+  , scenarioBuilders :: Bool
   , sourceName :: FilePath
   , sourceLocation :: FilePath
   , targetFile :: FilePath
@@ -14,14 +21,37 @@ data Opts = Opts
 main :: IO ()
 main = do
   Opts {..} <- execParser infoParser
-  discoverCards (Source sourceName) (Destination targetFile) dir
+  let mode
+        | scenarioBuilders = ScenarioBuilders
+        | Just kind <- buildersFor = CardBuilders kind
+        | Just kind <- defsFor = CardDefsRegistry kind
+        | homebrewContent = HomebrewContent
+        | homebrewDefs = HomebrewCardDefs
+        | instancesOnly = InstancesOnly
+        | otherwise = ReExport
+  discoverCardsWith (Source sourceName) (Destination targetFile) dir only mode
  where
-  infoParser = info
-    (helper <*> optsParser)
-    (progDesc "finds card files in a subdirectory and rexports them")
+  infoParser =
+    info
+      (helper <*> optsParser)
+      (progDesc "finds card files in a subdirectory and rexports them")
   optsParser =
     Opts
       <$> strOption (long "dir" <> short 'd' <> value "Cards")
+      <*> optional (strOption (long "only" <> help "Only files with this exact basename"))
+      <*> switch (long "instances" <> help "Emit instance-only imports (import M ())")
+      <*> switch (long "homebrew-content" <> help "Register discovered card builders as homebrew content")
+      <*> switch (long "homebrew-defs" <> help "Register discovered card definitions as homebrew defs")
+      <*> optional
+        ( strOption
+            (long "builders" <> metavar "KIND" <> help "Emit all<KIND>CardBuilders from discovered card modules")
+        )
+      <*> optional
+        ( strOption
+            (long "defs" <> metavar "KIND" <> help "Emit all<KIND>CardDefs from discovered card-def modules")
+        )
+      <*> switch
+        (long "scenario-builders" <> help "Emit allScenarioBuilders from discovered scenario modules")
       <*> argument str (metavar "NAME" <> help "Name of the source file")
       <*> argument str (metavar "PATH" <> help "Path to the input file")
       <*> argument str (metavar "PATH" <> help "Path to the output file")

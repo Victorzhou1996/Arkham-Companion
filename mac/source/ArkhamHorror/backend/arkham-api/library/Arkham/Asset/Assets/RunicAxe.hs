@@ -20,7 +20,6 @@ import Arkham.Matcher hiding (DiscoverClues)
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Move
 import Arkham.Projection
-import Arkham.Tracing
 import Arkham.Trait (Trait (Relic))
 
 data Inscription = Accuracy | Power | Glory | Elders | Hunt | Fury
@@ -92,7 +91,7 @@ instance HasAbilities RunicAxe where
   getAbilities (RunicAxe (With a _)) = [restrictedAbility a 1 ControlsThis fightAction_]
 
 availableInscriptions
-  :: (HasGame m, Tracing m) => InvestigatorId -> AssetAttrs -> Metadata -> m [Inscription]
+  :: HasGame m => InvestigatorId -> AssetAttrs -> Metadata -> m [Inscription]
 availableInscriptions iid attrs meta = do
   connectedLocations <- notNull <$> getAccessibleLocations iid (attrs.ability 1)
   unengagedEnemies <- selectAny $ CanEngageEnemy (attrs.ability 1) <> enemyAtLocationWith iid
@@ -137,6 +136,7 @@ instance RunMessage RunicAxe where
             , not
                 <$> selectAny
                   (ConcealedCardWithId (coerce eid) <> ConcealedCardAt (locationWithInvestigator iid))
+            , not <$> selectAny (AssetWithId (coerce eid) <> at_ (locationWithInvestigator iid))
             ]
         let imbueAgain = if attrs `hasCustomization` Scriptweaver then [Do msg, msg] else [msg]
         if needsHunt && attrs `hasCustomization` InscriptionOfTheHunt
@@ -156,7 +156,9 @@ instance RunMessage RunicAxe where
                 ]
       pure a
     Do msg'@(ChoseEnemy _sid iid (isAbilitySource attrs 1 -> True) _) -> do
-      choices <- availableInscriptions iid attrs meta
+      -- Scriptweaver's pair comes from one charge and must be two different inscriptions
+      let sameCharge = take 1 (inscriptions meta)
+      choices <- filter (`notElem` sameCharge) <$> availableInscriptions iid attrs meta
       chooseOne iid
         $ Label "$cards.label.runicAxe.doNotUseAdditionalImbue" []
         : [ Label
@@ -177,6 +179,7 @@ instance RunMessage RunicAxe where
           mLoc <- getLocationOf iid
           isLocation <- coerce eid <=~> Anywhere
           mConcealed <- selectOne (ConcealedCardWithId (coerce eid))
+          mAsset <- selectOne (AssetWithId (coerce eid))
           let
             huntToward loc = for_ mLoc \loc' -> do
               accessibleLocations <- getAccessibleLocations iid (attrs.ability 1)
@@ -185,10 +188,12 @@ instance RunMessage RunicAxe where
               chooseOneM iid $ targets locations (moveTo (attrs.ability 1) iid)
           if isLocation
             then moveTo (attrs.ability 1) iid (coerce @_ @LocationId eid)
-            else case mConcealed of
-              -- concealed cards can't be engaged, so Hunt can only close the distance
-              Just c -> getLocationOf c.id >>= traverse_ \loc -> when (Just loc /= mLoc) (huntToward loc)
-              Nothing ->
+            else case (mConcealed, mAsset) of
+              -- concealed cards and as-if-enemy assets (Key Loci) can't be engaged, so
+              -- Hunt can only close the distance
+              (Just c, _) -> getLocationOf c.id >>= traverse_ \loc -> when (Just loc /= mLoc) (huntToward loc)
+              (_, Just aid) -> getLocationOf aid >>= traverse_ \loc -> when (Just loc /= mLoc) (huntToward loc)
+              (Nothing, Nothing) ->
                 getLocationOf eid >>= traverse_ \loc -> do
                   if Just loc /= mLoc
                     then huntToward loc

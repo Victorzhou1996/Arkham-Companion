@@ -9,7 +9,7 @@ TOOLCHAIN_DIR="${ARKHAM_TOOLCHAIN_DIR:-${WORKSPACE_ROOT}/toolchain}"
 OUTPUT_ROOT="${ARKHAM_BUILD_OUTPUT_ROOT:-${PROJECT_ROOT}/build-artifacts}"
 LOCAL_RUNTIME_TEMPLATE="${ARKHAM_LOCAL_RUNTIME_TEMPLATE:-$(dirname "${WORKSPACE_ROOT}")/ArkhamHorror-macos-arm64}"
 CARD_IMAGE_SOURCE="${ARKHAM_CARD_IMAGE_SOURCE:-$(dirname "${WORKSPACE_ROOT}")/cards}"
-BUILD_JOBS="${ARKHAM_BUILD_JOBS:-4}"
+BUILD_JOBS="${ARKHAM_BUILD_JOBS:-2}"
 
 SKIP_TESTS=false
 SKIP_MAC=false
@@ -38,7 +38,7 @@ Environment overrides:
                               Existing complete Mac runtime used as the package skeleton.
                               It must include the Build app, Build cache, and Build routes.
   ARKHAM_CARD_IMAGE_SOURCE    Complete Chinese AVIF card image directory.
-  ARKHAM_BUILD_JOBS          Backend compiler parallelism (default: 4).
+  ARKHAM_BUILD_JOBS          Backend compiler parallelism (default: 2).
 EOF
 }
 
@@ -412,8 +412,11 @@ run_frontend_typecheck() {
 
 build_frontend() {
   cd "${PROJECT_ROOT}/frontend"
+  mkdir -p public/img
+  rsync -a --ignore-existing --exclude '/custom/' "${LOCAL_RUNTIME_TEMPLATE}/frontend/dist/img/" public/img/
+  npm run fetch-static-assets
   rm -rf "${RUN_DIR}/frontend"
-  VITE_ASSET_HOST="" npm run build -- --outDir "${RUN_DIR}/frontend" --emptyOutDir
+  VITE_ASSET_HOST="" ARKHAM_FRONTEND_DIST="${RUN_DIR}/frontend" npm run build -- --outDir "${RUN_DIR}/frontend" --emptyOutDir
   test -f "${RUN_DIR}/frontend/index.html"
 }
 
@@ -525,8 +528,8 @@ build_mac_backend() {
   if [ "$INCREMENTAL" != true ]; then
     stack clean arkham-api
   fi
-  stack build --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
-  stack --local-bin-path "${RUN_DIR}/macos-arm64" install arkham-api --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
+  stack --no-system-ghc --install-ghc build arkham-api --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
+  stack --no-system-ghc --local-bin-path "${RUN_DIR}/macos-arm64" install arkham-api --jobs "$BUILD_JOBS" --fast --no-terminal --ghc-options="-j${BUILD_JOBS}"
   test -x "${RUN_DIR}/macos-arm64/arkham-api"
   relocate_macos_backend "${RUN_DIR}/macos-arm64/arkham-api"
 }
@@ -557,6 +560,8 @@ build_linux_backend() {
   cd "$PROJECT_ROOT"
   docker buildx build \
     --platform linux/amd64 \
+    --build-arg "ARKHAM_BUILD_JOBS=${BUILD_JOBS}" \
+    --build-arg "GIT_SHA1=$(git rev-parse HEAD)" \
     --target api-artifact \
     --output "type=local,dest=${RUN_DIR}/linux-amd64" \
     .
@@ -566,13 +571,18 @@ build_linux_backend() {
 
 package_outputs() {
   cd "$RUN_DIR"
+  bash "${PROJECT_ROOT}/scripts/gen-native-setup.sh" \
+    | awk '/^-- Added locally: official arkham_epic migration/{flag=1} flag{print}' \
+    > "${RUN_DIR}/schema-upgrade.sql"
+  install -m 644 "${PROJECT_ROOT}/scripts/native-custom-art.patch" "${RUN_DIR}/native-custom-art.patch"
+  install -m 644 "${PROJECT_ROOT}/scripts/native-custom-art-backup.patch" "${RUN_DIR}/native-custom-art-backup.patch"
 
   # Public nginx may run as a different user from the game service.
   find "${RUN_DIR}/frontend" -type d -exec chmod 755 {} +
   find "${RUN_DIR}/frontend" -type f -exec chmod 644 {} +
 
   if [ -d macos-arm64 ]; then
-    COPYFILE_DISABLE=1 tar --no-xattrs -czf local-update-macos-arm64.tar.gz frontend macos-arm64
+    COPYFILE_DISABLE=1 tar --no-xattrs -czf local-update-macos-arm64.tar.gz frontend macos-arm64 schema-upgrade.sql native-custom-art.patch native-custom-art-backup.patch
 
     local complete_dir="${RUN_DIR}/ArkhamHorror-macos-arm64"
     rm -rf "$complete_dir"
@@ -580,10 +590,19 @@ package_outputs() {
     rsync -a \
       --exclude '/data/' \
       --exclude '/bin/backups/' \
+      --exclude '/config/client_session_key.aes' \
       --exclude '/config/nginx.conf' \
       --exclude '.DS_Store' \
       "$LOCAL_RUNTIME_TEMPLATE/" "$complete_dir/"
-    install -m 644 "${LOCAL_RUNTIME_TEMPLATE}/data/setup.sql" "${complete_dir}/data/setup.sql"
+    bash "${PROJECT_ROOT}/scripts/gen-native-setup.sh" > "${complete_dir}/data/setup.sql"
+    install -m 644 "${PROJECT_ROOT}/backend/arkham-api/config/settings.yml" "${complete_dir}/config/settings.yml"
+    chmod 644 "${complete_dir}/data/setup.sql"
+    if ! grep -q 'export ARKHAM_CUSTOM_CARD_ART_DIR=' "${complete_dir}/start.sh"; then
+      patch -d "$complete_dir" -p1 < "${PROJECT_ROOT}/scripts/native-custom-art.patch"
+    fi
+    if ! grep -q 'card-art-backup.XXXXXX' "${complete_dir}/start.sh"; then
+      patch -d "$complete_dir" -p1 < "${PROJECT_ROOT}/scripts/native-custom-art-backup.patch"
+    fi
 
     rm -rf "${complete_dir}/frontend/dist"
     mkdir -p "${complete_dir}/frontend/dist"
@@ -611,6 +630,7 @@ package_outputs() {
     rm -f "${complete_dir}/config/nginx.conf"
 
     test -x "${complete_dir}/bin/arkham-api"
+    test ! -e "${complete_dir}/config/client_session_key.aes"
     test -x "${complete_dir}/bin/nginx"
     test -x "${complete_dir}/pgsql/bin/postgres"
     test -f "${complete_dir}/frontend/dist/index.html"
@@ -632,7 +652,7 @@ package_outputs() {
     COPYFILE_DISABLE=1 tar --no-xattrs -czf ArkhamHorror-macos-arm64-complete.tar.gz ArkhamHorror-macos-arm64
   fi
   if [ -d linux-amd64 ]; then
-    COPYFILE_DISABLE=1 tar --no-xattrs -czf server-update-linux-amd64.tar.gz frontend linux-amd64
+    COPYFILE_DISABLE=1 tar --no-xattrs -czf server-update-linux-amd64.tar.gz frontend linux-amd64 schema-upgrade.sql native-custom-art.patch
   fi
 
   : >SHA256SUMS
@@ -643,6 +663,9 @@ package_outputs() {
     done < <(find "$path" -type f -print | LC_ALL=C sort)
   done
   for file in \
+    schema-upgrade.sql \
+    native-custom-art.patch \
+    native-custom-art-backup.patch \
     local-update-macos-arm64.tar.gz \
     ArkhamHorror-macos-arm64-complete.tar.gz \
     server-update-linux-amd64.tar.gz; do

@@ -41,9 +41,10 @@ import Arkham.Scenario.Setup (ScenarioBuilderT)
 import Arkham.Scenario.Types (Field (ScenarioCounts))
 import Arkham.ScenarioLogKey (ScenarioCountKey (HemlockStandaloneDay, HemlockStandaloneNight))
 import Arkham.Source
-import Arkham.Story.Cards qualified as Stories
+import Arkham.Story.CardDefs.TheFeastOfHemlockVale.TheFinalDay qualified as Stories
+import Arkham.Story.CardDefs.TheFeastOfHemlockVale.TheFirstDay qualified as Stories
+import Arkham.Story.CardDefs.TheFeastOfHemlockVale.TheSecondDay qualified as Stories
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Trait (Trait (Dark))
 import Data.Monoid (First (..))
 
@@ -92,7 +93,7 @@ makePreparationsForNextSurvey iid = do
 
   for_ persistAssets \(asset, _) -> setupModifier ScenarioSource asset Persist
   unless (null otherAssets) $ campaignI18n $ chooseOrRunOneM iid do
-    questionLabeled' "chooseAssetToKeepForNextSurvey"
+    questionLabeled "chooseAssetToKeepForNextSurvey"
     for_ (eachWithRest (map fst otherAssets)) \(asset, rest) ->
       targeting asset do
         setupModifier ScenarioSource asset Persist
@@ -169,7 +170,7 @@ read the day from inside 'HasModifiersFor' (CorpseLichen, GraspingTendril,
 BroodQueenDyingMother, both Crustacean Hybrids, Poisonblossom), so reading a
 modifier here would re-enter modifier collection and loop.
 -}
-getHemlockMeta :: (Tracing m, HasGame m) => m TheFeastOfHemlockValeMeta
+getHemlockMeta :: HasGame m => m TheFeastOfHemlockValeMeta
 getHemlockMeta =
   getCampaignMetaMaybe >>= \case
     Just meta -> pure meta
@@ -183,10 +184,10 @@ getHemlockMeta =
       let time = if readCount HemlockStandaloneNight == 1 then Night else Day
       pure $ TheFeastOfHemlockValeMeta day time []
 
-getCampaignTime :: (Tracing m, HasGame m) => m Time
+getCampaignTime :: HasGame m => m Time
 getCampaignTime = (.time) <$> getHemlockMeta
 
-getCampaignDay :: (Tracing m, HasGame m) => m Day
+getCampaignDay :: HasGame m => m Day
 getCampaignDay = (.day) <$> getHemlockMeta
 
 {- | Standalone mode has no campaign to carry the day and time, so each scenario
@@ -223,7 +224,7 @@ hemlockStandaloneBag day =
       Day2 -> [Tablet, ElderThing]
       Day3 -> [Tablet, Tablet, ElderThing, ElderThing]
 
-getTimeFor :: (Targetable a, Tracing m, HasGame m) => a -> m Time
+getTimeFor :: (Targetable a, HasGame m) => a -> m Time
 getTimeFor a = do
   mods <- getModifiers a
   maybe getCampaignTime pure
@@ -312,7 +313,7 @@ afterPrelude =
  where
   setNextCampaignStep = push . NextCampaignStep . continueNoUpgrade
 
-getCrossedOutResidents :: (Tracing m, HasGame m) => m [Resident]
+getCrossedOutResidents :: HasGame m => m [Resident]
 getCrossedOutResidents =
   catMaybes
     <$> sequence
@@ -390,7 +391,7 @@ relationshipKey = \case
   GideonMizrah -> toCampaignLogKey GideonMizrahRelationshipLevel
   JudithPark -> toCampaignLogKey JudithParkRelationshipLevel
 
-getRelationshipLevel :: (HasGame m, Tracing m) => Resident -> m Int
+getRelationshipLevel :: HasGame m => Resident -> m Int
 getRelationshipLevel = getRecordCount . relationshipKey
 
 increaseRelationshipLevel :: ReverseQueue m => Resident -> Int -> m ()
@@ -436,7 +437,7 @@ residentFromCardDef def
   | def == Assets.judithParkTheMuscle = Just JudithPark
   | otherwise = Nothing
 
-getAreasSurveyed :: (HasGame m, Tracing m) => m [AreasSurveyed]
+getAreasSurveyed :: HasGame m => m [AreasSurveyed]
 getAreasSurveyed = filterM (getHasRecord . AreasSurveyed) [NorthPointMine ..]
 
 {- | The chaos token of a value one lower, or Nothing if it cannot be lowered

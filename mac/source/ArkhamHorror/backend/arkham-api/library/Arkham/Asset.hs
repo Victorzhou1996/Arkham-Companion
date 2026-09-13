@@ -5,7 +5,9 @@ module Arkham.Asset where
 import Arkham.Asset.Assets
 import Arkham.Asset.Runner
 import Arkham.Card
-import Arkham.Card.PlayerCard (tabooMutated)
+import Arkham.Card.PlayerCard (tabooChained, tabooMutated)
+import Arkham.Custom.Asset (customAsset)
+import Arkham.Homebrew.Registry qualified as Registry
 import Arkham.Prelude
 
 createAsset :: (HasCallStack, IsCard a) => a -> AssetId -> Asset
@@ -16,6 +18,7 @@ createAsset a aId =
           { assetCustomizations = customizations
           , assetTaboo = tabooList
           , assetMutated = mutated
+          , assetChained = chained
           }
  where
   customizations = case toCard a of
@@ -27,11 +30,16 @@ createAsset a aId =
   mutated = case toCard a of
     PlayerCard pc -> tabooMutated tabooList pc
     _ -> Nothing
+  chained = case toCard a of
+    PlayerCard pc -> tabooChained tabooList pc
+    _ -> Nothing
 
 lookupAsset :: HasCallStack => CardCode -> AssetId -> Maybe InvestigatorId -> CardId -> Asset
 lookupAsset cardCode = case lookup cardCode allAssets of
-  Nothing -> error $ "Unknown asset: " <> show cardCode
   Just (SomeAssetCard a) -> \aid mId cId -> Asset $ cbCardBuilder a cId (aid, mId)
+  Nothing -> case lookupCustomCardDefOrMissing AssetType cardCode of
+    Just def -> \aid mId cId -> Asset $ cbCardBuilder (customAsset def) cId (aid, mId)
+    Nothing -> error $ "Unknown asset: " <> show cardCode
 
 instance FromJSON Asset where
   parseJSON = withObject "Asset" $ \o -> do
@@ -42,12 +50,15 @@ instance FromJSON Asset where
 withAssetCardCode
   :: CardCode -> (forall a. IsAsset a => AssetCard a -> r) -> r
 withAssetCardCode cCode f = case lookup cCode allAssets of
-  Nothing -> error "invalid assets"
   Just (SomeAssetCard a) -> f a
+  Nothing -> case lookupCustomCardDefOrMissing AssetType cCode of
+    Just def -> f (customAsset def)
+    Nothing -> error "invalid assets"
 
 allAssets :: Map CardCode SomeAssetCard
 allAssets =
-  mapFromList
+  (mapFromList (concatMap someAssetCardCodes Registry.assets) <>)
+    $ mapFromList
     $ concatMap
       someAssetCardCodes
       [ -- Night of the Zealot
@@ -1242,6 +1253,18 @@ allAssets =
       , --- story [core2026]
         SomeAssetCard drHenryArmitage_SpreadingFlames
       , SomeAssetCard collector
+      , -- Children of Blood
+        --- River of Blood [cob]
+        SomeAssetCard detectiveReynoldsInOverHisHead
+      , SomeAssetCard fangOfZburamoarte
+      , --- New Horizons [cob]
+        SomeAssetCard sanguineSong
+      , SomeAssetCard forgedPermit
+      , --- Blood Money [cob]
+        SomeAssetCard chosenOfZburamoarteFightingTheHunger
+      , SomeAssetCard chosenOfZburamoarteCompelledToFeed
+      , --- Friends in Low Places [cob]
+        SomeAssetCard charlieKaneKnowsAGuy
       , -- Return to Night of the Zealot
         --- guardian [rtnotz]
         SomeAssetCard physicalTraining2
@@ -1607,6 +1630,11 @@ allAssets =
         SomeAssetCard universityChemist
       , SomeAssetCard meteoriteSample
       , SomeAssetCard theMilitarysPlan
+      , SomeAssetCard armoredCar
+      , SomeAssetCard brainCase
+      , SomeAssetCard gMen
+      , SomeAssetCard corrosiveCloud
+      , SomeAssetCard alienInstruments
       , SomeAssetCard universalSolvent
       , SomeAssetCard petOozeling
       , SomeAssetCard miGoWeapon
@@ -1638,7 +1666,11 @@ allAssets =
         SomeAssetCard mysteriousPhoto
       , SomeAssetCard mysteriousPhotoBack
       , --- The Drowned City
-        SomeAssetCard rubyStandish
+        SomeAssetCard expeditionGear
+      , SomeAssetCard laudanum
+      , SomeAssetCard alienTablet
+      , SomeAssetCard divingSuitTheDrownedCity
+      , SomeAssetCard rubyStandish
       , SomeAssetCard andyVanNortwick
       , SomeAssetCard walkInFaith
       , SomeAssetCard toeTheLine

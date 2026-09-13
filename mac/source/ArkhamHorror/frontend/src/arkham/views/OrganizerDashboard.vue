@@ -4,14 +4,15 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useClipboard } from '@vueuse/core'
-import { deleteEvent, eventTimeUp, resolveEventAdvance } from '@/arkham/api'
+import { deleteEvent, eventTimeUp, replicateAberration, resolveEventAdvance, swapMainStreetInvestigators } from '@/arkham/api'
 import { useEventStore } from '@/arkham/stores/event'
 import { useDbCardStore } from '@/stores/dbCards'
 import { imgsrc, buildShareableUrl } from '@/arkham/helpers'
 import { useEpicHelpers } from '@/arkham/composables/useEpicHelpers'
 import { useEventTimer } from '@/arkham/composables/useEventTimer'
 import {
-  activePendingAdvanceStage,
+  actContribution,
+  activeAwaitingStage,
   counterValue,
   TOTAL_INVESTIGATORS,
   type GroupDigest,
@@ -54,57 +55,78 @@ const isOrganizer = computed(() => event.value?.role === 'organizer')
 const committed = computed(() => groupDigests.value.some((g) => g.youAreSeated))
 
 // --- Shared act-advance allocation ------------------------------------------
-// When the shared clue pool EXCEEDS the threshold the backend sets
-// `pending-act-advance:<stage>` and waits for the organizer to choose which groups
-// spend. We detect the stage by scanning the shared counters (no need to know it
-// up front), and require the chosen spends to total exactly `2 * total-investigators`.
-const pendingStage = computed(() => activePendingAdvanceStage(sharedState.value))
+// When the pooled clues reach the threshold the backend sets
+// `awaiting-organizer:<stage>` and waits for the organizer to choose which groups
+// spend. We detect the stage by scanning the shared counters, and require the
+// chosen spends to total exactly `2 * total-investigators`, each within that
+// group's contribution (`act-contribution:<stage>:<ordinal>`).
+const awaitingStage = computed(() => activeAwaitingStage(sharedState.value))
 
 const totalInvestigators = computed(
   () => counterValue(sharedState.value, TOTAL_INVESTIGATORS) || sharedState.value.sharedTotalInvestigators,
 )
 const advanceThreshold = computed(() => 2 * totalInvestigators.value)
 
-// Per-group spend, keyed by ordinal. The clamp/cap helper keeps reads safe.
-const spendByOrdinal = ref<Record<number, number>>({})
+// Each group's cap = its contribution to the pending stage's pool. Read straight
+// from the shared counters (no GroupDigest field needed).
 function groupCap(group: GroupDigest): number {
-  return Math.max(0, group.actClues ?? 0)
+  const stage = awaitingStage.value
+  if (stage === null) return 0
+  return Math.max(0, actContribution(sharedState.value, stage, group.ordinal))
 }
+
+// Per-group spend, keyed by ordinal.
+const spendByOrdinal = ref<Record<number, number>>({})
 function spendFor(group: GroupDigest): number {
   return spendByOrdinal.value[group.ordinal] ?? 0
 }
-
-// When a pending advance appears, greedily pre-fill a valid starting allocation
-// (fill each group up to its clues until the threshold is met) the organizer can
-// then tweak. Keyed ONLY on the stage transition so live clue updates over the ws
-// don't clobber the organizer's in-progress edits. Cleared when nothing is pending.
-watch(
-  pendingStage,
-  (stage) => {
-    if (stage === null) {
-      spendByOrdinal.value = {}
-      return
-    }
-    let remaining = advanceThreshold.value
-    const next: Record<number, number> = {}
-    for (const g of groupDigests.value) {
-      const take = Math.min(groupCap(g), Math.max(0, remaining))
-      next[g.ordinal] = take
-      remaining -= take
-    }
-    spendByOrdinal.value = next
-  },
-  { immediate: true },
-)
 
 const totalSpend = computed(() =>
   groupDigests.value.reduce((sum, g) => sum + (Number(spendByOrdinal.value[g.ordinal]) || 0), 0),
 )
 
-// Valid when every group's spend is a whole number within [0, its clues] and the
-// total equals the threshold exactly.
+// Sum of every group's contribution cap for the pending stage. Drives both the
+// initial seed and a re-seed if contributions land in a later shared-state tick.
+const capsTotal = computed(() =>
+  awaitingStage.value === null ? 0 : groupDigests.value.reduce((sum, g) => sum + groupCap(g), 0),
+)
+
+// Greedily fill each group up to its contribution until the threshold is met.
+function prefillAllocation() {
+  let remaining = advanceThreshold.value
+  const next: Record<number, number> = {}
+  for (const g of groupDigests.value) {
+    const take = Math.min(groupCap(g), Math.max(0, remaining))
+    next[g.ordinal] = take
+    remaining -= take
+  }
+  spendByOrdinal.value = next
+}
+
+// Seed a valid starting allocation the organizer can tweak. Keyed on the stage AND
+// the caps total, with `immediate`, so it fills:
+//   * on mount even when the dashboard is opened AFTER the gate was already set
+//     (no stage transition fires otherwise), and
+//   * again if a group's contribution arrives in a later shared-state tick.
+// It only (re)seeds while nothing has been entered yet (totalSpend === 0), so live
+// updates can never clobber the organizer's in-progress edits. Cleared when nothing
+// is pending.
+watch(
+  [awaitingStage, capsTotal],
+  () => {
+    if (awaitingStage.value === null) {
+      spendByOrdinal.value = {}
+      return
+    }
+    if (totalSpend.value === 0 && capsTotal.value > 0) prefillAllocation()
+  },
+  { immediate: true },
+)
+
+// Valid when every group's spend is a whole number within [0, its contribution] and
+// the total equals the threshold exactly.
 const allocationValid = computed(() => {
-  if (pendingStage.value === null || advanceThreshold.value <= 0) return false
+  if (awaitingStage.value === null || advanceThreshold.value <= 0) return false
   if (totalSpend.value !== advanceThreshold.value) return false
   return groupDigests.value.every((g) => {
     const v = Number(spendByOrdinal.value[g.ordinal] ?? 0)
@@ -114,14 +136,14 @@ const allocationValid = computed(() => {
 
 const submittingAllocation = ref(false)
 async function submitAllocation() {
-  const stage = pendingStage.value
+  const stage = awaitingStage.value
   if (stage === null || !allocationValid.value || submittingAllocation.value) return
   submittingAllocation.value = true
   const allocation = groupDigests.value.map((g) => ({ ordinal: g.ordinal, spend: spendFor(g) }))
   try {
     await resolveEventAdvance(props.id, stage, allocation)
-    // Backend resets the pool + clears the flag; the event ws pushes the update,
-    // which flips pendingStage to null and tears down the panel.
+    // Backend clears the gate + resets the pool; the event ws pushes the update,
+    // which flips awaitingStage to null and tears down the panel.
   } catch (e) {
     console.error(e)
   } finally {
@@ -134,6 +156,63 @@ async function submitAllocation() {
 function bareCode(investigatorId: string): string {
   return investigatorId.replace(/^c/, '')
 }
+const firstSwapGroup = ref<number | null>(null)
+const secondSwapGroup = ref<number | null>(null)
+const swapping = ref(false)
+const mainStreetReadyGroups = computed(() =>
+  groupDigests.value.filter((group) => counterValue(sharedState.value, `main-street-ready:${group.ordinal}`) > 0),
+)
+async function submitMainStreetSwap() {
+  if (firstSwapGroup.value === null || secondSwapGroup.value === null || swapping.value) return
+  swapping.value = true
+  try {
+    await swapMainStreetInvestigators(props.id, firstSwapGroup.value, secondSwapGroup.value)
+    firstSwapGroup.value = null
+    secondSwapGroup.value = null
+  } catch (e) {
+    console.error(e)
+  } finally {
+    swapping.value = false
+  }
+}
+
+const aberrations = [
+  ['89010a', 'Manifold enemy at exactly 1 remaining health'],
+  ['89010b', 'Oozeling whose spawn location does not exist'],
+  ['89010c', 'Manifold enemy defeated by excess damage'],
+  ['89010d', 'Last clue discovered from an Oozified location'],
+  ['89010e', 'Isolated investigator'],
+  ['89010f', 'Asset defeated by an Ooze attack'],
+  ['89010g', 'Investigator with 3+ resources on It’s got me!'],
+  ['89010h', 'Enemy with Alien Food Chain attached'],
+  ['89010i', 'Location with Sticky Feet attached'],
+] as const
+const replicateGroup = ref<number | null>(null)
+const replicateCard = ref('89010a')
+const replicateTargetIndex = ref(0)
+const replicating = ref(false)
+const selectedReplicateGroup = computed(() => groupDigests.value.find((g) => g.ordinal === replicateGroup.value))
+const selectedReplicateTarget = computed(() => selectedReplicateGroup.value?.replicateTargets[replicateTargetIndex.value])
+watch(groupDigests, (groups) => {
+  if (replicateGroup.value === null && groups.length) replicateGroup.value = groups[0].ordinal
+}, { immediate: true })
+watch(replicateGroup, () => { replicateTargetIndex.value = 0 })
+function replicateTargetLabel(target: GroupDigest['replicateTargets'][number]): string {
+  return `${target.kind}: ${dbStore.getDbCard(target.cardCode)?.name ?? target.cardCode}`
+}
+async function submitReplicate() {
+  const target = selectedReplicateTarget.value
+  if (replicateGroup.value === null || !target || replicating.value) return
+  replicating.value = true
+  try {
+    await replicateAberration(props.id, replicateGroup.value, replicateCard.value, target.target)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    replicating.value = false
+  }
+}
+
 function investigatorName(investigatorId: string): string {
   const code = bareCode(investigatorId)
   return dbStore.getDbCard(code)?.name ?? code
@@ -251,9 +330,9 @@ onUnmounted(() => {
     <template v-else>
       <p v-if="socketError" class="socket-error">{{ $t('event.disconnected') }}</p>
 
-      <section v-if="isOrganizer && pendingStage !== null" class="advance-panel">
+      <section v-if="isOrganizer && awaitingStage !== null" class="advance-panel">
         <header class="advance-header">
-          <h3>{{ $t('event.allocateAdvance', { stage: pendingStage }) }}</h3>
+          <h3>{{ $t('event.allocateAdvance', { stage: awaitingStage }) }}</h3>
           <p class="advance-hint">{{ $t('event.allocateAdvanceHint', { threshold: advanceThreshold }) }}</p>
         </header>
 
@@ -275,7 +354,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <footer class="advance-footer">
+        <div class="advance-footer">
           <span class="advance-total" :class="{ invalid: totalSpend !== advanceThreshold }">
             {{ $t('event.allocateTotal', { total: totalSpend, threshold: advanceThreshold }) }}
           </span>
@@ -287,7 +366,65 @@ onUnmounted(() => {
           >
             {{ $t('event.confirmAdvance') }}
           </button>
-        </footer>
+        </div>
+      </section>
+
+      <section v-if="isOrganizer && mainStreetReadyGroups.length" class="advance-panel replicate-panel">
+        <header class="advance-header">
+          <h3>Main Street group swap</h3>
+          <p class="advance-hint">Groups appear here after an investigator activates Main Street. Resolving the swap is a permanent undo barrier.</p>
+        </header>
+        <div class="replicate-controls">
+          <label>
+            First ready group
+            <select v-model.number="firstSwapGroup">
+              <option :value="null">Select group</option>
+              <option v-for="group in mainStreetReadyGroups" :key="group.ordinal" :value="group.ordinal">{{ groupLabel(group) }}</option>
+            </select>
+          </label>
+          <label>
+            Second ready group
+            <select v-model.number="secondSwapGroup">
+              <option :value="null">Select group</option>
+              <option v-for="group in mainStreetReadyGroups" :key="group.ordinal" :value="group.ordinal">{{ groupLabel(group) }}</option>
+            </select>
+          </label>
+          <button type="button" class="advance-submit" :disabled="firstSwapGroup === null || secondSwapGroup === null || firstSwapGroup === secondSwapGroup || swapping" @click="submitMainStreetSwap">
+            Swap investigators
+          </button>
+        </div>
+      </section>
+
+      <section v-if="isOrganizer && event?.playWithBlobElse" class="advance-panel replicate-panel">
+        <header class="advance-header">
+          <h3>Replicating Aberration</h3>
+          <p class="advance-hint">Nominate a spotted condition. The chosen group may spend 1 countermeasure to cancel it.</p>
+        </header>
+        <div class="replicate-controls">
+          <label>
+            Group
+            <select v-model.number="replicateGroup">
+              <option v-for="group in groupDigests" :key="group.ordinal" :value="group.ordinal">{{ groupLabel(group) }}</option>
+            </select>
+          </label>
+          <label>
+            Replicate condition
+            <select v-model="replicateCard">
+              <option v-for="[code, description] in aberrations" :key="code" :value="code">{{ code }} — {{ description }}</option>
+            </select>
+          </label>
+          <label>
+            Target
+            <select v-model.number="replicateTargetIndex">
+              <option v-for="(target, index) in selectedReplicateGroup?.replicateTargets ?? []" :key="`${target.kind}-${target.cardCode}-${index}`" :value="index">
+                {{ replicateTargetLabel(target) }}
+              </option>
+            </select>
+          </label>
+          <button type="button" class="advance-submit" :disabled="!selectedReplicateTarget || replicating" @click="submitReplicate">
+            Offer replication
+          </button>
+        </div>
       </section>
 
       <section class="groups">

@@ -3,13 +3,13 @@ module Arkham.Asset.Assets.PuzzleBox (puzzleBox) where
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted hiding (InvestigatorDefeated)
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheCircleUndone.TheWatcher qualified as Enemies
 import Arkham.Helpers.Modifiers
 import Arkham.Location.Brazier
 import Arkham.Location.Types (Field (..))
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
-import Arkham.Scenarios.ForTheGreaterGood.Helpers
+import Arkham.Scenarios.TheCircleUndone.ForTheGreaterGood.Helpers
 
 newtype PuzzleBox = PuzzleBox AssetAttrs
   deriving anyclass (IsAsset, HasModifiersFor)
@@ -48,11 +48,11 @@ instance RunMessage PuzzleBox where
       canDealDamage <- withoutModifier iid CannotDealDamage
       chooseOrRunOneM iid $ scenarioI18n do
         for_ locationLit \location ->
-          labeled' "puzzleBox.unlight" $ updateLocation location LocationBrazier (Just Unlit)
-        for_ readySpectralWatcher $ labeled' "puzzleBox.exhaust" . exhaustWith attrs
+          labeled "puzzleBox.unlight" $ updateLocation location LocationBrazier (Just Unlit)
+        for_ readySpectralWatcher $ labeled "puzzleBox.exhaust" . exhaustWith attrs
         when canDealDamage do
           for_ exhaustedSpectralWatcher
-            $ labeled' "puzzleBox.damage"
+            $ labeled "puzzleBox.damage"
             . nonAttackEnemyDamage (Just iid) (attrs.ability 2) 5
       pure a
     _ -> PuzzleBox <$> liftRunMessage msg attrs

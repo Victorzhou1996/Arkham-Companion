@@ -22,6 +22,7 @@ export type Question = QuestionCommon & (
   | ChooseOneAtATime 
   | ChooseOneAtATimeWithAuto 
   | ChooseDeck 
+  | ChooseJoinDeck
   | ChooseUpgradeDeck 
   | ChoosePaymentAmounts 
   | ChooseAmounts 
@@ -29,6 +30,7 @@ export type Question = QuestionCommon & (
   | PayCostQuestion
   | QuestionWithSource
   | Read
+  | ChooseOneWizard
   | PickSupplies 
   | DropDown 
   | PickScenarioSettings 
@@ -56,12 +58,14 @@ export enum QuestionType {
   CHOOSE_ONE_AT_A_TIME_WITH_AUTO = 'ChooseOneAtATimeWithAuto',
   CHOOSE_UPGRADE_DECK = 'ChooseUpgradeDeck',
   CHOOSE_DECK = 'ChooseDeck',
+  CHOOSE_JOIN_DECK = 'ChooseJoinDeck',
   CHOOSE_PAYMENT_AMOUNTS = 'ChoosePaymentAmounts',
   CHOOSE_AMOUNTS = 'ChooseAmounts',
   QUESTION_LABEL = 'QuestionLabel',
   PAY_COST_QUESTION = 'PayCostQuestion',
   QUESTION_WITH_SOURCE = 'QuestionWithSource',
   READ = 'Read',
+  CHOOSE_ONE_WIZARD = 'ChooseOneWizard',
   PICK_SUPPLIES = 'PickSupplies',
   PICK_DESTINY = 'PickDestiny',
   DROP_DOWN = 'DropDown',
@@ -139,6 +143,20 @@ export type Read = {
   flavorText: FlavorText
   readChoices: ReadChoices
   readCards: string[] | null;
+}
+
+export type WizardChoice = {
+  label: string
+  flavorText: FlavorText
+  messages: unknown[]
+}
+
+export type ChooseOneWizard = {
+  tag: QuestionType.CHOOSE_ONE_WIZARD
+  flavorText: FlavorText
+  wizardChoices: WizardChoice[]
+  confirmLabel: string
+  backLabel: string
 }
 
 type Supply
@@ -289,6 +307,13 @@ export type ChooseDeck = {
   tag: QuestionType.CHOOSE_DECK
 }
 
+// Deck selection for a seat joining a campaign already underway. usedInvestigators
+// are the ones already played this campaign, which this player may not choose.
+export type ChooseJoinDeck = {
+  tag: QuestionType.CHOOSE_JOIN_DECK
+  usedInvestigators: string[]
+}
+
 export type AmountChoice = {
   choiceId: string
   label: string
@@ -372,6 +397,14 @@ export const chooseDeckDecoder = JsonDecoder.object<ChooseDeck>(
   'ChooseDeck',
 );
 
+export const chooseJoinDeckDecoder = JsonDecoder.object<ChooseJoinDeck>(
+  {
+    tag: JsonDecoder.literal(QuestionType.CHOOSE_JOIN_DECK),
+    usedInvestigators: JsonDecoder.array(JsonDecoder.string(), 'string[]'),
+  },
+  'ChooseJoinDeck',
+);
+
 export const pickScenarioSettingsDecoder = JsonDecoder.object<PickScenarioSettings>(
   {
     tag: JsonDecoder.literal(QuestionType.PICK_SCENARIO_SETTINGS),
@@ -448,6 +481,24 @@ export const readDecoder: JsonDecoder.Decoder<Read> = JsonDecoder.object<Read>(
     readCards: JsonDecoder.nullable(JsonDecoder.array(JsonDecoder.string(), 'CardCodes[]'))
   },
   'Read',
+);
+
+export const chooseOneWizardDecoder: JsonDecoder.Decoder<ChooseOneWizard> = JsonDecoder.object<ChooseOneWizard>(
+  {
+    tag: JsonDecoder.literal(QuestionType.CHOOSE_ONE_WIZARD),
+    flavorText: flavorTextDecoder,
+    wizardChoices: JsonDecoder.array(JsonDecoder.object<WizardChoice>(
+      {
+        label: JsonDecoder.string(),
+        flavorText: flavorTextDecoder,
+        messages: JsonDecoder.array(JsonDecoder.succeed(), 'unknown[]'),
+      },
+      'WizardChoice',
+    ), 'WizardChoice[]'),
+    confirmLabel: JsonDecoder.string(),
+    backLabel: JsonDecoder.string(),
+  },
+  'ChooseOneWizard',
 );
 
 export const pickSuppliesDecoder = JsonDecoder.object<PickSupplies>(
@@ -593,6 +644,7 @@ export const questionDecoder = JsonDecoder.oneOf<Question>(
     chooseOneAtATimeWithAutoDecoder,
     chooseUpgradeDeckDecoder,
     chooseDeckDecoder,
+    chooseJoinDeckDecoder,
     chooseAmountsDecoder,
     choosePaymentAmountsDecoder,
     chooseExchangeAmountsDecoder,
@@ -600,6 +652,7 @@ export const questionDecoder = JsonDecoder.oneOf<Question>(
     payCostQuestionDecoder,
     questionWithSourceDecoder,
     readDecoder,
+    chooseOneWizardDecoder,
     pickSuppliesDecoder,
     pickDestinyDecoder,
     pickCampaignSpecificDecoder,

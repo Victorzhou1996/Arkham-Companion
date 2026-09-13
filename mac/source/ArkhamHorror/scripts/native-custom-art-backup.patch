@@ -1,0 +1,63 @@
+--- a/start.sh
++++ b/start.sh
+@@ -1203,10 +1203,22 @@
+ 
+     info "Creating tar backup: $backup_path"
+     rm -f "$backup_path" 2>/dev/null || true
+-    if ! tar -czf "$backup_path" -C "$PGDATA_OS_PARENT" pgdata; then
++    local art_stage="" tar_args=(-czf "$backup_path" -C "$PGDATA_OS_PARENT" pgdata)
++    if [ -d "$ARKHAM_CUSTOM_CARD_ART_DIR" ]; then
++        art_stage="$(mktemp -d "$DATA_DIR/card-art-backup.XXXXXX")"
++        mkdir -p "$art_stage/custom-card-art"
++        if ! cp -R "$ARKHAM_CUSTOM_CARD_ART_DIR/." "$art_stage/custom-card-art/"; then
++            rm -rf "$art_stage"
++            die 4011 "Could not stage custom card art for backup"
++        fi
++        tar_args+=(-C "$art_stage" custom-card-art)
++    fi
++    if ! tar "${tar_args[@]}"; then
++        [ -z "$art_stage" ] || rm -rf "$art_stage"
+         rm -f "$backup_path" 2>/dev/null || true
+         die 4011 "Tar backup failed"
+     fi
++    [ -z "$art_stage" ] || rm -rf "$art_stage"
+     info "Tar backup created: $backup_path"
+ }
+ 
+@@ -1244,7 +1256,7 @@
+     restore_tmp="$(mktemp -d "${TMPDIR:-/tmp}/arkham-restore.XXXXXX")"
+     info "Extracting tar backup with progress ..."
+     if ! python3 - "$archive_path" "$restore_tmp" <<'PY'
+-import sys, tarfile
++import os, sys, tarfile
+ 
+ archive, dest = sys.argv[1], sys.argv[2]
+ 
+@@ -1260,6 +1272,13 @@
+ with tarfile.open(archive, "r:gz") as tf:
+     members = tf.getmembers()
+     total = len(members)
++    root = os.path.realpath(dest)
++    for member in members:
++        target = os.path.realpath(os.path.join(root, member.name))
++        if os.path.isabs(member.name) or os.path.commonpath([root, target]) != root:
++            raise ValueError("Backup member escapes the restore directory")
++        if not (member.isdir() or member.isfile()):
++            raise ValueError("Backup contains a link or unsupported special file")
+     for idx, member in enumerate(members, 1):
+         tf.extract(member, dest)
+         render(idx, total, "extract")
+@@ -1341,6 +1360,13 @@
+         die 4018 "Failed to copy restored pgdata"
+     fi
+ 
++    if [ -d "$restore_tmp/custom-card-art" ]; then
++        ensure_dir "$ARKHAM_CUSTOM_CARD_ART_DIR"
++        if ! cp -R "$restore_tmp/custom-card-art/." "$ARKHAM_CUSTOM_CARD_ART_DIR/"; then
++            rm -rf "$restore_tmp"
++            die 4018 "Failed to restore custom card art"
++        fi
++    fi
+     rm -rf "$restore_tmp"
+     rm -f "$PG_DATA/postmaster.pid" 2>/dev/null || true
+     rm -f "$PG_SOCKET_DIR/.s.PGSQL.${PG_PORT}" "$PG_SOCKET_DIR/.s.PGSQL.${PG_PORT}.lock" 2>/dev/null || true
