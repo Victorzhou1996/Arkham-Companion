@@ -13,6 +13,9 @@ import {
 import { useToast } from 'vue-toastification'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { tabletopUndoKey } from '@/arkham/tabletopControls'
+import TabletopLayoutControls from '@/arkham/components/TabletopLayoutControls.vue'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
 import confetti from '@/effects/confetti'
 import { useWebSocket, useResizeObserver } from '@vueuse/core'
 import { MenuItem } from '@headlessui/vue'
@@ -20,6 +23,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
   ArrowUturnLeftIcon,
+  ArrowsRightLeftIcon,
   BackwardIcon,
   BeakerIcon,
   BoltIcon,
@@ -238,6 +242,11 @@ const hasEventBar = computed(() => !!organizerEventId.value || !!playerEventId.v
 // and it defaults to 0 for ordinary, non-event games — no layout shift for them.
 const epicBarRef = ref<HTMLElement | null>(null)
 const epicBarHeight = ref(0)
+const tabletopToolsRef = ref<HTMLElement | null>(null)
+const tabletopToolsHeight = ref(0)
+useResizeObserver(tabletopToolsRef, () => {
+  tabletopToolsHeight.value = tabletopToolsRef.value?.offsetHeight ?? 0
+})
 useResizeObserver(epicBarRef, () => {
   epicBarHeight.value = epicBarRef.value?.offsetHeight ?? 0
 })
@@ -272,6 +281,7 @@ const archiveChecking = ref(onlineMode)
 const archiving = ref(false)
 const isExpertMode = computed(() => game.value?.settings.settingsUndoMode === 'expert')
 const canUseDebug = computed(() => !isExpertMode.value)
+const tabletop = useTabletopLabels()
 const canUseUndo = computed(
   () => !isExpertMode.value && (!onlineMode || (!archiveChecking.value && !archived.value)),
 )
@@ -405,6 +415,10 @@ const showSidebar = ref(
     ? false
     : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true'),
 )
+const sidebarViewport = window.matchMedia('(max-width: 800px)')
+const onSidebarViewportChange = (event: MediaQueryListEvent) => {
+  showSidebar.value = event.matches ? false : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true')
+}
 const socketError = ref(false)
 const error = ref<string | null>(null)
 const solo = ref(false)
@@ -1714,6 +1728,7 @@ async function runUndo(call: (gameId: string) => Promise<void>) {
 async function undo() {
   await runUndo((gameId) => undoChoice(gameId, debug.active))
 }
+provide(tabletopUndoKey, { enabled: canUseUndo, locked: undoLock, run: undo })
 
 async function undoScenario() {
   confirmingUndoScenario.value = false
@@ -1978,6 +1993,7 @@ const onPlayabilityResult = (result: any) => {
 emitter.on('playabilityResult', onPlayabilityResult)
 
 onMounted(() => {
+  sidebarViewport.addEventListener('change', onSidebarViewportChange)
   flashlightX.value = window.innerWidth / 2
   flashlightY.value = window.innerHeight / 2
   ;(window as any).sendDebug = async (msg: any) => {
@@ -2002,6 +2018,7 @@ onMounted(() => {
 
 onBeforeRouteLeave(() => close())
 onUnmounted(() => {
+  sidebarViewport.removeEventListener('change', onSidebarViewportChange)
   disposed = true
   stopNarration()
   clearCurrentNarration()
@@ -2032,7 +2049,7 @@ onUnmounted(() => {
       </section>
     </div>
   </div>
-  <div id="game" v-else-if="ready && game && playerId" :style="{ '--epic-bar-height': epicBarHeight + 'px' }">
+  <div id="game" v-else-if="ready && game && playerId" :class="{ 'tabletop-game': isActualScenarioView }" :style="{ '--epic-bar-height': epicBarHeight + 'px', '--tabletop-tools-height': tabletopToolsHeight + 'px' }">
     <dialog v-if="error" class="error-dialog">
       <h2>{{ $t('error') }}</h2>
       <p class="error-message">{{ error }}</p>
@@ -2210,6 +2227,7 @@ onUnmounted(() => {
       <!-- frontend/src/locales/en/gameBoard/base.json -->
       <p>{{ $t('outOfSyncHint') }}</p>
     </div>
+    <div ref="tabletopToolsRef" class="tabletop-tools">
     <div class="game-bar">
       <div class="game-bar-item">
         <div>
@@ -2334,6 +2352,12 @@ onUnmounted(() => {
           </template>
         </Menu>
       </div>
+      <div v-if="!canUseDebug">
+        <!-- Diagnostic export is read-only; expert games still hide all debug mutations. -->
+        <button @click="debugExport('basic')">
+          <DocumentArrowDownIcon aria-hidden="true" /> {{ $t('gameBar.debugExport') }}
+        </button>
+      </div>
       <div>
         <button @click="filingBug = true">
           <ExclamationTriangleIcon aria-hidden="true" /> {{ $t('fileBug') }}
@@ -2365,6 +2389,7 @@ onUnmounted(() => {
         </button>
         <NarrationMenu />
       </div>
+    </div>
     </div>
     <div v-if="hasEventBar" ref="epicBarRef" class="epic-bar-slot">
       <OrganizerBar
@@ -2410,6 +2435,7 @@ onUnmounted(() => {
         </template>
       </CampaignLog>
       <div v-else class="game-main">
+        <TabletopLayoutControls v-if="isActualScenarioView" />
         <div v-if="showTheSilenceModal" class="the-silence-modal-backdrop">
           <div
             class="the-silence-modal"
@@ -2568,6 +2594,7 @@ onUnmounted(() => {
           :class="{ 'sidebar--empty-log': gameLog.length === 0 }"
           v-if="showSidebar && isActualScenarioView"
         >
+          <button class="tabletop-log-close" type="button" :aria-label="tabletop.closeLog" @click="toggleSidebar">×</button>
           <GameLog :game="game" :gameLog="gameLog" @undo="undo" />
         </div>
         <div class="game-over" v-if="gameOver">

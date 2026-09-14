@@ -15,6 +15,10 @@ import Treachery from '@/arkham/components/Treachery.vue';
 import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 import { useCardStore } from '@/stores/cards';
 import * as DebugMove from '@/arkham/debugCardMove';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
+import DeckCount from '@/arkham/components/DeckCount.vue';
+import TabletopPileHeading from '@/arkham/components/TabletopPileHeading.vue';
+const tabletop = useTabletopLabels();
 
 const { t } = useI18n();
 
@@ -268,7 +272,7 @@ watch(choices, async (newChoices) => {
 </script>
 
 <template>
-  <div class="discard"
+  <div class="discard" :data-tabletop-label="`${tabletop.discard} ${discards.length}`"
     :class="{ 'discard--drop-target': discardDraggedOver && discardAccepts === true, 'discard--drop-refused': discardDraggedOver && discardAccepts === false }"
     @drop="onDropDiscard($event)"
     @dragover.prevent="onDragOverDiscard($event)"
@@ -276,6 +280,7 @@ watch(choices, async (newChoices) => {
     @dragend="discardDraggedOver = false"
     @dragenter.prevent
   >
+    <TabletopPileHeading :label="tabletop.discard" :count="discards.length" discard />
     <Card v-if="topOfDiscard" :game="game" :card="topOfDiscard" :playerId="playerId" :allowAbilityButtons="false" :allowInteractions="false" />
     <CardsUnderIndicator
       v-if="discards.length > 0"
@@ -290,9 +295,11 @@ watch(choices, async (newChoices) => {
       :fullWidth="true"
       @choose="emit('choose', $event)"
     />
+    <span v-if="discards.length === 0" class="tabletop-discard-empty" aria-hidden="true"></span>
     <button v-if="debug.active && discards.length > 0" class="view-discard-button" @click="debug.send(game.id, {tag: 'ShuffleDiscardBackIn', contents: investigatorId})">{{ $t('draw.shuffleBackIn') }}</button>
   </div>
-  <div class="deck-container">
+  <div class="deck-container" :data-tabletop-label="`${tabletop.deck} ${investigator.deckSize}`">
+    <TabletopPileHeading :label="tabletop.deck" :count="investigator.deckSize" />
     <div
       class="top-of-deck"
       :class="{ 'top-of-deck--drop-target': deckDropIndicator && !deckDropIndicator.rejected, 'top-of-deck--drop-refused': deckDropIndicator?.rejected }"
@@ -319,7 +326,7 @@ watch(choices, async (newChoices) => {
         width="150px"
         @click="emit('choose', drawCardsAction)"
       />
-      <span class="deck-size">{{investigator.deckSize}}</span>
+      <DeckCount :count="investigator.deckSize" />
       <div
         v-if="deckDropIndicator && deckDropPosition"
         class="deck-drop-indicator"

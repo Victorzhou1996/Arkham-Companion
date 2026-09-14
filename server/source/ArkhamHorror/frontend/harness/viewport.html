@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>桌面布局尺寸验证（仅开发）</title>
+<style>
+  * { box-sizing: border-box; } body { margin: 0; background: #071a13; color: #dec994; font: 14px system-ui; }
+  header { height: 42px; padding: 6px; display: flex; gap: 8px; }
+  button { background: #243a2e; color: inherit; border: 1px solid #948457; padding: 4px 10px; }
+  iframe { display: block; border: 0; width: 2932px; height: 1844px; }
+  pre { position: fixed; top: 42px; right: 0; z-index: 999; background: #142c22; border: 1px solid #a18d55; padding: 12px; max-height: 60vh; overflow: auto; }
+</style>
+<header>
+  <button data-size="2932,1844">参考图尺寸</button>
+  <button data-size="1920,1080">1920 × 1080</button>
+  <button data-size="1280,720">1280 × 720</button>
+  <button data-size="390,844">手机竖屏</button>
+  <button data-size="390,620">小屏手机</button>
+  <button id="measure">测量区域</button>
+  <span id="size">2932 × 1844</span>
+</header>
+<pre id="measurements" hidden></pre>
+<iframe title="真实游戏前端尺寸预览" src="/#/games/d7658786-4e8f-4549-93ea-4fea0148a8fe"></iframe>
+<script>
+  document.querySelectorAll('button[data-size]').forEach(button => {
+    button.addEventListener('click', () => {
+      const [width, height] = button.dataset.size.split(',').map(Number)
+      const frame = document.querySelector('iframe')
+      frame.style.width = `${width}px`
+      frame.style.height = `${height}px`
+      document.querySelector('#size').textContent = `${width} × ${height}`
+    })
+  })
+  document.querySelector('#measure').addEventListener('click', () => {
+    const result = document.querySelector('#measurements')
+    if (!result.hidden) { result.hidden = true; return }
+    const doc = document.querySelector('iframe').contentDocument
+    const selectors = ['.scenario-cards', '.location-cards-container', '#player-zone', '#game-log-sidebar', '.hand-area', '.adaptive-hand', '.action-count']
+    const regions = selectors.map(selector => {
+      const element = doc.querySelector(selector)
+      return { selector, rect: element?.getBoundingClientRect().toJSON(), scrollWidth: element?.scrollWidth, clientWidth: element?.clientWidth }
+    })
+    result.textContent = JSON.stringify({ regions, handCards: doc.querySelectorAll('.adaptive-hand-row > *').length, brokenImages: [...doc.images].filter(image => image.complete && !image.naturalWidth).length }, null, 2)
+    result.hidden = false
+  })
+</script>
+</html>

@@ -158,7 +158,7 @@ const deckLabel = computed(() => {
         :class="{ 'can-interact': deckAction !== -1 }"
         @click="choose(deckAction)"
       />
-      <span v-if="deckLabel" class="deck-label">{{deckLabel}}</span>
+      <span v-if="deckLabel" class="deck-label" :title="deckLabel">{{deckLabel}}</span>
       <span class="deck-size" :class="{ 'abyss-deck-size': deck[0] === 'AbyssDeck' }">{{deck[1].length}}</span>
       <img
         v-if="investigatorPortrait"
@@ -232,6 +232,7 @@ const deckLabel = computed(() => {
 }
 
 .deck-label {
+  pointer-events: none;
   position: absolute;
   top: 0;
   left: 50%;

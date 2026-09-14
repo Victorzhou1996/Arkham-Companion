@@ -1,4 +1,7 @@
 import './styles/index.css'
+import './styles/tabletop.css'
+import './styles/tabletopHome.css'
+import './styles/tabletopInteraction.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import FloatingVue from 'floating-vue'

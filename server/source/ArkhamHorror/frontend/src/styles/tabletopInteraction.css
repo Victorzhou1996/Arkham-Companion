@@ -1,0 +1,56 @@
+/* Action availability still comes from the live game components. The pulse
+   changes only the existing gold affordance, never card opacity or geometry. */
+@keyframes tabletop-action-breathe {
+  0%, 100% {
+    box-shadow: var(--card-shadow, 0 0 transparent),
+      0 0 0 1px color-mix(in srgb, var(--select) 45%, transparent),
+      0 0 3px 0 color-mix(in srgb, var(--select) 15%, transparent);
+  }
+  50% {
+    box-shadow: var(--card-shadow, 0 0 transparent),
+      0 0 0 2px color-mix(in srgb, var(--select) 90%, transparent),
+      0 0 10px 2px color-mix(in srgb, var(--select) 55%, transparent);
+  }
+}
+
+@keyframes tabletop-token-breathe {
+  0%, 100% {
+    filter: drop-shadow(1px 0 0 var(--select)) drop-shadow(-1px 0 0 var(--select))
+      drop-shadow(0 1px 0 var(--select)) drop-shadow(0 -1px 0 var(--select));
+  }
+  50% {
+    filter: drop-shadow(1px 0 0 var(--select)) drop-shadow(-1px 0 0 var(--select))
+      drop-shadow(0 1px 0 var(--select)) drop-shadow(0 -1px 0 var(--select))
+      drop-shadow(0 0 5px color-mix(in srgb, var(--select) 75%, transparent));
+  }
+}
+
+/* With reduced motion the original steady colored borders remain. Avoid the
+   parent location-cell, which is a routing marker, not a clickable card. Put
+   the location glow on its frame so overflow:hidden does not swallow it. */
+@media (prefers-reduced-motion: no-preference) {
+  body:has(#game.tabletop-game) :is(
+    .card--can-interact, .act--can-progress, .act--can-interact,
+    .agenda--can-progress, .enemy--can-interact, .event--can-interact,
+    .investigator--can-interact, .investigator--can-interact--portrait,
+    .story--can-interact, .skill--can-interact, .treachery--can-interact,
+    .scarletKey--can-interact, .concealed-card--can-interact,
+    .key--can-interact, .deck--can-draw, .token--can-draw,
+    .clue--can-take, .clue--can-spend, .can-interact,
+    .asset--can-interact:not(.asset--pending) > img.card,
+    .card-frame-inner:has(> img.location--can-interact:not(.source-highlight)),
+    .card-frame-inner.blocked--selectable
+  ):not(:disabled, [aria-disabled="true"], .source-highlight, .ability-target,
+    .card--highlighted, .card--flipping, .card--flipping-diagonal) {
+    animation: tabletop-action-breathe 2.6s ease-in-out infinite;
+  }
+
+  body:has(#game.tabletop-game) :is(
+    .resource--can-take, .resource--can-spend, .health--can-interact, .sanity--can-interact
+  ):not([aria-disabled="true"]) > img {
+    animation: tabletop-token-breathe 2.6s ease-in-out infinite;
+  }
+}
+
+/* Existing focus outlines remain. The colored border never vanishes at the
+   dim end of the cycle, and flipping/source highlights keep their styles. */

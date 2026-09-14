@@ -25,6 +25,9 @@ import { useI18n } from 'vue-i18n';
 import useEmitter from '@/composable/useEmitter';
 import useHighlighter from '@/composable/useHighlighter';
 import Resources from '@/arkham/components/Resources.vue';
+import ActionCount from '@/arkham/components/ActionCount.vue';
+import ActionExtras from '@/arkham/components/ActionExtras.vue';
+import { tabletopUndoKey } from '@/arkham/tabletopControls';
 import Draw from '@/arkham/components/Draw.vue';
 import { IsMobile } from '@/arkham/isMobile';
 const { t } = useI18n();
@@ -38,6 +41,7 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), { portrait: false })
+const tabletopUndo = inject(tabletopUndoKey)
 const emit = defineEmits(['showCards', 'hideCards', 'choose'])
 
 const id = computed(() => props.investigator.id)
@@ -441,13 +445,15 @@ const spadeInjury = computed(() => {
 <template>
   <div v-if="portrait" class="portrait-container">
     <span v-if="isMobile">
-      <i class="action" v-for="n in investigator.remainingActions" :key="n"></i>
+      <ActionCount :count="investigator.remainingActions" />
+      <ActionExtras :count="investigator.additionalActions.length">
       <template v-for="action in investigator.additionalActions" :key="action">
         <button @click="useEffectAction(action)" v-if="action.tag === 'EffectAction'" v-tooltip="action.contents[0]" :class="[{ activeButton: isActiveEffectAction(action)}, `${investigatorClass.toLowerCase()}ActionButton`]">
           <i class="action"></i>
         </button>
         <i v-else class="action" :class="`${investigatorClass.toLowerCase()}Action`"></i>
       </template>
+      </ActionExtras>
     </span>
     <span
       v-if="isMobile && isTakingImmediateAction"
@@ -501,6 +507,32 @@ const spadeInjury = computed(() => {
           <div class="agility agility-icon">{{agility}}</div>
         </div>
         <div class="investigator-image">
+            <span v-if="!isMobile" class="action-container">
+              <i class="spade" v-if="spadeInjury"></i>
+              <i class="heart" v-if="heartInjury"></i>
+              <i class="diamond" v-if="diamondInjury"></i>
+              <i class="club" v-if="clubInjury"></i>
+              <ActionCount :count="investigator.remainingActions" />
+              <ActionExtras :count="investigator.additionalActions.length">
+              <template v-for="action in investigator.additionalActions" :key="action">
+                <button @click="useEffectAction(action)" v-if="action.tag === 'EffectAction'" v-tooltip="action.contents[0]" :class="[{ activeButton: isActiveEffectAction(action)}, `${investigatorClass.toLowerCase()}ActionButton`]">
+                  <i class="action"></i>
+                </button>
+                <i v-else class="action" :class="`${investigatorClass.toLowerCase()}Action`"></i>
+              </template>
+              </ActionExtras>
+              <span
+                v-if="isTakingImmediateAction"
+                class="no-free-abilities"
+                v-tooltip="{ content: $t('investigator.freeAbilitiesUnavailable'), html: true }"
+              >
+                <span class="fast-icon"></span>
+                <svg class="no-sign" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="5" y1="5" x2="19" y2="19" />
+                </svg>
+              </span>
+            </span>
           <img
             :class="{ 'investigator--can-interact': investigatorAction !== -1, 'ability-target': isHighlighted || isAttackTarget }"
             class="card card--sideways"
@@ -538,30 +570,7 @@ const spadeInjury = computed(() => {
       <div>
         <div class="player-buttons">
           <div class="button-group" :class="{ 'button-group--skip-all-pending': isCurrentPlayersInvestigator && skipAllInProgress }">
-            <span v-if="!isMobile" class="action-container">
-              <i class="spade" v-if="spadeInjury"></i>
-              <i class="heart" v-if="heartInjury"></i>
-              <i class="diamond" v-if="diamondInjury"></i>
-              <i class="club" v-if="clubInjury"></i>
-              <i class="action" v-for="n in investigator.remainingActions" :key="n"></i>
-              <template v-for="action in investigator.additionalActions" :key="action">
-                <button @click="useEffectAction(action)" v-if="action.tag === 'EffectAction'" v-tooltip="action.contents[0]" :class="[{ activeButton: isActiveEffectAction(action)}, `${investigatorClass.toLowerCase()}ActionButton`]">
-                  <i class="action"></i>
-                </button>
-                <i v-else class="action" :class="`${investigatorClass.toLowerCase()}Action`"></i>
-              </template>
-              <span
-                v-if="isTakingImmediateAction"
-                class="no-free-abilities"
-                v-tooltip="{ content: $t('investigator.freeAbilitiesUnavailable'), html: true }"
-              >
-                <span class="fast-icon"></span>
-                <svg class="no-sign" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="5" y1="5" x2="19" y2="19" />
-                </svg>
-              </span>
-            </span>
+            <button v-if="!isMobile && tabletopUndo?.enabled.value" class="tabletop-undo" :disabled="tabletopUndo.locked.value" @click="tabletopUndo.run()">↶ {{ $t('gameBar.undo') }}</button>
             <template v-if="debug.active">
               <button
                 @click.exact="debug.send(game.id, {tag: 'GainActions', contents: [id, {tag: 'TestSource', contents: []}, 1]})"

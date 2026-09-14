@@ -20,6 +20,9 @@ import Story from '@/arkham/components/Story.vue';
 import StackIndicator from '@/arkham/components/StackIndicator.vue';
 import * as Arkham from '@/arkham/types/Agenda';
 import { useCardFlip } from '@/arkham/composables/useCardFlip';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
+import { EyeIcon } from '@heroicons/vue/24/outline';
+const tabletop = useTabletopLabels();
 
 const props = defineProps<{
   agenda: Arkham.Agenda
@@ -280,7 +283,8 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
 </script>
 
 <template>
-  <div class="agenda-container">
+  <div class="agenda-container" :data-tabletop-label="tabletop.agenda">
+    <h3 class="tabletop-card-heading"><EyeIcon aria-hidden="true" />{{ tabletop.agenda }}</h3>
     <StackIndicator
       label="Agenda"
       :current="currentAgendaPosition"

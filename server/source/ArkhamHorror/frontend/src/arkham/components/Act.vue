@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ComputedRef, computed, ref, watch } from 'vue'
+import { BookOpenIcon } from '@heroicons/vue/24/outline'
 import { Dropdown } from 'floating-vue'
 import { useCardStore } from '@/stores/cards'
 import { type Game } from '@/arkham/types/Game'
@@ -25,6 +26,8 @@ import * as Arkham from '@/arkham/types/Act'
 import { useEventStore } from '@/arkham/stores/event'
 import { actContribution, actSpend } from '@/arkham/types/EpicEvent'
 import { useCardFlip } from '@/arkham/composables/useCardFlip'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
+const tabletop = useTabletopLabels()
 
 const props = defineProps<{
   act: Arkham.Act
@@ -441,7 +444,8 @@ const chooseFromStoryCollection = (choice: number) => {
 </script>
 
 <template>
-  <div class="act-container">
+  <div class="act-container" :data-tabletop-label="tabletop.act">
+    <h3 class="tabletop-card-heading"><BookOpenIcon aria-hidden="true" />{{ tabletop.act }}</h3>
     <div class="act-row">
       <div
         class="card-container"

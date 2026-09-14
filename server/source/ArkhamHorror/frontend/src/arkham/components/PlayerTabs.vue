@@ -15,6 +15,7 @@ import { imgsrc, isTypingTarget } from '@/arkham/helpers';
 import { gameLocalStorageKey } from '@/arkham/localStorage';
 import { IsMobile } from '@/arkham/isMobile';
 import { useDbCardStore } from '@/stores/dbCards'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
 
 export interface Props {
   game: Game
@@ -26,6 +27,7 @@ export interface Props {
 }
 
 const props = defineProps<Props>()
+const tabletop = useTabletopLabels()
 
 const storageKey = computed(() => gameLocalStorageKey(props.game.id, 'selected-tab'))
 const selectedTab = useStorage<string>(storageKey, props.playerId)
@@ -54,6 +56,7 @@ function tabClass(investigator: Investigator) {
   return [
     {
       'tab--selected': pid === selectedTab.value,
+      'tab--perspective': pid === props.playerId,
       'tab--active-player': investigator.id === props.activePlayerId,
       'tab--lead-player': investigator.id === props.game.leadInvestigatorId,
       'tab--has-actions': pid !== selectedTab.value && hasChoices(pid),
@@ -69,11 +72,8 @@ function hasSwitch(investigator: Investigator) {
 }
 
 function instructions(investigator: Investigator) {
-  if (investigator.playerId !== props.playerId) {
-    return "Switch to this investigator's perspective"
-  }
-
-  return null
+  const label = investigator.playerId === props.playerId ? tabletop.value.currentPerspective : tabletop.value.switchPerspective
+  return `${label}: ${getInvestigatorName(investigator.name.title)}`
 }
 
 type SwitchReason = 'baseline' | 'tab-action' | 'sole-question' | 'covered-question'
@@ -486,6 +486,10 @@ watch(
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
+          :aria-label="instructions(investigator)"
+          :aria-pressed="investigator.playerId === props.playerId"
+          :title="instructions(investigator)"
+          :data-perspective-id="investigator.playerId"
           :disabled="investigator.playerId === props.playerId"
           class="switch-investigators"
           @click.stop="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>
@@ -505,6 +509,10 @@ watch(
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
+          :aria-label="instructions(investigator)"
+          :aria-pressed="investigator.playerId === props.playerId"
+          :title="instructions(investigator)"
+          :data-perspective-id="investigator.playerId"
           :disabled="investigator.playerId === props.playerId"
           class="switch-investigators"
           @click.stop="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>

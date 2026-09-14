@@ -212,7 +212,7 @@ const isSupportNotification = (notification: AppNotification) => {
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container tabletop-lobby">
     <NewGame v-if="currentUser && newGame" @close="toggleNewGame">
       <template #cancel>
         <button @click="toggleNewGame" class="cancel-new-game-button">

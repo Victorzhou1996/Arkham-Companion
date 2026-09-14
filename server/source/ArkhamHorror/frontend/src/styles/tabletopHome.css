@@ -1,0 +1,65 @@
+/* Homepage / sign-in only. Reuse the tabletop assets, without changing other
+   routes, investigator class colors, forms' behavior or game permissions. */
+#app:has(.tabletop-lobby, .tabletop-login) {
+  --background: #0c211a;
+  --background-dark: #102b22;
+  --box-background: #102a22e8;
+  --box-border: #aa945a66;
+  --title: #e6dab4;
+  --text: #c4cdbd;
+  --button-1: #35674d;
+  --spooky-green: #35674d;
+  color: var(--text);
+  background: linear-gradient(#04181055, #041610b0), url('/img/arkham/tabletop-felt-20260914-v2.png') center / 640px repeat;
+}
+#app:has(.tabletop-lobby, .tabletop-login) #nav {
+  background: linear-gradient(#183b2eee, #0b221bec);
+  border-bottom: 3px double #ad965c88;
+  box-shadow: 0 3px 18px #0005;
+}
+#app:has(.tabletop-lobby, .tabletop-login) #nav :is(a, .user-btn) { color: #d5c899; }
+#app:has(.tabletop-lobby, .tabletop-login) #nav :is(a, .user-btn):hover { color: #fff0c3; background: #294b37; }
+#app:has(.tabletop-lobby, .tabletop-login) footer { color: #a8b4a1; padding: 3px 8px; background: #091f19df; }
+#app:has(.tabletop-lobby, .tabletop-login) footer a { color: #cbbd90; }
+.tabletop-lobby { background: radial-gradient(ellipse at 50% 0, #43836a25, transparent 65%); padding-bottom: 32px; }
+.tabletop-lobby .home { padding-top: clamp(22px, 3vw, 44px); }
+.tabletop-lobby .main-header { padding: 0 0 14px; border-bottom: 3px double #b9a36a77; margin-bottom: 18px; }
+.tabletop-lobby .home h2 { color: #e3d2a0; font-family: Georgia, 'Noto Serif SC', serif; font-size: clamp(20px, 1.6vw, 28px); letter-spacing: .05em; }
+.tabletop-lobby .home :is(.support-card, .load-game-panel, .box, .game) { border-color: #b29b5d66; box-shadow: inset 0 0 0 3px #b6a16a0c, 0 8px 24px #0003; }
+.tabletop-lobby .home .support-card { background: linear-gradient(150deg, #204334ee, #0b221be8); border: 3px double #b09a5b77; }
+.tabletop-lobby .home .support-card h3 { color: #e3d2a0; font-family: Georgia, 'Noto Serif SC', serif; }
+.tabletop-lobby .home .game { background: linear-gradient(110deg, #193c2eed, #0c251eee); border-radius: 5px; }
+.tabletop-lobby .home .game:hover { border-color: #c2ab71aa; background: linear-gradient(110deg, #234935ed, #102f24ee); }
+.tabletop-lobby .home .game a:not(.game-delete a):hover { color: #ffe7a3; }
+.tabletop-lobby .home .game .game-subdetails { background: #081b142e; }
+.tabletop-lobby .home .header-actions button { border: 1px solid #a8915688; background: #35674d; color: #fff0cd; }
+.tabletop-lobby .home .header-actions button:hover { background: #467e5d; }
+.tabletop-lobby .home .header-actions .secondary-cta { background: #122d23; opacity: 1; }
+.tabletop-lobby .home button:focus-visible, .tabletop-lobby a:focus-visible { outline: 2px solid #e3cb81; outline-offset: 3px; }
+.tabletop-lobby .home .notification { --background: #263e28; --text: #ece0b6; font-size: 1em; border-color: #a99155; }
+.tabletop-lobby .home .notification a { color: #f1d98f; }
+.tabletop-lobby .app-version { opacity: .7; }
+#app form.tabletop-login {
+  flex: 0 0 auto;
+  width: min(440px, calc(100vw - 32px));
+  max-width: 440px;
+  margin: clamp(32px, 9vh, 110px) auto 32px;
+  padding: 28px 24px;
+  background: linear-gradient(#14382ce8, #091f18ed);
+  border: 3px double #b19a6188;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 7px #ae985512, 0 18px 60px #0006;
+}
+form.tabletop-login i.secret { color: #cfba7d; text-shadow: 0 2px 18px #a5904c33; }
+form.tabletop-login input { border: 1px solid #84967270; border-radius: 3px; background: #091e17d9; color: #f0e9d2; }
+form.tabletop-login input::placeholder { color: #a4b3a1; }
+form.tabletop-login input:focus { outline: 2px solid #cbb473; outline-offset: 1px; }
+form.tabletop-login button { background: #35674d; border: 1px solid #a58e57; color: #fff0cd; border-radius: 3px; }
+form.tabletop-login button:hover { background: #467e5d; }
+form.tabletop-login a { color: #dfca91; }
+@media (max-width: 600px) {
+  .tabletop-lobby .home .main-header { align-items: flex-start; flex-wrap: wrap; }
+  .tabletop-lobby .home .main-header h2 { flex-basis: 100%; }
+  .tabletop-lobby .home .header-actions { justify-content: flex-start; }
+  #app form.tabletop-login { margin-top: 32px; padding: 22px 14px; }
+}
