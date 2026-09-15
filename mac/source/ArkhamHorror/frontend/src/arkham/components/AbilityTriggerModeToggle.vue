@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDebug } from '@/arkham/debug'
-import { handTriggerModeIndexes } from '@/arkham/abilityTriggerModeEligibility'
+import { handTriggerModeIndexes, normalizeCardCode } from '@/arkham/abilityTriggerModeEligibility'
 import type { AbilityType } from '@/arkham/types/Ability'
 import type { Game } from '@/arkham/types/Game'
 import type { AbilityTriggerMode } from '@/arkham/types/Investigator'
@@ -17,6 +17,7 @@ const props = defineProps<{
   includePlayMode?: boolean
   currentAbilitiesOnly?: boolean
   exhausted?: boolean
+  knownAbilityIndexes?: readonly number[]
 }>()
 
 const { t } = useI18n()
@@ -47,12 +48,13 @@ function isOptionalTrigger(type: AbilityType): boolean {
 }
 
 const abilityIndexes = computed(() => {
+  if (!investigator.value) return []
   const current = props.abilities
     .map((entry) => entry.contents)
     .filter((entry) => entry.tag === MessageType.ABILITY_LABEL)
     .filter((entry) =>
       entry.investigatorId === investigator.value?.id
-      && entry.ability.cardCode === props.cardCode
+      && normalizeCardCode(entry.ability.cardCode) === normalizeCardCode(props.cardCode)
       && isOptionalTrigger(entry.ability.type)
     )
     .map((entry) => entry.ability.index)
@@ -63,7 +65,9 @@ const abilityIndexes = computed(() => {
   }
 
   const playMode = props.includePlayMode ? [-1] : []
-  return [...new Set([...saved, ...playMode, ...current])]
+  // Settings must remain reachable before an optional window is offered.
+  // These indices come from verified ability definitions, never guessed icons.
+  return [...new Set([...saved, ...playMode, ...current, ...(props.knownAbilityIndexes ?? [])])]
     .filter(Number.isInteger)
     .sort((left, right) => left - right)
 })
@@ -151,15 +155,18 @@ async function cycleMode(index: number) {
 }
 
 .ability-trigger-mode {
-  width: 20px;
-  height: 20px;
+  /* Keep settings legible when the equipment row fits small cards. Absolute
+     controls do not change card height or start a resize/scale feedback loop. */
+  width: calc(24px / var(--equipment-control-scale, 1));
+  height: calc(24px / var(--equipment-control-scale, 1));
+  flex-shrink: 0;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 4px;
+  border: calc(2px / var(--equipment-control-scale, 1)) solid rgba(255, 255, 255, 0.9);
+  border-radius: calc(5px / var(--equipment-control-scale, 1));
   color: #fff;
-  font-size: 12px;
+  font-size: calc(14px / var(--equipment-control-scale, 1));
   font-weight: 700;
-  line-height: 18px;
+  line-height: 1;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
   cursor: pointer;

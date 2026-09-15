@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import {
   computed,
+  inject,
   markRaw,
   nextTick,
   onMounted,
@@ -13,6 +14,15 @@ import {
 import { useToast } from 'vue-toastification'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { tabletopUndoKey } from '@/arkham/tabletopControls'
+import { undoShortcut, allowsUndoInput } from '@/arkham/undoShortcut'
+import TabletopLayoutControls from '@/arkham/components/TabletopLayoutControls.vue'
+import { deviceInfoKey, provideMobileBoard } from '@/arkham/mobile/context'
+import { phonePresentation, readDeviceInfo } from '@/arkham/mobile/devicePresentation'
+import MobileGameHeader from '@/arkham/mobile/MobileGameHeader.vue'
+import { useMobileActionHints } from '@/arkham/mobile/useMobileActionHints'
+import '@/styles/mobileGame.css'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
 import confetti from '@/effects/confetti'
 import { useWebSocket, useResizeObserver } from '@vueuse/core'
 import { MenuItem } from '@headlessui/vue'
@@ -20,6 +30,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
   ArrowUturnLeftIcon,
+  ArrowsRightLeftIcon,
   BackwardIcon,
   BeakerIcon,
   BoltIcon,
@@ -103,6 +114,8 @@ import StoryQuestion from '@/arkham/components/StoryQuestion.vue'
 import Draggable from '@/components/Draggable.vue'
 import Menu from '@/components/Menu.vue'
 import Prompt from '@/components/Prompt.vue'
+import GameLoadStatus from '@/arkham/components/GameLoadStatus.vue'
+import { createGameLoader, type GameLoadFailure } from '@/arkham/gameLoadState'
 
 interface GameCard {
   title: string
@@ -238,6 +251,11 @@ const hasEventBar = computed(() => !!organizerEventId.value || !!playerEventId.v
 // and it defaults to 0 for ordinary, non-event games — no layout shift for them.
 const epicBarRef = ref<HTMLElement | null>(null)
 const epicBarHeight = ref(0)
+const tabletopToolsRef = ref<HTMLElement | null>(null)
+const tabletopToolsHeight = ref(0)
+useResizeObserver(tabletopToolsRef, () => {
+  tabletopToolsHeight.value = tabletopToolsRef.value?.offsetHeight ?? 0
+})
 useResizeObserver(epicBarRef, () => {
   epicBarHeight.value = epicBarRef.value?.offsetHeight ?? 0
 })
@@ -272,6 +290,7 @@ const archiveChecking = ref(onlineMode)
 const archiving = ref(false)
 const isExpertMode = computed(() => game.value?.settings.settingsUndoMode === 'expert')
 const canUseDebug = computed(() => !isExpertMode.value)
+const tabletop = useTabletopLabels()
 const canUseUndo = computed(
   () => !isExpertMode.value && (!onlineMode || (!archiveChecking.value && !archived.value)),
 )
@@ -395,16 +414,23 @@ const playabilityInfo = ref<PlayabilityInfo | null>(null)
 const gameLog = shallowRef<readonly string[]>(Object.freeze([]))
 const playerId = ref<string | null>(null)
 const ready = ref(false)
+const loadFailure = ref<GameLoadFailure | null>(null)
 const resultQueue = ref<any>([])
 const showLog = ref(false)
 const showShortcuts = ref(false)
+const mobileSidebarQuery = '(max-width: 800px), (pointer: coarse) and (max-height: 600px) and (max-width: 1000px)'
+const presentationDevice = inject(deviceInfoKey, ref(readDeviceInfo()))
 const isMobileViewport = () =>
-  typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches
+  typeof window !== 'undefined' && phonePresentation(window.innerWidth, window.innerHeight, presentationDevice.value)
 const showSidebar = ref(
   isMobileViewport()
     ? false
     : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true'),
 )
+const sidebarViewport = window.matchMedia(mobileSidebarQuery)
+const onSidebarViewportChange = (event: MediaQueryListEvent) => {
+  showSidebar.value = isMobileViewport() ? false : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true')
+}
 const socketError = ref(false)
 const error = ref<string | null>(null)
 const solo = ref(false)
@@ -600,6 +626,8 @@ watch(
   },
 )
 
+// Run on entry too: an ongoing game stays false before and after loading,
+// so a change-only watcher would leave online undo checking forever.
 watch(gameOver, async (ended) => {
   if (!onlineMode) return
   if (!ended || props.spectate) {
@@ -615,7 +643,7 @@ watch(gameOver, async (ended) => {
   } finally {
     archiveChecking.value = false
   }
-})
+}, { immediate: true })
 
 async function exportAndArchive() {
   if (!window.confirm(t('archiveConfirm'))) return
@@ -688,6 +716,18 @@ const isActualScenarioView = computed(() => {
     && activeQuestionTag !== 'ContinueCampaign'
 })
 
+const mobileBoard = provideMobileBoard(isActualScenarioView, presentationDevice)
+const mobileGameRoot = ref<HTMLElement | null>(null)
+useMobileActionHints(mobileGameRoot, mobileBoard)
+const mobileEnabled = mobileBoard.enabled
+const touchEnabled = mobileBoard.touchEnabled
+const tabletEnabled = mobileBoard.tablet
+const mobileZone = mobileBoard.zone
+const mobileTools = mobileBoard.tools
+const mobileTopCollapsed = mobileBoard.topCollapsed
+const mobileBottomCollapsed = mobileBoard.bottomCollapsed
+const mobileViewport = mobileBoard.viewport
+const mobilePreview = mobileBoard.preview
 const realityAcidLightOverride = ref<boolean | null>(null)
 const realityAcidLightMetaActive = computed(() => {
   const scenario = game.value?.scenario
@@ -878,6 +918,28 @@ const websocketUrl = computed(() => {
   return buildWebsocketUrl(`/api/v1/arkham/games/${props.gameId}${spectatePrefix}`, userStore.token)
 })
 
+const initialGameLoad = createGameLoader<Awaited<ReturnType<typeof fetchGame>>>({
+  loading() { ready.value = false; loadFailure.value = null },
+  loaded({ game: newGame, playerId: newPlayerId, multiplayerMode, eventId }) {
+    if (!newPlayerId) { loadFailure.value = 'forbidden'; return }
+    ;(window as Window & { g?: Arkham.Game }).g = newGame
+    game.value = newGame
+    solo.value = multiplayerMode === 'Solo'
+    gamePayloadEventId.value = eventId
+    updateGameLog(newGame.log)
+    playerId.value = newPlayerId
+    ready.value = true
+  },
+  failed(reason) {
+    loadFailure.value = reason
+    if (reason === 'signedOut') userStore.logout()
+  },
+})
+
+function reloadInitialGame() {
+  return initialGameLoad.load(() => fetchGame(props.gameId, props.spectate))
+}
+
 watch(
   // Also react to `spectate`: the same Game.vue instance is reused when an
   // organizer toggles between the Spectate (organizer) and Game (play-my-seat)
@@ -888,19 +950,7 @@ watch(
     const [newId] = newVals
     if (!newId) return
     if (oldVals && newId === oldVals[0] && newVals[1] === oldVals[1]) return
-    await fetchGame(props.gameId, props.spectate).then(
-      async ({ game: newGame, playerId: newPlayerId, multiplayerMode, eventId }) => {
-        ;(window as Window & { g?: Arkham.Game }).g = newGame
-        game.value = newGame
-        solo.value = multiplayerMode === 'Solo'
-        // Engage the Epic event this game belongs to even when the URL lacks
-        // ?event (e.g. entered via the join / take-a-seat path).
-        gamePayloadEventId.value = eventId
-        updateGameLog(newGame.log)
-        playerId.value = newPlayerId
-        ready.value = true
-      },
-    )
+    await reloadInitialGame()
   },
   { immediate: true },
 )
@@ -1494,7 +1544,10 @@ const feedKonami = (rawKey: string): boolean => {
 // Keyboard Shortcuts
 const handleKeyPress = (event: KeyboardEvent) => {
   if (filingBug.value) return
-  if (isTypingTarget(event.target)) return
+  if (event.isComposing || event.repeat || mobilePreview.value) return
+  const undoKey = undoShortcut(event)
+  const nonTextUndoControl = undoKey && event.target instanceof HTMLInputElement && allowsUndoInput(event.target.type)
+  if (isTypingTarget(event.target) && !nonTextUndoControl) return
   if (event.ctrlKey) return
   if (event.metaKey) return
   if (event.altKey) return
@@ -1539,13 +1592,18 @@ const handleKeyPress = (event: KeyboardEvent) => {
     clearUndoChord()
   }
 
-  if (event.key === 'u') {
+  if (undoKey === 'undo') {
+    event.preventDefault()
     if (canUseUndo.value) undo()
     return
   }
 
-  if (event.key === 'U') {
-    if (canUseUndo.value) armUndoChord()
+  if (undoKey === 'chord') {
+    event.preventDefault()
+    if (canUseUndo.value) {
+      armUndoChord()
+      toast.info('分级撤回：再按 A / T / P / R / S；再按 U 撤回一步。', { timeout: UNDO_CHORD_TIMEOUT_MS })
+    }
     return
   }
 
@@ -1705,6 +1763,7 @@ async function runUndo(call: (gameId: string) => Promise<void>) {
   } catch (e) {
     processing.value = false
     if (game.value && oldQuestion) setGameQuestion(oldQuestion)
+    toast.error('撤回失败，请检查连接或稍后重试。若当前没有历史步骤，则无法继续撤回。')
     console.log(e)
   } finally {
     undoLock.value = false
@@ -1714,6 +1773,7 @@ async function runUndo(call: (gameId: string) => Promise<void>) {
 async function undo() {
   await runUndo((gameId) => undoChoice(gameId, debug.active))
 }
+provide(tabletopUndoKey, { enabled: canUseUndo, locked: undoLock, run: undo })
 
 async function undoScenario() {
   confirmingUndoScenario.value = false
@@ -1791,6 +1851,7 @@ function isStoryQuestion(question: Question | null | undefined): boolean {
 async function choose(idx: number) {
   if (processing.value) return
   if (idx !== -1 && game.value && !props.spectate) {
+    mobileBoard.preview.value?.close()
     oldQuestion.value = game.value.question
     const questionVersion = game.value.scenarioSteps
     if (!shouldPreserveFocusedChaosWindow() && !shouldPreserveFocusedCardChoice()) {
@@ -1951,6 +2012,8 @@ function updateFocusLight() {
 }
 
 function scheduleFocusLightUpdate() {
+  // Phone has no cursor spotlight; avoid scanning the whole document for it.
+  if (mobileEnabled.value || document.hidden) return
   if (focusLightAnimationFrame !== null) return
   focusLightAnimationFrame = requestAnimationFrame(() => {
     focusLightAnimationFrame = null
@@ -1978,6 +2041,7 @@ const onPlayabilityResult = (result: any) => {
 emitter.on('playabilityResult', onPlayabilityResult)
 
 onMounted(() => {
+  sidebarViewport.addEventListener('change', onSidebarViewportChange)
   flashlightX.value = window.innerWidth / 2
   flashlightY.value = window.innerHeight / 2
   ;(window as any).sendDebug = async (msg: any) => {
@@ -2002,6 +2066,8 @@ onMounted(() => {
 
 onBeforeRouteLeave(() => close())
 onUnmounted(() => {
+  initialGameLoad.cancel()
+  sidebarViewport.removeEventListener('change', onSidebarViewportChange)
   disposed = true
   stopNarration()
   clearCurrentNarration()
@@ -2032,7 +2098,8 @@ onUnmounted(() => {
       </section>
     </div>
   </div>
-  <div id="game" v-else-if="ready && game && playerId" :style="{ '--epic-bar-height': epicBarHeight + 'px' }">
+  <div id="game" ref="mobileGameRoot" v-else-if="ready && game && playerId" :inert="touchEnabled && !!mobilePreview" :class="{ 'tabletop-game': isActualScenarioView && !mobileEnabled, 'mobile-game': mobileEnabled, 'touch-game': touchEnabled, 'tablet-game': isActualScenarioView && tabletEnabled, 'mobile-tools-open': mobileTools, 'mobile-top-collapsed': mobileEnabled && mobileTopCollapsed, 'mobile-bottom-collapsed': mobileEnabled && mobileBottomCollapsed }" :data-mobile-zone="mobileEnabled ? mobileZone : undefined" :style="{ '--epic-bar-height': epicBarHeight + 'px', '--tabletop-tools-height': tabletopToolsHeight + 'px', ...(touchEnabled ? mobileViewport : {}) }">
+    <MobileGameHeader v-if="mobileEnabled" :game="game" @log="toggleSidebar" />
     <dialog v-if="error" class="error-dialog">
       <h2>{{ $t('error') }}</h2>
       <p class="error-message">{{ error }}</p>
@@ -2210,6 +2277,7 @@ onUnmounted(() => {
       <!-- frontend/src/locales/en/gameBoard/base.json -->
       <p>{{ $t('outOfSyncHint') }}</p>
     </div>
+    <div ref="tabletopToolsRef" class="tabletop-tools">
     <div class="game-bar">
       <div class="game-bar-item">
         <div>
@@ -2334,6 +2402,12 @@ onUnmounted(() => {
           </template>
         </Menu>
       </div>
+      <div v-if="!canUseDebug">
+        <!-- Diagnostic export is read-only; expert games still hide all debug mutations. -->
+        <button @click="debugExport('basic')">
+          <DocumentArrowDownIcon aria-hidden="true" /> {{ $t('gameBar.debugExport') }}
+        </button>
+      </div>
       <div>
         <button @click="filingBug = true">
           <ExclamationTriangleIcon aria-hidden="true" /> {{ $t('fileBug') }}
@@ -2348,13 +2422,14 @@ onUnmounted(() => {
         </div>
       </template>
       <div class="right">
-        <ResponseStatusBar v-if="isActualScenarioView" :game="game" />
+        <ResponseStatusBar v-if="isActualScenarioView && !mobileEnabled" :game="game" />
         <button
           v-if="canUseUndo"
           class="touch-undo"
+          :class="{ 'touch-undo--tablet': tabletEnabled }"
           type="button"
           :title="$t('gameBar.undo')"
-          :aria-label="$t('gameBar.undo')"
+          aria-label="撤回一步"
           :disabled="undoLock"
           @click="undo"
         >
@@ -2365,6 +2440,7 @@ onUnmounted(() => {
         </button>
         <NarrationMenu />
       </div>
+    </div>
     </div>
     <div v-if="hasEventBar" ref="epicBarRef" class="epic-bar-slot">
       <OrganizerBar
@@ -2410,6 +2486,7 @@ onUnmounted(() => {
         </template>
       </CampaignLog>
       <div v-else class="game-main">
+        <TabletopLayoutControls v-if="isActualScenarioView && !mobileEnabled" v-model:show-log="showSidebar" />
         <div v-if="showTheSilenceModal" class="the-silence-modal-backdrop">
           <div
             class="the-silence-modal"
@@ -2527,6 +2604,7 @@ onUnmounted(() => {
         />
         <Campaign
           v-else-if="game.campaign"
+          :key="mobileEnabled ? 'mobile-campaign' : 'desktop-campaign'"
           :game="game"
           :gameLog="gameLog"
           :playerId="playerId"
@@ -2547,6 +2625,7 @@ onUnmounted(() => {
         />
         <StandaloneScenario
           v-else-if="game.scenario && !gameOver"
+          :key="mobileEnabled ? 'mobile-scenario' : 'desktop-scenario'"
           :game="game"
           :playerId="playerId"
           :realityAcidLightDevoured="realityAcidLightDevoured"
@@ -2568,6 +2647,7 @@ onUnmounted(() => {
           :class="{ 'sidebar--empty-log': gameLog.length === 0 }"
           v-if="showSidebar && isActualScenarioView"
         >
+          <button class="tabletop-log-close" type="button" :aria-label="tabletop.closeLog" @click="toggleSidebar">×</button>
           <GameLog :game="game" :gameLog="gameLog" @undo="undo" />
         </div>
         <div class="game-over" v-if="gameOver">
@@ -2605,6 +2685,7 @@ onUnmounted(() => {
       :no="() => (confirmingUndoScenario = false)"
     />
   </div>
+  <GameLoadStatus v-else :failure="loadFailure" :next-url="route.fullPath" @retry="reloadInitialGame" />
 </template>
 
 <style lang="scss" scoped>
@@ -2871,7 +2952,7 @@ onUnmounted(() => {
   max-width: 300px;
   display: flex;
   flex-direction: column;
-  background: #d0d9dc;
+  background: var(--box-background);
 
   @media (max-width: 800px) {
     position: fixed;
@@ -2887,7 +2968,7 @@ onUnmounted(() => {
   }
 
   @media (prefers-color-scheme: dark) {
-    background: #1c1c1c;
+    background: var(--box-background);
   }
 }
 
@@ -2927,7 +3008,7 @@ onUnmounted(() => {
 }
 
 #invite {
-  background-color: #15192c;
+  background-color: var(--box-background);
   color: white;
   width: 800px;
   margin: 0 auto;
@@ -3659,7 +3740,7 @@ header {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .touch-undo {
+  .touch-undo:not(.touch-undo--tablet) {
     display: none !important;
   }
 }
@@ -4035,7 +4116,7 @@ dialog {
 }
 
 .debug-playability-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   padding: 1.5rem;

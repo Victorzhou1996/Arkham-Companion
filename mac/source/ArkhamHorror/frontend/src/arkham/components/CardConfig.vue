@@ -1,5 +1,9 @@
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, inject } from 'vue';
+import { useMobileBoard, mobileCardKey } from '@/arkham/mobile/context';
+const mobileBoard = useMobileBoard();
+const mobileCard = inject(mobileCardKey, null);
+const mobileInline = computed(() => !!mobileBoard?.touchEnabled.value && !!mobileCard?.preview.value);
 import { OnClickOutside } from '@vueuse/components';
 import CardOptionGroups from '@/arkham/components/CardOptionGroups.vue';
 import { cardOptionName, useCardOptions } from '@/arkham/composables/useCardOptions';
@@ -32,6 +36,7 @@ const { options, groups, configured, isOn, valueOf, valuesOf, label, valueLabel,
   );
 
 function calculatePosition() {
+  if (mobileInline.value) { panelPosition.value = {}; return }
   if (!frame.value) return;
   const rect = frame.value.getBoundingClientRect();
   const menuWidth = panelRef.value?.getBoundingClientRect().width ?? 330;
@@ -79,9 +84,9 @@ onUnmounted(() => {
     <font-awesome-icon icon="gear" />
   </button>
 
-  <Teleport to="body">
+  <Teleport to="body" :disabled="mobileInline">
     <OnClickOutside v-if="shown" @trigger="close" :options="{ ignore: [frame] }">
-      <div ref="panelRef" class="card-config no-card-overlay" :style="panelPosition">
+      <div ref="panelRef" class="card-config no-card-overlay" :class="{ 'mobile-inline-config': mobileInline }" :style="panelPosition">
         <div class="card-config__header">
           <h2 class="card-config__title">{{ cardName }}</h2>
         </div>

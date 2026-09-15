@@ -21,6 +21,7 @@ test('unsuffixed runtime codes resolve split-card front translations', async (t)
   const hydraBack = { code: '07331b', name: '海德拉', real_name: 'Hydra' }
   const originalFetch = globalThis.fetch
   globalThis.fetch = async () => ({
+    ok: true,
     json: async () => [dagonFront, dagonBack, hydraFront, hydraBack],
   })
   t.after(() => {

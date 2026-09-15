@@ -71,7 +71,7 @@ h2 {
 }
 .game {
   display: flex;
-  background-color: #15192C;
+  background-color: var(--box-background);
   border-left: 10px solid var(--button-1);
   color: #f0f0f0;
   border-radius: 3px;

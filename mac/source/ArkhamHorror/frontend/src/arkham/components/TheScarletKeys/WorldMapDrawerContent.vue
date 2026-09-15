@@ -153,12 +153,12 @@ h3 {
   padding: 0.375em;
   border-radius: 4px;
   font-weight: bold;
-  background: #2e3a4f;
+  background: var(--surface-raised);
   color: #eee;
   font-size: 1em;
   cursor: pointer;
   border: none;
-  &:hover { background: #3b4a6b; }
+  &:hover { background: var(--surface-hover); }
 }
 
 .action.secondary {

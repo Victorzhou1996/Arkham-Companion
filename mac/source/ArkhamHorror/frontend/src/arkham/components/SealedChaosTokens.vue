@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
+import { useMobileBoard } from '@/arkham/mobile/context'
 import Token from '@/arkham/components/Token.vue'
 import { ChaosToken } from '@/arkham/types/ChaosToken'
 import { Game } from '@/arkham/types/Game'
@@ -99,6 +100,7 @@ const spreadStyle = computed(() => ({
 }))
 const shapePath = computed(() => layout.value.shapePath)
 const expanded = ref(false)
+const mobileBoard = useMobileBoard()
 </script>
 
 <template>
@@ -126,7 +128,7 @@ const expanded = ref(false)
       @choose="emit('choose', $event)"
       class="sealed sealed-token"
       :style="{ '--sealed-index': index, ...positions[index] }"
-      @mouseenter="expanded = true"
+      @mouseenter="!mobileBoard?.touchEnabled.value && (expanded = true)"
     />
   </div>
 </template>

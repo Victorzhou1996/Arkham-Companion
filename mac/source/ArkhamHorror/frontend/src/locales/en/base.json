@@ -1,4 +1,16 @@
 {
+  "gameLoad": {
+    "loading": "Loading game",
+    "wait": "Reading game data. Please wait.",
+    "failed": "This game could not be opened",
+    "pageUnavailable": "A page component could not be loaded. Files may be missing, cached, or blocked. Reload, then check frontend resources in the manager if needed. Do not disable browser security.",
+    "signedOut": "Your session has expired. Please sign in again to continue.",
+    "forbidden": "This account cannot enter this game. Please check that you are using the correct account.",
+    "missing": "This save was not found on this server. Clean packages do not include old saves. Start a game from Home, or restore your own backup using the manager.",
+    "unavailable": "The game service could not be reached or did not respond. Check its status in the manager, then retry.",
+    "invalid": "The game data could not be loaded and may be incompatible with this version. Keep your save and check the service logs.",
+    "retry": "Retry"
+  },
   "serviceUnavailable": "Service Unavailable",
   "pleaseTryAgainLater": "Please try again later.",
   "nav": {

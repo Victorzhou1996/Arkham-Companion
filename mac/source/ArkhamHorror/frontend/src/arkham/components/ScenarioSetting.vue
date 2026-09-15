@@ -289,7 +289,7 @@ const displayKey = (key: string) => {
   margin: 0 auto;
   margin-top: 10px;
   padding: 10px;
-  background-color: #3E485C;
+  background-color: var(--surface-raised);
   border-radius: 5px;
   font-size: 1.5em;
   color: #B6B6B6;

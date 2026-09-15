@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
+import { useMobileBoard } from '@/arkham/mobile/context'
+import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
 import { computed, onMounted } from 'vue';
 import { imgsrc } from '@/arkham/helpers';
 import { cardImage } from '@/arkham/cardImages';
@@ -34,6 +37,7 @@ const emit = defineEmits<{
   choose: [value: number]
 }>()
 const debug = useDebug()
+const mobileBoard = useMobileBoard()
 const cardStore = useCardStore()
 
 onMounted(() => {
@@ -249,6 +253,7 @@ function startDrag(event: DragEvent) {
 
 <template>
   <div class="card-container" :data-index="id">
+      <MobileCard>
     <img
       v-if="modifiedPlayingCard"
       :src="modifiedPlayingCard"
@@ -277,6 +282,7 @@ function startDrag(event: DragEvent) {
       @click.stop="debugCustomize"
     ><font-awesome-icon icon="bug" /></button>
     <AbilityButton
+      v-if="!mobileBoard?.touchEnabled.value"
       v-for="ability in abilities"
       :key="ability.index"
       :ability="ability.contents"
@@ -284,6 +290,8 @@ function startDrag(event: DragEvent) {
       :game="game"
       @click="$emit('choose', ability.index)"
       />
+    <AbilitiesMenu v-if="mobileBoard?.touchEnabled.value && abilities.length" :game="game" :abilities="abilities" :frame="null" @choose="emit('choose', $event)" />
+      </MobileCard>
   </div>
 </template>
 

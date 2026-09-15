@@ -1175,7 +1175,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
 }
 
 .custom-card-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   color: #eee;
@@ -1258,7 +1258,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
   img {
     width: 100%;
     border-radius: 8px;
-    background: #111827;
+    background: var(--surface-input);
     display: block;
   }
 
@@ -1324,7 +1324,7 @@ label {
 input,
 select,
 textarea {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -1338,7 +1338,7 @@ textarea {
 select {
   -webkit-appearance: none;
   appearance: none;
-  background: #111827 var(--select-caret) no-repeat right 0.6rem center;
+  background: var(--surface-input) var(--select-caret) no-repeat right 0.6rem center;
   background-size: var(--select-caret-size);
   padding: 0.4rem 1.6rem 0.4rem 0.5rem;
 }
@@ -1394,7 +1394,7 @@ select {
 }
 
 .art-empty {
-  background: #111827;
+  background: var(--surface-input);
   border-radius: 8px;
   width: 100%;
 }
@@ -1595,7 +1595,7 @@ fieldset {
   img {
     width: 100%;
     border-radius: 6px;
-    background: #111827;
+    background: var(--surface-input);
   }
 
   small {

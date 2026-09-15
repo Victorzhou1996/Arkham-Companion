@@ -58,7 +58,7 @@ async function logout() {
 
 <template>
   <header id="nav">
-    <button v-if="currentUser" class="mobile-menu-btn" @click="mobileOpen = !mobileOpen">
+    <button v-if="currentUser" class="mobile-menu-btn" :aria-expanded="mobileOpen" aria-label="Navigation" @click="mobileOpen = !mobileOpen">
       <font-awesome-icon icon="bars" />
     </button>
 
@@ -100,6 +100,7 @@ async function logout() {
     </OnClickOutside>
 
     <div v-if="mobileOpen" class="mobile-menu" @click="mobileOpen = false">
+      <router-link to="/">{{$t('nav.home')}}</router-link>
       <router-link to="/decks">{{$t('nav.myDecks')}}</router-link>
       <a :href="buildHref">Build</a>
       <router-link to="/achievements">{{$t('nav.achievements')}}</router-link>
@@ -109,6 +110,8 @@ async function logout() {
       <router-link to="/about">{{$t('nav.about')}}</router-link>
       <router-link to="/about?support">{{$t('nav.support')}}</router-link>
       <router-link v-if="currentUser && currentUser.admin" to="/admin">{{$t('nav.admin')}}</router-link>
+      <router-link to="/settings">{{$t('settings')}}</router-link>
+      <button @click="logout">{{ $t('logOut') }}</button>
     </div>
   </header>
 

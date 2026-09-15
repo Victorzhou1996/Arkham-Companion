@@ -336,7 +336,7 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
   flex-direction: column;
   width: 100%;
   max-height: 75vh;
-  background: var(--background);
+  background: var(--app-background);
   color: var(--text);
 }
 

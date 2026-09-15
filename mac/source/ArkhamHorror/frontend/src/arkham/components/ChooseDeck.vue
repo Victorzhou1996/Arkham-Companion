@@ -657,7 +657,7 @@ const needsReply = computed(() => {
 
 <style scoped>
 .container {
-  background: var(--background);
+  background: var(--app-background);
   width: 100%;
   max-width: unset;
   height: 100%;

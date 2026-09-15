@@ -303,7 +303,7 @@ const setCount = (key: string) => {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
-  background: var(--background);
+  background: var(--app-background);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   padding: 0;
 }

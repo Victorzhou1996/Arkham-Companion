@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
+import { computed, ref } from 'vue';
 import MissingCardBadge from '@/arkham/components/MissingCardBadge.vue';
 import { Game } from '@/arkham/types/Game';
 import Token from '@/arkham/components/Token.vue';
 import * as ArkhamGame from '@/arkham/types/Game';
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message';
 import { cardImg } from '@/arkham/helpers';
-import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import CardAbilityControls from '@/arkham/components/CardAbilityControls.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
 import * as Arkham from '@/arkham/types/Skill';
@@ -19,6 +20,8 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), { attached: false })
+const cardFrame = ref<HTMLElement | null>(null)
+const abilityControls = ref<InstanceType<typeof CardAbilityControls> | null>(null)
 
 const emits = defineEmits<{
   choose: [value: number]
@@ -89,25 +92,21 @@ const choose = (index: number) => emits('choose', index)
 
 <template>
   <div class="skill" :class="{ attached }">
+    <MobileCard>
     <MissingCardBadge :card-code="cardCode" />
     <img
       :src="image"
-      :class="{ 'skill--can-interact': cardAction !== -1 }"
+      ref="cardFrame"
+      :class="{ 'skill--can-interact': cardAction !== -1 || abilities.length > 0 }"
       class="card skill"
-      @click="choose(cardAction)"
+      @click="cardAction !== -1 ? choose(cardAction) : abilityControls?.activate()"
       :data-customizations="JSON.stringify(skill.customizations)"
     />
     <div v-if="hasPool" class="pool">
       <Token v-for="(sealedToken, index) in skill.sealedChaosTokens" :key="index" :token="sealedToken" :playerId="playerId" :game="game" @choose="choose" />
     </div>
-    <AbilityButton
-      v-for="ability in abilities"
-      :key="ability.index"
-      :ability="ability.contents"
-      :data-image="image"
-      :game="game"
-      @click="choose(ability.index)"
-      />
+    <CardAbilityControls ref="abilityControls" :game="game" :abilities="abilities"
+      :frame="cardFrame" :image="image" @choose="choose" />
     <AbilityTriggerModeToggle
       v-if="ownedByCurrentPlayer"
       :game="game"
@@ -116,6 +115,7 @@ const choose = (index: number) => emits('choose', index)
       :card-code="cardCode"
       :abilities="triggerModeAbilities"
     />
+    </MobileCard>
   </div>
 </template>
 

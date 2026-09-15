@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
+import { computed, ref } from 'vue';
 import MissingCardBadge from '@/arkham/components/MissingCardBadge.vue';
 import { useDebug } from '@/arkham/debug';
 import { cardImage } from '@/arkham/cardImages';
@@ -7,11 +8,9 @@ import type { Game } from '@/arkham/types/Game';
 import * as ArkhamGame from '@/arkham/types/Game';
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message';
 import TokenPool from '@/arkham/components/TokenPool.vue';
-import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import CardAbilityControls from '@/arkham/components/CardAbilityControls.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
-import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
-import { IsMobile } from '@/arkham/isMobile'
 import Token from '@/arkham/components/Token.vue';
 import * as Arkham from '@/arkham/types/Treachery';
 
@@ -43,13 +42,8 @@ function startDrag(event: DragEvent) {
 const choose = (idx: number) => emits('choose', idx)
 
 const debug = useDebug()
-const { isMobile } = IsMobile()
 const cardFrame = ref<HTMLElement | null>(null)
-const showAbilities = ref(false)
-
-watch(() => props.mobileHandOpen, (open) => {
-  if (open === false) showAbilities.value = false
-})
+const abilityControls = ref<InstanceType<typeof CardAbilityControls> | null>(null)
 const image = computed(() => cardImage(props.treachery.cardCode))
 const id = computed(() => props.treachery.id)
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
@@ -106,30 +100,17 @@ const triggerModeAbilities = computed(() => {
 
 const tokenOverrides = { Damage: { type: 'damage' } }
 const cardAction = computed(() => choices.value.findIndex(canInteract))
-const canUseMobileAbilityMenu = computed(() => isMobile && props.isInHand && abilities.value.length > 0)
-const canHighlight = computed(() => cardAction.value !== -1 || canUseMobileAbilityMenu.value)
+const canHighlight = computed(() => cardAction.value !== -1 || abilities.value.length > 0)
 
 function handleCardClick() {
-  if (canUseMobileAbilityMenu.value) {
-    showAbilities.value = true
-    return
-  }
-
-  emits('choose', cardAction.value)
+  if (cardAction.value !== -1) emits('choose', cardAction.value)
+  else abilityControls.value?.activate()
 }
 </script>
 <template>
   <div class="treachery" :class="{ attached, exhausted: isExhausted }">
+      <MobileCard>
     <MissingCardBadge :card-code="treachery.cardCode" />
-    <AbilityButton
-      v-if="isInHand && !canUseMobileAbilityMenu"
-      v-for="ability in abilities"
-      :key="ability.index"
-      :ability="ability.contents"
-      :data-image="image"
-      :game="game"
-      @click="$emit('choose', ability.index)"
-    />
     <img
       ref="cardFrame"
       :src="image"
@@ -140,15 +121,8 @@ function handleCardClick() {
       @click="handleCardClick"
       :data-delay="overlayDelay"
     />
-    <AbilityButton
-      v-if="!isInHand"
-      v-for="ability in abilities"
-      :key="ability.index"
-      :ability="ability.contents"
-      :data-image="image"
-      :game="game"
-      @click="$emit('choose', ability.index)"
-    />
+    <CardAbilityControls ref="abilityControls" :game="game" :abilities="abilities"
+      :frame="cardFrame" :image="image" @choose="choose" />
     <AbilityTriggerModeToggle
       v-if="ownedByCurrentPlayer && ownerInvestigatorId"
       :game="game"
@@ -158,15 +132,6 @@ function handleCardClick() {
       :abilities="triggerModeAbilities"
       :exhausted="isExhausted"
     />
-    <AbilitiesMenu
-      v-if="canUseMobileAbilityMenu"
-      v-model="showAbilities"
-      :game="game"
-      :abilities="abilities"
-      :frame="cardFrame"
-      position="top"
-      @choose="$emit('choose', $event)"
-    />
     <div class="pool">
       <TokenPool :tokens="treachery.tokens" :overrides="tokenOverrides" />
       <Token v-for="(sealedToken, index) in treachery.sealedChaosTokens" :key="index" :token="sealedToken" :playerId="playerId" :game="game" @choose="choose" />
@@ -175,6 +140,7 @@ function handleCardClick() {
     <template v-if="debug.active">
       <button @click="debug.send(game.id, {tag: 'Discard', contents: [null, { tag: 'GameSource' }, { tag: 'TreacheryTarget', contents: id}]})">{{ $t('treachery.discard') }}</button>
     </template>
+      </MobileCard>
   </div>
 </template>
 

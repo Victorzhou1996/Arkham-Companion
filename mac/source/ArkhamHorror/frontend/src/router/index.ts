@@ -1,5 +1,7 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { authNavigation } from './authGuard'
+import { routeLoadFailed } from './loadState'
 import baseRoutes from '@/routes';
 import arkhamRoutes from '@/arkham/routes';
 
@@ -14,48 +16,15 @@ const router = createRouter({
 })
 
 
-router.beforeEach(async (to, _from, next) => {
-  const store = useUserStore()
-  const restoreUser = store.loadUserFromStorage()
-
-  if (to.matched.some((record) => record.meta && record.meta.requiresAuth)) {
-    if (localStorage.getItem('arkham-token') === null) {
-      next({ path: '/sign-in', query: { nextUrl: to.fullPath } });
-    } else {
-      if (to.matched.some((record) => record.meta && record.meta.requiresAdmin)) {
-        await restoreUser
-        if (store.isAdmin) {
-          document.title = `${to.meta.title}`
-          next();
-        } else {
-          next({ path: '/' })
-        }
-      } else {
-        document.title = `${to.meta.title}`
-        next();
-        void restoreUser
-          .then(() => {
-            if (!store.token && router.currentRoute.value.meta.requiresAuth) {
-              void router.replace({
-                path: '/sign-in',
-                query: { nextUrl: router.currentRoute.value.fullPath },
-              })
-            }
-          })
-          .catch((error) => console.warn('Could not restore the signed-in user', error))
-      }
-    }
-  } else if (to.matched.some((record) => record.meta && record.meta.guest)) {
-    await restoreUser
-    if (localStorage.getItem('arkham-token') === null) {
-      document.title = `${to.meta.title}`
-      next();
-    } else {
-      next({ path: '/' });
-    }
-  } else {
-    next();
-  }
+router.beforeEach(async to => {
+  routeLoadFailed.value = false
+  const destination = await authNavigation(to, useUserStore())
+  if (destination === true && to.meta.title) document.title = String(to.meta.title)
+  return destination
 });
+
+// A missing/blocked lazy chunk must leave a recoverable page, not just the
+// navigation bar and background. Do not weaken CSP to work around a load error.
+router.onError(() => { routeLoadFailed.value = true })
 
 export default router

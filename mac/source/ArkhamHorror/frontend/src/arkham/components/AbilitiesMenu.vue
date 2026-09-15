@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Game } from '@/arkham/types/Game';
 import { OnClickOutside } from '@vueuse/components'
-import { ref, watch, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
+import { ref, watch, computed, nextTick, onMounted, onUnmounted, useId, inject } from 'vue';
+import { useMobileBoard, mobileCardKey } from '@/arkham/mobile/context';
 import type { AbilityMessage } from '@/arkham/types/Message';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 
@@ -18,6 +19,11 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<{
   (e: 'choose', index: number): void;
 }>();
+const mobileBoard = useMobileBoard();
+const mobileCard = inject(mobileCardKey, null);
+const mobileEnabled = computed(() => !!mobileBoard?.touchEnabled.value && !!mobileCard);
+const mobilePreview = computed(() => mobileCard?.preview.value ?? false);
+const mobileForced = computed(() => props.abilities.some(a => 'ability' in a.contents && JSON.stringify(a.contents.ability.type).includes('ForcedAbility')));
 
 interface Position {
   bottom?: string;
@@ -66,8 +72,8 @@ function verifyAnchorPlacement() {
   if (!useAnchor.value || !abilitiesRef.value) return;
   const rect = abilitiesRef.value.getBoundingClientRect();
   const onScreen =
-    rect.bottom > 0 && rect.right > 0
-    && rect.top < window.innerHeight && rect.left < window.innerWidth;
+    rect.top >= 0 && rect.left >= 0
+    && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
   if (onScreen) return;
 
   anchorFailed.value = true;
@@ -78,6 +84,7 @@ function verifyAnchorPlacement() {
 }
 
 function calculatePosition() {
+  if (mobileEnabled.value) return;
   if (useAnchor.value) return;
   if (props.frame) {
     const rect = props.frame.getBoundingClientRect();
@@ -116,6 +123,15 @@ function calculatePosition() {
         break;
     }
 
+    const menuHeight = menuRect?.height ?? 80;
+    const requestedTop = positionStyle.top ? parseFloat(positionStyle.top)
+      : window.innerHeight - parseFloat(positionStyle.bottom ?? '0') - menuHeight;
+    positionStyle.top = `${Math.max(margin, Math.min(requestedTop, window.innerHeight - menuHeight - margin))}px`;
+    delete positionStyle.bottom;
+    if (positionStyle.right) {
+      positionStyle.left = clampedLeft(window.innerWidth - parseFloat(positionStyle.right) - menuWidth);
+      delete positionStyle.right;
+    }
     abilitiesPosition.value = positionStyle;
   }
 }
@@ -138,6 +154,7 @@ watch(
 );
 
 watch(showAbilities, (newValue) => {
+  if (mobileEnabled.value) { if (newValue) mobileCard?.open(); return }
   if (newValue) {
     nextTick(() => { calculatePosition(); verifyAnchorPlacement(); });
   }
@@ -161,9 +178,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <div v-if="mobileEnabled && abilities.length" class="mobile-inline-abilities">
+    <button v-if="!mobilePreview" class="mobile-ability-anchor" type="button" data-mobile-ability-available="true" :data-mobile-forced="mobileForced || undefined" aria-label="打开大图查看能力" @click.stop="mobileCard?.open()">⚡ 能力</button>
+    <div v-else class="mobile-preview-abilities">
+      <button v-if="playAction !== undefined" type="button" class="play-card-button" @click="chooseAbility(playAction)">{{ $t('label.play') }}</button>
+      <AbilityButton v-for="{index, contents} in abilities" :key="index" :ability="contents" :show-move="showMove" :host-has-swarm="hostHasSwarm" :game="game" @click="chooseAbility(index)" />
+    </div>
+  </div>
+  <Teleport v-else-if="!mobileEnabled" to="body">
     <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame] }">
-      <div class="abilities" :class="[positionClass, { anchored: supportsAnchor }]" :style="anchorStyle" ref="abilitiesRef" >
+      <div class="abilities" :class="[positionClass, { anchored: useAnchor }]" :style="anchorStyle" ref="abilitiesRef" >
         <button
           v-if="playAction !== undefined"
           class="play-card-button"
@@ -188,6 +212,9 @@ onUnmounted(() => {
 
 <style scoped>
 .abilities {
+  max-height: calc(100dvh - 16px);
+  max-width: calc(100vw - 16px);
+  overflow: auto;
   position: fixed;
   padding: min(3px, 1vw);
   background: rgba(0, 0, 0, 0.8);

@@ -191,8 +191,8 @@ async function sync(deck: Arkham.Deck) {
 }
 
 .new-deck-panel {
-  background: #111;
-  border: 1px solid #2a2a2a;
+  background: var(--box-background);
+  border: 1px solid var(--box-border);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;

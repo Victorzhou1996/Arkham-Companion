@@ -8,16 +8,17 @@
   <template v-else>
     <NavBar/>
     <main class="router-container">
-      <Suspense>
-        <router-view v-slot="{ Component }">
-          <transition name="fade">
+      <GameLoadStatus v-if="routeLoadFailed" failure="pageUnavailable" next-url="/" @retry="reloadPage" />
+      <router-view v-else v-slot="{ Component }">
+        <transition v-if="Component" name="fade" mode="out-in">
+          <Suspense :timeout="0">
             <component :is="Component" />
-          </transition>
-        </router-view>
-        <template #fallback>
-          Loading...
-        </template>
-      </Suspense>
+            <template #fallback>
+              <div role="status">{{ $t('gameLoad.loading') }}</div>
+            </template>
+          </Suspense>
+        </transition>
+      </router-view>
     </main>
     <ModalsContainer />
   </template>
@@ -30,6 +31,10 @@ import { ref, onMounted } from 'vue'
 import { useSiteSettingsStore } from '@/stores/site_settings'
 import { checkImageExists } from '@/arkham/helpers'
 import NavBar from '@/components/NavBar.vue'
+import GameLoadStatus from '@/arkham/components/GameLoadStatus.vue'
+import { routeLoadFailed } from '@/router/loadState'
+
+const reloadPage = () => window.location.reload()
 
 const settingsStore = useSiteSettingsStore()
 
@@ -49,4 +54,3 @@ const checkAvifSupport = (): Promise<boolean> => {
   })
 };
 </script>
-
