@@ -12,3 +12,7 @@ server/windows/support/*.bat text eol=crlf
 server/windows/start.sh text eol=lf
 server/linux/self-hosted/**/*.sh text eol=lf
 server/linux/self-hosted/*.sh text eol=lf
+
+# Precompressed release bytes must never undergo text newline conversion.
+*.gz binary
+*.br binary
