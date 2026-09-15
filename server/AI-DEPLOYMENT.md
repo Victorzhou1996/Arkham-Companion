@@ -1,5 +1,13 @@
 # Arkham Companion Server：AI 部署指南
 
+## 当前版本优先说明 · 2026-09-15
+
+当前默认产物为 `2026.09.15-online-undo`，前端 `VITE_ONLINE_MODE=true`，与 online 的最新修复版逐文件校验；不再是下文旧发布说明中的9月9日快照。先阅读 [RELEASE-20260915.md](RELEASE-20260915.md)，执行 `git lfs pull` 和 `python3 server/packaging/verify-server-release.py`，通过后才允许打包/部署。该验证器不改数据库或配置。
+
+普通独立服务器请用 `server/linux/self-hosted/` 的说明并以 false-mode 构建；不能把 online 预编译前端放进没有运营Sidecar的自托管包。按账号布局接口须保留自己的 `ARKHAM_LAYOUT_DB` 及精确代理路由。线上配置只在实例上保存，仓库参考模板不等于当前实例配置。
+
+当前 Linux 后端 SHA-256 已与在线运行文件核对为 `70ddafe1dc30f412ff75c1d7dbda52aca99efa1dcf8fbfa9754f466a41bb5993`，规则基线为9月13日；之后是前端/管理层修复。不要因为历史泛化说明而用未知工具链重新构建并替换已验证规则二进制。任何实际服务器更新仍须用户授权及停服/备份计划。
+
 这份文件是给 AI 编程助手或服务器运维助手使用的部署约束。用户可以把本文件链接连同服务器连接方式交给 AI，让 AI 先审计、再部署、最后给出可复核的报告。
 
 > 本指南只适用于本仓库的 `Server` 分支。不要把上游 `halogenandtoast/ArkhamHorror` 的安装脚本或镜像当成 Arkham Companion Server 成品。

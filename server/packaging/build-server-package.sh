@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+python3 "$ROOT_DIR/server/packaging/verify-server-release.py" --repo-root "$ROOT_DIR"
 RELEASE_DATE="${RELEASE_DATE:-$(date +%Y%m%d)}"
 RELEASE_NAME="Arkham-Horror-Server-Linux-amd64-${RELEASE_DATE}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-$ROOT_DIR/releases}"
@@ -15,11 +16,11 @@ fi
 
 mkdir -p "$STAGING_DIR" "$OUTPUT_ROOT"
 rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/release/" "$STAGING_DIR/runtime/"
-rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/sidecar/" "$STAGING_DIR/sidecar/"
+rsync -a --exclude '.DS_Store' --exclude '__pycache__/' --exclude '*.pyc' "$ROOT_DIR/server/sidecar/" "$STAGING_DIR/sidecar/"
 rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/deploy/" "$STAGING_DIR/deploy/"
-rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/linux/" "$STAGING_DIR/linux/"
+rsync -a --exclude '.DS_Store' --exclude '__pycache__/' --exclude '*.pyc' "$ROOT_DIR/server/linux/" "$STAGING_DIR/linux/"
 
-cp "$ROOT_DIR/server/RELEASE-20260825.md" "$STAGING_DIR/PACKAGE-README.md"
+cp "$ROOT_DIR/server/RELEASE-20260915.md" "$STAGING_DIR/PACKAGE-README.md"
 
 (
   cd "$STAGING_DIR"
