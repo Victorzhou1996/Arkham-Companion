@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { ComputedRef, computed, ref, watch } from 'vue'
 import { BookOpenIcon } from '@heroicons/vue/24/outline'
 import { Dropdown } from 'floating-vue'
@@ -445,6 +446,7 @@ const chooseFromStoryCollection = (choice: number) => {
 
 <template>
   <div class="act-container" :data-tabletop-label="tabletop.act">
+      <MobileCard>
     <h3 class="tabletop-card-heading"><BookOpenIcon aria-hidden="true" />{{ tabletop.act }}</h3>
     <div class="act-row">
       <div
@@ -603,6 +605,7 @@ const chooseFromStoryCollection = (choice: number) => {
         @choose="$emit('choose', $event)"
       />
     </div>
+      </MobileCard>
   </div>
 </template>
 

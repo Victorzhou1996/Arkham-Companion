@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed, ref } from 'vue'
 import { Game } from '@/arkham/types/Game'
 import { imgsrc } from '@/arkham/helpers'
@@ -278,6 +279,7 @@ async function debugAddCardToDeck(card: CardDef) {
 
 <template>
   <div class="encounter-deck" :data-tabletop-label="`${isSpectral ? tabletop.spectral : tabletop.encounter} ${props.spectral === undefined ? game.encounterDeckSize : props.spectral}`">
+      <MobileCard>
     <TabletopPileHeading :label="isSpectral ? tabletop.spectral : tabletop.encounter" :count="props.spectral === undefined ? game.encounterDeckSize : props.spectral" />
     <div v-if="debug.active" class="debug-buttons">
       <button @click="drawEncounterCard">{{ $t('encounterDeck.draw') }}</button>
@@ -356,6 +358,7 @@ async function debugAddCardToDeck(card: CardDef) {
         :src="investigatorPortrait"
       />
     </div>
+      </MobileCard>
   </div>
 </template>
 
@@ -463,7 +466,7 @@ async function debugAddCardToDeck(card: CardDef) {
 }
 
 .debug-add-card-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   color: #eee;
@@ -486,7 +489,7 @@ async function debugAddCardToDeck(card: CardDef) {
   }
 
   input {
-    background: #111827;
+    background: var(--surface-input);
     border: 1px solid #4b5563;
     border-radius: 4px;
     color: #eee;

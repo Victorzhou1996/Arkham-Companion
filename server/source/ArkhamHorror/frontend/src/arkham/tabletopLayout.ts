@@ -14,13 +14,13 @@ export function visibleActionCount(value: number, threshold = 6) {
   return { count, icons: count > threshold ? 1 : count, collapsed: count > threshold }
 }
 
-export function handLayout(count: number, availableWidth: number, cardWidth: number) {
+export function handLayout(count: number, availableWidth: number, cardWidth: number, minTouchStrip = 24) {
   const n = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0
   const width = Number.isFinite(cardWidth) ? Math.max(1, cardWidth) : 100
   const available = Number.isFinite(availableWidth) ? Math.max(0, availableWidth) : 0
   // Preserve a usable strip of every card. Very large hands scroll instead of
   // squeezing cards to invisible slivers or discarding any of them.
-  const minimumStep = Math.min(width, 24)
+  const minimumStep = Math.min(width, minTouchStrip)
   const step = n < 2 ? width + 6 : Math.max(minimumStep, Math.min(width + 6, (available - width) / (n - 1)))
   return { step, width: n === 0 ? 0 : width + (n - 1) * step, overlapping: step < width }
 }

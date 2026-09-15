@@ -46,9 +46,13 @@ export interface DbCardsState {
   dbCardTypedNameIndex: Map<string, ArkhamDBCard>
   lang: string
   loadingLang: string | null
+  loadedLang: string | null
 }
 
 let loadingPromise: Promise<void> | null = null
+// Failed lazy loads must not turn a render -> loading flag -> render cycle
+// into continuous requests. Keep retry bookkeeping outside reactive state.
+const failedUntil = new Map<string, number>()
 
 export const useDbCardStore = defineStore('dbCards', {
   state: (): DbCardsState =>
@@ -59,12 +63,13 @@ export const useDbCardStore = defineStore('dbCards', {
       dbCardTypedNameIndex: new Map(),
       lang: 'en',
       loadingLang: null,
+      loadedLang: null,
     }) as DbCardsState,
 
   actions: {
     getDbCard(code: string): ArkhamDBCard | null {
       if (this.dbCards.length < 1) {
-        void this.initDbCards()
+        void this.initDbCards().catch(() => {})
       }
 
       // ArkhamDB stores some split-card fronts with an "a" suffix, while the
@@ -75,7 +80,7 @@ export const useDbCardStore = defineStore('dbCards', {
     getCardName(cardTitle: string, typeCode: string = ''): string {
       if (this.dbCards.length < 1) {
         const language = localStorage.getItem('language') || 'en'
-        if (language !== 'en') void this.initDbCards()
+        if (language !== 'en') void this.initDbCards().catch(() => {})
       }
 
       const i = typeCode
@@ -86,11 +91,13 @@ export const useDbCardStore = defineStore('dbCards', {
     },
 
     async fetchDbCards(lang: string) {
-      const data = await fetch(`/cards/cards_${lang}.json`.replace(/^\//, '')).then(
+      const data = await fetch(`${import.meta.env.BASE_URL}cards/cards_${lang}.json`).then(
         async (cardResponse) => {
+          if (!cardResponse.ok) throw new Error(`Card names unavailable (${cardResponse.status})`)
           return await cardResponse.json()
         },
       )
+      if (!Array.isArray(data)) throw new Error('Invalid card-name data')
 
       if (this.lang !== lang) return
 
@@ -108,12 +115,15 @@ export const useDbCardStore = defineStore('dbCards', {
       this.dbCardsIndex = index
       this.dbCardNameIndex = nameIndex
       this.dbCardTypedNameIndex = typedNameIndex
+      this.loadedLang = lang
     },
 
     async initDbCards() {
       const language = (localStorage.getItem('language') || 'en').toLowerCase().split('-')[0]
 
-      if (this.lang === language && this.dbCards.length > 0) return
+      if (Date.now() < (failedUntil.get(language) ?? 0)) return
+
+      if (this.lang === language && (this.loadedLang === language || this.dbCards.length > 0)) return
       if (this.loadingLang === language && loadingPromise) return loadingPromise
 
       this.lang = language
@@ -125,6 +135,10 @@ export const useDbCardStore = defineStore('dbCards', {
 
       try {
         await loadingPromise
+        failedUntil.delete(language)
+      } catch (error) {
+        failedUntil.set(language, Date.now() + 30_000)
+        throw error
       } finally {
         if (this.loadingLang === language) {
           this.loadingLang = null

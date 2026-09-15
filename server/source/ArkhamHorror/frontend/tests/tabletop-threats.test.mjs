@@ -22,14 +22,14 @@ test('equipment spans both columns and threats occupy only the lower left',()=>{
   assert.match(css,/\.tabletop-equipment \{ grid-column: 1 \/ -1; grid-row: 1;/)
   const controls=read('arkham/components/TabletopLayoutControls.vue')
   assert.match(controls,/case 'threat':[^\n]*lowerTop.value \+ lowerHeight.value \* p.hand \/ 100/)
-  assert.match(controls,/case 'hand': return \{ left: `\$\{left\}px`/)
+  assert.match(controls,/case 'hand': return \{ left: `\$\{s.width \* p.investigator \/ 100\}px`/)
 })
 
-test('mobile threat wrapper is transparent; preview and keyboard handlers are desktop guarded',()=>{
+test('disabled threat wrapper is transparent; touch never uses the old first-tap preview',()=>{
   const source=read('arkham/components/AdaptiveHand.vue')
   const {descriptor}=parse(source)
   assert.match(source,/!props.desktopOnly \|\| desktop.value/)
-  assert.match(source,/if \(!enabled.value \|\| !overlapping.value/)
+  assert.match(source,/if \(touch.value \|\| !enabled.value \|\| !overlapping.value/)
   assert.match(source,/function onKey[\s\S]*?if \(!enabled.value\) return/)
   assert.match(source,/keyboardStops.forEach\(card => card.removeAttribute\('tabindex'\)\)/)
   const style=compileStyle({source:descriptor.styles[0].content,scoped:true,id:'data-v-test'})

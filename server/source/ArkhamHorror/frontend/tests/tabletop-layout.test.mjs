@@ -7,19 +7,29 @@ const source = readFileSync(new URL('../src/arkham/tabletopLayout.ts', import.me
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
 const { visibleActionCount, handLayout, scenarioFitScale, TABLETOP_MEDIA_QUERY } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`)
 
-test('tabletop CSS and component placement use a width-only breakpoint', () => {
+test('desktop baseline remains width-only; class-selected iPads are not excluded below 801px', () => {
   const css = readFileSync(new URL('../src/styles/tabletop.css', import.meta.url), 'utf8')
   assert.equal(TABLETOP_MEDIA_QUERY, '(min-width: 801px)')
-  assert.ok(css.includes(`@media ${TABLETOP_MEDIA_QUERY} {`))
+  assert.doesNotMatch(css, /@media \(min-width: 801px\)/)
+  assert.match(css, /#game.tabletop-game \.scenario/)
   assert.doesNotMatch(css, /@media[^\{]*orientation/)
 })
 
-test('interaction pulse keeps the live highlight color, geometry and reduced-motion fallback', () => {
+test('touch hands only overlap when needed and retain a 44px actionable strip', () => {
+  assert.deepEqual(handLayout(3,380,92,44), {step:98,width:288,overlapping:false})
+  assert.ok(handLayout(8,380,92,44).overlapping)
+  assert.ok(handLayout(30,380,92,44).step >= 44)
+})
+
+test('interaction pulse uses orange-red, bounded paint and reduced-motion fallback', () => {
   const css = readFileSync(new URL('../src/styles/tabletopInteraction.css', import.meta.url), 'utf8')
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/)
-  assert.match(css, /var\(--select\)/)
-  assert.match(css, /2\.6s ease-in-out infinite/)
-  assert.doesNotMatch(css, /(?:^|[;{])\s*(?:opacity|transform|width|height|pointer-events)\s*:/m)
+  assert.match(css, /--tabletop-action: #ff784f/)
+  assert.match(css, /outline: 4px solid var\(--tabletop-action\)/)
+  assert.match(css, /border-radius: 10px/)
+  assert.match(css, /2\.6s steps\(12\) 3/)
+  assert.doesNotMatch(css, /animation: tabletop-(?:action|token)-breathe[^;]*infinite/)
+  assert.doesNotMatch(css, /(?:^|[;{])\s*(?:transform|width|height)\s*:/m)
   assert.match(css, /\.card--flipping/)
   assert.match(css, /\.source-highlight/)
 })

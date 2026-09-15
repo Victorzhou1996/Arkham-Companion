@@ -244,6 +244,7 @@ const targetFromEvent = (e: Event): HTMLElement | null => {
 }
 
 const queueHover = (el: HTMLElement) => {
+  if (el.closest('#game.touch-game, .mobile-card-preview')) return
   hoverTimer = clearTimer(hoverTimer)
   const delay = el.dataset.delay ? parseInt(el.dataset.delay, 10) : 0
   hoverTimer = window.setTimeout(() => {
@@ -1814,7 +1815,7 @@ watchEffect(() => {
   margin: 8px 0 0;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #111827;
+  background: var(--surface-input);
   color: #fff7d6;
   font-size: 0.8rem;
   font-weight: 600;
@@ -1827,7 +1828,7 @@ watchEffect(() => {
   margin: 8px 0 0;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #111827;
+  background: var(--surface-input);
   color: #fff7d6;
   font-size: 0.8rem;
   font-weight: 600;

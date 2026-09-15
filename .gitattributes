@@ -4,3 +4,11 @@
 */bin/arkham-api filter=lfs diff=lfs merge=lfs -text
 mac/release/** filter=lfs diff=lfs merge=lfs -text
 server/release/bin/arkham-api filter=lfs diff=lfs merge=lfs -text
+
+# Preserve Windows launcher compatibility while keeping source diffs readable.
+server/windows/*.ps1 text eol=crlf
+server/windows/*.bat text eol=crlf
+server/windows/support/*.bat text eol=crlf
+server/windows/start.sh text eol=lf
+server/linux/self-hosted/**/*.sh text eol=lf
+server/linux/self-hosted/*.sh text eol=lf

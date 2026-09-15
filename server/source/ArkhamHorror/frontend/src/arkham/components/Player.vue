@@ -42,10 +42,17 @@ import { fullName } from '@/arkham/types/Name';
 import { isCthulhuBoardEnemy } from '@/arkham/components/TheDrownedCity/cthulhuBoard'
 import { storeToRefs } from 'pinia';
 import { useSettings } from '@/stores/settings';
+import { useMobileBoard } from '@/arkham/mobile/context';
+import MobilePlayerNav from '@/arkham/mobile/MobilePlayerNav.vue';
+import MobileCard from '@/arkham/mobile/MobileCard.vue';
+import MobilePlayerStatus from '@/arkham/mobile/MobilePlayerStatus.vue';
 import { useCardStore } from '@/stores/cards';
 import { getGameLocalStorageItem, setGameLocalStorageItem } from '@/arkham/localStorage';
 const { t } = useI18n();
 const tabletop = useTabletopLabels();
+const mobileBoard = useMobileBoard();
+const mobileEnabled = computed(() => mobileBoard?.enabled.value ?? false);
+const mobileHunchSlot = ref<HTMLElement | null>(null);
 
 interface RefWrapper<T> {
   ref: ComputedRef<T>
@@ -112,13 +119,13 @@ const hideWhenUsedCardCodes = computed(() =>
 
 const spentCardCodes = computed(() => new Set(props.investigator.usedAbilityCardCodes))
 
-const tuckInertCards = computed(() => settings.hideInertCards && !props.game.inSetup)
+const tuckInertCards = computed(() => !mobileEnabled.value && settings.hideInertCards && !props.game.inSetup)
 
 // Per-player overrides on top of the tags, dragged in and out of the stack and
 // remembered for this game only. `shown` exists so a tagged card can be dragged
 // back out and stay out.
-const hiddenKey = computed(() => `hiddenCards:${investigatorId.value}`)
-const shownKey = computed(() => `shownCards:${investigatorId.value}`)
+const hiddenKey = computed(() => `${mobileEnabled.value ? 'mobile:' : ''}hiddenCards:${investigatorId.value}`)
+const shownKey = computed(() => `${mobileEnabled.value ? 'mobile:' : ''}shownCards:${investigatorId.value}`)
 
 function loadIds(key: string): string[] {
   try {
@@ -918,7 +925,7 @@ const handAreaMarginBottom = ref(handCardExposedHeight_MIN);
 const handAreaPointerEvents = ref('none');
 
 onMounted(() => {
-  if (isMobile) {
+  if (isMobile.value && !mobileEnabled.value) {
     document.addEventListener('click',toggleHandAreaMarginBottom)
     const isMinimized_SkillTest = inject('isMinimized_SkillTest', ref(false))
     watch([() => props.game.skillTest, isMinimized_SkillTest], ([newSkillTest,isMinimized]) => {
@@ -937,7 +944,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  if (isMobile) {
+  if (isMobile.value && !mobileEnabled.value) {
     document.removeEventListener('click', toggleHandAreaMarginBottom)
   }
 });
@@ -965,6 +972,8 @@ function closeHand() {
 
 <template>
   <div class="player-cards">
+    <MobilePlayerStatus v-if="mobileEnabled" :investigator="investigator" :choices="choices" :player-id="playerId" @choose="$emit('choose', $event)" />
+    <MobilePlayerNav v-if="mobileEnabled" :hand="totalHandSize" :threats="threatCount" :owner="investigator.playerId" />
     <button class="in-play-toggle" @click="playAreaCollapsed = !playAreaCollapsed"></button>
     <div class="in-play-row">
       <transition name="grow">
@@ -1043,7 +1052,9 @@ function closeHand() {
 
             <template v-if="tarotCards.length > 0">
               <div v-for="tarotCard in tarotCards" :key="tarotCard.arcana" :data-index="tarotCard.arcana">
+                <MobileCard>
                 <img :src="imgsrc(`tarot/${tarotCardImage(tarotCard)}`)" class="card tarot-card" :class="{ [tarotCard.facing]: true, 'can-interact': tarotCardAbility(tarotCard) !== -1 }" @click="$emit('choose', tarotCardAbility(tarotCard))"/>
+                </MobileCard>
               </div>
             </template>
 
@@ -1237,6 +1248,7 @@ function closeHand() {
     />
 
     <div class="player">
+      <Teleport :to="mobileHunchSlot || 'body'" :disabled="!mobileEnabled || !mobileHunchSlot">
       <div v-if="hunchDeck" class="hunch-deck">
         <div class="top-of-deck">
           <HandCard
@@ -1257,6 +1269,7 @@ function closeHand() {
         </div>
         <button v-if="debug.active" @click="showHunchDeck">{{ $t('player.viewDeck') }}</button>
       </div>
+      </Teleport>
 
       <div class="investigator-and-deck">
         <Investigator
@@ -1275,6 +1288,7 @@ function closeHand() {
           :investigator="investigator"
           @choose="$emit('choose', $event)"
         />
+        <div v-if="mobileEnabled" ref="mobileHunchSlot" class="mobile-hunch-slot" />
       </div>
       <div v-if="!isMobile" class="hand hand-area">
         <h3 class="tabletop-zone-title"><HandRaisedIcon aria-hidden="true" />{{ tabletop.hand }} <span>{{totalHandSize}}/{{investigator.handSize}}</span></h3>
@@ -1508,7 +1522,7 @@ function closeHand() {
   height: 12px;
   align-items: center;
   justify-content: center;
-  background: #1e2235;
+  background: var(--box-background);
   border: none;
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.4);
   cursor: pointer;
@@ -2012,7 +2026,7 @@ function closeHand() {
 }
 
 .debug-add-card-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   color: #eee;
@@ -2035,7 +2049,7 @@ function closeHand() {
   }
 
   input {
-    background: #111827;
+    background: var(--surface-input);
     border: 1px solid #4b5563;
     border-radius: 4px;
     color: #eee;

@@ -14,6 +14,7 @@ import type { TarotCard } from '@/arkham/types/TarotCard';
 import { imgsrc, isTypingTarget } from '@/arkham/helpers';
 import { gameLocalStorageKey } from '@/arkham/localStorage';
 import { IsMobile } from '@/arkham/isMobile';
+import { useMobileBoard } from '@/arkham/mobile/context';
 import { useDbCardStore } from '@/stores/dbCards'
 import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
 
@@ -29,7 +30,8 @@ export interface Props {
 const props = defineProps<Props>()
 const tabletop = useTabletopLabels()
 
-const storageKey = computed(() => gameLocalStorageKey(props.game.id, 'selected-tab'))
+const mobileBoard = useMobileBoard()
+const storageKey = computed(() => gameLocalStorageKey(props.game.id, mobileBoard?.enabled.value ? 'mobile:selected-tab' : 'selected-tab'))
 const selectedTab = useStorage<string>(storageKey, props.playerId)
 const playerInfo = ref<HTMLElement | null>(null)
 
@@ -60,6 +62,7 @@ function tabClass(investigator: Investigator) {
       'tab--active-player': investigator.id === props.activePlayerId,
       'tab--lead-player': investigator.id === props.game.leadInvestigatorId,
       'tab--has-actions': pid !== selectedTab.value && hasChoices(pid),
+      'mobile-zone-action': !!mobileBoard?.enabled.value && pid !== selectedTab.value && (hasChoices(pid) || Object.values(mobileBoard.actions.value.players[pid] ?? {}).some(Boolean)),
       'glow-effect': investigator.id === 'c89001',
     },
     `tab--${investigatorClass}`,

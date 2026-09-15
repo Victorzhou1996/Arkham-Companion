@@ -19,3 +19,7 @@ node_modules/
 backend/**/.hie/
 frontend/dist/
 *.tmp
+
+# Python test caches are not release source.
+__pycache__/
+*.pyc

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed, ComputedRef } from 'vue';
 import { useDebug } from '@/arkham/debug';
 import type { Card } from '@/arkham/types/Card';
@@ -142,6 +143,7 @@ const deckLabel = computed(() => {
 
 <template>
   <div class="scenario-deck-area" :class="homebrewDisplay?.className">
+      <MobileCard>
     <div v-if="topOfDiscard" class="discard-card">
       <img :src="topOfDiscardImage ?? undefined" class="card" />
       <span class="deck-size">{{ discardPile!.length }}</span>
@@ -167,6 +169,7 @@ const deckLabel = computed(() => {
       />
     </div>
     <button v-if="debug.active" @click="showCards">{{ $t('scenarioDeck.showCards') }}</button>
+      </MobileCard>
   </div>
 </template>
 

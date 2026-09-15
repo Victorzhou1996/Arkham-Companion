@@ -1,36 +1,59 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watchEffect } from 'vue'
-import { useMediaQuery, useResizeObserver, useStorage } from '@vueuse/core'
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
+import { useMediaQuery, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { TABLETOP_MEDIA_QUERY } from '@/arkham/tabletopLayout'
-import { movePanel, normalizePanels, panelDefaults, panelLimits, persistentPanels, temporaryPileDefaults, type PanelKey, type PanelLayout } from '@/arkham/tabletopPanels'
+import { useMobileBoard } from '@/arkham/mobile/context'
+import { useDragHold } from '@/arkham/mobile/useDragHold'
+import { useAccountPanels } from '@/arkham/composables/useAccountPanels'
+import { collapsedLogWidth, logCollapsed, movePanel, normalizePanels, panelDefaults, panelLimits, persistentPanels, temporaryPileDefaults, type PanelKey, type PanelLayout } from '@/arkham/tabletopPanels'
 
-const desktop = useMediaQuery(TABLETOP_MEDIA_QUERY)
+const desktopWidth = useMediaQuery(TABLETOP_MEDIA_QUERY)
+const showLog = defineModel<boolean>('showLog', { default: true })
+const mobileBoard = useMobileBoard()
+const tablet = computed(() => !!mobileBoard?.tablet.value)
+const desktop = computed(() => desktopWidth.value || tablet.value)
+const dragHold = useDragHold()
 const { locale } = useI18n()
 const zh = computed(() => locale.value.toLowerCase().startsWith('zh'))
 const layer = ref<HTMLElement | null>(null)
 const root = computed(() => layer.value?.closest<HTMLElement>('#game') ?? null)
 const board = computed(() => layer.value?.parentElement ?? null)
-const saved = useStorage<Partial<PanelLayout>>('arkham-tabletop-panels-v1', persistentPanels(panelDefaults))
+const { saved, save, flush } = useAccountPanels()
 // Only these two separators are temporary. Ignore legacy saved pile splits.
 const temporaryPiles = ref({ ...temporaryPileDefaults })
 const size = ref({ width: 1, height: 1, phase: 36, tabs: 32 })
 const upperMax = computed(() => size.value.height <= 1 ? 76 : Math.max(42, Math.min(76, (size.value.height - size.value.tabs - 222) / size.value.height * 100)))
 const layout = computed(() => { const p = normalizePanels({ ...saved.value, ...temporaryPiles.value }); return { ...p, upper: Math.min(p.upper, upperMax.value) } })
+const logIsCollapsed = ref(false)
+watch(() => size.value.width * layout.value.log / 100, width => {
+  if (size.value.width > 1) {
+    logIsCollapsed.value = logCollapsed(width, logIsCollapsed.value)
+    if (logIsCollapsed.value) showLog.value = false
+  }
+}, { immediate: true })
+const logClosed = computed(() => logIsCollapsed.value || !showLog.value)
+const logWidth = computed(() => logClosed.value ? collapsedLogWidth : size.value.width * layout.value.log / 100)
+watch(showLog, visible => {
+  if (visible && logIsCollapsed.value && size.value.width > 1) setPanel('log', Math.max(panelDefaults.log, 190 / size.value.width * 100))
+})
 function setPanel(key: PanelKey, value: number) {
   const next = normalizePanels({ ...layout.value, [key]: value })
   if (key === 'piles' || key === 'pileRows') temporaryPiles.value = { ...temporaryPiles.value, [key]: next[key] }
-  else saved.value = persistentPanels(next)
+  else save({ [key]: next[key] })
+  if (key === 'log' && next.log * size.value.width / 100 >= 190) showLog.value = true
 }
 const dragging = ref<PanelKey | null>(null)
 let drag: { pointer: number; x: number; y: number; start: PanelLayout; span: number; target: HTMLElement } | null = null
 const names: Record<PanelKey, [string, string]> = {
-  left: ['左侧卡牌区 / 地图', 'Scenario cards / map'], right: ['地图 / 日志与牌堆', 'Map / log and piles'],
+  left: ['左侧卡牌区 / 地图', 'Scenario cards / map'], right: ['中间区域 / 四宫格牌堆', 'Player area / four piles'],
+  log: ['地图 / 战役日志', 'Map / campaign log'],
+  investigator: ['调查员 / 装备与手牌', 'Investigator / assets and hand'],
   upper: ['地图 / 调查员区域', 'Map / investigator area'], threat: ['威胁区 / 手牌', 'Threats / hand'],
   hand: ['装备 / 威胁区与手牌', 'Assets / threats and hand'], piles: ['个人牌堆 / 遭遇牌堆', 'Player / encounter piles'],
   pileRows: ['抽牌堆 / 弃牌堆', 'Draw / discard piles'],
 }
-const vertical = (key: PanelKey) => ['left', 'right', 'threat', 'piles'].includes(key)
+const vertical = (key: PanelKey) => ['left', 'investigator', 'right', 'log', 'threat', 'piles'].includes(key)
 const label = (key: PanelKey) => names[key][zh.value ? 0 : 1]
 function measure() {
   if (!board.value || !root.value) return
@@ -42,17 +65,19 @@ function measure() {
 useResizeObserver([board, root], measure)
 const lowerTop = computed(() => size.value.height * layout.value.upper / 100 + size.value.tabs + 2)
 const lowerHeight = computed(() => Math.max(1, size.value.height - lowerTop.value))
-const middleWidth = computed(() => size.value.width * (100 - layout.value.left - layout.value.right) / 100)
-const threatX = computed(() => size.value.width * layout.value.left / 100 + middleWidth.value * layout.value.threat / 100)
+const middleWidth = computed(() => size.value.width * (100 - layout.value.investigator - layout.value.right) / 100)
+const threatX = computed(() => size.value.width * layout.value.investigator / 100 + middleWidth.value * layout.value.threat / 100)
 function position(key: PanelKey) {
   const p = layout.value, s = size.value
   const left = s.width * p.left / 100, right = s.width * (100 - p.right) / 100
   switch (key) {
-    case 'left': return { left: `${left}px`, top: `${s.phase}px`, bottom: '0' }
-    case 'right': return { left: `${right}px`, top: '0', bottom: '0' }
+    case 'left': return { left: `${left}px`, top: `${s.phase}px`, height: `${Math.max(0, s.height * p.upper / 100 - s.phase)}px` }
+    case 'investigator': return { left: `${s.width * p.investigator / 100}px`, top: `${lowerTop.value}px`, bottom: '0' }
+    case 'right': return { left: `${right}px`, top: `${s.height * p.upper / 100}px`, bottom: '0' }
+    case 'log': return { left: `${s.width - logWidth.value}px`, top: '0', height: `${s.height * p.upper / 100}px` }
     case 'upper': return { top: `${s.height * p.upper / 100}px`, left: '0', right: '0' }
     case 'threat': return { left: `${threatX.value}px`, top: `${lowerTop.value + lowerHeight.value * p.hand / 100}px`, bottom: '0' }
-    case 'hand': return { left: `${left}px`, right: `${s.width - right}px`, top: `${lowerTop.value + lowerHeight.value * p.hand / 100}px` }
+    case 'hand': return { left: `${s.width * p.investigator / 100}px`, right: `${s.width - right}px`, top: `${lowerTop.value + lowerHeight.value * p.hand / 100}px` }
     case 'piles': return { left: `${right + (s.width - right) * p.piles / 100}px`, top: `${lowerTop.value}px`, bottom: '0' }
     case 'pileRows': return { left: `${right}px`, right: '0', top: `${lowerTop.value + lowerHeight.value * p.pileRows / 100}px` }
   }
@@ -60,53 +85,65 @@ function position(key: PanelKey) {
 watchEffect(() => {
   if (!root.value) return
   for (const [key, value] of Object.entries(layout.value)) root.value.style.setProperty(`--panel-${key}`, String(value))
+  root.value.style.setProperty('--tabletop-log-width', `${logWidth.value}px`)
+  root.value.classList.toggle('tabletop-log-collapsed', logClosed.value)
 })
 function start(event: PointerEvent, key: PanelKey) {
   if (event.button !== 0) return
-  measure()
   const target = event.currentTarget as HTMLElement
+  if (tablet.value && event.pointerType !== 'mouse') {
+    event.preventDefault()
+    dragHold.start(event, () => begin(event, key, target))
+  } else begin(event, key, target)
+}
+function begin(event: PointerEvent, key: PanelKey, target: HTMLElement) {
+  measure()
   const span = key === 'threat' ? middleWidth.value : key === 'piles' ? size.value.width * layout.value.right / 100
     : ['hand', 'pileRows'].includes(key) ? lowerHeight.value : vertical(key) ? size.value.width : size.value.height
-  drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY, start: layout.value, span: Math.max(1, span), target }
+  const start = key === 'log' && logClosed.value ? { ...layout.value, log: logWidth.value / size.value.width * 100 } : layout.value
+  drag = { pointer: event.pointerId, x: event.clientX, y: event.clientY, start, span: Math.max(1, span), target }
   dragging.value = key
-  target.setPointerCapture(event.pointerId)
+  if (event.isTrusted) target.setPointerCapture(event.pointerId)
   event.preventDefault()
 }
 function move(event: PointerEvent) {
   if (!drag || !dragging.value || event.pointerId !== drag.pointer) return
   const key = dragging.value
   const distance = vertical(key) ? event.clientX - drag.x : event.clientY - drag.y
-  setPanel(key, movePanel(drag.start, key, distance / drag.span * 100 * (key === 'right' ? -1 : 1))[key])
+  setPanel(key, movePanel(drag.start, key, distance / drag.span * 100 * (key === 'right' || key === 'log' ? -1 : 1))[key])
 }
 function end() {
+  dragHold.cancel()
   if (drag?.target.hasPointerCapture(drag.pointer)) drag.target.releasePointerCapture(drag.pointer)
   drag = null
   dragging.value = null
+  flush()
 }
 function keyboard(event: KeyboardEvent, key: PanelKey) {
   const positive = vertical(key) ? 'ArrowRight' : 'ArrowDown'
   const negative = vertical(key) ? 'ArrowLeft' : 'ArrowUp'
   if (event.key === 'Home') setPanel(key, panelDefaults[key])
   else if (event.key === positive || event.key === negative) setPanel(key, movePanel(layout.value, key,
-    (event.key === positive ? 1 : -1) * (event.shiftKey ? 5 : 1) * (key === 'right' ? -1 : 1))[key])
+    (event.key === positive ? 1 : -1) * (event.shiftKey ? 5 : 1) * (key === 'right' || key === 'log' ? -1 : 1))[key])
   else return
   event.preventDefault()
+  event.stopPropagation() // Unhandled keys (including U) belong to the game.
 }
 onBeforeUnmount(end)
 </script>
 
 <template>
-  <div ref="layer" class="tabletop-dividers" :class="{ 'tabletop-dividers--dragging': dragging }">
+  <div ref="layer" class="tabletop-dividers" :class="{ 'tabletop-dividers--dragging': dragging, 'tabletop-dividers--touch': tablet, 'tabletop-dividers--holding': dragHold.waiting.value }">
     <template v-if="desktop">
       <div v-for="(_, key) in panelDefaults" :key="key" role="separator" tabindex="0"
         class="tabletop-divider" :class="vertical(key) ? 'tabletop-divider--vertical' : 'tabletop-divider--horizontal'"
         :data-panel="key" :style="position(key)" :aria-label="label(key)"
         :aria-orientation="vertical(key) ? 'vertical' : 'horizontal'" :aria-valuenow="Math.round(layout[key])"
         :aria-valuemin="panelLimits[key][0]" :aria-valuemax="key === 'upper' ? Math.round(upperMax) : panelLimits[key][1]"
-        :title="`${label(key)} · ${zh ? '拖动调整；双击复位' : 'Drag to resize; double-click to reset'}`"
+        :title="`${label(key)} · ${tablet ? (zh ? '长按后拖动调整' : 'Hold then drag to resize') : (zh ? '拖动调整；双击复位' : 'Drag to resize; double-click to reset')}`"
         @pointerdown.stop="start($event, key)" @pointermove.stop="move" @pointerup.stop="end"
-        @pointercancel="end" @lostpointercapture="end" @keydown.stop="keyboard($event, key)"
-        @dblclick.stop="setPanel(key, panelDefaults[key])"><span /></div>
+        @pointercancel="end" @lostpointercapture="end" @keydown="keyboard($event, key)"
+        @dblclick.stop="setPanel(key, panelDefaults[key])"><span /><i class="tabletop-divider__grip" aria-hidden="true" /></div>
     </template>
   </div>
 </template>
@@ -122,5 +159,16 @@ onBeforeUnmount(end)
 .tabletop-divider:hover, .tabletop-divider:focus-visible { background: #e0ca8220; }
 .tabletop-divider:is(:hover, :focus-visible) span, .tabletop-dividers--dragging span { background: var(--select); }
 .tabletop-dividers--dragging { pointer-events: auto; }
+.tabletop-divider__grip { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); pointer-events: auto; }
+/* Two 6×12 right-isosceles triangles, with a 4px gap from the line.
+   Their transparent 44px hit box stays usable without a large visible pill. */
+.tabletop-divider__grip::before, .tabletop-divider__grip::after { content: ''; position: absolute; background: #c2ac73; transition: background .15s; }
+.tabletop-divider--vertical .tabletop-divider__grip::before { width: 6px; height: 12px; left: 11px; top: 16px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.tabletop-divider--vertical .tabletop-divider__grip::after { width: 6px; height: 12px; right: 11px; top: 16px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.tabletop-divider--horizontal .tabletop-divider__grip::before { width: 12px; height: 6px; top: 11px; left: 16px; clip-path: polygon(0 100%, 50% 0, 100% 100%); }
+.tabletop-divider--horizontal .tabletop-divider__grip::after { width: 12px; height: 6px; bottom: 11px; left: 16px; clip-path: polygon(0 0, 50% 100%, 100% 0); }
+.tabletop-divider:is(:hover, :focus-visible) .tabletop-divider__grip::before, .tabletop-divider:is(:hover, :focus-visible) .tabletop-divider__grip::after,
+.tabletop-dividers--dragging .tabletop-divider__grip::before, .tabletop-dividers--dragging .tabletop-divider__grip::after { background: #ffe4a0; }
+.tabletop-dividers--holding .tabletop-divider:active .tabletop-divider__grip { outline: 1px dotted #c2ac7380; border-radius: 50%; }
 :global(#game:has(.location-cards-container--fullscreen) .tabletop-dividers) { display: none; }
 </style>

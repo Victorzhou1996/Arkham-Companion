@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
+import { playerDeckChoice } from '@/arkham/playerDeckChoice'
 import { useDebug } from '@/arkham/debug'
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
 import * as ArkhamCard from '@/arkham/types/Card';
@@ -99,17 +101,7 @@ const topOfDeckAbilities = computed<AbilityMessage[]>(() => {
 })
 
 const drawCardsAction = computed(() => {
-  if(props.playerId !== props.investigator.playerId) {
-    return -1
-  }
-  return choices
-    .value
-    .findIndex((c) => {
-      if (c.tag === "ComponentLabel") {
-        return (c.component.tag == "InvestigatorDeckComponent")
-      }
-      return false
-    });
+  return playerDeckChoice(choices.value, props.playerId, props.investigator.playerId)
 })
 
 function isDiscardChoice(c: Message) {
@@ -299,6 +291,7 @@ watch(choices, async (newChoices) => {
     <button v-if="debug.active && discards.length > 0" class="view-discard-button" @click="debug.send(game.id, {tag: 'ShuffleDiscardBackIn', contents: investigatorId})">{{ $t('draw.shuffleBackIn') }}</button>
   </div>
   <div class="deck-container" :data-tabletop-label="`${tabletop.deck} ${investigator.deckSize}`">
+      <MobileCard>
     <TabletopPileHeading :label="tabletop.deck" :count="investigator.deckSize" />
     <div
       class="top-of-deck"
@@ -349,6 +342,7 @@ watch(choices, async (newChoices) => {
       <button v-if="canSelectDraw" @click="debug.send(game.id, {tag: 'SearchMessage', contents: {tag: 'Search_', contents: ['Looking', investigatorId, {tag: 'GameSource', contents: []}, { tag: 'InvestigatorTarget', contents: investigatorId }, [[{tag: 'FromDeck', contents: []}, 'ShuffleBackIn']], {tag: 'BasicCardMatch', contents: {tag: 'AnyCard', contents: []}}, { tag: 'DrawFound', contents: [investigatorId, 1]}]}})">{{ $t('draw.selectDraw') }}</button>
       <button @click="debug.send(game.id, {tag: 'ShuffleDeck', contents: {tag: 'InvestigatorDeck', contents: investigatorId}})">{{ $t('draw.shuffle') }}</button>
     </template>
+      </MobileCard>
   </div>
 </template>
 

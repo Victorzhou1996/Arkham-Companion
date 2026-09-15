@@ -61,7 +61,7 @@ const group = `bool-${Math.random().toString(36).slice(2, 9)}`
 
 .bool-toggle {
   align-self: flex-start;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 999px;
   display: inline-flex;
@@ -70,7 +70,7 @@ const group = `bool-${Math.random().toString(36).slice(2, 9)}`
 }
 
 .bool-thumb {
-  background: #374151;
+  background: var(--surface-hover);
   border-radius: 999px;
   bottom: 2px;
   left: 2px;

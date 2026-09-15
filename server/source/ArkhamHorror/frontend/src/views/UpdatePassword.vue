@@ -55,7 +55,7 @@ form {
 }
 
 section {
-  background-color: #15192C;
+  background-color: var(--box-background);
   border-radius: 3px;
   padding: 10px;
 }
@@ -68,7 +68,8 @@ input {
   outline: 0;
   border: 1px solid #000;
   padding: 15px;
-  background: #F2F2F2;
+  background: var(--surface-input);
+    color: var(--text);
   width: 100%;
   margin-bottom: 10px;
 }

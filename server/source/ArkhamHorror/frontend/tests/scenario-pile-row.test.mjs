@@ -7,7 +7,7 @@ test('special decks and victory display share one horizontal group without chang
   const source = readFileSync(new URL('../src/arkham/components/Scenario.vue', import.meta.url), 'utf8')
   const { descriptor, errors } = parse(source)
   assert.equal(errors.length, 0)
-  const groups = [...descriptor.template.content.matchAll(/<ScenarioPileRow>([\s\S]*?)<\/ScenarioPileRow>/g)]
+  const groups = [...descriptor.template.content.matchAll(/<ScenarioPileRow\b[^>]*>([\s\S]*?)<\/ScenarioPileRow>/g)]
   assert.equal(groups.length, 1)
   assert.match(groups[0][1], /<ScenarioDeck[\s\S]*?@choose="choose"[\s\S]*?@show="doShowCards"/)
   assert.match(groups[0][1], /<VictoryDisplay[^>]*@choose="choose"/)

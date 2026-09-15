@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { useSettings } from '@/stores/settings';
 import { storeToRefs } from 'pinia';
 import { onUnmounted, onMounted, computed, inject, ref, watch } from 'vue'
@@ -498,6 +499,7 @@ const spadeInjury = computed(() => {
     />
   </div>
   <div v-else class="player-container">
+      <MobileCard>
     <div class="player-area">
       <div class="player-card">
         <div class="stats">
@@ -586,6 +588,7 @@ const spadeInjury = computed(() => {
               />
             <button
             :class="{ active: endTurnAction !== -1 && investigator.remainingActions === 0 }"
+            data-mobile-direct
             :disabled="endTurnAction == -1"
             :data-game-actionable="endTurnAction !== -1 || undefined"
             @click="$emit('choose', endTurnAction)"
@@ -602,6 +605,7 @@ const spadeInjury = computed(() => {
                 :data-game-actionable="canSkipTriggers && !skipAllInProgress || undefined"
                 @click="skipTriggers"
                 class="skip-triggers-button"
+                data-mobile-direct
               >{{ isMobile ? t('skip') : $t('investigator.skipTriggers') }}</button>
               <button
                 v-if="showSkipAll"
@@ -657,6 +661,7 @@ const spadeInjury = computed(() => {
       </div>
       <button class="close button" @click="toggleShowBonded">{{$t('close')}}</button>
     </Draggable>
+      </MobileCard>
   </div>
 </template>
 

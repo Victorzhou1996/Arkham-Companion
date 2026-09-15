@@ -62,24 +62,30 @@
   --elder-thing: #2D1F25;
 
   --delete: #c13131;
-  --background: #2e3440;
-  --background-dark: #242831;
-  --background-mid: #515a68;
-  --background-light: #c9ced8;
-  --box-background: #353b49;
-  --box-border: #434c5e;
+  /* Shared game-app surfaces (including body-teleported dialogs). The separate
+     /build/ application does not import this stylesheet. */
+  --background: #0c211a;
+  --background-dark: #102b22;
+  --background-mid: #294b3d;
+  --background-light: #c5d1bd;
+  --box-background: #142f26;
+  --box-border: #aa945a66;
+  --surface-input: #091e17;
+  --surface-raised: #204334;
+  --surface-hover: #2e5641;
+  --app-background: linear-gradient(#04181055, #041610b0), url('/img/arkham/tabletop-felt-20260914-v2.png') center / 640px repeat;
 
-  --title: #cecece;
+  --title: #e6dab4;
   --green-title: #38615F;
-  --text: white;
-  --spooky-green: #879C5A;
+  --text: #d7dfce;
+  --spooky-green: #35674d;
   --spooky-green-dark: #3A5144;
 
-  --button: #555;
-  --button-highlight: #444;
+  --button: #294b3d;
+  --button-highlight: #35674d;
 
-  --button-1: #6E8640;
-  --button-1-highlight: #5a6e34;
+  --button-1: #35674d;
+  --button-1-highlight: #467e5d;
 
   --button-2: #532e61;
   --button-2-highlight: #4d2b61;

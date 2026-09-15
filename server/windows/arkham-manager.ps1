@@ -1,19 +1,60 @@
 ﻿param(
-    [switch]$SelfTest
+    [switch]$SelfTest,
+    [switch]$UiSmokeTest,
+    [switch]$ResolveWslDistro
 )
 
 $ErrorActionPreference = 'Stop'
+[Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RuntimeEnv = Join-Path $RootDir 'game\config\runtime.env'
+$StartupHelper = Join-Path $RootDir 'support\Start-ArkhamHorror.bat'
+$RuntimeEnv = Join-Path $RootDir 'config\runtime.env'
+$LegacyRuntimeEnv = Join-Path $RootDir 'game\config\runtime.env'
 $PortFile = Join-Path $RootDir 'game\config\ports.env'
 $LanInfoFile = Join-Path $RootDir 'game\config\lan.env'
 $LanHelper = Join-Path $RootDir 'Configure-ArkhamHorror-LAN.ps1'
+$SaveHistoryViewer = Join-Path $RootDir 'game\tools\save_history_viewer.py'
 $script:ResolvedWslDistro = $null
+
+function Get-RegisteredWslDistroNames {
+    $rawNames = @(& wsl.exe --list --quiet 2>$null)
+    if ($LASTEXITCODE -ne 0) {
+        return @()
+    }
+
+    $result = New-Object System.Collections.Generic.List[string]
+    foreach ($rawName in $rawNames) {
+        # Windows PowerShell 5.1 may expose wsl.exe UTF-16 output with NUL
+        # characters. Strip them before comparing or reusing a distro name.
+        $cleanText = ([string]$rawName).Replace([string][char]0, '')
+        foreach ($line in ($cleanText -split "`r?`n")) {
+            $name = $line.Trim()
+            if (-not [string]::IsNullOrWhiteSpace($name) -and -not $result.Contains($name)) {
+                $result.Add($name)
+            }
+        }
+    }
+    return @($result)
+}
+
+function Test-ArkhamWslDistro([string]$Name) {
+    if ([string]::IsNullOrWhiteSpace($Name) -or $Name -match '^(docker-desktop|docker-desktop-data)$') {
+        return $false
+    }
+
+    # The game requires bash. A fresh compatible distro must also be able to
+    # create the non-root arkham account; an already prepared distro may have
+    # that account even when useradd is not on the default PATH.
+    & wsl.exe -d $Name -u root -- sh -lc 'command -v bash >/dev/null 2>&1 && (id arkham >/dev/null 2>&1 || command -v useradd >/dev/null 2>&1)' *> $null
+    return ($LASTEXITCODE -eq 0)
+}
 
 function Show-Info {
     param(
@@ -22,6 +63,7 @@ function Show-Info {
         [System.Windows.Forms.IWin32Window]$Owner = $null
     )
 
+    $Message = Remove-TerminalControlSequences $Message
     if ($null -ne $Owner) {
         [System.Windows.Forms.MessageBox]::Show(
             $Owner,
@@ -48,6 +90,10 @@ function Show-ErrorDialog {
         [System.Windows.Forms.IWin32Window]$Owner = $null
     )
 
+    $Message = Remove-TerminalControlSequences $Message
+    if ([string]::IsNullOrWhiteSpace($Message)) {
+        $Message = '操作失败，未收到详细错误。请使用管理工具导出诊断包以便排查。'
+    }
     if ($null -ne $Owner) {
         [System.Windows.Forms.MessageBox]::Show(
             $Owner,
@@ -83,35 +129,50 @@ function Get-WslDistroName {
     }
 
     $candidates = New-Object System.Collections.Generic.List[string]
-    if (Test-Path -LiteralPath $RuntimeEnv) {
-        foreach ($line in Get-Content -LiteralPath $RuntimeEnv -Encoding UTF8) {
+    $runtimeFiles = @($RuntimeEnv, $LegacyRuntimeEnv) | Select-Object -Unique
+    foreach ($runtimeFile in $runtimeFiles) {
+        if (-not (Test-Path -LiteralPath $runtimeFile)) {
+            continue
+        }
+        foreach ($line in Get-Content -LiteralPath $runtimeFile -Encoding UTF8) {
             if ($line -match '^ARKHAM_WSL_DISTRO=(.+)$') {
                 $configured = $matches[1].Trim()
-                if (-not [string]::IsNullOrWhiteSpace($configured)) {
+                if (-not [string]::IsNullOrWhiteSpace($configured) -and -not $candidates.Contains($configured)) {
                     $candidates.Add($configured)
                 }
             }
         }
     }
 
-    # Keep this order identical to Start-ArkhamHorror.bat. Otherwise a PC with
-    # multiple Ubuntu distributions can start the game in one distro while the
-    # manager edits an unrelated database in another.
-    foreach ($candidate in @('Ubuntu', 'Ubuntu-24.04', 'Ubuntu-22.04', 'Ubuntu-20.04', 'Ubuntu-18.04')) {
+    # Prefer known names, then discover renamed/imported distributions. WSL
+    # abstracts the VHDX storage drive once a distro is registered, so a distro
+    # moved from C: to another drive must be selected by its registered name.
+    foreach ($candidate in @('ArkhamRuntime', 'Ubuntu-24.04', 'Ubuntu', 'Ubuntu-22.04', 'Ubuntu-20.04', 'Ubuntu-18.04')) {
+        if (-not $candidates.Contains($candidate)) {
+            $candidates.Add($candidate)
+        }
+    }
+
+    $registered = @(Get-RegisteredWslDistroNames)
+    foreach ($candidate in @($registered | Where-Object { $_ -match '(?i)(arkham|ubuntu)' })) {
+        if (-not $candidates.Contains($candidate)) {
+            $candidates.Add($candidate)
+        }
+    }
+    foreach ($candidate in $registered) {
         if (-not $candidates.Contains($candidate)) {
             $candidates.Add($candidate)
         }
     }
 
     foreach ($candidate in $candidates) {
-        & wsl.exe -d $candidate -- echo ok *> $null
-        if ($LASTEXITCODE -eq 0) {
+        if (Test-ArkhamWslDistro $candidate) {
             $script:ResolvedWslDistro = $candidate
             return $candidate
         }
     }
 
-    throw '未检测到可用的 WSL 运行时，请先运行 Start-ArkhamHorror.bat 完成环境准备。'
+    throw '未检测到可用的 WSL 运行时。请在管理工具中点击“启动服务”检查环境。C 盘完全占满也会导致已有 WSL 无法启动；请检查或修复 WSL／Ubuntu 后重试。'
 }
 
 function Ensure-WslEnvironment {
@@ -121,7 +182,7 @@ function Ensure-WslEnvironment {
 
     & wsl.exe -d $distro -- echo ok *> $null
     if ($LASTEXITCODE -ne 0) {
-        throw "$distro 不可用，请先运行 Start-ArkhamHorror.bat 完成环境准备。"
+        throw "$distro 不可用，请在管理工具中点击启动服务检查环境。"
     }
 
     & wsl.exe -d $distro -u root -- id arkham *> $null
@@ -146,6 +207,34 @@ function Convert-ToWslPath([string]$WindowsPath) {
     }
 
     return "/mnt/$drive/$rest"
+}
+
+function Remove-TerminalControlSequences([string]$Text) {
+    if ([string]::IsNullOrEmpty($Text)) {
+        return ''
+    }
+
+    # WSL UTF-16 output can contain NULs when decoded by Windows PowerShell.
+    # WinForms stops at the first NUL, turning "w\0s\0l\0" into just "w".
+    $Text = $Text.Replace([string][char]0, '')
+    # start.sh uses ANSI SGR sequences for colours and bold text in a terminal.
+    # WinForms message boxes cannot interpret them and render the ESC byte as a
+    # square followed by text such as [0;32m. Remove CSI and OSC sequences before
+    # putting command output into a Windows control or diagnostic text file.
+    return [regex]::Replace(
+        $Text,
+        '\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))',
+        ''
+    )
+}
+
+function Convert-FromWslPath([string]$WslPath) {
+    $distro = Get-WslDistroName
+    $converted = & wsl.exe -d $distro -u arkham -- wslpath -w -- $WslPath 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($converted | Out-String))) {
+        throw "无法转换 WSL 路径到 Windows: $WslPath"
+    }
+    return (($converted | Select-Object -First 1) -as [string]).Trim()
 }
 
 function Quote-BashArg([string]$Value) {
@@ -702,6 +791,46 @@ function Import-SqlDialog([System.Windows.Forms.Form]$Owner) {
     Invoke-StartShWithStatusDialog -Owner $Owner -Title '导入 SQL 存档' -InitialMessage '正在导入 SQL 存档并重建数据库，请稍候...' -Arguments @('--import-sql', (Convert-ToWslPath $dialog.FileName)) -SuccessMessage "SQL 存档导入完成。`r`n`r`n详细日志：$RootDir\game\data\import-sql.log"
 }
 
+function Show-SaveHistory([System.Windows.Forms.Form]$Owner) {
+    if (-not (Test-Path -LiteralPath $SaveHistoryViewer -PathType Leaf)) {
+        throw "存档操作记录查看器不存在：$SaveHistoryViewer"
+    }
+
+    $dialog = New-Object System.Windows.Forms.OpenFileDialog
+    $dialog.Title = '选择 Arkham JSON 存档'
+    $dialog.Filter = 'Arkham JSON 存档 (*.json;*.json.gz;*.gz)|*.json;*.json.gz;*.gz|所有文件 (*.*)|*.*'
+    $dialog.Multiselect = $false
+    $dialog.CheckFileExists = $true
+
+    if ($dialog.ShowDialog($Owner) -ne [System.Windows.Forms.DialogResult]::OK) {
+        return
+    }
+
+    Invoke-UiTask -Owner $Owner -Action {
+        Ensure-WslEnvironment
+        $distro = Get-WslDistroName
+        $viewerPath = Convert-ToWslPath $SaveHistoryViewer
+        $savePath = Convert-ToWslPath $dialog.FileName
+        $runtimePath = Convert-ToWslPath (Join-Path $RootDir 'game')
+        $command = @(
+            'python3',
+            (Quote-BashArg $viewerPath),
+            (Quote-BashArg $savePath),
+            (Quote-BashArg $runtimePath)
+        ) -join ' '
+        $output = & wsl.exe -d $distro -u arkham -- bash -lc $command 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw (($output | Out-String).Trim())
+        }
+        $generatedPath = (($output | Select-Object -Last 1) -as [string]).Trim()
+        $windowsPath = Convert-FromWslPath $generatedPath
+        if (-not (Test-Path -LiteralPath $windowsPath -PathType Leaf)) {
+            throw "操作记录页面没有生成：$windowsPath"
+        }
+        Start-Process -FilePath $windowsPath
+    }
+}
+
 function Reset-SqlDialog([System.Windows.Forms.Form]$Owner) {
     $confirmation = Show-TextInputDialog -Title '清空当前 SQL 存档' -Prompt '此操作会清空账号、牌组和游戏。请输入 RESET 确认：'
     if ($confirmation -cne 'RESET') {
@@ -878,15 +1007,81 @@ function Read-LanInfo {
         ARKHAM_LAN_PORT = ''
         ARKHAM_WSL_IP = ''
         ARKHAM_LAN_MODE = ''
+        ARKHAM_LAN_ERROR = ''
+        ARKHAM_LAN_NOTE = ''
     }
     if (Test-Path -LiteralPath $LanInfoFile) {
         foreach ($line in Get-Content -LiteralPath $LanInfoFile -Encoding UTF8) {
-            if ($line -match '^(ARKHAM_LAN_READY|ARKHAM_LAN_IP|ARKHAM_LAN_PORT|ARKHAM_WSL_IP|ARKHAM_LAN_MODE)=(.*)$') {
+            if ($line -match '^(ARKHAM_LAN_READY|ARKHAM_LAN_IP|ARKHAM_LAN_PORT|ARKHAM_WSL_IP|ARKHAM_LAN_MODE|ARKHAM_LAN_ERROR|ARKHAM_LAN_NOTE)=(.*)$') {
                 $info[$matches[1]] = $matches[2].Trim()
             }
         }
     }
     return $info
+}
+
+function Get-WindowsLanIPv4 {
+    $excludedAdapters = 'Loopback|vEthernet|WSL|Hyper-V|VirtualBox|VMware|Docker|Tailscale|ZeroTier'
+    try {
+        $configs = @(Get-NetIPConfiguration -ErrorAction Stop |
+            Where-Object {
+                $_.NetAdapter.Status -eq 'Up' -and
+                $null -ne $_.IPv4DefaultGateway -and
+                $_.InterfaceAlias -notmatch $excludedAdapters
+            } |
+            Sort-Object { $_.NetIPv4Interface.InterfaceMetric })
+        foreach ($config in $configs) {
+            foreach ($entry in @($config.IPv4Address)) {
+                $address = [string]$entry.IPAddress
+                $parsed = $null
+                if ([Net.IPAddress]::TryParse($address, [ref]$parsed) -and
+                    $parsed.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetwork -and
+                    $address -ne '127.0.0.1' -and
+                    $address -notlike '169.254.*') {
+                    return $address
+                }
+            }
+        }
+    }
+    catch {
+        return $null
+    }
+    return $null
+}
+
+function Get-AccessAddressInfo {
+    $port = [string](Read-PortConfig).ARKHAM_PORT
+    $lan = Read-LanInfo
+    $isVerified = $lan.ARKHAM_LAN_READY -eq '1' -and
+        $lan.ARKHAM_LAN_IP -and
+        $lan.ARKHAM_LAN_PORT -eq $port
+    $lanIp = if ($isVerified) { $lan.ARKHAM_LAN_IP } else { Get-WindowsLanIPv4 }
+    $modeText = switch ($lan.ARKHAM_LAN_MODE) {
+        'nat' { 'WSL2 NAT 端口转发' }
+        'mirrored' { 'WSL 镜像网络' }
+        default { '网络模式未确认' }
+    }
+    $statusText = if ($isVerified) {
+        "局域网地址已验证 · $modeText"
+    }
+    elseif ($lanIp) {
+        '已检测到 Windows 局域网地址；尚未验证防火墙/转发，可点击“检查/修复局域网访问”。'
+    }
+    else {
+        '未检测到 Windows 局域网地址，请检查网络连接。'
+    }
+    if ($lan.ARKHAM_LAN_ERROR) {
+        $statusText += " 上次配置失败：$($lan.ARKHAM_LAN_ERROR)"
+    }
+    elseif ($lan.ARKHAM_LAN_NOTE) {
+        $statusText += " 提示：$($lan.ARKHAM_LAN_NOTE)"
+    }
+    return [pscustomobject]@{
+        LocalUrl = "http://127.0.0.1:$port"
+        LanUrl = if ($lanIp) { "http://${lanIp}:$port" } else { '未检测到局域网地址' }
+        LanVerified = $isVerified
+        Status = $statusText
+    }
 }
 
 function Get-CurrentWslIPv4 {
@@ -919,24 +1114,22 @@ function Repair-LanAccess {
     $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$LanHelper`" -Port $port -WslIp `"$wslIp`" -InfoFile `"$LanInfoFile`" -Elevated"
     $process = Start-Process -FilePath $powerShell -Verb RunAs -Wait -PassThru -ArgumentList $arguments
     if ($process.ExitCode -ne 0) {
-        throw "局域网配置失败，退出码：$($process.ExitCode)"
+        $failedInfo = Read-LanInfo
+        $detail = if ($failedInfo.ARKHAM_LAN_ERROR) { "：$($failedInfo.ARKHAM_LAN_ERROR)" } else { '' }
+        throw "局域网配置失败（退出码 $($process.ExitCode)）$detail"
     }
 }
 
 function Show-LanAccessDialog([System.Windows.Forms.Form]$Owner) {
     $info = Read-LanInfo
-    $port = (Read-PortConfig).ARKHAM_PORT
-    $status = if ($info.ARKHAM_LAN_READY -eq '1') { '已配置' } else { '尚未配置或需要刷新' }
+    $access = Get-AccessAddressInfo
+    $status = if ($access.LanVerified) { '已配置并验证' } elseif ($access.LanUrl.StartsWith('http://')) { '已检测地址，尚未验证配置' } else { '尚未配置或需要刷新' }
     $mode = switch ($info.ARKHAM_LAN_MODE) {
         'nat' { 'WSL2 NAT（Windows 端口转发）' }
         'mirrored' { 'WSL 镜像网络（直接访问）' }
         default { '未知' }
     }
-    $lanUrl = if ($info.ARKHAM_LAN_READY -eq '1' -and $info.ARKHAM_LAN_IP) {
-        "http://$($info.ARKHAM_LAN_IP):$port"
-    } else {
-        '配置完成后显示'
-    }
+    $lanUrl = $access.LanUrl
     $message = "状态：$status`r`n模式：$mode`r`nWSL 地址：$($info.ARKHAM_WSL_IP)`r`n局域网地址：$lanUrl`r`n`r`n是否立即重新检测并修复局域网访问？"
     if (-not (Confirm-Action $message '局域网访问')) {
         return
@@ -947,7 +1140,8 @@ function Show-LanAccessDialog([System.Windows.Forms.Form]$Owner) {
         if ($updated.ARKHAM_LAN_READY -ne '1') {
             throw '局域网脚本执行完成，但没有生成有效状态。'
         }
-        Show-Info -Owner $Owner -Message "局域网访问已配置：`r`nhttp://$($updated.ARKHAM_LAN_IP):$($updated.ARKHAM_LAN_PORT)`r`n`r`n若 WSL 地址为 172.x，Windows 会自动转发到该地址，不需要手工设置。"
+        $note = if ($updated.ARKHAM_LAN_NOTE) { "`r`n`r`n附加说明：$($updated.ARKHAM_LAN_NOTE)" } else { '' }
+        Show-Info -Owner $Owner -Message "局域网访问已配置：`r`nhttp://$($updated.ARKHAM_LAN_IP):$($updated.ARKHAM_LAN_PORT)`r`n`r`n若 WSL 地址为 172.x，Windows 会自动转发到该地址，不需要手工设置。$note"
     }
 }
 
@@ -957,8 +1151,8 @@ function Get-LocalWebUrl {
 }
 
 function Start-LocalServices([System.Windows.Forms.Form]$Owner) {
-    $launcher = Join-Path $RootDir 'Start-ArkhamHorror.bat'
-    if (-not (Test-Path -LiteralPath $launcher)) { throw '找不到 Start-ArkhamHorror.bat。' }
+    $launcher = $StartupHelper
+    if (-not (Test-Path -LiteralPath $launcher)) { throw '找不到 support\Start-ArkhamHorror.bat，请保持游戏文件夹完整。' }
     Start-Process -FilePath $launcher
     Show-Info -Owner $Owner -Message '启动窗口已经打开。请保持该窗口运行。'
 }
@@ -973,7 +1167,8 @@ function Stop-LocalServices([System.Windows.Forms.Form]$Owner) {
 function Restart-LocalServices([System.Windows.Forms.Form]$Owner) {
     Invoke-UiTask -Owner $Owner -Action {
         Invoke-StartSh -Arguments @('--stop')
-        $launcher = Join-Path $RootDir 'Start-ArkhamHorror.bat'
+        $launcher = $StartupHelper
+        if (-not (Test-Path -LiteralPath $launcher)) { throw '找不到 support\Start-ArkhamHorror.bat，请保持游戏文件夹完整。' }
         Start-Process -FilePath $launcher
         Show-Info -Owner $Owner -Message '旧服务已经停止，新的启动窗口已经打开。'
     }
@@ -982,7 +1177,7 @@ function Restart-LocalServices([System.Windows.Forms.Form]$Owner) {
 function Show-ServiceStatus([System.Windows.Forms.Form]$Owner) {
     Invoke-UiTask -Owner $Owner -Action {
         $result = Invoke-StartSh -Arguments @('--status') -CaptureOutput
-        $statusText = ($result.Output | Out-String).Trim()
+        $statusText = Remove-TerminalControlSequences (($result.Output | Out-String).Trim())
         $lan = Read-LanInfo
         $lanUrl = if ($lan.ARKHAM_LAN_READY -eq '1') { "http://$($lan.ARKHAM_LAN_IP):$($lan.ARKHAM_LAN_PORT)" } else { '未配置或未验证' }
         $packageInfo = Join-Path $RootDir 'PACKAGE-INFO.txt'
@@ -1022,7 +1217,8 @@ function Export-Diagnostics([System.Windows.Forms.Form]$Owner) {
         [System.IO.Directory]::CreateDirectory($tempDir) | Out-Null
         try {
             $status = Invoke-StartSh -Arguments @('--status') -CaptureOutput
-            [System.IO.File]::WriteAllText((Join-Path $tempDir 'service-status.txt'), (($status.Output | Out-String).Trim()), [System.Text.UTF8Encoding]::new($false))
+            $plainStatus = Remove-TerminalControlSequences (($status.Output | Out-String).Trim())
+            [System.IO.File]::WriteAllText((Join-Path $tempDir 'service-status.txt'), $plainStatus, [System.Text.UTF8Encoding]::new($false))
             $systemLines = @(
                 'Generated: ' + (Get-Date -Format o)
                 'Package: ' + (Split-Path -Leaf $RootDir)
@@ -1117,16 +1313,47 @@ function New-MainButton([string]$Text, [int]$X, [int]$Y, [scriptblock]$Action, [
     return $button
 }
 
+if ($ResolveWslDistro) {
+    Write-Output (Get-WslDistroName)
+    exit 0
+}
+
 if ($SelfTest) {
+    if (-not (Test-Path -LiteralPath $StartupHelper -PathType Leaf)) {
+        throw 'SelfTest 失败：缺少辅助启动脚本。'
+    }
     Ensure-WslEnvironment
     $converted = Convert-ToWslPath $RootDir
     if (-not $converted.StartsWith('/mnt/')) {
         throw 'SelfTest 失败：路径转换异常。'
     }
+    $roundTrip = Convert-FromWslPath $converted
+    if ([System.IO.Path]::GetFullPath($roundTrip).TrimEnd('\') -ne [System.IO.Path]::GetFullPath($RootDir).TrimEnd('\')) {
+        throw 'SelfTest 失败：WSL 到 Windows 的路径转换异常。'
+    }
     $helpResult = Invoke-StartSh -Arguments @('--help') -CaptureOutput
     if ($helpResult.ExitCode -ne 0 -or (($helpResult.Output | Out-String) -notmatch '--backup-save')) {
         throw 'SelfTest 失败：game/start.sh 缺少管理工具命令。'
     }
+    if (-not (Test-Path -LiteralPath $SaveHistoryViewer -PathType Leaf)) {
+        throw 'SelfTest 失败：缺少存档操作记录查看器。'
+    }
+    $viewerPath = Convert-ToWslPath $SaveHistoryViewer
+    $distro = Get-WslDistroName
+    $viewerOutput = & wsl.exe -d $distro -u arkham -- python3 $viewerPath --self-test 2>&1
+    if ($LASTEXITCODE -ne 0 -or (($viewerOutput | Out-String).Trim()) -ne 'OK') {
+        throw 'SelfTest 失败：存档操作记录查看器未通过测试。'
+    }
+    $addressInfo = Get-AccessAddressInfo
+    if ($addressInfo.LocalUrl -notmatch '^http://127\.0\.0\.1:\d+$') {
+        throw 'SelfTest 失败：本机访问地址格式不正确。'
+    }
+    $ansiSample = ([char]27).ToString() + '[1mService Status' + ([char]27).ToString() + '[0m'
+    if ((Remove-TerminalControlSequences $ansiSample) -ne 'Service Status') {
+        throw 'SelfTest 失败：终端控制符清理异常。'
+    }
+    Write-Output "local-url=$($addressInfo.LocalUrl)"
+    Write-Output "lan-url=$($addressInfo.LanUrl)"
     Write-Output 'selftest-ok'
     exit 0
 }
@@ -1137,7 +1364,7 @@ $mainForm.StartPosition = 'CenterScreen'
 $mainForm.FormBorderStyle = 'FixedDialog'
 $mainForm.MaximizeBox = $false
 $mainForm.MinimizeBox = $false
-$mainForm.ClientSize = New-Object System.Drawing.Size(804, 560)
+$mainForm.ClientSize = New-Object System.Drawing.Size(804, 708)
 
 $titleLabel = New-Object System.Windows.Forms.Label
 $titleLabel.Text = 'Arkham Horror LCG 管理工具'
@@ -1172,8 +1399,8 @@ $mainForm.Controls.Add((New-MainButton '重启服务' 18 200 { Restart-LocalServ
 $mainForm.Controls.Add((New-MainButton '查看版本和运行状态' 18 246 { Show-ServiceStatus $mainForm }))
 $mainForm.Controls.Add((New-MainButton '打开本地网页' 18 292 { Open-LocalWeb }))
 $mainForm.Controls.Add((New-MainButton '检查/修复白屏与前端资源' 18 338 { Repair-Frontend $mainForm }))
-$mainForm.Controls.Add((New-MainButton '检查/修复局域网访问' 18 384 { Show-LanAccessDialog $mainForm }))
-$mainForm.Controls.Add((New-MainButton '修改前端端口' 18 430 { Show-FrontendPortDialog $mainForm }))
+$mainForm.Controls.Add((New-MainButton '检查/修复局域网访问' 18 384 { Show-LanAccessDialog $mainForm; if ($script:RefreshAccessAddresses) { & $script:RefreshAccessAddresses } }))
+$mainForm.Controls.Add((New-MainButton '修改前端端口' 18 430 { Show-FrontendPortDialog $mainForm; if ($script:RefreshAccessAddresses) { & $script:RefreshAccessAddresses } }))
 $mainForm.Controls.Add((New-MainButton '导出诊断包' 18 476 { Export-Diagnostics $mainForm }))
 
 $mainForm.Controls.Add((New-MainButton '备份全部本地存档（tar.gz）' 410 108 { Backup-SaveDialog $mainForm }))
@@ -1182,14 +1409,128 @@ $mainForm.Controls.Add((New-MainButton '从其他文件恢复存档（tar.gz）'
 $mainForm.Controls.Add((New-MainButton '导入 SQL 存档' 410 246 { Import-SqlDialog $mainForm }))
 $mainForm.Controls.Add((New-MainButton '本地账号管理 / 重置密码' 410 292 { Show-AccountsDialog $mainForm }))
 $mainForm.Controls.Add((New-MainButton '清空当前 SQL 存档' 410 338 { Reset-SqlDialog $mainForm }))
+$mainForm.Controls.Add((New-MainButton '打开存档操作记录（JSON）' 410 384 { Show-SaveHistory $mainForm }))
+
+$addressGroup = New-Object System.Windows.Forms.GroupBox
+$addressGroup.Text = '访问地址（文本框可直接选中复制）'
+$addressGroup.Location = New-Object System.Drawing.Point(18, 526)
+$addressGroup.Size = New-Object System.Drawing.Size(768, 132)
+$mainForm.Controls.Add($addressGroup)
+
+$localAddressLabel = New-Object System.Windows.Forms.Label
+$localAddressLabel.Text = '本机地址'
+$localAddressLabel.AutoSize = $true
+$localAddressLabel.Location = New-Object System.Drawing.Point(14, 31)
+$addressGroup.Controls.Add($localAddressLabel)
+
+$localAddressBox = New-Object System.Windows.Forms.TextBox
+$localAddressBox.ReadOnly = $true
+$localAddressBox.BackColor = [System.Drawing.SystemColors]::Window
+$localAddressBox.Location = New-Object System.Drawing.Point(80, 27)
+$localAddressBox.Size = New-Object System.Drawing.Size(550, 24)
+$addressGroup.Controls.Add($localAddressBox)
+
+$copyLocalAddressButton = New-Object System.Windows.Forms.Button
+$copyLocalAddressButton.Text = '复制本机地址'
+$copyLocalAddressButton.Location = New-Object System.Drawing.Point(638, 25)
+$copyLocalAddressButton.Size = New-Object System.Drawing.Size(116, 28)
+$addressGroup.Controls.Add($copyLocalAddressButton)
+
+$lanAddressLabel = New-Object System.Windows.Forms.Label
+$lanAddressLabel.Text = '局域网地址'
+$lanAddressLabel.AutoSize = $true
+$lanAddressLabel.Location = New-Object System.Drawing.Point(14, 65)
+$addressGroup.Controls.Add($lanAddressLabel)
+
+$lanAddressBox = New-Object System.Windows.Forms.TextBox
+$lanAddressBox.ReadOnly = $true
+$lanAddressBox.BackColor = [System.Drawing.SystemColors]::Window
+$lanAddressBox.Location = New-Object System.Drawing.Point(80, 61)
+$lanAddressBox.Size = New-Object System.Drawing.Size(550, 24)
+$addressGroup.Controls.Add($lanAddressBox)
+
+$copyLanAddressButton = New-Object System.Windows.Forms.Button
+$copyLanAddressButton.Text = '复制局域网地址'
+$copyLanAddressButton.Location = New-Object System.Drawing.Point(638, 59)
+$copyLanAddressButton.Size = New-Object System.Drawing.Size(116, 28)
+$addressGroup.Controls.Add($copyLanAddressButton)
+
+$addressStatusLabel = New-Object System.Windows.Forms.Label
+$addressStatusLabel.AutoSize = $false
+$addressStatusLabel.Location = New-Object System.Drawing.Point(14, 99)
+$addressStatusLabel.Size = New-Object System.Drawing.Size(610, 22)
+$addressGroup.Controls.Add($addressStatusLabel)
+
+$refreshAddressButton = New-Object System.Windows.Forms.Button
+$refreshAddressButton.Text = '刷新地址'
+$refreshAddressButton.Location = New-Object System.Drawing.Point(638, 93)
+$refreshAddressButton.Size = New-Object System.Drawing.Size(116, 28)
+$addressGroup.Controls.Add($refreshAddressButton)
+
+$script:AddressLocalBox = $localAddressBox
+$script:AddressLanBox = $lanAddressBox
+$script:AddressStatusLabel = $addressStatusLabel
+$script:CopyLanAddressButton = $copyLanAddressButton
+$script:RefreshAccessAddresses = {
+    try {
+        $addressInfo = Get-AccessAddressInfo
+        $script:AddressLocalBox.Text = $addressInfo.LocalUrl
+        $script:AddressLanBox.Text = $addressInfo.LanUrl
+        $script:CopyLanAddressButton.Enabled = $addressInfo.LanUrl.StartsWith('http://')
+        $script:AddressStatusLabel.Text = $addressInfo.Status
+        $script:AddressStatusLabel.ForeColor = if ($addressInfo.LanVerified) {
+            [System.Drawing.Color]::FromArgb(46, 125, 50)
+        } else {
+            [System.Drawing.Color]::FromArgb(180, 100, 0)
+        }
+    }
+    catch {
+        $script:AddressLocalBox.Text = Get-LocalWebUrl
+        $script:AddressLanBox.Text = '检测失败'
+        $script:CopyLanAddressButton.Enabled = $false
+        $script:AddressStatusLabel.Text = $_.Exception.Message
+        $script:AddressStatusLabel.ForeColor = [System.Drawing.Color]::FromArgb(192, 0, 0)
+    }
+}
+
+$copyLocalAddressButton.Add_Click({
+    [System.Windows.Forms.Clipboard]::SetText($script:AddressLocalBox.Text)
+    $script:AddressStatusLabel.Text = '本机地址已复制到剪贴板。'
+})
+$copyLanAddressButton.Add_Click({
+    if ($script:AddressLanBox.Text.StartsWith('http://')) {
+        [System.Windows.Forms.Clipboard]::SetText($script:AddressLanBox.Text)
+        $script:AddressStatusLabel.Text = '局域网地址已复制到剪贴板。'
+    }
+})
+$refreshAddressButton.Add_Click({ & $script:RefreshAccessAddresses })
+& $script:RefreshAccessAddresses
 
 $closeButton = New-Object System.Windows.Forms.Button
 $closeButton.Text = '关闭'
-$closeButton.Location = New-Object System.Drawing.Point(710, 518)
+$closeButton.Location = New-Object System.Drawing.Point(710, 668)
 $closeButton.Size = New-Object System.Drawing.Size(76, 30)
 $closeButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
 $mainForm.Controls.Add($closeButton)
 $mainForm.CancelButton = $closeButton
+
+if ($UiSmokeTest) {
+    if (-not $localAddressBox.ReadOnly -or -not $lanAddressBox.ReadOnly) {
+        throw 'UI smoke test 失败：访问地址文本框必须为只读。'
+    }
+    if ($localAddressBox.Text -notmatch '^http://127\.0\.0\.1:\d+$') {
+        throw 'UI smoke test 失败：本机地址没有正确显示。'
+    }
+    if ($addressGroup.Bottom -gt $mainForm.ClientSize.Height -or $closeButton.Bottom -gt $mainForm.ClientSize.Height) {
+        throw 'UI smoke test 失败：窗口控件超出可见区域。'
+    }
+    Write-Output "ui-local-url=$($localAddressBox.Text)"
+    Write-Output "ui-lan-url=$($lanAddressBox.Text)"
+    Write-Output "ui-lan-copy-enabled=$($copyLanAddressButton.Enabled)"
+    Write-Output 'ui-smoke-ok'
+    $mainForm.Dispose()
+    exit 0
+}
 
 try {
     [void]$mainForm.ShowDialog()

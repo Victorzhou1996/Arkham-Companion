@@ -2,10 +2,13 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { handLayout, TABLETOP_MEDIA_QUERY } from '@/arkham/tabletopLayout'
+import { useMobileBoard } from '@/arkham/mobile/context'
 
 const props = defineProps<{ previewOnTap?: boolean; desktopOnly?: boolean }>()
 const desktop = useMediaQuery(TABLETOP_MEDIA_QUERY)
-const enabled = computed(() => !props.desktopOnly || desktop.value)
+const mobileBoard = useMobileBoard()
+const touch = computed(() => !!mobileBoard?.touchEnabled.value)
+const enabled = computed(() => touch.value || !props.desktopOnly || desktop.value)
 const root = ref<HTMLElement>()
 const step = ref(106)
 const measuredCardWidth = ref(100)
@@ -38,7 +41,7 @@ function measure() {
   }
   const width = first?.querySelector('img.card')?.getBoundingClientRect().width || first?.getBoundingClientRect().width || 100
   measuredCardWidth.value = width
-  const layout = handLayout(entries.length, Math.max(0, root.value.clientWidth - 16), width)
+  const layout = handLayout(entries.length, Math.max(0, root.value.clientWidth - 16), width, touch.value ? 44 : 24)
   step.value = layout.step
   contentWidth.value = layout.width
   overlapping.value = layout.overlapping
@@ -49,7 +52,7 @@ function measure() {
   entries.forEach(card => { if (!card.hasAttribute('tabindex')) { card.tabIndex = 0; keyboardStops.add(card) } })
 }
 function previewCard(event: MouseEvent) {
-  if (!enabled.value || !overlapping.value || event.detail === 0 || !(props.previewOnTap || pointerType === 'touch' || pointerType === 'pen')) return
+  if (touch.value || !enabled.value || !overlapping.value || event.detail === 0 || !(props.previewOnTap || pointerType === 'touch' || pointerType === 'pen')) return
   const card = cards().find(entry => entry.contains(event.target as Node))
   if (!card || card === selectedCard) return
   // The first tap on an overlapped strip only reveals it. A second tap reaches
@@ -87,7 +90,7 @@ watch(enabled, () => nextTick(measure))
 </script>
 
 <template>
-  <div ref="root" :class="{ 'adaptive-hand': enabled, 'adaptive-hand--disabled': !enabled, 'adaptive-hand--overlap': enabled && overlapping }"
+  <div ref="root" :class="{ 'adaptive-hand': enabled, 'adaptive-hand--disabled': !enabled, 'adaptive-hand--overlap': enabled && overlapping, 'adaptive-hand--touch': touch }"
     :style="{ '--hand-step': `${step}px`, '--hand-content-width': `${contentWidth}px`, '--hand-card-width': `${measuredCardWidth}px` }"
     @keydown="onKey" @pointerdown.capture="pointerType = $event.pointerType" @click.capture="previewCard">
     <slot />
@@ -109,5 +112,6 @@ watch(enabled, () => nextTick(measure))
 .adaptive-hand :deep(.adaptive-hand-row > :hover) { z-index: 101; }
 .adaptive-hand :deep(.adaptive-hand-row > :focus-visible) { outline: 2px solid #dbc582; outline-offset: 2px; }
 .adaptive-hand :deep(.ability-trigger-mode) { position: relative; z-index: 2; }
+.adaptive-hand--touch :deep(.adaptive-hand-row > :is(:hover, :focus-within)) { translate: none; filter: none; z-index: auto; }
 @media (prefers-reduced-motion: reduce) { .adaptive-hand :deep(.adaptive-hand-row > *) { transition: none; } }
 </style>

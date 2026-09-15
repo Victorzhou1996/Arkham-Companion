@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { useDbCardStore } from '@/stores/dbCards'
 import { chaosTokenImage, type ChaosToken } from '@/arkham/types/ChaosToken';
 import { useI18n } from 'vue-i18n';
@@ -905,7 +906,7 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
       </div>
       <template v-for="{choice, index} in filteredCards" :key="index">
         <CardImage v-if="choice.flippable" :card="flippableCard(choice.cardCode)" />
-        <img v-else class="card" :src="cardLabelImage(choice.cardCode)" @click="choose(index)" />
+        <MobileCard v-else><img class="card" :src="cardLabelImage(choice.cardCode)" @click="choose(index)" /></MobileCard>
       </template>
     </div>
 
@@ -930,7 +931,7 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
 
     <div class="intro-text" v-if="question && question.tag === QuestionType.READ && !suppressReadInSkillTest">
       <div v-if="readCards.length > 0" class="story-with-card">
-        <img :src="cardCodeImage(cardCode)" v-for="cardCode in readCards" :key="cardCode" class="card no-overlay" />
+        <MobileCard v-for="cardCode in readCards" :key="cardCode"><img :src="cardCodeImage(cardCode)" class="card no-overlay" /></MobileCard>
         <div>
           <FormattedEntry v-for="(paragraph, index) in question.flavorText.body" :key="index" :entry="paragraph" />
         </div>

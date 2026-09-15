@@ -1,26 +1,37 @@
-/* Homepage / sign-in only. Reuse the tabletop assets, without changing other
-   routes, investigator class colors, forms' behavior or game permissions. */
-#app:has(.tabletop-lobby, .tabletop-login) {
-  --background: #0c211a;
-  --background-dark: #102b22;
-  --box-background: #102a22e8;
-  --box-border: #aa945a66;
-  --title: #e6dab4;
-  --text: #c4cdbd;
-  --button-1: #35674d;
-  --spooky-green: #35674d;
+/* Common game-app chrome; /build/ is a separate document. Page-specific home
+   and sign-in decoration follows below. No animation or font overrides here. */
+body, #app {
   color: var(--text);
-  background: linear-gradient(#04181055, #041610b0), url('/img/arkham/tabletop-felt-20260914-v2.png') center / 640px repeat;
+  background: var(--app-background);
 }
-#app:has(.tabletop-lobby, .tabletop-login) #nav {
+#app #nav {
   background: linear-gradient(#183b2eee, #0b221bec);
   border-bottom: 3px double #ad965c88;
   box-shadow: 0 3px 18px #0005;
 }
-#app:has(.tabletop-lobby, .tabletop-login) #nav :is(a, .user-btn) { color: #d5c899; }
-#app:has(.tabletop-lobby, .tabletop-login) #nav :is(a, .user-btn):hover { color: #fff0c3; background: #294b37; }
-#app:has(.tabletop-lobby, .tabletop-login) footer { color: #a8b4a1; padding: 3px 8px; background: #091f19df; }
-#app:has(.tabletop-lobby, .tabletop-login) footer a { color: #cbbd90; }
+#app #nav :is(a, .user-btn) { color: #d5c899; }
+#app #nav :is(a, .user-btn):hover { color: #fff0c3; background: #294b37; }
+#app footer { color: #a8b4a1; padding: 3px 8px; background: #091f19df; }
+#app footer a { color: #cbbd90; }
+/* Registration and password forms use the same surface as sign-in. */
+#app .router-container > form:not(.tabletop-login) {
+  flex: 0 0 auto;
+  width: min(440px, calc(100vw - 32px));
+  max-width: 440px;
+  margin: clamp(32px, 9vh, 110px) auto 32px;
+  padding: 24px 20px;
+  color: var(--text);
+  background: linear-gradient(#14382ce8, #091f18ed);
+  border: 3px double #b19a6188;
+  border-radius: 6px;
+}
+#app .router-container > form:not(.tabletop-login) input {
+  color: var(--text);
+  background: var(--surface-input);
+  border: 1px solid #84967270;
+  border-radius: 3px;
+}
+#app .router-container > form i.secret { color: #cfba7d; }
 .tabletop-lobby { background: radial-gradient(ellipse at 50% 0, #43836a25, transparent 65%); padding-bottom: 32px; }
 .tabletop-lobby .home { padding-top: clamp(22px, 3vw, 44px); }
 .tabletop-lobby .main-header { padding: 0 0 14px; border-bottom: 3px double #b9a36a77; margin-bottom: 18px; }
