@@ -76,7 +76,8 @@ function statusTitle(status: InvestigatorStatus): string {
       :class="`response-status__item--${status.state}`"
       :title="statusTitle(status)"
     >
-      {{ investigatorName(status.investigator) }}
+      <span class="response-status__name">{{ investigatorName(status.investigator) }}</span>
+      <span v-if="status.state !== 'idle'" class="response-status__state">{{ $t(`investigator.responseStatus.${status.state}`) }}</span>
     </span>
   </section>
 </template>
@@ -126,6 +127,8 @@ function statusTitle(status: InvestigatorStatus): string {
 .response-status__item--idle {
   background: rgba(0, 0, 0, 0.28);
 }
+
+.response-status__state { display: none; }
 
 @media (max-width: 760px) {
   .response-status {

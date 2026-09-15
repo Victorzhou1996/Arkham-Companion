@@ -56,7 +56,7 @@ async function join() {
 #join-game {
   width: 100%;
   color: #FFF;
-  background-color: #15192C;
+  background-color: var(--box-background);
   padding: 10px;
   border-radius: 3px;
   button {
@@ -82,7 +82,8 @@ async function join() {
     outline: 0;
     border: 1px solid #000;
     padding: 15px;
-    background: #F2F2F2;
+    background: var(--surface-input);
+    color: var(--text);
     width: 100%;
     margin-bottom: 10px;
   }
@@ -90,7 +91,8 @@ async function join() {
     outline: 0;
     border: 1px solid #000;
     padding: 15px;
-    background: #F2F2F2;
+    background: var(--surface-input);
+    color: var(--text);
     width: 100%;
     margin-bottom: 10px;
     background-image:

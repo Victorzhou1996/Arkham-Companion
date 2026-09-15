@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed, ref, watch } from 'vue'
 import { Dropdown } from 'floating-vue'
 import { BugAntIcon } from '@heroicons/vue/20/solid'
@@ -362,6 +363,7 @@ function onDrop(event: DragEvent) {
 
 <template>
   <div class="enemy--outer" :class="{showAbilities, oversized}">
+      <MobileCard>
     <div class="enemy">
       <Story v-if="enemyStory && !flipping" :story="enemyStory" :game="game" :playerId="playerId" @choose="choose"/>
       <template v-else>
@@ -570,6 +572,7 @@ function onDrop(event: DragEvent) {
       </Dropdown>
     </div>
     <DebugEnemy v-if="debugging" :game="game" :enemy="enemy" :playerId="playerId" @close="debugging = false" />
+      </MobileCard>
   </div>
 </template>
 

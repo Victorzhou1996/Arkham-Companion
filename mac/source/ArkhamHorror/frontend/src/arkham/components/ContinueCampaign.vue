@@ -758,7 +758,7 @@ const setIcon = computed(() => {
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--background);
+  background: var(--app-background);
   color: #fff;
 
   h2 {

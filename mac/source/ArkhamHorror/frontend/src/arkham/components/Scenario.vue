@@ -1,5 +1,10 @@
 <script lang="ts" setup>
 import UpgradeDeck from '@/arkham/components/UpgradeDeck.vue';
+import TabletopPileHeading from '@/arkham/components/TabletopPileHeading.vue';
+import ScenarioCardFit from '@/arkham/components/ScenarioCardFit.vue';
+import ScenarioPileRow from '@/arkham/components/ScenarioPileRow.vue';
+import ScenarioReferenceCards from '@/arkham/components/ScenarioReferenceCards.vue';
+import { TABLETOP_MEDIA_QUERY } from '@/arkham/tabletopLayout';
 import { EyeIcon, QuestionMarkCircleIcon, ViewColumnsIcon, ArchiveBoxXMarkIcon, ArrowPathIcon, LockClosedIcon, LockOpenIcon, ArrowUturnLeftIcon, ArrowsPointingOutIcon, ArrowsPointingInIcon } from '@heroicons/vue/20/solid'
 import {
   watchEffect,
@@ -30,7 +35,7 @@ import { type Target } from '@/arkham/types/Target';
 import { Message, AbilityMessage, AbilityLabel } from '@/arkham/types/Message';
 import { MessageType } from '@/arkham/types/Message';
 import { waitForImagesToLoad, imgsrc, groupBy } from '@/arkham/helpers';
-import { gameLocalStorageKey, getGameLocalStorageItem, setGameLocalStorageItem } from '@/arkham/localStorage';
+import { gameLocalStorageKey as rawStorageKey, getGameLocalStorageItem as readStorage, setGameLocalStorageItem as writeStorage } from '@/arkham/localStorage';
 import { cardImage as cardCodeImage } from '@/arkham/cardImages';
 import { fullName } from '@/arkham/types/Name';
 import { useMenu } from '@/composable/menu';
@@ -77,6 +82,31 @@ import { useCardStore } from '@/stores/cards'
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { IsMobile } from '@/arkham/isMobile';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
+import { useMobileBoard } from '@/arkham/mobile/context';
+import { useMapViewport } from '@/arkham/composables/useMapViewport';
+import { useMobileMapMemory } from '@/arkham/mobile/useMobileMapMemory';
+import { mobileMapMemoryKey } from '@/arkham/mobile/mapCameraMemory';
+import MobileCard from '@/arkham/mobile/MobileCard.vue';
+import MobileMapFold from '@/arkham/mobile/MobileMapFold.vue';
+import MobileScenarioNav from '@/arkham/mobile/MobileScenarioNav.vue';
+import DeckCount from '@/arkham/components/DeckCount.vue';
+const tabletop = useTabletopLabels();
+const mobileBoard = useMobileBoard();
+const mobileEnabled = computed(() => mobileBoard?.enabled.value ?? false);
+// Layout preferences are presentation-specific; never overwrite desktop zoom.
+const storageSetting = (key: string) => mobileEnabled.value ? `mobile:${key}` : key;
+const gameLocalStorageKey = (id: string, key: string) => rawStorageKey(id, storageSetting(key));
+const getGameLocalStorageItem = (id: string, key: string) => readStorage(id, storageSetting(key));
+const setGameLocalStorageItem = (id: string, key: string, value: string) => writeStorage(id, storageSetting(key), value);
+const scenarioReferenceSlot = ref<HTMLElement | null>(null);
+const mobileEncounterSlot = ref<HTMLElement | null>(null);
+const tabletopDesktopQuery = window.matchMedia(TABLETOP_MEDIA_QUERY);
+const tabletopWidth = ref(tabletopDesktopQuery.matches);
+const tabletopDesktop = computed(() => (tabletopWidth.value || !!mobileBoard?.tablet.value) && !mobileEnabled.value);
+const updateTabletopDesktop = (event: MediaQueryListEvent) => { tabletopWidth.value = event.matches };
+onMounted(() => tabletopDesktopQuery.addEventListener('change', updateTabletopDesktop));
+onBeforeUnmount(() => tabletopDesktopQuery.removeEventListener('change', updateTabletopDesktop));
 const { t } = useI18n();
 
 // types
@@ -177,8 +207,10 @@ const rainOptions = {
   dropWidth: 0.8,
   fallSpeed: 0.6,
 }
-const { splitView } = storeToRefs(settingsStore)
-const { toggleSplitView, setGameId } = settingsStore
+const { splitView: desktopSplitView } = storeToRefs(settingsStore)
+const splitView = computed(() => !mobileEnabled.value && desktopSplitView.value)
+const toggleSplitView = () => { if (!mobileEnabled.value) settingsStore.toggleSplitView() }
+const { setGameId } = settingsStore
 const needsInit = ref(true)
 const showChaosBag = ref(false)
 const showOutOfPlay = ref(false)
@@ -713,6 +745,7 @@ function proxyClippedLocationClick(event: MouseEvent) {
 }
 
 function onStagePointerDown(event: PointerEvent) {
+  if (event.pointerType === 'touch') return // Dedicated one/two-finger map camera.
   if (event.button !== 0) return
   const scroller = scrollerRef.value
   if (!scroller) return
@@ -1340,6 +1373,24 @@ async function updateScrollMargins() {
     grid.style.marginBottom = ''
   }
 }
+
+const mapViewport = useMapViewport({
+  scroller: scrollerRef,
+  grid: () => (locationMap.value as any)?.$el ?? locationMap.value as HTMLElement | null,
+  zoom: locationsZoom,
+  updateMargins: updateScrollMargins,
+  manualZoom: () => setDoubleZoomActive(false),
+  cancelLocationDrag: cancelActiveDrag,
+  canPan: () => !locationsUnlocked.value,
+})
+useMobileMapMemory({
+  key: computed(() => mobileEnabled.value ? mobileMapMemoryKey(props.game.id, props.scenario.id) : null),
+  scroller: scrollerRef,
+  grid: () => (locationMap.value as any)?.$el ?? locationMap.value as HTMLElement | null,
+  zoom: locationsZoom,
+  snapshot: mapViewport.snapshot,
+  restore: mapViewport.restore,
+})
 
 const scenarioDeckStyles = computed(() => {
   const { decksLayout } = props.scenario
@@ -2172,7 +2223,7 @@ async function addChaosToken(face: any){
     <UpgradeDeck :game="game" :key="playerId" :playerId="playerId" @choose="choose" @update="update"/>
   </div>
   <div v-else-if="!gameOver" id="scenario" class="scenario" :data-scenario="scenario.id">
-    <div class="scenario-body" :class="{'split-view': splitView, 'scenario-body--notifier-overlays': showScenarioNotifierBar }">
+    <div class="scenario-body" :class="{'split-view': splitView && !mobileEnabled, 'scenario-body--notifier-overlays': showScenarioNotifierBar }">
       <Draggable v-if="showOutOfPlay || forcedShowOutOfPlay">
         <template #handle><header><h2>{{ $t('gameBar.outOfPlay') }}</h2></header></template>
         <div class="card-row-cards">
@@ -2306,8 +2357,11 @@ async function addChaosToken(face: any){
         @choose="choose"
         @close="hideCards"
       />
-      <div class="scenario-cards" :class="{ 'scenario-cards--has-badges': showScenarioNotifierBar }">
-        <div v-if="anyInTheShadowLocations || inTheShadows.length > 0 || inTheShadowsInvestigators.length > 0" class="in-the-shadows">
+      <div class="scenario-cards" :class="{ 'scenario-cards--has-badges': showScenarioNotifierBar }" :data-mobile-scenario-zone="mobileBoard?.scenarioZone.value">
+        <MobileScenarioNav v-if="mobileEnabled" />
+        <div v-if="mobileEnabled" ref="mobileEncounterSlot" class="mobile-encounter-slot" data-mobile-scenario-group="encounter" />
+        <ScenarioCardFit :enabled="tabletopDesktop">
+        <div v-if="anyInTheShadowLocations || inTheShadows.length > 0 || inTheShadowsInvestigators.length > 0" class="in-the-shadows" data-mobile-scenario-group="other">
           <template v-if="anyInTheShadowLocations">
             <Location
               v-if="inTheShadowLocations.left && game.locations[inTheShadowLocations.left]"
@@ -2355,7 +2409,7 @@ async function addChaosToken(face: any){
             :portrait="true"
           />
         </div>
-        <div v-if="tarotCards.length > 0" class="tarot-cards">
+        <div v-if="tarotCards.length > 0" class="tarot-cards" data-mobile-scenario-group="other">
           <div
             v-for="tarotCard in tarotCards"
             :key="tarotCard.arcana"
@@ -2366,7 +2420,7 @@ async function addChaosToken(face: any){
             <img :src="imgsrc(`tarot/${tarotCardImage(tarotCard)}`)" :class="tarotCard.facing" class="card tarot-card" />
           </div>
         </div>
-        <div v-if="topEnemyInVoid">
+        <div v-if="topEnemyInVoid" data-mobile-scenario-group="other">
           <EnemyView
             :enemy="topEnemyInVoid"
             :game="game"
@@ -2374,7 +2428,7 @@ async function addChaosToken(face: any){
             @choose="choose"
           />
         </div>
-        <div v-if="showCthulhuBoard" class="cthulhu-board-row">
+        <div v-if="showCthulhuBoard" class="cthulhu-board-row" data-mobile-scenario-group="other">
           <aside
             v-if="resolvingCthulhuDeckStory && resolvingCthulhuDeckStoryImage"
             class="resolving-cthulhu-card"
@@ -2394,6 +2448,7 @@ async function addChaosToken(face: any){
             @choose="choose"
           />
         </div>
+        <ScenarioPileRow data-mobile-scenario-group="other">
         <ScenarioDeck
           v-for="[,scenarioDeck] in scenarioDecks"
           :key="scenarioDeck[0]"
@@ -2405,107 +2460,10 @@ async function addChaosToken(face: any){
           @show="doShowCards"
         />
         <VictoryDisplay :game="game" :victoryDisplay="victoryDisplay" @choose="choose" :playerId="playerId" />
-        <div class="scenario-encounter-decks">
-          <div
-            v-if="topOfEncounterDiscard"
-            class="discard"
-            :class="{ 'discard--drop-target': encounterDiscardDraggedOver && encounterDiscardAccepts === true, 'discard--drop-refused': encounterDiscardDraggedOver && encounterDiscardAccepts === false }"
-            style="grid-area: encounterDiscard"
-            @drop="onDropEncounterDiscard($event)"
-            @dragover.prevent="onDragOverEncounterDiscard($event)"
-            @dragleave="onDragLeaveEncounterDiscard($event)"
-            @dragend="encounterDiscardDraggedOver = false"
-            @dragenter.prevent
-          >
-            <div class="discard-card">
-              <img
-                :src="topOfEncounterDiscard"
-                class="card"
-              />
-              <span class="deck-size">{{discards.length}}</span>
-            </div>
+        <div ref="scenarioReferenceSlot" class="scenario-reference-slot" />
+        </ScenarioPileRow>
 
-
-            <div v-if="discards.length > 0" class="buttons">
-              <CardsUnderIndicator
-                v-if="discards.length > 0"
-                v-model:shown="encounterDiscardPopoverShown"
-                class="view-discard-button"
-                :cards="discards"
-                :game="game"
-                :playerId="playerId"
-                :label="t('scenario.discards')"
-                :isDiscards="true"
-                :highlighted="encounterDiscardCardsAction"
-                :fullWidth="true"
-                @choose="choose"
-              />
-              <template v-if="debug.active">
-                <button @click="debug.send(game.id, {tag: 'ShuffleEncounterDiscardBackIn'})">{{ $t('scenarioComponent.shuffleBackIn') }}</button>
-              </template>
-            </div>
-          </div>
-          <!-- An empty discard still has to be a drop target, or there is nothing
-               to drop the first card onto. -->
-          <div
-            v-else-if="props.scenario.hasEncounterDeck && !hideEncounterDeck"
-            class="encounter-discard-placeholder"
-            :class="{ 'discard--drop-target': encounterDiscardDraggedOver && encounterDiscardAccepts === true, 'discard--drop-refused': encounterDiscardDraggedOver && encounterDiscardAccepts === false }"
-            style="grid-area: encounterDiscard"
-            aria-hidden="true"
-            @drop="onDropEncounterDiscard($event)"
-            @dragover.prevent="onDragOverEncounterDiscard($event)"
-            @dragleave="onDragLeaveEncounterDiscard($event)"
-            @dragend="encounterDiscardDraggedOver = false"
-            @dragenter.prevent
-          ></div>
-
-          <EncounterDeck
-            :game="game"
-            :playerId="playerId"
-            @choose="choose"
-            style="grid-area: encounterDeck"
-            v-if="props.scenario.hasEncounterDeck && !hideEncounterDeck"
-          />
-
-          <div v-if="topOfSpectralDiscard" class="discard" style="grid-area: spectralDiscard">
-            <div class="discard-card">
-              <img
-                :src="topOfSpectralDiscard"
-                class="card"
-              />
-              <span class="deck-size">{{ spectralDiscards.length }}</span>
-            </div>
-
-            <div v-if="spectralDiscards.length > 0" class="buttons">
-              <CardsUnderIndicator
-                v-model:shown="spectralDiscardPopoverShown"
-                class="view-discard-button"
-                :cards="spectralDiscards"
-                :game="game"
-                :playerId="playerId"
-                :label="t('scenario.discards')"
-                :isDiscards="true"
-                :fullWidth="true"
-                @choose="choose"
-              />
-              <template v-if="debug.active">
-                <button @click="debug.send(game.id, {tag: 'ShuffleEncounterDiscardBackInByKey', contents: 'SpectralEncounterDeck'})">{{ $t('scenarioComponent.shuffleBackIn') }}</button>
-              </template>
-            </div>
-          </div>
-
-          <EncounterDeck
-            v-if="spectralEncounterDeck"
-            :spectral="spectralEncounterDeck.length"
-            :game="game"
-            :playerId="playerId"
-            @choose="choose"
-            style="grid-area: spectralDeck"
-          />
-        </div>
-
-        <div class="scenario-decks" :style="scenarioDeckStyles">
+        <div class="scenario-decks" :style="scenarioDeckStyles" data-mobile-scenario-group="scene">
           <TransitionGroup
             v-if="Object.values(game.agendas).length > 0"
             name="deck-advance"
@@ -2594,21 +2552,14 @@ async function addChaosToken(face: any){
           @choose="choose"
         />
 
-        <div class="scenario-guide">
+        <Teleport :to="scenarioReferenceSlot || 'body'" :disabled="!tabletopDesktop || !scenarioReferenceSlot">
+        <div class="scenario-guide" :class="{ 'scenario-guide--pile': tabletopDesktop }" data-mobile-scenario-group="reference" @dblclick.stop>
+          <MobileCard>
           <div class="scenario-guide-main">
             <div class="scenario-guide-card-wrapper">
               <div class="scenario-guide-card">
-                <img
-                  class="card"
-                  :src="scenarioGuide"
-                  :data-spent-keys="JSON.stringify(spentKeys)"
-                  :data-depth="currentDepth"
-                />
-                <img
-                  v-for="reference in additionalReferences"
-                  class="card"
-                  :src="reference"
-                />
+                <ScenarioReferenceCards :cards="[scenarioGuide, ...additionalReferences]" :enabled="tabletopDesktop"
+                  :spent-keys="JSON.stringify(spentKeys)" :depth="currentDepth" />
                 <AbilityButton
                   v-for="ability in abilities"
                   :key="ability.index"
@@ -2714,9 +2665,11 @@ async function addChaosToken(face: any){
             full-width
             @choose="choose"
           />
+          </MobileCard>
         </div>
+        </Teleport>
 
-        <div v-if="hollowed.length > 0" class="discard">
+        <div v-if="hollowed.length > 0" class="discard" data-mobile-scenario-group="other">
           <div class="discard-card">
             <CardView
               :game="game"
@@ -2820,6 +2773,7 @@ async function addChaosToken(face: any){
           class="scenario-balance-placeholder"
           aria-hidden="true"
         ></div>
+        </ScenarioCardFit>
       </div>
 
 
@@ -2838,23 +2792,28 @@ async function addChaosToken(face: any){
         }"
         @dblclick.passive="toggleZoom"
       >
+        <MobileMapFold v-if="mobileEnabled" edge="top" />
+        <MobileMapFold v-if="mobileEnabled" edge="bottom" />
         <!-- ponytail: in-board mirror of the player-zone zoom-control; duplicated markup
              beats prop-drilling ~10 handlers into a shared child. Keep the two in sync.
              Used for fullscreen (floating, top right) and for split view, where the
              player zone is too narrow for it and it docks to the bottom of the board
              instead. The player-zone copy hides itself in split view. -->
         <div
-          v-if="locationsFullscreen || splitView"
+          v-if="locationsFullscreen || splitView || tabletopDesktop || mobileEnabled"
           class="zoom-control"
           :class="locationsFullscreen ? 'zoom-control--fullscreen' : 'zoom-control--docked'"
           @dblclick.stop
         >
-          <button class="zoom-btn" @pointerdown.stop="startHold(decreaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">−</button>
-          <input v-model.number="locationsZoom" type="range" min="0.25" max="6" step="0.05" class="zoom-slider" />
-          <button class="zoom-btn" @pointerdown.stop="startHold(increaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">+</button>
+          <button class="zoom-btn" :aria-label="tabletop.zoomOut" @pointerdown.stop="startHold(decreaseZoom)" @pointerup="stopHold" @pointerleave="stopHold" @click.stop="($event.detail === 0) && decreaseZoom()">−</button>
+          <input v-model.number="locationsZoom" :aria-label="tabletop.zoom" type="range" min="0.25" max="6" step="0.05" class="zoom-slider" />
+          <button class="zoom-btn" :aria-label="tabletop.zoomIn" @pointerdown.stop="startHold(increaseZoom)" @pointerup="stopHold" @pointerleave="stopHold" @click.stop="($event.detail === 0) && increaseZoom()">+</button>
+          <button class="zoom-btn" aria-label="重置地图视野" title="重置地图视野（不移动地点）" @click.stop="mapViewport.resetView()">◎</button>
           <button
             class="zoom-btn"
             :class="{ 'zoom-btn--active': locationsUnlocked }"
+            :aria-label="locationsUnlocked ? tabletop.lock : tabletop.unlock"
+            :aria-pressed="locationsUnlocked"
             @click.stop="toggleLocationsUnlocked"
             v-tooltip="locationsUnlocked ? 'Lock locations' : 'Unlock locations to drag'"
           >
@@ -2862,16 +2821,18 @@ async function addChaosToken(face: any){
             <LockClosedIcon v-else class="zoom-btn__icon" />
           </button>
           <button
-            v-if="hasAnyOffset"
             class="zoom-btn"
+            :aria-label="tabletop.resetMap"
             @click.stop="resetLocationsLayout"
             v-tooltip="'Reset location positions'"
           >
             <ArrowUturnLeftIcon class="zoom-btn__icon" />
+            <span v-if="tabletopDesktop" class="tabletop-reset-label">{{tabletop.reset}}</span>
           </button>
           <button
             class="zoom-btn"
             :class="{ 'zoom-btn--active': locationsFullscreen }"
+            :aria-label="locationsFullscreen ? tabletop.collapse : tabletop.expand"
             @click.stop="locationsFullscreen = !locationsFullscreen"
             v-tooltip="locationsFullscreen ? 'Exit fullscreen locations (Esc)' : 'Expand locations to full screen'"
           >
@@ -3008,7 +2969,109 @@ async function addChaosToken(face: any){
         </div>
       </div>
       </RainOverlay>
+        <Teleport :to="mobileEncounterSlot || 'body'" :disabled="!mobileEnabled || !mobileEncounterSlot">
+        <div class="scenario-encounter-decks" :class="{ 'scenario-encounter-decks--spectral': spectralEncounterDeck }">
+          <div
+            v-if="topOfEncounterDiscard"
+            class="discard"
+            :class="{ 'discard--drop-target': encounterDiscardDraggedOver && encounterDiscardAccepts === true, 'discard--drop-refused': encounterDiscardDraggedOver && encounterDiscardAccepts === false }"
+            style="grid-area: encounterDiscard"
+            @drop="onDropEncounterDiscard($event)"
+            @dragover.prevent="onDragOverEncounterDiscard($event)"
+            @dragleave="onDragLeaveEncounterDiscard($event)"
+            @dragend="encounterDiscardDraggedOver = false"
+            @dragenter.prevent
+          >
+            <TabletopPileHeading :label="tabletop.discard" :count="discards.length" discard />
+            <div class="discard-card">
+              <img
+                :src="topOfEncounterDiscard"
+                class="card"
+              />
+              <DeckCount :count="discards.length" />
+            </div>
 
+
+            <div v-if="discards.length > 0" class="buttons">
+              <CardsUnderIndicator
+                v-if="discards.length > 0"
+                v-model:shown="encounterDiscardPopoverShown"
+                class="view-discard-button"
+                :cards="discards"
+                :game="game"
+                :playerId="playerId"
+                :label="t('scenario.discards')"
+                :isDiscards="true"
+                :highlighted="encounterDiscardCardsAction"
+                :fullWidth="true"
+                @choose="choose"
+              />
+              <template v-if="debug.active">
+                <button @click="debug.send(game.id, {tag: 'ShuffleEncounterDiscardBackIn'})">{{ $t('scenarioComponent.shuffleBackIn') }}</button>
+              </template>
+            </div>
+          </div>
+          <!-- An empty discard still has to be a drop target, or there is nothing
+               to drop the first card onto. -->
+          <div
+            v-else-if="props.scenario.hasEncounterDeck && !hideEncounterDeck"
+            class="encounter-discard-placeholder"
+            :class="{ 'discard--drop-target': encounterDiscardDraggedOver && encounterDiscardAccepts === true, 'discard--drop-refused': encounterDiscardDraggedOver && encounterDiscardAccepts === false }"
+            style="grid-area: encounterDiscard"
+            @drop="onDropEncounterDiscard($event)"
+            @dragover.prevent="onDragOverEncounterDiscard($event)"
+            @dragleave="onDragLeaveEncounterDiscard($event)"
+            @dragend="encounterDiscardDraggedOver = false"
+            @dragenter.prevent
+          ><TabletopPileHeading :label="tabletop.discard" :count="0" discard /></div>
+
+          <EncounterDeck
+            :game="game"
+            :playerId="playerId"
+            @choose="choose"
+            style="grid-area: encounterDeck"
+            v-if="props.scenario.hasEncounterDeck && !hideEncounterDeck"
+          />
+
+          <div v-if="topOfSpectralDiscard" class="discard" style="grid-area: spectralDiscard">
+            <TabletopPileHeading :label="`${tabletop.spectral} · ${tabletop.discard}`" :count="spectralDiscards.length" discard />
+            <div class="discard-card">
+              <img
+                :src="topOfSpectralDiscard"
+                class="card"
+              />
+              <DeckCount :count="spectralDiscards.length" />
+            </div>
+
+            <div v-if="spectralDiscards.length > 0" class="buttons">
+              <CardsUnderIndicator
+                v-model:shown="spectralDiscardPopoverShown"
+                class="view-discard-button"
+                :cards="spectralDiscards"
+                :game="game"
+                :playerId="playerId"
+                :label="t('scenario.discards')"
+                :isDiscards="true"
+                :fullWidth="true"
+                @choose="choose"
+              />
+              <template v-if="debug.active">
+                <button @click="debug.send(game.id, {tag: 'ShuffleEncounterDiscardBackInByKey', contents: 'SpectralEncounterDeck'})">{{ $t('scenarioComponent.shuffleBackIn') }}</button>
+              </template>
+            </div>
+          </div>
+
+          <EncounterDeck
+            v-if="spectralEncounterDeck"
+            :spectral="spectralEncounterDeck.length"
+            :game="game"
+            :playerId="playerId"
+            @choose="choose"
+            style="grid-area: spectralDeck"
+          />
+        </div>
+
+        </Teleport>
       <div id="player-zone" :class="{ 'player-zone--fullscreen': locationsFullscreen }">
         <PlayerTabs
           :game="game"
@@ -3019,7 +3082,7 @@ async function addChaosToken(face: any){
           :tarotCards="props.scenario.tarotCards"
           @choose="choose"
         >
-          <div v-if="!splitView" class="zoom-control">
+          <div v-if="!splitView && !mobileEnabled" class="zoom-control">
             <button class="zoom-btn" @pointerdown.stop="startHold(decreaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">−</button>
             <button class="zoom-btn" @pointerdown.stop="startHold(increaseZoom)" @pointerup="stopHold" @pointerleave="stopHold">+</button>
             <button
@@ -3352,7 +3415,9 @@ async function addChaosToken(face: any){
   min-height: 0;
   min-width: 0;
   overflow: auto;
-  touch-action: manipulation;
+  touch-action: none;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
   scrollbar-gutter: stable both-edges;
   scroll-padding: 30%;
   padding: 24px;
@@ -3418,6 +3483,12 @@ async function addChaosToken(face: any){
   overflow: hidden;
 }
 
+.map-camera-active .location-cards-stage {
+  padding: var(--map-gutter-y, 0px) var(--map-gutter-x, 0px);
+  box-sizing: content-box;
+}
+.map-camera-active .location-cards { transition: none; }
+
 .location-cards {
   display: grid;
   grid-area: 1 / 1;
@@ -3428,8 +3499,8 @@ async function addChaosToken(face: any){
 }
 
 .location-cards-container {
-  --hidden-location-action-glow: rgba(255, 0, 255, 0.32);
-  --hidden-location-action-soft: rgba(255, 0, 255, 0.12);
+  --hidden-location-action-glow: color-mix(in srgb, var(--select) 42%, transparent);
+  --hidden-location-action-soft: color-mix(in srgb, var(--select) 16%, transparent);
   --hidden-location-action-top: transparent;
   --hidden-location-action-right: transparent;
   --hidden-location-action-bottom: transparent;
@@ -3669,7 +3740,7 @@ async function addChaosToken(face: any){
   height: 100%;
   justify-content: space-around;
   color: #b8c1c6;
-  background: #484E51;
+  background: var(--surface-raised);
   text-transform: uppercase;
   font-family: Arial;
   .current {
@@ -3700,7 +3771,7 @@ async function addChaosToken(face: any){
     }
   }
   > div:nth-of-type(2n) {
-    background: #5a6062;
+    background: var(--surface-hover);
     &:hover {
       background: rgba(0, 0, 0, 0.5);
     }
@@ -3849,7 +3920,7 @@ async function addChaosToken(face: any){
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #1d2229;
+  background: var(--box-background);
   transition: left 0.15s ease;
 }
 
@@ -3912,7 +3983,7 @@ async function addChaosToken(face: any){
 }
 
 .reality-acid-light-switch--on .reality-acid-light-switch-track {
-  background: #263241;
+  background: var(--surface-raised);
 }
 
 .reality-acid-light-switch--on .reality-acid-light-switch-knob {
@@ -4470,7 +4541,7 @@ async function addChaosToken(face: any){
 #player-zone {
   display: flex;
   flex-direction: row;
-  background: #181c2a;
+  background: var(--box-background);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
   .player-info {

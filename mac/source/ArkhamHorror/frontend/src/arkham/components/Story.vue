@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed } from 'vue'
 import { Game } from '@/arkham/types/Game'
 import * as ArkhamGame from '@/arkham/types/Game'
@@ -115,6 +116,7 @@ const sealedChaosTokens = computed(() => props.story.sealedChaosTokens ?? [])
 
 <template>
   <div class="story">
+      <MobileCard>
     <div class="story-card">
       <div class="image-container">
         <img :src="displayedImage"
@@ -144,6 +146,7 @@ const sealedChaosTokens = computed(() => props.story.sealedChaosTokens ?? [])
     <div v-if="setAsideTokens.length > 0" class="infestation-tokens">
       <Token v-for="token in setAsideTokens" :key="token.id" :token="token" :playerId="playerId" :game="game" @choose="choose" />
     </div>
+      </MobileCard>
   </div>
 </template>
 

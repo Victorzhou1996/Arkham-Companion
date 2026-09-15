@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed, ref } from 'vue'
 import { Game } from '@/arkham/types/Game'
 import { imgsrc } from '@/arkham/helpers'
@@ -12,6 +13,10 @@ import type { CardDef } from '@/arkham/types/CardDef'
 import { fullName } from '@/arkham/types/Name'
 import { useCardStore } from '@/stores/cards'
 import * as DebugMove from '@/arkham/debugCardMove'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
+import DeckCount from '@/arkham/components/DeckCount.vue'
+import TabletopPileHeading from '@/arkham/components/TabletopPileHeading.vue'
+const tabletop = useTabletopLabels()
 
 export interface Props {
   game: Game
@@ -77,7 +82,7 @@ const investigatorPortrait = computed(() => {
 
 const deckLabel = computed(() => {
   if (isSpectral.value) {
-    return "Spectral"
+    return tabletop.value.spectral
   }
   return null
 })
@@ -273,7 +278,9 @@ async function debugAddCardToDeck(card: CardDef) {
 </script>
 
 <template>
-  <div class="encounter-deck">
+  <div class="encounter-deck" :data-tabletop-label="`${isSpectral ? tabletop.spectral : tabletop.encounter} ${props.spectral === undefined ? game.encounterDeckSize : props.spectral}`">
+      <MobileCard>
+    <TabletopPileHeading :label="isSpectral ? tabletop.spectral : tabletop.encounter" :count="props.spectral === undefined ? game.encounterDeckSize : props.spectral" />
     <div v-if="debug.active" class="debug-buttons">
       <button @click="drawEncounterCard">{{ $t('encounterDeck.draw') }}</button>
       <button
@@ -342,7 +349,7 @@ async function debugAddCardToDeck(card: CardDef) {
           @dragend="draggedOver = false"
           @dragenter.prevent
         />
-        <span class="deck-size">{{props.spectral === undefined ? game.encounterDeckSize : props.spectral}}</span>
+        <DeckCount :count="props.spectral === undefined ? game.encounterDeckSize : props.spectral" />
         <span v-if="deckLabel" class="deck-label">{{deckLabel}}</span>
       </div>
       <img
@@ -351,6 +358,7 @@ async function debugAddCardToDeck(card: CardDef) {
         :src="investigatorPortrait"
       />
     </div>
+      </MobileCard>
   </div>
 </template>
 
@@ -458,7 +466,7 @@ async function debugAddCardToDeck(card: CardDef) {
 }
 
 .debug-add-card-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   color: #eee;
@@ -481,7 +489,7 @@ async function debugAddCardToDeck(card: CardDef) {
   }
 
   input {
-    background: #111827;
+    background: var(--surface-input);
     border: 1px solid #4b5563;
     border-radius: 4px;
     color: #eee;

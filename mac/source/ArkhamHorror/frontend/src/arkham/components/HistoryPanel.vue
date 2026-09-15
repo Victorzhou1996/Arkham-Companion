@@ -581,7 +581,7 @@ function damagedFallbackText(view: DamagedTargetView): string {
 }
 
 .history-panel {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   padding: 1rem 1.25rem 1.25rem;
@@ -623,7 +623,7 @@ function damagedFallbackText(view: DamagedTargetView): string {
 }
 
 .scope-tab, .investigator-tab {
-  background: #232346;
+  background: var(--surface-raised);
   border: 1px solid var(--neutral-dark);
   color: #ccc;
   padding: 0.35rem 0.75rem;
@@ -633,7 +633,7 @@ function damagedFallbackText(view: DamagedTargetView): string {
 }
 
 .scope-tab--active {
-  background: #345;
+  background: var(--surface-hover);
   color: #fff;
   border-color: #67a;
 }
@@ -708,7 +708,7 @@ function damagedFallbackText(view: DamagedTargetView): string {
   height: 1.05rem;
   padding: 0 0.4rem;
   border-radius: 999px;
-  background: #2c2c52;
+  background: var(--surface-hover);
   color: #d8e8ff;
   font-size: 0.7rem;
   font-weight: 600;
@@ -739,7 +739,7 @@ function damagedFallbackText(view: DamagedTargetView): string {
 }
 
 .pills li, .chips li {
-  background: #232346;
+  background: var(--surface-raised);
   border: 1px solid var(--neutral-dark);
   border-radius: 999px;
   padding: 0.2rem 0.65rem;
@@ -750,7 +750,7 @@ function damagedFallbackText(view: DamagedTargetView): string {
 }
 
 .rows li {
-  background: #232346;
+  background: var(--surface-raised);
   border: 1px solid var(--neutral-dark);
   border-radius: 4px;
   padding: 0.2rem 0.5rem;
@@ -920,7 +920,7 @@ function damagedFallbackText(view: DamagedTargetView): string {
 }
 
 .chip {
-  background: #232346;
+  background: var(--surface-raised);
   border: 1px solid var(--neutral-dark);
   border-radius: 999px;
   padding: 0.2rem 0.65rem;

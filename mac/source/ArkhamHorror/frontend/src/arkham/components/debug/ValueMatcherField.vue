@@ -186,7 +186,7 @@ const removeBranch = (at: number) =>
  * that happen to touch. */
 .matcher {
   align-items: stretch;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   display: flex;
@@ -242,7 +242,7 @@ const removeBranch = (at: number) =>
 // Divides the test from what it tests against.
 .rule {
   align-self: center;
-  background: #374151;
+  background: var(--surface-hover);
   flex: none;
   height: 1.1rem;
   width: 1px;

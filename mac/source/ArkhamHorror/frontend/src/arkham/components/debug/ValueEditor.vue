@@ -662,7 +662,7 @@ const asComparison = computed(
 .field-body > .picked-row,
 .field-body > .picker > .picked-row {
   align-items: stretch;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   overflow: hidden;
@@ -698,7 +698,7 @@ const asComparison = computed(
   position: relative;
 
   input {
-    background: #0b1220;
+    background: var(--surface-input);
     border: 1px solid #14b8a6;
     border-radius: 4px;
     color: #eee;
@@ -715,7 +715,7 @@ const asComparison = computed(
  * nested field would otherwise push everything below it down the page, which
  * moves the very field you were aiming at. */
 .binding-menu {
-  background: #0b1220;
+  background: var(--surface-input);
   border: 1px solid #374151;
   border-radius: 5px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
@@ -984,7 +984,7 @@ const asComparison = computed(
 
 .picked {
   align-items: center;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -1020,7 +1020,7 @@ const asComparison = computed(
   top: 100%;
   left: 0;
   right: 0;
-  background: #0f1422;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 4px;
   max-height: 260px;
@@ -1109,7 +1109,7 @@ const asComparison = computed(
 }
 
 input {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;

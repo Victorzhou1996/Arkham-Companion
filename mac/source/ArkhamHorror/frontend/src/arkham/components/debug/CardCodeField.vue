@@ -182,7 +182,7 @@ function choose(code: string) {
 
 .field-body > .picker > .picked-row {
   align-items: stretch;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   overflow: hidden;
@@ -214,7 +214,7 @@ function choose(code: string) {
   position: relative;
 
   input {
-    background: #0b1220;
+    background: var(--surface-input);
     border: 1px solid #84cc16;
     border-radius: 4px;
     color: #eee;
@@ -228,7 +228,7 @@ function choose(code: string) {
 }
 
 .binding-menu {
-  background: #0b1220;
+  background: var(--surface-input);
   border: 1px solid #374151;
   border-radius: 5px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);

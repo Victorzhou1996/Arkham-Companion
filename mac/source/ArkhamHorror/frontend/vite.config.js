@@ -55,14 +55,22 @@ export default defineConfig({
   server: {
     port: 8080,
     proxy: {
+      "^/cards/cards_": {
+        target: process.env.ARKHAM_DEV_ASSETS || "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
+      "^/img/arkham/(cards|zh/cards|en/cards|portraits)/": {
+        target: process.env.ARKHAM_DEV_ASSETS || "http://127.0.0.1:3000",
+        changeOrigin: true,
+      },
       "^/api": {
-        target: "http://127.0.0.1:3002",
+        target: process.env.ARKHAM_DEV_API || "http://127.0.0.1:3002",
         changeOrigin: true,
         secure: false,
         ws: true
       },
       "^/health": {
-        target: "http://127.0.0.1:3002",
+        target: process.env.ARKHAM_DEV_API || "http://127.0.0.1:3002",
         changeOrigin: true,
         secure: false,
         ws: false

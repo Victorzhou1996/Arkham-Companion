@@ -62,7 +62,7 @@ dialog {
   padding: 32px;
   width: 90%;
   max-width: 400px;
-  background: #1e2030;
+  background: var(--box-background);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);

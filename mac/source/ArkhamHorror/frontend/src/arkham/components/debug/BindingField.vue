@@ -149,7 +149,7 @@ function choose(name: string) {
   position: relative;
 
   input {
-    background: #0b1220;
+    background: var(--surface-input);
     border: 1px solid #14b8a6;
     border-radius: 4px;
     color: #eee;
@@ -163,7 +163,7 @@ function choose(name: string) {
 }
 
 .binding-menu {
-  background: #0b1220;
+  background: var(--surface-input);
   border: 1px solid #374151;
   border-radius: 5px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);

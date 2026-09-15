@@ -1154,7 +1154,7 @@ label {
 
 input,
 select {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -1168,7 +1168,7 @@ select {
 select {
   -webkit-appearance: none;
   appearance: none;
-  background: #111827 var(--select-caret) no-repeat right 0.6rem center;
+  background: var(--surface-input) var(--select-caret) no-repeat right 0.6rem center;
   background-size: var(--select-caret-size);
   padding: 0.3rem 1.6rem 0.3rem 0.4rem;
 }

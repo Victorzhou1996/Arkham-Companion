@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed, watch, ref } from 'vue';
 import { Dropdown } from 'floating-vue';
 import useHighlighter from '@/composable/useHighlighter';
@@ -25,6 +26,7 @@ import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
+import { knownAssetTriggerModeIndexes } from '@/arkham/assetTriggerModeCatalog'
 import CardConfig from '@/arkham/components/CardConfig.vue'
 import MissingCardBadge from '@/arkham/components/MissingCardBadge.vue';
 import Story from '@/arkham/components/Story.vue';
@@ -384,6 +386,7 @@ function startDrag(event: DragEvent) {
 
 <template>
   <div class="asset--outer">
+      <MobileCard>
     <Story v-if="assetStory && !flipping" :story="assetStory" :game="game" :playerId="playerId" @choose="choose"/>
     <div v-else class="asset" :data-index="asset.cardId">
       <div class="card-frame" ref="frame">
@@ -480,6 +483,7 @@ function startDrag(event: DragEvent) {
             :investigator-id="controllerInvestigatorId"
             :card-code="cardCode"
             :abilities="triggerModeAbilities"
+            :known-ability-indexes="knownAssetTriggerModeIndexes(cardCode)"
             :exhausted="exhausted"
           />
           <span v-if="showDiscardMark" class="discard-mark" aria-hidden="true" @click="clicked">
@@ -604,6 +608,7 @@ function startDrag(event: DragEvent) {
       </template>
     </div>
     <DebugAsset v-if="debugging" :game="game" :asset="asset" :playerId="playerId" @close="debugging = false" @choose="$emit('choose', $event)"/>
+      </MobileCard>
   </div>
 </template>
 

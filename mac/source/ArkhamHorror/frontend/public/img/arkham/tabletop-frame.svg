@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" fill="none" stroke="#a28d56" stroke-width=".8">
+  <path d="M1 1H99V99H1Z M5 5H95V95H5Z" opacity=".75"/>
+  <g id="corner">
+    <path d="M1 22V1H22 M5 18V5H18 M1 12C14 12 12 1 12 1 M5 5L16 16 M1 7A6 6 0 0 1 7 1 M5 12A7 7 0 0 0 12 5"/>
+    <circle cx="8" cy="8" r="3"/>
+  </g>
+  <use href="#corner" transform="translate(100 0) rotate(90)"/>
+  <use href="#corner" transform="translate(100 100) rotate(180)"/>
+  <use href="#corner" transform="translate(0 100) rotate(270)"/>
+</svg>

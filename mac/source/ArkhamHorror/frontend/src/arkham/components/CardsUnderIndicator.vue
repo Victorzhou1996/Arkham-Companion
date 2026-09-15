@@ -80,6 +80,7 @@ const interactive = computed(() => props.game !== undefined && props.playerId !=
 // An ability's source names the entity, not the card, so resolve it back to the
 // card id the stack holds. Assets and threat-area treacheries both land here.
 function sourceCardId(source: Source): string | undefined {
+  if (source.sourceTag === 'ProxySource') return sourceCardId(source.source)
   if (source.sourceTag !== 'OtherSource' || !source.contents) return undefined
   const sourceId = source.contents
   return props.game?.assets[sourceId]?.cardId
@@ -89,7 +90,15 @@ function sourceCardId(source: Source): string | undefined {
 
 function cardMatchesChoice(card: ArkhamCard | CardContents, choice: Message): boolean {
   const cardId = toCardContents(card).id
-  if (choice.tag === 'TargetLabel') return choice.target.tag === 'CardIdTarget' && cardId === choice.target.contents
+  if (choice.tag === 'TargetLabel') {
+    const { tag, contents } = choice.target
+    if (typeof contents !== 'string') return false
+    // These are also accepted by the CardView rendered inside the popover.
+    if (contents === cardId) return true
+    if (tag === 'EnemyTarget') return props.game?.enemies[contents]?.cardId === cardId
+    if (tag === 'SkillTarget') return props.game?.skills[contents]?.cardId === cardId
+    return false
+  }
   if (choice.tag === 'AbilityLabel') return sourceCardId(choice.ability.source) === cardId
   return false
 }
@@ -205,6 +214,8 @@ onBeforeUnmount(() => finishDrag())
     <button
       type="button"
       class="cards-under-indicator"
+      data-mobile-direct
+      :data-game-actionable="count > 0 && isHighlighted || undefined"
       :class="{ 'cards-under-indicator--highlighted': isHighlighted, 'cards-under-indicator--with-label': showLabel, 'cards-under-indicator--full-width': fullWidth, 'cards-under-indicator--vertical': vertical, 'cards-under-indicator--dragged-over': draggedOver }"
       :aria-label="tooltip"
       v-tooltip="tooltip"
