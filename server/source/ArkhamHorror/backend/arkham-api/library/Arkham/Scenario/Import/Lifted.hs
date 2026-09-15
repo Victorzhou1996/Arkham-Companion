@@ -36,6 +36,8 @@ import Arkham.Message as X (
   pattern BeforeRevealChaosTokens,
   pattern BeforeSkillTest,
   pattern BeginSkillTestAfterFast,
+  pattern AddChaosToken,
+  pattern AddChaosTokenForGame,
   pattern BeginSkillTestWithPreMessages,
   pattern BeginSkillTestWithPreMessages',
   pattern CancelAssetHorror,
@@ -258,6 +260,7 @@ import Arkham.Scenario.Runner as X (
   getMetaKeyDefault,
   gridL,
   hasEncounterDeckL,
+  isPreludeL,
   locationLayoutL,
   metaL,
   optionsL,
@@ -271,6 +274,7 @@ import Arkham.Scenario.Runner as X (
   scenarioWith,
   setMetaKey,
   sideStory,
+  sideStory_,
   standaloneCampaignLogL,
   startedL,
   tarotDeckL,
@@ -282,18 +286,11 @@ import Arkham.Target as X
 import Arkham.Text as X
 
 import Arkham.Helpers.FlavorText
-import Arkham.I18n
+import Arkham.Helpers.FlavorText as X (resolution, resolutionWithXp)
+import Arkham.I18n as X
 import Arkham.Id
 import Arkham.Matcher.Investigator
 import Arkham.Message.Lifted.Choose
-
-resolutionWithXp :: (HasI18n, ReverseQueue m) => Scope -> m Int -> m ()
-resolutionWithXp s f = do
-  xp <- f
-  resolutionFlavor $ withVars ["xp" .= xp] $ setTitle (s <> ".title") >> p (s <> ".body")
-
-resolution :: (HasI18n, ReverseQueue m) => Scope -> m ()
-resolution s = resolutionFlavor $ setTitle (s <> ".title") >> p (s <> ".body")
 
 resolutionWithChooseOne :: (HasI18n, ReverseQueue m) => Scope -> ChooseT m () -> m ()
 resolutionWithChooseOne s = resolutionFlavorWithChooseOne (setTitle (s <> ".title") >> p (s <> ".body"))

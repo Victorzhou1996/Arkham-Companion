@@ -4,11 +4,13 @@ import TestImport
 
 import Api.Handler.Arkham.Games.Shared (isRandomOutcomeMessage, retainedStepFloor)
 import Arkham.Deck qualified as Deck
+import Arkham.Card.Settings qualified as CardSettings
 import Arkham.Draw.Types (CardDrew (..))
 import Arkham.Game.Settings (Settings (settingsUndoMode), UndoMode (..))
 import Data.Aeson.Diff (Patch)
 import Data.Aeson.Types (Result (..))
 import Data.UUID (nil)
+import Data.Map.Strict qualified as Map
 import Entity.Arkham.Step (Choice (choiceHasRandomOutcome))
 
 spec :: Spec
@@ -55,3 +57,17 @@ spec = do
       let oldChoice = object ["choicePatchDown" .= (mempty :: Patch), "choiceMessages" .= ([] :: [Message])]
       let decoded = fromJSON oldChoice :: Result Choice
       choiceHasRandomOutcome <$> decoded `shouldBe` Success False
+
+    it "preserves old card skip settings while defaulting new card options" do
+      let oldSettings = object
+            [ "cardIgnoreUnrelatedSkillTestTriggers" .= True
+            , "cardIgnoreDuringSkillTests" .= False
+            , "cardAttachments" .= ([] :: [Text])
+            , "cardAbilityModes" .= Map.singleton (1 :: Int) CardSettings.AbilityAutoSkip
+            ]
+          decoded = fromJSON oldSettings :: Result CardSettings.PerCardSettings
+      CardSettings.cardIgnoreUnrelatedSkillTestTriggers <$> decoded `shouldBe` Success True
+      CardSettings.cardIgnoreDuringSkillTests <$> decoded `shouldBe` Success False
+      CardSettings.cardOptions <$> decoded `shouldBe` Success mempty
+      CardSettings.cardSilenced <$> decoded `shouldBe` Success False
+      CardSettings.cardAbilityModes <$> decoded `shouldBe` Success (Map.singleton 1 CardSettings.AbilityAutoSkip)

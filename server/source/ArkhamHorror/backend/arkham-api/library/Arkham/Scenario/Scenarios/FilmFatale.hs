@@ -1,7 +1,7 @@
 module Arkham.Scenario.Scenarios.FilmFatale (filmFatale) where
 
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.FilmFatale qualified as Acts
+import Arkham.Agenda.CardDefs.FilmFatale qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaign.Types (Field (..))
 import Arkham.EncounterSet qualified as Set
@@ -12,7 +12,7 @@ import Arkham.Helpers.FlavorText
 import Arkham.Helpers.Log
 import Arkham.Helpers.Query
 import Arkham.Helpers.Xp
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.FilmFatale qualified as Locations
 import Arkham.Matcher
 import Arkham.Message (pattern SetCampaignChaosBag)
 import Arkham.Message.Lifted.Choose

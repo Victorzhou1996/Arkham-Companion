@@ -10,7 +10,6 @@ import Arkham.Prelude
 import Arkham.Source
 import Arkham.Strategy
 import Arkham.Target
-import Arkham.Tracing
 
 enemyAttack
   :: (Targetable target, Sourceable source, IdOf enemy ~ EnemyId, AsId enemy)
@@ -38,14 +37,14 @@ viaAlert :: EnemyAttackDetails -> EnemyAttackDetails
 viaAlert a = a {attackType = AlertAttack}
 
 -- | Whether @enemyId@ is allowed to attack @iid@ right now.
-canBeAttackedBy :: (HasGame m, Tracing m) => EnemyId -> InvestigatorId -> m Bool
+canBeAttackedBy :: HasGame m => EnemyId -> InvestigatorId -> m Bool
 canBeAttackedBy enemyId iid = do
   mods <- getModifiers iid
   flip noneM mods \case
     CannotBeAttackedBy matcher -> enemyId <=~> matcher
     _ -> pure False
 
-attackIsValid :: (HasGame m, Tracing m) => EnemyAttackDetails -> EnemyAttrs -> m Bool
+attackIsValid :: HasGame m => EnemyAttackDetails -> EnemyAttrs -> m Bool
 attackIsValid details attrs = andM [readyEnough, targetIsValid]
  where
   readyEnough

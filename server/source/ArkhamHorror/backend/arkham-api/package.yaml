@@ -60,6 +60,8 @@ library:
     - aeson-diff
     - annotated-exception
     - async
+    - base16-bytestring
+    - base64-bytestring
     - bugsnag
     - bugsnag-hs
     - bugsnag-yesod
@@ -70,6 +72,7 @@ library:
     - conduit
     - constraints-extras
     - containers
+    - crypton
     - crypton-x509-store
     - data-default-class
     - dependent-map
@@ -85,8 +88,6 @@ library:
     - file-embed
     - hashable
     - hedis
-    - hs-opentelemetry-sdk
-    - hs-opentelemetry-instrumentation-wai
     - http-api-data
     - http-client-tls
     - http-conduit
@@ -99,7 +100,6 @@ library:
     - monad-time
     - monoidal-containers
     - mtl >= 2.3.1
-    - opentelemetry
     - parsec
     - path-pieces
     - persistent
@@ -121,7 +121,6 @@ library:
     - time
     - tls
     - transformers
-    - unix
     - unliftio
     - uri-bytestring
     - uuid
@@ -165,7 +164,6 @@ executables:
       - aeson
       - arkham-api
       - bytestring
-      - hs-opentelemetry-sdk
       - MonadRandom
       - text
     when:
@@ -196,8 +194,6 @@ tests:
       - exceptions
       - hspec
       - hspec-expectations-lifted
-      - hs-opentelemetry-api
-      - hs-opentelemetry-sdk
       - lens
       - uuid
       - mtl

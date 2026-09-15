@@ -37,27 +37,26 @@ import Arkham.SkillType
 import Arkham.Source
 import Arkham.Target
 import Arkham.Timing qualified as Timing
-import Arkham.Tracing
 import Arkham.Window (Window (..), mkAfter, mkWhen, mkWindow)
 import Arkham.Window qualified as Window
 import Control.Lens (each)
 import Data.Map.Strict qualified as Map
 
-locationTargetToMaybeCard :: (HasCallStack, HasGame m, Tracing m) => LocationId -> m (Maybe Card)
+locationTargetToMaybeCard :: (HasCallStack, HasGame m) => LocationId -> m (Maybe Card)
 locationTargetToMaybeCard lid = do
   mCard <- targetToMaybeCard (LocationTarget lid)
   case mCard of
     Just card -> pure $ Just card
     Nothing -> fmap toCard <$> maybeLocation lid
 
-skillTestTargetToMaybeCard :: (HasCallStack, HasGame m, Tracing m) => Target -> m (Maybe Card)
+skillTestTargetToMaybeCard :: (HasCallStack, HasGame m) => Target -> m (Maybe Card)
 skillTestTargetToMaybeCard = \case
   LocationTarget lid -> locationTargetToMaybeCard lid
   ProxyTarget t _ -> skillTestTargetToMaybeCard t
   t -> targetToMaybeCard t
 
 skillTestSourceToMaybeCard
-  :: (HasCallStack, HasGame m, Tracing m, Sourceable source) => source -> m (Maybe Card)
+  :: (HasCallStack, HasGame m, Sourceable source) => source -> m (Maybe Card)
 skillTestSourceToMaybeCard (toSource -> source) = case source of
   LocationSource lid -> locationTargetToMaybeCard lid
   AbilitySource src _ -> skillTestSourceToMaybeCard src
@@ -67,7 +66,7 @@ skillTestSourceToMaybeCard (toSource -> source) = case source of
   PaymentSource inner -> skillTestSourceToMaybeCard inner
   s -> sourceToMaybeCard s
 
-totalModifiedSkillValue :: (HasGame m, Tracing m) => SkillTest -> m Int
+totalModifiedSkillValue :: HasGame m => SkillTest -> m Int
 totalModifiedSkillValue s = do
   results <- calculateSkillTestResultsData s
   chaosTokenValues <- totalChaosTokenValues s
@@ -306,17 +305,17 @@ instance RunMessage SkillTest where
       withQueue_ $ filter $ \case
         Will FailedSkillTest {} -> False
         Will PassedSkillTest {} -> False
-        CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _] ->
+        CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _ _] ->
           False
-        CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _] ->
+        CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _ _] ->
           False
-        Do (CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _]) ->
+        Do (CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _ _]) ->
           False
-        Do (CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _]) ->
+        Do (CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _ _]) ->
           False
-        CheckWindows [Window Timing.After (Window.SkillTestStep ResolveChaosSymbolEffectsStep) _] ->
+        CheckWindows [Window Timing.After (Window.SkillTestStep ResolveChaosSymbolEffectsStep) _ _] ->
           False
-        Do (CheckWindows [Window Timing.After (Window.SkillTestStep ResolveChaosSymbolEffectsStep) _]) ->
+        Do (CheckWindows [Window Timing.After (Window.SkillTestStep ResolveChaosSymbolEffectsStep) _ _]) ->
           False
         Ask player' (ChooseOne [SkillTestApplyResultsButton])
           | player == player' -> False
@@ -418,7 +417,10 @@ instance RunMessage SkillTest where
     PassSkillTest -> do
       push $ Do PassSkillTest
       when (skillTestStep < SkillTestFastWindow2) $ push CheckAllAdditionalCommitCosts
-      pure s
+      pure
+        $ if skillTestStep < RevealChaosTokenStep
+          then s & stepL .~ DetermineInvestigatorsModifiedSkillValueStep
+          else s
     Do PassSkillTest -> do
       modifiedSkillValue' <- totalModifiedSkillValue s
       player <- getPlayer skillTestInvestigator
@@ -435,21 +437,30 @@ instance RunMessage SkillTest where
             & (difficultyIncreaseL .~ 0)
       results <- calculateSkillTestResultsData s'
       push $ SkillTestResults results
-      pure s'
+      pure $ s' & stepL .~ DetermineSuccessOrFailureOfSkillTestStep
     PassSkillTestBy n -> do
       player <- getPlayer skillTestInvestigator
       removeAllMessagesMatching \case
         Ask _ (ChooseOne [SkillTestApplyResultsButton]) -> True
         _ -> False
       push $ chooseOne player [SkillTestApplyResultsButton]
-      let s' = s & resultL .~ SucceededBy NonAutomatic n
-      results <- calculateSkillTestResultsData s'
-      push $ SkillTestResults results
-      pure $ s' & difficultyIncreaseL .~ 0
+      -- "You succeed by n, instead" overrides the tested values entirely, so the
+      -- result can't be recalculated from them (FailTies etc. must not apply)
+      mods <- getModifiers (toTarget s)
+      let x = getSum $ mconcat [Sum m | SkillTestResultValueModifier m <- mods]
+      push $ SkillTestResults $ SkillTestResultsData n 0 0 0 (guard (x /= 0) $> x) True
+      pure
+        $ s
+        & (resultL .~ SucceededBy NonAutomatic n)
+        & (difficultyL .~ SkillTestDifficulty (Fixed 0))
+        & (difficultyIncreaseL .~ 0)
     FailSkillTest -> do
       push $ Do FailSkillTest
       when (skillTestStep < SkillTestFastWindow2) $ push CheckAllAdditionalCommitCosts
-      pure s
+      pure
+        $ if skillTestStep < RevealChaosTokenStep
+          then s & stepL .~ DetermineInvestigatorsModifiedSkillValueStep
+          else s
     Do FailSkillTest -> do
       resultsData <- autoFailSkillTestResultsData s
       difficulty <- getModifiedSkillTestDifficulty s
@@ -530,7 +541,10 @@ instance RunMessage SkillTest where
         else do
           player <- getPlayer skillTestResolveFailureInvestigator
           pushAll $ handleChoice skillTestResolveFailureInvestigator player
-      pure $ s & resultL .~ FailedBy Automatic difficulty
+      pure
+        $ s
+        & (resultL .~ FailedBy Automatic difficulty)
+        & (stepL .~ DetermineSuccessOrFailureOfSkillTestStep)
     StartSkillTest _ -> do
       windowMsg <- checkWindows [mkWhen Window.FastPlayerWindow]
       pushAll [CheckAllAdditionalCommitCosts, windowMsg, TriggerSkillTest skillTestInvestigator]
@@ -566,6 +580,11 @@ instance RunMessage SkillTest where
           -- triggers run *after* the plain/additional-cost commits.
           case triggerCommits of
             [] -> pure ()
+            -- Copies of the same card have the same on-commit effect, so ordering
+            -- them is not a real choice; run them in commit order instead.
+            _
+              | length (nub $ map (toCardCode . snd) triggerCommits) <= 1 ->
+                  pushAll [CommitCard i c | (i, c) <- triggerCommits]
             _ -> do
               player <- getPlayer skillTestInvestigator
               push
@@ -691,7 +710,11 @@ instance RunMessage SkillTest where
               other -> other
             _ -> id
 
-      discardMessages <- forMaybeM discards $ \(iid, discard) -> do
+      discardMessages <- forMaybeM discards $ \(committer, discard) -> do
+        -- A committed card returns to its *owner*, not to whoever committed it. These
+        -- differ when an effect lets you commit another investigator's card (e.g. Guided
+        -- by the Unseen (3), which digs into the performing investigator's deck).
+        let iid = fromMaybe committer discard.owner
         mods <- map resultF <$> getModifiers (toCardId discard)
         let mDevourer = listToMaybe [iid' | SetAfterPlay (DevourThis iid') <- mods]
         pure
@@ -701,9 +724,8 @@ instance RunMessage SkillTest where
             | PlaceOnBottomOfDeckInsteadOfDiscard `elem` mods ->
                 Just (PutCardOnBottomOfDeck iid (Deck.InvestigatorDeck iid) (toCard discard))
             | ReturnToHandAfterTest `elem` mods -> Just $ AddToHand iid [toCard discard]
-            | ShuffleIntoDeckInsteadOfDiscard `elem` mods
-            , Just owner <- discard.owner ->
-                Just $ ShuffleCardsIntoDeck (Deck.InvestigatorDeck owner) [toCard discard]
+            | ShuffleIntoDeckInsteadOfDiscard `elem` mods ->
+                Just $ ShuffleCardsIntoDeck (Deck.InvestigatorDeck iid) [toCard discard]
             | otherwise -> guard (LeaveCardWhereItIs `notElem` mods) $> AddToDiscard iid discard
 
       modifiers' <- getModifiers (toTarget s)
@@ -870,7 +892,6 @@ instance RunMessage SkillTest where
 
       modifiers' <- getModifiers (toTarget s)
       let
-        successTimes = if DoubleSuccess `elem` modifiers' then 2 else 1
         modifiedSkillTestResult =
           foldl' modifySkillTestResult skillTestResult modifiers'
         modifySkillTestResult r (SkillTestResultValueModifier n) = case r of
@@ -894,12 +915,16 @@ instance RunMessage SkillTest where
           -- The collect must come last so initiators still get to register --
           -- see the Fight/Evade handlers in "Arkham.Enemy.Runner". Mirrors the
           -- failure branch below.
+          --
+          -- Results are DETERMINED once and RESOLVED N times (Double or Nothing
+          -- makes N 2, see 'getSkillTestResolveTimes' at the collect). Repeating
+          -- the determination instead would let riders such as Vicious Blow push
+          -- their 'DamageDealt' modifier once per repeat and stack it, whereas
+          -- the FAQ says to first determine the results of the successful test
+          -- (bonus damage included) and only then resolve those effects twice.
           pushAll
-            $ cycleN
-              successTimes
-              ( [passed target | target <- skillTestSubscribers <> tokenSubscribers]
-                  <> [passed (SkillTestInitiatorTarget skillTestTarget), CollectSkillTestOptions]
-              )
+            $ [passed target | target <- skillTestSubscribers <> tokenSubscribers]
+            <> [passed (SkillTestInitiatorTarget skillTestTarget), CollectSkillTestOptions]
         FailedBy _ n -> do
           investigatorsToResolveFailure <-
             (`notNullOr` [skillTestInvestigator])
@@ -1010,13 +1035,13 @@ instance RunMessage SkillTest where
         withQueue_ $ filter $ \case
           Will FailedSkillTest {} -> False
           Will PassedSkillTest {} -> False
-          CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _] ->
+          CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _ _] ->
             False
-          CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _] ->
+          CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _ _] ->
             False
-          Do (CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _]) ->
+          Do (CheckWindows [Window Timing.When (Window.WouldFailSkillTest _ _) _ _]) ->
             False
-          Do (CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _]) ->
+          Do (CheckWindows [Window Timing.When (Window.WouldPassSkillTest _ _) _ _]) ->
             False
           Ask player' (ChooseOne [SkillTestApplyResultsButton])
             | player == player' -> False

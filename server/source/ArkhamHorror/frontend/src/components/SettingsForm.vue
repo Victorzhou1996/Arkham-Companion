@@ -25,7 +25,7 @@ const props = defineProps<{
 
 const store = useDbCardStore()
 const settings = useSettings()
-const { epicMultiplayerStored, aiInvestigatorsStored } = storeToRefs(settings)
+const { epicMultiplayerStored, customCardsEnabled } = storeToRefs(settings)
 const dev = isDevBuild()
 const { availableLocales, locale, setLocaleMessage, t } = useI18n({ useScope: 'global' })
 const language = ref(localStorage.getItem('language') || locale.value)
@@ -208,13 +208,20 @@ const updateCdnBadge = () => {
 // Dev-only Epic Multiplayer flag, bound to the persisted store value via On/Off.
 const epicMultiplayer = computed({
   get: () => (epicMultiplayerStored.value ? 'On' : 'Off'),
-  set: (value: string) => settings.setEpicMultiplayerEnabled(value === 'On'),
+  set: (value: string) => settings.setEpicMultiplayerEnabled(value === 'On')
 })
 
-// Dev-only AI Investigators flag (WIP), bound to the persisted store value.
-const aiInvestigators = computed({
-  get: () => (aiInvestigatorsStored.value ? 'On' : 'Off'),
-  set: (value: string) => settings.setAiInvestigatorsEnabled(value === 'On'),
+const customCards = computed({
+  get: () => (customCardsEnabled.value ? 'On' : 'Off'),
+  set: (value: string) => settings.setCustomCardsEnabled(value === 'On')
+})
+
+const revisedCoreArt = computed({
+  get: () => settings.useVariants.includes('revised'),
+  set: (enabled: boolean) =>
+    settings.setUseVariants(
+      enabled ? [...settings.useVariants, 'revised'] : settings.useVariants.filter((variant) => variant !== 'revised')
+    )
 })
 
 const updateLanguage = async (a: Event) => {
@@ -228,7 +235,7 @@ const updateLanguage = async (a: Event) => {
   }
 
   language.value = selectedLanguage
-  locale.value = selectedLanguage
+  locale.value = uiLocale
   localStorage.setItem('language', selectedLanguage)
   await store.initDbCards()
   await checkImageExists()
@@ -444,21 +451,35 @@ onMounted(refreshRuntimeInfo)
           </div>
         </div>
 
-        <div class="dev-flag">
-          <h4>{{ $t('settingsForm.aiInvestigators') }}</h4>
-          <p class="warning">{{ $t('settingsForm.aiInvestigatorsWarning') }}</p>
-          <div class="row">
-            <label class="radio-label">
-              <input type="radio" name="aiInvestigators" value="On" v-model="aiInvestigators" />
-              {{ $t('On') }}
-            </label>
-            <label class="radio-label">
-              <input type="radio" name="aiInvestigators" value="Off" v-model="aiInvestigators" />
-              {{ $t('Off') }}
-            </label>
-          </div>
-        </div>
       </section>
+          <section class="box column">
+            <h4>{{ $t('settingsForm.customCards') }}</h4>
+            <i18n-t keypath="settingsForm.customCardsHelp" tag="p" scope="global">
+              <template #icon>
+                <font-awesome-icon icon="layer-group" class="inline-icon" />
+              </template>
+            </i18n-t>
+            <div class="row">
+              <label class="radio-label">
+                <input type="radio" name="customCards" value="On" v-model="customCards" />
+                {{ $t('On') }}
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="customCards" value="Off" v-model="customCards" />
+                {{ $t('Off') }}
+              </label>
+            </div>
+            <router-link v-if="customCardsEnabled" to="/card-builder" class="builder-link">
+              {{ $t('settingsForm.openCardBuilder') }}
+            </router-link>
+          </section>
+        <section class="box column">
+          <label class="radio-label">
+            <input type="checkbox" v-model="revisedCoreArt" aria-describedby="revised-core-art-description" />
+            {{ $t('settingsForm.usedRevisedCoreArt') }}
+          </label>
+          <p id="revised-core-art-description">{{ $t('settingsForm.revisedCoreArtDescription') }}</p>
+        </section>
     </div>
   </div>
 </template>
@@ -573,13 +594,67 @@ input[type='checkbox'] {
   font-weight: bold;
 }
 
-.dev-flag {
-  margin: 8px 0 16px;
-  padding-bottom: 16px;
+/* The overlay button wears this icon, so the help can point straight at it. */
+.inline-icon {
+  color: var(--title);
+  margin: 0 0.15em;
+}
+
+.builder-link {
+  color: var(--spooky-green);
+  width: fit-content;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 0.5rem;
   border-bottom: 1px solid var(--box-border);
 }
 
-.dev-flag h4 {
+.settings-tabs button {
+  background: transparent;
+  color: var(--title);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.settings-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--spooky-green);
+  font-weight: bold;
+}
+
+.settings-tabs button:hover {
+  background: var(--background-dark);
+}
+
+.settings-tabs button:focus-visible,
+.settings-panel:focus-visible {
+  outline: 2px solid var(--spooky-green);
+  outline-offset: 2px;
+}
+
+.settings-panel {
+  gap: 1rem;
+}
+
+.experiments-warning {
+  color: #f5d76e;
+  background: #342c14;
+  border-left: 3px solid #f5d76e;
+  padding: 0.75rem 1rem;
+  opacity: 1;
+}
+
+.experiment {
+  border-top: 1px solid var(--box-border);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.experiment h4 {
   margin: 0 0 4px;
   color: var(--title);
   font-family: teutonic, sans-serif;

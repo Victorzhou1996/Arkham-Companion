@@ -14,6 +14,7 @@ import Arkham.Field
 import Arkham.GameValue
 import Arkham.Id
 import Arkham.Keyword (Keyword)
+import Arkham.Keyword qualified as Keyword
 import {-# SOURCE #-} Arkham.Matcher.Asset
 import Arkham.Matcher.Base
 import Arkham.Matcher.ChaosToken
@@ -106,6 +107,7 @@ data EnemyMatcher
   | CanFightEnemy Source
   | CanFightEnemyWith SourceMatcher
   | CanEvadeEnemy Source -- This checks for an ability
+  | EnemyCanBeAttackedBy Source -- This is not checking for an ability
   | EnemyCanBeEvadedBy Source -- This is not checking for an ability
   | EnemyCanBeDefeatedBy Source
   | EnemyCanBeRemovedBy Source
@@ -146,6 +148,11 @@ data EnemyMatcher
   | IncludeOmnipotent EnemyMatcher
   | IncludeOutOfPlayEnemy EnemyMatcher
   | EnemyWithPlacement Placement
+  | {- | Face *down* in a threat area (Dark Matter, "Lost Quantum"), the enemy
+    sibling of 'TreacheryFacedownInThreatAreaOf'. A face-down card is not in
+    play, so ordinary threat-area effects must not see it.
+    -}
+    EnemyFacedownInThreatAreaOf InvestigatorMatcher
   | EnemyWithBounty -- Tony Morgan
   | PatrolEnemy
   | SwarmOf EnemyId
@@ -206,6 +213,9 @@ instance IsLabel "criminal" EnemyMatcher where
 
 instance IsLabel "cultist" EnemyMatcher where
   fromLabel = EnemyWithTrait Cultist
+
+instance IsLabel "hunter" EnemyMatcher where
+  fromLabel = EnemyWithKeyword Keyword.Hunter
 
 instance Semigroup EnemyMatcher where
   AnyEnemy <> x = x

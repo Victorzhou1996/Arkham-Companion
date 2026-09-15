@@ -82,7 +82,11 @@ export function cardBackTypeUrl(type: CardBackType) {
 }
 
 export function arkhamImageUrl(path: string) {
-  return arkhamHorrorPath(`/img/arkham/${path.replace(/^\/+/, "")}`);
+  const normalized = path.replace(/^\/+/, "");
+  const url = arkhamHorrorPath(`/img/arkham/${normalized}`);
+  return /^(?:zh\/)?cards\//.test(normalized)
+    ? `${url}?v=cards-20260913`
+    : url;
 }
 
 export function reversed(card: Card) {

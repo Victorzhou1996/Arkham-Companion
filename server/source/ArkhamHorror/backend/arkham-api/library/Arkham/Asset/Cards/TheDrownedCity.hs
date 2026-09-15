@@ -91,6 +91,7 @@ lockedAndLoaded3 =
       { cdCardTraits = setFromList [Condition]
       , cdLevel = Just 3
       , cdDeckRestrictions = [PerDeckLimit 1]
+      , cdTags = [noGameplayEffectTag]
       }
 
 remingtonModel18584 :: CardDef
@@ -397,6 +398,7 @@ eldritchBrand5 =
       { cdCardTraits = setFromList [Pact]
       , cdExceptional = True
       , cdLevel = Just 5
+      , cdTags = [setupOnlyTag]
       }
 
 anchorChain :: CardDef
@@ -470,6 +472,7 @@ ascetic =
       { cdCardTraits = setFromList [Condition]
       , cdDeckRestrictions = [PurchaseAtDeckCreation, PerDeckLimit 1]
       , cdGrantedXp = Just 10
+      , cdTags = [noGameplayEffectTag]
       }
 
 spiritualHealing4 :: CardDef
@@ -479,6 +482,7 @@ spiritualHealing4 =
       { cdCardTraits = setFromList [Condition, Blessed]
       , cdLevel = Just 4
       , cdDeckRestrictions = [PerDeckLimit 1]
+      , cdTags = [noGameplayEffectTag]
       }
 
 libraryPass1 :: CardDef
@@ -710,6 +714,7 @@ goodMoney =
     $ (storyAsset_ "11756a" ("Good Money" <:> "The \"Quid\" Part") Tasks)
       { cdCardTraits = setFromList [Task, Incomplete]
       , cdCardSubType = Just Weakness
+      , cdOptions = [forAbility 1 $ cardToggle "stopAtFiveResources" False]
       }
 
 doNoHarm :: CardDef
@@ -753,6 +758,7 @@ expeditionGear =
   (storyAsset "11761" ("Expedition Gear" <:> "Tough but Reliable") 2 TheDrownedCityExpedition)
     { cdCardTraits = setFromList [Item, Trait.Supply]
     , cdSkills = [#combat, #agility, #wild]
+    , cdUses = uses Supply 3
     }
 
 laudanum :: CardDef
@@ -760,6 +766,7 @@ laudanum =
   (storyAsset "11762" ("Laudanum" <:> "Desperate Measures") 2 TheDrownedCityExpedition)
     { cdCardTraits = setFromList [Item, Trait.Supply]
     , cdSkills = [#willpower, #willpower]
+    , cdUses = uses Supply 3
     }
 
 alienTablet :: CardDef
@@ -776,6 +783,7 @@ divingSuitTheDrownedCity =
   (storyAsset "11764" "Diving Suit" 3 TheDrownedCityExpedition)
     { cdCardTraits = setFromList [Item, Armor]
     , cdSkills = [#combat]
+    , cdOptions = [cardToggle "treatAsPartiallyFlooded" True]
     }
 
 rubyStandish :: CardDef
@@ -801,25 +809,33 @@ noPlaceLikeHomeCompleted :: CardDef
 noPlaceLikeHomeCompleted =
   permanent
     $ (storyAsset_ "11753b" ("No Place Like Home" <:> "Where Your Heart Is") Tasks)
-      {cdCardTraits = setFromList [Task, Completed]}
+      { cdCardTraits = setFromList [Task, Completed]
+      , cdOtherSide = Just "11753a"
+      }
 
 walkInFaithCompleted :: CardDef
 walkInFaithCompleted =
   permanent
     $ (storyAsset_ "11754b" ("Walk in Faith" <:> "Filled with Spirit") Tasks)
-      {cdCardTraits = setFromList [Task, Completed]}
+      { cdCardTraits = setFromList [Task, Completed]
+      , cdOtherSide = Just "11754a"
+      }
 
 toeTheLineCompleted :: CardDef
 toeTheLineCompleted =
   permanent
     $ (storyAsset_ "11755b" ("Toe the Line" <:> "Restored and Resolved") Tasks)
-      {cdCardTraits = setFromList [Task, Completed]}
+      { cdCardTraits = setFromList [Task, Completed]
+      , cdOtherSide = Just "11755a"
+      }
 
 goodMoneyCompleted :: CardDef
 goodMoneyCompleted =
   permanent
     $ (storyAsset_ "11756b" ("Good Money" <:> "The \"Quo\" Part") Tasks)
-      {cdCardTraits = setFromList [Task, Completed]}
+      { cdCardTraits = setFromList [Task, Completed]
+      , cdOtherSide = Just "11756a"
+      }
 
 proveYourWorthCompleted :: CardDef
 proveYourWorthCompleted =
@@ -827,25 +843,32 @@ proveYourWorthCompleted =
     $ (storyAsset_ "11757b" ("Prove Your Worth" <:> "Standing on Your Own") Tasks)
       { cdCardTraits = setFromList [Task, Completed]
       , cdUses = uses Token.Chance 3
+      , cdOtherSide = Just "11757a"
       }
 
 doNoHarmCompleted :: CardDef
 doNoHarmCompleted =
   permanent
     $ (storyAsset_ "11758b" ("Do No Harm" <:> "Reliable Support") Tasks)
-      {cdCardTraits = setFromList [Task, Completed]}
+      { cdCardTraits = setFromList [Task, Completed]
+      , cdOtherSide = Just "11758a"
+      }
 
 dreamsOfDestructionCompleted :: CardDef
 dreamsOfDestructionCompleted =
   permanent
     $ (storyAsset_ "11759b" ("Dreams of Destruction" <:> "The Future is Not Fixed") Tasks)
-      {cdCardTraits = setFromList [Task, Completed]}
+      { cdCardTraits = setFromList [Task, Completed]
+      , cdOtherSide = Just "11759a"
+      }
 
 plumbTheDepthsCompleted :: CardDef
 plumbTheDepthsCompleted =
   permanent
     $ (storyAsset_ "11760b" ("Plumb the Depths" <:> "Mastered Acumen") Tasks)
-      {cdCardTraits = setFromList [Task, Completed]}
+      { cdCardTraits = setFromList [Task, Completed]
+      , cdOtherSide = Just "11760a"
+      }
 
 -- The Drowned City — encounter story assets (artifacts / relics / allies)
 obsidianRelic :: CardDef
@@ -890,6 +913,7 @@ grislyMask =
     { cdCardTraits = setFromList [Item, Artifact, Rlyeh]
     , cdMeta = artifactBack
     , cdUnique = True
+    , cdOptions = [forAbility 1 $ cardToggle "onlyWhenEngaged" False]
     }
 
 tidalTablet :: CardDef

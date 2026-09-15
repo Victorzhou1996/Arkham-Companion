@@ -47,10 +47,10 @@ instance RunMessage TaskForce where
       when (canUseAbility || canMove || canDiscover) do
         chooseOneM iid $ cardI18n $ scope "taskForce" do
           when canUseAbility do
-            labeled' "resolveAbilityNoCost"
+            labeled "resolveAbilityNoCost"
               $ doStep 1 msg'
-          when canMove $ labeled' "moveToConnecting" $ doStep 2 msg'
-          when canDiscover $ labeled' "discoverClueAtTheirLocation" $ doStep 3 msg'
+          when canMove $ labeled "moveToConnecting" $ doStep 2 msg'
+          when canDiscover $ labeled "discoverClueAtTheirLocation" $ doStep 3 msg'
       pure e
     DoStep 1 msg'@(PlayThisEvent iid (is attrs -> True)) -> do
       investigators <- select $ colocatedWith iid
@@ -58,9 +58,9 @@ instance RunMessage TaskForce where
         abilities <-
           map ((`applyAbilityModifiers` [IgnoreActionCost]) . doesNotProvokeAttacksOfOpportunity)
             <$> select
-              ( PerformableAbilityBy (InvestigatorWithId iid') [IgnoreActionCost]
-                  <> #action
+              ( #action
                   <> AbilityOnAsset (assetControlledBy iid')
+                  <> PerformableAbilityBy (InvestigatorWithId iid') [IgnoreActionCost]
               )
         pure $ if null abilities then Nothing else Just (iid', abilities)
       chooseOrRunOneM iid do

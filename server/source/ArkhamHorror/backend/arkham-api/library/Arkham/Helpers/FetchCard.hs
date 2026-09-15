@@ -13,26 +13,43 @@ import Arkham.Location.Types qualified as Field
 import Arkham.Matcher.Card
 import Arkham.Prelude
 import Arkham.Projection
-import Arkham.Tracing
+import Arkham.Story.Types qualified as Field
 import Arkham.Treachery.Types qualified as Field
 import Data.Monoid (First (..))
 
 class Show a => FetchCard a where
-  fetchCardMaybe :: (HasCallStack, Tracing m, HasGame m, CardGen m) => a -> m (Maybe Card)
+  fetchCardMaybe :: (HasCallStack, HasGame m, CardGen m) => a -> m (Maybe Card)
   fetchCardMaybe = fetchCardMaybe_
-  fetchCardMaybe_ :: (HasCallStack, Tracing m, HasGame m) => a -> m (Maybe Card)
+  fetchCardMaybe_ :: (HasCallStack, HasGame m) => a -> m (Maybe Card)
 
-fetchCard :: (HasCallStack, Tracing m, HasGame m, CardGen m, FetchCard a) => a -> m Card
+fetchCard :: (HasCallStack, HasGame m, CardGen m, FetchCard a) => a -> m Card
 fetchCard a = fromJustNote ("Card not found: " <> show a) <$> fetchCardMaybe a
+
+fetchCards :: (HasCallStack, HasGame m, CardGen m, FetchCard a, Traversable t) => t a -> m (t Card)
+fetchCards = traverse fetchCard
 
 instance FetchCard UniqueFetchCard where
   fetchCardMaybe (UniqueFetchCard def) = do
-    findCard ((== def.cardCode) . toCardCode) >>= \case
+    findCardFace def >>= \case
       Nothing -> Just <$> genCard def
-      Just card -> pure $ Just $ if cardCodeExactEq def.cardCode card.cardCode then card else flipCard card
-  fetchCardMaybe_ (UniqueFetchCard def) = do
-    findCard ((== def.cardCode) . toCardCode)
-      <&> fmap (\card -> if cardCodeExactEq def.cardCode card.cardCode then card else flipCard card)
+      Just card -> pure $ Just card
+  fetchCardMaybe_ (UniqueFetchCard def) = findCardFace def
+
+{- | Find the unique card for a def, preferring the face we actually asked for.
+
+Both faces of a double-sided card share a base card code, so a purely loose
+search can return the card registered under the *other* face — whichever sorts
+first by card id — and then hand back a flipped copy of it. The copy shows the
+right card code but carries the other card's identity, so the real card is never
+consumed (it sits set aside forever) and anything that resolves the returned
+card back through the registry, such as the victory display, sees the other face
+instead. Look for an exact match first and only fall back to the flip side.
+-}
+findCardFace :: HasGame m => CardDef -> m (Maybe Card)
+findCardFace def =
+  findCard (cardCodeExactEq def.cardCode . toCardCode) >>= \case
+    Just card -> pure $ Just card
+    Nothing -> fmap flipCard <$> findCard ((== def.cardCode) . toCardCode)
 
 instance FetchCard CardDef where
   fetchCardMaybe def =
@@ -81,11 +98,28 @@ instance FetchCard EnemyId where
 instance FetchCard LocationId where
   fetchCardMaybe_ = fieldMap Field.LocationCard Just
 
+instance FetchCard StoryId where
+  fetchCardMaybe_ = fieldMap Field.StoryCard Just
+
 instance FetchCard CardId where
   fetchCardMaybe_ = fmap Just . getCard
 
 instance FetchCard Field.TreacheryAttrs where
   fetchCardMaybe_ = fieldMap Field.TreacheryCard Just . asId
 
+instance FetchCard Field.StoryAttrs where
+  fetchCardMaybe_ = fieldMap Field.StoryCard Just . asId
+
 newtype UniqueFetchCard = UniqueFetchCard CardDef
   deriving newtype (Show, Eq, ToJSON, FromJSON)
+
+flippedOver :: (FetchCard c, HasGame m, CardGen m) => c -> m ()
+flippedOver c = do
+  card <- fetchCard c
+  replaceCard card.id (flipCard card)
+
+flippedOverCapture :: (FetchCard c, HasGame m, CardGen m) => c -> m Card
+flippedOverCapture c = do
+  card <- flipCard <$> fetchCard c
+  replaceCard card.id card
+  pure card

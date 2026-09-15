@@ -8,9 +8,7 @@ import Arkham.Source as X
 import Arkham.Target as X
 
 import Arkham.Ability
-import Arkham.Ai.Decks (bundledDeckFor)
-import Arkham.Ai.Helpers (getAiPlayerState)
-import Arkham.Ai.State (aiInvestigatorCode)
+import Arkham.Campaign.Overlay (CampaignOverlay (..))
 import Arkham.CampaignLog
 import Arkham.CampaignLogKey
 import Arkham.CampaignStep
@@ -22,6 +20,7 @@ import Arkham.Classes.GameLogger
 import Arkham.Classes.Query
 import Arkham.Classes.RunMessage
 import Arkham.Decklist (decklistTrauma)
+import Arkham.Custom.Overlay (DeckOverlay (..))
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.GameT
 import Arkham.Helpers
@@ -41,6 +40,7 @@ import Arkham.Tarot
 import Arkham.UltimatumsAndBoons
 import Arkham.Xp
 import Data.Aeson.Key qualified as Aeson
+import Data.Aeson.Types (parseMaybe)
 import Data.Map.Strict qualified as Map
 
 defaultCampaignRunner :: IsCampaign a => Runner a
@@ -57,6 +57,12 @@ defaultCampaignRunner msg a = case msg of
         )
   SetGlobal CampaignTarget k v -> do
     pure $ updateAttrs a (storeL . at (Aeson.toText k) ?~ v)
+  IncrementGlobal CampaignTarget k n -> do
+    let bump mv = toJSON $ n + fromMaybe 0 (mv >>= parseMaybe parseJSON)
+    pure $ updateAttrs a (storeL . at (Aeson.toText k) %~ Just . bump)
+  InsertGlobal CampaignTarget k v -> do
+    let prepend mvs = toJSON $ nub $ v : fromMaybe [] (mvs >>= parseMaybe parseJSON)
+    pure $ updateAttrs a (storeL . at (Aeson.toText k) %~ Just . prepend)
   SetCampaignMeta v -> do
     pure $ updateAttrs a (metaL .~ v)
   AddCampaignModifiersForAll modTypes -> do
@@ -67,20 +73,13 @@ defaultCampaignRunner msg a = case msg of
     -- [ALERT] StartCampaign
     players <- allPlayers
     lead <- getActivePlayer
-    -- AI seats (registered via RegisterAiPlayer before StartCampaign) skip the
-    -- deck prompt: their bundled decklist is loaded in-place instead. A seat is
-    -- treated as AI here only if it both has registered AI state and resolves to
-    -- a bundled deck; anything else falls through to the normal prompt.
-    aiSeats <- forMaybeM players \pid -> do
-      mState <- getAiPlayerState pid
-      pure $ (pid,) <$> (bundledDeckFor . aiInvestigatorCode =<< mState)
     batchId <- getId
     -- The settings prompt and the first campaign step are the barrier's
     -- continuation: they are held in game state until every seat has finished its
     -- deck setup, rather than queued behind the deck ask where a seat's InitDeck
     -- tail could run past them (#5173).
     push
-      $ chooseDecksWithAi batchId players aiSeats
+      $ chooseDecks batchId players
       $ [Ask lead PickCampaignSettings | (campaignStep (toAttrs a)).unwrap /= PrologueStep]
       <> [CampaignStep $ campaignStep $ toAttrs a]
     pure a
@@ -148,6 +147,32 @@ defaultCampaignRunner msg a = case msg of
     lead <- getLeadPlayer
     push $ Ask lead ContinueCampaign
     pure a
+  LeaveCampaign iid -> do
+    played <- hasPlayedInCampaign a iid
+    push $ if played then RetireInvestigator iid else RemoveInvestigatorFromCampaign iid
+    pure a
+  -- Roster changes happen while the table sits on the continuation screen, so each
+  -- one re-runs the current step to hand the (possibly new) lead a fresh ask.
+  RetireInvestigator _ -> a <$ push (CampaignStep $ campaignStep $ toAttrs a)
+  RemoveInvestigatorFromCampaign iid -> do
+    let attrs = toAttrs a
+    -- Hand back everything InitDeck dealt this seat, the random basic weakness
+    -- among the story cards included: only one physical copy of each weakness
+    -- exists, so nothing may stay spent on an investigator who never played.
+    for_ (findWithDefault [] iid (campaignStoryCards attrs)) (removeCard . toCardId)
+    for_ (maybe [] unDeck $ lookup iid (campaignDecks attrs)) (removeCard . toCardId)
+    push (CampaignStep $ campaignStep attrs)
+    pure
+      $ updateAttrs a
+      $ (decksL %~ Map.delete iid)
+      . (storyCardsL %~ Map.delete iid)
+      . (modifiersL %~ Map.delete iid)
+  UnretireInvestigator _ -> a <$ push (CampaignStep $ campaignStep $ toAttrs a)
+  JoinCampaign pid -> do
+    batchId <- getId
+    used <- getUsedInvestigators a
+    push $ chooseJoinDeck batchId pid used [CampaignStep $ campaignStep $ toAttrs a]
+    pure a
   CampaignStep (StandaloneScenarioStep sid _) -> do
     pushAll
       [ ResetInvestigators
@@ -156,7 +181,7 @@ defaultCampaignRunner msg a = case msg of
       , ForInvestigators [] ResetGame
       , StartScenario sid Nothing
       ]
-    spendSideStoryXp sid
+    spendSideStoryXp (campaignOverlays a) sid
     pure a
   CampaignStep (StandaloneScenarioStepWithOptions sid _ opts) -> do
     pushAll
@@ -166,91 +191,107 @@ defaultCampaignRunner msg a = case msg of
       , ForInvestigators [] ResetGame
       , StartScenario sid (Just opts)
       ]
-    spendSideStoryXp sid
+    spendSideStoryXp (campaignOverlays a) sid
     pure a
   SetChaosTokensForScenario -> a <$ push (SetChaosTokens $ campaignChaosBag $ toAttrs a)
-  SetCampaignChaosBag tokens' -> pure $ updateAttrs a (chaosBagL .~ tokens')
+  SetCampaignChaosBag tokens' -> pure $ updateAttrs a (overCampaignChaosBag (const tokens'))
   AddCampaignCardToDeck iid _ card -> do
     card' <- setOwner iid card
     pure $ updateAttrs a (storyCardsL %~ insertWith (<>) iid [card'])
   RemoveCampaignCardFromDeck iid cardDef ->
-    pure
-      $ updateAttrs a
-      $ (storyCardsL %~ adjustMap (filter ((/= cardDef) . toCardDef)) iid)
-      . (decksL %~ adjustMap (withDeck $ filter ((/= cardDef) . toCardDef)) iid)
-  AddChaosToken token -> do
-    if token `notElem` [CurseToken, BlessToken]
-      then pure $ updateAttrs a (chaosBagL %~ (token :))
+    -- Printing-aware: the copy in the deck may be a reprint or a campaign
+    -- overlay's stand-in, which a structural CardDef comparison would miss.
+    let notIt :: IsCard c => c -> Bool
+        notIt = not . isPrintingOf cardDef.cardCode
+     in pure
+          $ updateAttrs a
+          $ (storyCardsL %~ adjustMap (filter notIt) iid)
+          . (decksL %~ adjustMap (withDeck $ filter notIt) iid)
+  ReplaceCard cardId card ->
+    -- Keep campaign story cards in sync when a card's identity changes (e.g. a
+    -- story asset moved from the encounter pool to the player pool).
+    pure $ updateAttrs a (storyCardsL %~ Map.map (map (\c -> if toCardId c == cardId then card else c)))
+  AddChaosTokenWith details -> do
+    if details.toCampaign && details.face `notElem` [CurseToken, BlessToken]
+      then pure $ updateAttrs a (overCampaignChaosBag (details.face :))
       else pure a
-  RemoveChaosToken token -> pure $ updateAttrs a (chaosBagL %~ deleteFirstMatch (== token))
-  RemoveAllChaosTokens token -> pure $ updateAttrs a (chaosBagL %~ filter (/= token))
+  RemoveChaosToken token -> pure $ updateAttrs a (overCampaignChaosBag (deleteFirstMatch (== token)))
+  RemoveAllChaosTokens token -> pure $ updateAttrs a (overCampaignChaosBag (filter (/= token)))
   RemoveOption option -> pure $ updateAttrs a (logL . optionsL %~ deleteSet option)
-  InitDeck InitDeckAttrs {initDeckInvestigator = iid, initDeckDecklist = mDecklist, initDeckDeck = deck} -> do
-    playerCount <- getPlayerCount
-    investigatorClass <- field InvestigatorClass iid
-    let cardCodes = map toCardCode $ unDeck deck
+  InitDeck
+    InitDeckAttrs {initDeckInvestigator = iid, initDeckDecklist = mDecklist, initDeckDeck = deck} -> do
+      playerCount <- getPlayerCount
+      investigatorClass <- field InvestigatorClass iid
+      let cardCodes = map toCardCode $ unDeck deck
 
-    mEldritchBrand <-
-      if "11080" `elem` cardCodes
-        then
-          getMaybeCardAttachments iid (CardCode "11080") >>= \case
-            Nothing -> do
-              pid <- getPlayer iid
-              let cards = nub $ map toCardCode $ filterCards (card_ $ #asset <> #spell) (unDeck deck)
-              pure $ Just $ Ask pid $ QuestionLabel "$cards.label.eldritchBrand5.chooseCard" Nothing $ ChooseOne $ flip map cards \c ->
-                CardLabel c False [UpdateCardSetting iid "11080" (SetCardSetting CardAttachments [c])]
-            Just _ -> pure Nothing
-        else pure Nothing
+      mEldritchBrand <-
+        if "11080" `elem` cardCodes
+          then
+            getMaybeCardAttachments iid (CardCode "11080") >>= \case
+              Nothing -> do
+                pid <- getPlayer iid
+                let cards = nub $ map toCardCode $ filterCards (card_ $ #asset <> #spell) (unDeck deck)
+                pure $ Just $ Ask pid $ QuestionLabel "$cards.label.eldritchBrand5.chooseCard" Nothing $ ChooseOne $ flip map cards \c ->
+                  CardLabel c False [UpdateCardSetting iid "11080" (SetCardSetting CardAttachments [c])]
+              Just _ -> pure Nothing
+          else pure Nothing
 
-    (deck', baseRandomWeaknesses) <- addRandomBasicWeaknessIfNeeded investigatorClass playerCount mDecklist deck
-    -- Ultimatum of Disaster: deckbuilding requirements gain 1 additional
-    -- random basic weakness.
-    disaster <- hasUltimatum UltimatumOfDisaster
-    extraWeakness <-
-      if disaster
-        then (: []) <$> (genCard =<< getRandomBasicWeakness investigatorClass playerCount mDecklist)
-        else pure []
-    let randomWeaknesses = baseRandomWeaknesses <> extraWeakness
-    morrigan <- hasBoon BoonOfTheMorrigan
-    morriganSwaps <-
-      if morrigan
-        then
-          concat <$> for randomWeaknesses \_ ->
-            morriganWeaknessMessages
-              iid
-              (genCard =<< getRandomBasicWeakness investigatorClass playerCount mDecklist)
-        else pure []
-    let weaknessMessages =
-          if morrigan then [] else map (AddCampaignCardToDeck iid ShuffleIn) randomWeaknesses
-    ancients <- hasBoon BoonOfTheAncients
-    startingTrauma <- case mDecklist >>= decklistTrauma of
-      Just (physical, mental) -> pure [SetTrauma iid physical mental]
-      Nothing -> initDeckTrauma deck' iid CampaignTarget
-    initXp <- initDeckXp deck' iid CampaignTarget
-    pid <- getPlayer iid
+      (deck', baseRandomWeaknesses) <-
+        addRandomBasicWeaknessIfNeeded investigatorClass playerCount mDecklist deck
+      -- Ultimatum of Disaster: deckbuilding requirements gain 1 additional
+      -- random basic weakness.
+      disaster <- hasUltimatum UltimatumOfDisaster
+      extraWeakness <-
+        if disaster
+          then
+            (: [])
+              <$> ( genCard
+                      =<< getRandomBasicWeaknessExcluding
+                        (basicWeaknessCodes baseRandomWeaknesses)
+                        investigatorClass
+                        playerCount
+                        mDecklist
+                  )
+          else pure []
+      let randomWeaknesses = baseRandomWeaknesses <> extraWeakness
+      morrigan <- hasBoon BoonOfTheMorrigan
+      morriganSwaps <-
+        if morrigan
+          then
+            concat <$> for randomWeaknesses \_ ->
+              morriganWeaknessMessages
+                iid
+                (genCard =<< getRandomBasicWeakness investigatorClass playerCount mDecklist)
+          else pure []
+      let weaknessMessages =
+            if morrigan then [] else map (AddCampaignCardToDeck iid ShuffleIn) randomWeaknesses
+      ancients <- hasBoon BoonOfTheAncients
+      purchaseTrauma <- initDeckTrauma deck' iid CampaignTarget
+      initXp <- initDeckXp deck' iid CampaignTarget
+      pid <- getPlayer iid
 
-    -- Every InitDeck runs while decks are still being chosen. Its interactive parts
-    -- (Boon of the Morrígan, trauma, Eldritch Brand, XP) must not park inside that
-    -- window: the message queue is global, so a question parked here leaves the rest
-    -- of this seat's setup sitting in it, and the next seat to answer anything drains
-    -- that tail -- running this seat's setup, and then the campaign, out from under
-    -- its own unanswered question (#5173). Deferred past the barrier instead, they
-    -- resolve one seat at a time once the table is done choosing.
-    --
-    -- DoStep 1 (Spiritual Healing) reads the trauma purchased above, and the XP
-    -- messages follow it, so the whole tail defers together and keeps its order.
-    pushAll
-      $ weaknessMessages
-      <> [ DeferPastSimultaneousAsk pid
-             $ morriganSwaps
-             <> startingTrauma
-             <> toList mEldritchBrand
-             <> [DoStep 1 msg]
-             <> initXp
-             <> (if ancients then ancientsStartingXpMessages iid else [])
-         ]
+      -- Every InitDeck runs while decks are still being chosen. Its interactive parts
+      -- (Boon of the Morrígan, trauma, Eldritch Brand, XP) must not park inside that
+      -- window: the message queue is global, so a question parked here leaves the rest
+      -- of this seat's setup sitting in it, and the next seat to answer anything drains
+      -- that tail -- running this seat's setup, and then the campaign, out from under
+      -- its own unanswered question (#5173). Deferred past the barrier instead, they
+      -- resolve one seat at a time once the table is done choosing.
+      --
+      -- DoStep 1 (Spiritual Healing) reads the trauma purchased above, and the XP
+      -- messages follow it, so the whole tail defers together and keeps its order.
+      pushAll
+        $ weaknessMessages
+        <> [ DeferPastSimultaneousAsk pid
+               $ morriganSwaps
+               <> purchaseTrauma
+               <> toList mEldritchBrand
+               <> [DoStep 1 msg]
+               <> initXp
+               <> (if ancients then ancientsStartingXpMessages iid else [])
+           ]
 
-    pure $ updateAttrs a $ decksL %~ insertMap iid deck'
+      pure $ updateAttrs a $ decksL %~ insertMap iid deck'
   DoStep 1 (InitDeck InitDeckAttrs {initDeckInvestigator = iid, initDeckDeck = deck}) -> do
     let cardCodes = map toCardCode $ unDeck deck
     mSpiritualHealing <-
@@ -279,6 +320,36 @@ defaultCampaignRunner msg a = case msg of
     let mental = getChoiceAmount "$mental" choiceMap
     push $ SufferTrauma iid physical mental
     pure a
+  {- Laying custom cards over a campaign deck between scenarios.
+
+  Deliberately not routed through 'UpgradeDeck': that is the /purchase/ path,
+  which charges trauma for what it adds and initialises xp on the new cards.
+  Nothing here is bought, so the deck is simply edited in place.
+  -}
+  ApplyDeckOverlay iid overlay -> do
+    let deck = maybe [] unDeck $ lookup iid (campaignDecks $ toAttrs a)
+    let taken = Map.toList (overlaySwaps overlay)
+    -- A swap is a removal and an addition of however many actually came out.
+    let (afterSwaps, swappedIn) = foldl' swapOut (deck, []) taken
+    let afterRemovals = foldl' removeCopies afterSwaps (Map.toList (overlayRemove overlay))
+    added <-
+      concat <$> for (swappedIn <> Map.toList (overlayAdd overlay)) \(cardCode, n) ->
+        case lookupCardDef cardCode of
+          Nothing -> pure []
+          Just def -> replicateM n (genPlayerCard def)
+    -- Answering took the continuation ask with it, so re-run the step to hand
+    -- the lead a fresh one -- the same thing the roster changes below do.
+    push (CampaignStep $ campaignStep $ toAttrs a)
+    pure $ updateAttrs a $ decksL %~ insertMap iid (Deck (afterRemovals <> added))
+   where
+    matching cardCode = (== cardCode) . toCardCode
+    removeCopies cards (cardCode, n) =
+      foldr (\_ cs -> deleteFirstMatch (matching cardCode) cs) cards [1 .. n]
+    swapOut (cards, adds) (replaced, replacement) =
+      let n = length (filter (matching replaced) cards)
+       in ( filter (not . matching replaced) cards
+          , if n > 0 then (replacement, n) : adds else adds
+          )
   UpgradeDeck iid mUrl deck -> do
     let
       oldDeck = fromJustNote "No deck? (UpgradeDeck)" $ lookup iid (campaignDecks $ toAttrs a)
@@ -363,11 +434,7 @@ defaultCampaignRunner msg a = case msg of
   ReloadDecks -> do
     for_ (mapToList $ campaignDecks $ toAttrs a) \(iid, Deck deck) -> do
       let storyCards = findWithDefault [] iid (campaignStoryCards $ toAttrs a)
-      let storyCardCodes = map toCardCode storyCards
-      let (deck', removals) =
-            partition
-              (\card -> card.cardCode `notElem` storyCardCodes && card.cardCode `notElem` invalidCards a)
-              deck
+      let (deck', removals) = partitionReloadedDeck storyCards (invalidCards a) deck
       for_ removals \c -> removeCard c.id
 
       push (LoadDeck iid . Deck $ deck' <> mapMaybe (preview _PlayerCard) storyCards)
@@ -384,7 +451,7 @@ defaultCampaignRunner msg a = case msg of
       $ (logL . recordedL %~ deleteSet key)
       . (logL . crossedOutL %~ crossedOutModifier)
       . (logL . recordedSetsL %~ deleteMap key)
-      . (logL . recordedCountsL %~ deleteMap key)
+      . overRecordedCount key (const Nothing)
       . (logL . orderedKeysL %~ removeOrderedKey)
   Record key -> do
     send $ "Record \"" <> format key <> "\""
@@ -436,11 +503,11 @@ defaultCampaignRunner msg a = case msg of
         key
   RecordCount key int -> do
     send $ "Record \"" <> format key <> "\" (" <> tshow int <> ")"
-    pure $ updateAttrs a $ logL . recordedCountsL %~ insertMap key int
+    pure $ updateAttrs a $ overRecordedCount key (const $ Just int)
   IncrementRecordCount key int ->
-    pure $ updateAttrs a $ logL . recordedCountsL %~ alterMap (Just . maybe int (+ int)) key
+    pure $ updateAttrs a $ overRecordedCount key (Just . maybe int (+ int))
   DecrementRecordCount key int ->
-    pure $ updateAttrs a $ logL . recordedCountsL %~ alterMap (fmap (max 0 . subtract int)) key
+    pure $ updateAttrs a $ overRecordedCount key (fmap (max 0 . subtract int))
   ScenarioResolution r -> case (toAttrs a).step.scenario of
     Just sid -> pure $ updateAttrs a $ resolutionsL %~ insertMap sid r
     _ -> error $ "must be called in a scenario, but called in " <> show (campaignStep (toAttrs a))
@@ -571,12 +638,14 @@ defaultCampaignRunner msg a = case msg of
     pure a
   _ -> pure a
 
-{- | Side-stories cost each investigator xp to play. Challenge scenarios only
+{- | Campaign overlays can replace a side-story's entry cost. Challenge scenarios
 charge their required investigator the full cost; everyone else pays 1.
 -}
-spendSideStoryXp :: ScenarioId -> GameT ()
-spendSideStoryXp sid = do
-  let baseCost = getSideStoryCost sid
+spendSideStoryXp :: [CampaignOverlay] -> ScenarioId -> GameT ()
+spendSideStoryXp overlays sid = do
+  let baseCost =
+        fromMaybe (getSideStoryCost sid)
+          $ listToMaybe [o.xpCost | o <- overlays, o.available, o.scenario == sid]
   investigators <- select Anyone
   case challengeScenarioInvestigator sid of
     Nothing -> for_ investigators \iid -> push $ SpendXP iid baseCost
@@ -590,3 +659,40 @@ spendSideStoryXp sid = do
         <> unpack title
       for_ investigators \iid ->
         push $ SpendXP iid $ if iid `elem` signatures then baseCost else 1
+
+{- | The investigators a player joining mid-campaign may not choose: everyone who
+has played in this campaign. Campaign decks retain entries for investigators who
+were killed, driven insane or replaced, so their keys cover the whole history;
+the live roster and anyone set aside by retiring are added for the seats whose
+deck has not been registered yet.
+-}
+getUsedInvestigators :: IsCampaign a => a -> GameT [InvestigatorId]
+getUsedInvestigators a = do
+  present <- select Anyone
+  retired <- getRetiredInvestigators
+  pure $ nub $ Map.keys (campaignDecks $ toAttrs a) <> present <> retired
+
+{- | Has this investigator been part of anything the campaign recorded?
+
+Every resolution reports xp, which stamps that step with the investigators present,
+so the breakdown is the participation record; xp and trauma cover anything that
+reached them outside a resolution. All false means they joined and left without
+playing, and there is nothing worth keeping for them.
+
+Do NOT add @campaignDecks@ or @campaignStoryCards@ here: 'InitDeck' writes both for
+every seat as it loads, the story cards via the @AddCampaignCardToDeck@ for the
+deck's random basic weakness. Either would be non-empty the instant a player joins
+and would make this always true.
+-}
+hasPlayedInCampaign :: IsCampaign a => a -> InvestigatorId -> GameT Bool
+hasPlayedInCampaign a iid = do
+  xp <- field InvestigatorXp iid
+  physical <- field InvestigatorPhysicalTrauma iid
+  mental <- field InvestigatorMentalTrauma iid
+  pure
+    $ or
+      [ xp > 0
+      , physical > 0
+      , mental > 0
+      , any ((iid `elem`) . (.xbsInvestigators)) (campaignXpBreakdown $ toAttrs a)
+      ]

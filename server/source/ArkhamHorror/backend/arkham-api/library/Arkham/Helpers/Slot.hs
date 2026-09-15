@@ -13,7 +13,6 @@ import Arkham.Matcher.Asset
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Slot as X
-import Arkham.Tracing
 import Data.Set qualified as Set
 
 isEmptySlot :: Slot -> Bool
@@ -82,8 +81,14 @@ removeIfMatchesOnce aid = \case
   RestrictedSlot source trait assets -> RestrictedSlot source trait (deleteFirst aid assets)
   AdjustableSlot source restriction trait assets -> AdjustableSlot source restriction trait (deleteFirst aid assets)
 
+retainSlotAssets :: (AssetId -> Bool) -> Slot -> Slot
+retainSlotAssets f = \case
+  Slot source assets -> Slot source (filter f assets)
+  RestrictedSlot source trait assets -> RestrictedSlot source trait (filter f assets)
+  AdjustableSlot source restriction trait assets -> AdjustableSlot source restriction trait (filter f assets)
+
 getPotentialSlots
-  :: (HasGame m, Tracing m, IsCard a) => a -> InvestigatorId -> m [SlotType]
+  :: (HasGame m, IsCard a) => a -> InvestigatorId -> m [SlotType]
 getPotentialSlots card iid = do
   slots <- field InvestigatorSlots iid
   let

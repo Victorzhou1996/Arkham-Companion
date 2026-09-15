@@ -37,12 +37,10 @@ import Arkham.Random
 import Arkham.SkillTest.Base
 import {-# SOURCE #-} Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Window
 import Control.Monad.Random.Lazy hiding (filterM, foldM, fromList)
 import Data.Dependent.Map qualified as DMap
 import Data.Map.Strict qualified as Map
-import OpenTelemetry.Trace.Monad (MonadTracer (..))
 
 -- Some ORPHANS we may want to move
 
@@ -83,6 +81,9 @@ getCard cardId = do
     Nothing -> error $ "Unregistered card id: " <> show cardId <> "\n" <> prettyCallStack callStack
     Just card -> pure card
 
+getCardMaybe :: HasGame m => CardId -> m (Maybe Card)
+getCardMaybe cardId = lookup cardId . gameCards <$> getGame
+
 findAllCards :: HasGame m => (Card -> Bool) -> m [Card]
 findAllCards cardPred = filter cardPred . toList . gameCards <$> getGame
 
@@ -98,7 +99,6 @@ toGameEnv
      , HasStdGen env
      , HasGameLogger m
      , MonadReader env m
-     , MonadTracer m
      )
   => m GameEnv
 toGameEnv = do
@@ -107,7 +107,6 @@ toGameEnv = do
   gameEnvQueue <- messageQueue
   gameCacheRef <- newIORef DMap.empty
   gameLogger <- getLogger
-  gameTracer <- getTracer
   pure $ GameEnv {..}
 
 runWithEnv
@@ -116,7 +115,6 @@ runWithEnv
      , HasStdGen env
      , HasGameLogger m
      , MonadReader env m
-     , MonadTracer m
      )
   => GameT a
   -> m a
@@ -167,13 +165,19 @@ getHistory RoundHistory iid = do
 getHistoryField :: HasGame m => HistoryType -> InvestigatorId -> HistoryField k -> m k
 getHistoryField htype iid fld = viewHistoryField fld <$> getHistory htype iid
 
-getDistance :: (HasGame m, Tracing m) => LocationId -> LocationId -> m (Maybe Distance)
+getDistance :: HasGame m => LocationId -> LocationId -> m (Maybe Distance)
 getDistance l1 l2 = do
   game <- getGame
   getDistance' game l1 l2
 
 getPhase :: HasGame m => m Phase
 getPhase = gamePhase <$> getGame
+
+getMythosPhaseStep :: HasGame m => m (Maybe MythosPhaseStep)
+getMythosPhaseStep =
+  getGame <&> \g -> case gamePhaseStep g of
+    Just (MythosPhaseStep s) -> Just s
+    _ -> Nothing
 
 getEnemyPhaseStep :: HasGame m => m (Maybe EnemyPhaseStep)
 getEnemyPhaseStep =
@@ -193,11 +197,26 @@ getAllAbilities = cached GetAllAbilitiesKey $ getAbilities <$> getGame
 getSettings :: HasGame m => m Settings
 getSettings = gameSettings <$> getGame
 
+{- | Whether "as if" should be ignored for this investigator right now. The
+Chapter 2 ruling confines the altered state to the ability being resolved, so
+windows that offer other abilities bracket themselves with 'SetAsIfAtIgnored'.
+Chapter 1 keeps the altered state throughout and always answers False.
+-}
+getAsIfIgnored :: HasGame m => InvestigatorId -> m Bool
+getAsIfIgnored iid = do
+  settings <- getSettings
+  g <- getGame
+  pure $ settingsStrictAsIfAt settings && iid `member` gameAsIfAtIgnored g
+
 getCurrentBatchId :: HasGame m => m (Maybe BatchId)
 getCurrentBatchId = gameCurrentBatchId <$> getGame
 
 getAllPlayers :: HasGame m => m [PlayerId]
 getAllPlayers = gamePlayers <$> getGame
+
+-- | Investigators set aside because their player left the campaign.
+getRetiredInvestigators :: HasGame m => m [InvestigatorId]
+getRetiredInvestigators = keys . gameRetiredInvestigators <$> getGame
 
 getActivePlayer :: HasGame m => m PlayerId
 getActivePlayer = gameActivePlayerId <$> getGame
@@ -256,7 +275,7 @@ withActiveInvestigator iid body = do
   runReaderT body $ game & activeInvestigatorIdL .~ iid
 
 withActiveInvestigatorAdjust
-  :: (HasGame m, Tracing m) => InvestigatorId -> ReaderT Game m a -> m a
+  :: HasGame m => InvestigatorId -> ReaderT Game m a -> m a
 withActiveInvestigatorAdjust iid body = do
   game <- getGame
   game' <-
@@ -279,6 +298,12 @@ getWindowStack = fromMaybe [] . gameWindowStack <$> getGame
 
 getCurrentWindowTick :: HasGame m => m (Maybe Int)
 getCurrentWindowTick = listToMaybe . gameWindowTickStack <$> getGame
+
+{- | The monotonic window clock. Read it to pin a triggering condition's
+initiation tick onto a window built ahead of when it is checked.
+-}
+getWindowTick :: HasGame m => m Int
+getWindowTick = gameWindowTick <$> getGame
 
 getEntryTicks :: HasGame m => m (Map CardId Int)
 getEntryTicks = gameEntryTicks <$> getGame

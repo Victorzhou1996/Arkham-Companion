@@ -1,4 +1,4 @@
-module Arkham.Campaign.Campaigns.TheForgottenAge (theForgottenAge, TheForgottenAge (..)) where
+module Arkham.Campaign.Campaigns.TheForgottenAge (theForgottenAge, TheForgottenAge (..), relicOwnedBy) where
 
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaign.Campaigns.TheForgottenAge.Achievements (runForgottenAgeAchievements)
@@ -10,6 +10,7 @@ import Arkham.Campaigns.TheForgottenAge.Import
 import Arkham.Card
 import Arkham.ChaosToken
 import Arkham.Classes.HasGame
+import Arkham.Classes.HasQueue (insertAfterMatchingOrNow)
 import Arkham.GameValue
 import Arkham.Helpers
 import Arkham.Helpers.Campaign (getOwner)
@@ -26,8 +27,8 @@ import Arkham.Message.Lifted.Log
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheForgottenAge.Poison qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheForgottenAge.TheCityOfArchives qualified as Treacheries
 import Data.Aeson (Result (..))
 import Data.Aeson.Types (parseMaybe)
 import Data.Map qualified as Map
@@ -70,13 +71,13 @@ instance IsCampaign TheForgottenAge where
 theForgottenAge :: Difficulty -> TheForgottenAge
 theForgottenAge = campaign TheForgottenAge (CampaignId "04") "The Forgotten Age"
 
-initialSupplyPoints :: (HasGame m, Tracing m) => m Int
+initialSupplyPoints :: HasGame m => m Int
 initialSupplyPoints = getPlayerCountValue (ByPlayerCount 10 7 5 4)
 
-initialResupplyPoints :: (HasGame m, Tracing m) => m Int
+initialResupplyPoints :: HasGame m => m Int
 initialResupplyPoints = getPlayerCountValue (ByPlayerCount 8 5 4 3)
 
-getPoisonedInvestigators :: (HasGame m, Tracing m) => CampaignAttrs -> m [InvestigatorId]
+getPoisonedInvestigators :: HasGame m => CampaignAttrs -> m [InvestigatorId]
 getPoisonedInvestigators attrs = do
   -- Only investigators still in the game can be poisoned. An investigator who
   -- was killed/driven insane and replaced still has their Poisoned card recorded
@@ -95,6 +96,13 @@ getPoisonedInvestigators attrs = do
     mapToList attrs.storyCards & mapMaybe \(iid, cards) ->
       guard (any (`cardMatch` CardWithTitle "Poisoned") cards) $> iid
 
+{- | The Relic of Ages card recorded against @iid@, whichever of its four printings the
+campaign has reached (04061, 04191, 04303, 04343 all share the title).
+-}
+relicOwnedBy :: InvestigatorId -> CampaignAttrs -> Maybe Card
+relicOwnedBy iid attrs =
+  find (`cardMatch` CardWithTitle "Relic of Ages") $ findWithDefault [] iid attrs.storyCards
+
 instance RunMessage TheForgottenAge where
   runMessage msg c@(TheForgottenAge attrs) = runQueueT $ campaignI18n do
     lift $ runForgottenAgeAchievements msg
@@ -112,7 +120,7 @@ instance RunMessage TheForgottenAge where
           ul $ li.validate (notNull expeditionLeaders) "expeditionLeader"
         when (notNull expeditionLeaders) do
           leadChooseOneM do
-            questionLabeled' "expeditionLeader"
+            questionLabeled "expeditionLeader"
             cardsLabeled expeditionLeaders \target -> do
               push $ SetCampaignMeta $ toJSON (metadata' {expeditionLeader = Just target})
         eachInvestigator (`forInvestigator` msg)
@@ -148,10 +156,10 @@ instance RunMessage TheForgottenAge where
               p.valid "tossingAndTurning"
 
           chooseOneM iid $ unscoped do
-            questionLabeled' "chooseTrauma"
+            questionLabeled "chooseTrauma"
             questionLabeledCard iid
-            countVar 1 $ labeled' "sufferPhysicalTrauma" $ sufferPhysicalTrauma iid 1
-            countVar 1 $ labeled' "sufferMentalTrauma" $ sufferMentalTrauma iid 1
+            countVar 1 $ labeled "sufferPhysicalTrauma" $ sufferPhysicalTrauma iid 1
+            countVar 1 $ labeled "sufferMentalTrauma" $ sufferMentalTrauma iid 1
 
         let useProvisions = take (length investigators) provisions
         for_ useProvisions (uncurry useSupply)
@@ -162,7 +170,7 @@ instance RunMessage TheForgottenAge where
             storyOnlyBuild [iid] $ setTitle "title" >> p.green "lowOnRations"
             handleTarget iid CampaignSource iid
 
-        storyWithChooseOneM' (setTitle "title" >> p.green "lookout") do
+        storyWithChooseOneM (setTitle "title" >> p.green "lookout") do
           for_ investigatorsWithBinocularsPairs \(iid, hasBinoculars) -> do
             cardLabeled (unInvestigatorId iid) do
               if hasBinoculars
@@ -182,8 +190,8 @@ instance RunMessage TheForgottenAge where
       ForInvestigators withPoisoned msg'@(CampaignStep (InterludeStep 1 _mkey)) -> scope "interlude1" do
         withMedicine <- getInvestigatorsWithSupply Medicine
         for_ (nonEmpty withMedicine) \(doctor :| _) -> do
-          storyWithChooseOneM' (setTitle "title" >> p.green "medicine") do
-            labeled' "doNotUseMedicine" nothing
+          storyWithChooseOneM (setTitle "title" >> p.green "medicine") do
+            labeled "doNotUseMedicine" nothing
             for_ (eachWithRest withPoisoned) \(poisoned, rest) -> do
               cardLabeled (unInvestigatorId poisoned) do
                 removeCampaignCardFromDeck poisoned Treacheries.poisoned
@@ -208,9 +216,9 @@ instance RunMessage TheForgottenAge where
         interludeStepPart 2 mkey $ if recoveredTheRelicOfAges then 1 else 5
         pure c
       CampaignStep (InterludeStepPart 2 mkey 1) -> scope "interlude2" do
-        storyWithChooseOneM' (setTitle "title" >> p "expeditionsEnd1") do
-          labeled' "pickExpeditionsEnd2" $ interludeStepPart 2 mkey 2
-          labeled' "pickExpeditionsEnd3" $ interludeStepPart 2 mkey 3
+        storyWithChooseOneM (setTitle "title" >> p "expeditionsEnd1") do
+          labeled "pickExpeditionsEnd2" $ interludeStepPart 2 mkey 2
+          labeled "pickExpeditionsEnd3" $ interludeStepPart 2 mkey 3
         pure c
       CampaignStep (InterludeStepPart 2 mkey 2) -> scope "interlude2" do
         flavor $ setTitle "title" >> p "expeditionsEnd2"
@@ -265,7 +273,7 @@ instance RunMessage TheForgottenAge where
         xp <- field InvestigatorXp iid
         when (xp + extraXp >= 2) do
           countVar extraXp
-            $ chooseAmount'
+            $ chooseAmount
               iid
               (if extraXp > 0 then "supplyPointsToGainWithExtra" else "supplyPointsToGain")
               "$supplyPoints"
@@ -306,17 +314,17 @@ instance RunMessage TheForgottenAge where
 
         when (isPoisoned && hasXp) do
           chooseOneM iid do
-            questionLabeled' "visitStMarys"
+            questionLabeled "visitStMarys"
             questionLabeledCard iid
 
             when (extraXp > 0) do
               info' $ countVar extraXp $ p "extraXp"
 
-            labeled' "removePoisoned" do
+            labeled "removePoisoned" do
               doStep 0 (DoStep 3 msg') -- spend extra first
               push $ SpendXP iid toSpend
               removeCampaignCardFromDeck iid Treacheries.poisoned
-            labeled' "doNotRemovePoisoned" nothing
+            labeled "doNotRemovePoisoned" nothing
         pure c
       DoStep 3 msg'@(ForInvestigator iid (CampaignStep ResupplyPoint)) -> scope "resupplyPoint" do
         let extraXp = Map.findWithDefault 0 iid (bonusXp metadata)
@@ -331,25 +339,25 @@ instance RunMessage TheForgottenAge where
 
         when canHealTrauma do
           chooseOneM iid do
-            questionLabeled' "visitStMarys"
+            questionLabeled "visitStMarys"
             questionLabeledCard iid
 
             when (extraXp > 0) do
               info' $ countVar extraXp $ p "extraXp"
 
             when hasPhysicalTrauma do
-              labeled' "removePhysicalTrauma" do
+              labeled "removePhysicalTrauma" do
                 doStep 0 (DoStep 5 msg') -- spend extra first
                 when (toSpend > 0) $ push $ SpendXP iid toSpend
                 push $ HealTrauma iid 1 0
                 when (isReturnTo && xp + extraXp - 5 >= 5) $ doStep 3 msg'
             when hasMentalTrauma do
-              labeled' "removeMentalTrauma" do
+              labeled "removeMentalTrauma" do
                 doStep 0 (DoStep 5 msg') -- spend extra first
                 when (toSpend > 0) $ push $ SpendXP iid toSpend
                 push $ HealTrauma iid 0 1
                 when (isReturnTo && xp + extraXp - 5 >= 5) $ doStep 3 msg'
-            labeled' "doNotRemoveTrauma" nothing
+            labeled "doNotRemoveTrauma" nothing
 
         pure c
       DoStep 0 (DoStep n (ForInvestigator iid (CampaignStep ResupplyPoint))) -> do
@@ -452,8 +460,8 @@ instance RunMessage TheForgottenAge where
       ForInvestigators withPoisoned msg'@(CampaignStep (InterludeStep 3 _mkey)) -> scope "interlude3" do
         withMedicine <- getInvestigatorsWithSupply Medicine
         for_ (nonEmpty withMedicine) \(doctor :| _) -> do
-          storyWithChooseOneM' (setTitle "title" >> p.green "medicine") do
-            labeled' "doNotUseMedicine" nothing
+          storyWithChooseOneM (setTitle "title" >> p.green "medicine") do
+            labeled "doNotUseMedicine" nothing
             for_ (eachWithRest withPoisoned) \(poisoned, rest) -> do
               cardLabeled (unInvestigatorId poisoned) do
                 removeCampaignCardFromDeck poisoned Treacheries.poisoned
@@ -594,8 +602,8 @@ instance RunMessage TheForgottenAge where
       ForInvestigators withPoisoned msg'@(CampaignStep (InterludeStepPart 4 _mkey 5)) -> scope "interlude4" do
         withMedicine <- getInvestigatorsWithSupply Medicine
         for_ (nonEmpty withMedicine) \(doctor :| _) -> do
-          storyWithChooseOneM' (setTitle "title" >> p.green "medicine") do
-            labeled' "doNotUseMedicine" nothing
+          storyWithChooseOneM (setTitle "title" >> p.green "medicine") do
+            labeled "doNotUseMedicine" nothing
             for_ (eachWithRest withPoisoned) \(poisoned, rest) -> do
               cardLabeled (unInvestigatorId poisoned) do
                 removeCampaignCardFromDeck poisoned Treacheries.poisoned
@@ -621,10 +629,10 @@ instance RunMessage TheForgottenAge where
         for_ withoutBlanket \iid -> do
           storyOnlyBuild [iid] $ setTitle "title" >> p.green "tossingAndTurning"
           chooseOneM iid $ unscoped do
-            questionLabeled' "chooseTrauma"
+            questionLabeled "chooseTrauma"
             questionLabeledCard iid
-            countVar 1 $ labeled' "sufferPhysicalTrauma" $ sufferPhysicalTrauma iid 1
-            countVar 1 $ labeled' "sufferMentalTrauma" $ sufferMentalTrauma iid 1
+            countVar 1 $ labeled "sufferPhysicalTrauma" $ sufferPhysicalTrauma iid 1
+            countVar 1 $ labeled "sufferMentalTrauma" $ sufferMentalTrauma iid 1
         pure c
       CampaignStep (InterludeStep 5 mkey) -> scope "interlude5" do
         fellIntoTheDepths <- getHasRecord TheInvestigatorsFellIntoTheDepths
@@ -726,4 +734,34 @@ instance RunMessage TheForgottenAge where
           _ -> error "Invalid meta!"
       HandleOption PlayersDoNotControlStoryAssetClues -> do
         pure $ TheForgottenAge $ attrs & logL . optionsL %~ insertSet PlayersDoNotControlStoryAssetClues
+      ReplaceInvestigator oldIid _ -> do
+        -- Threads of Fate, "The investigators found the missing relic": "For the remainder
+        -- of the campaign, anytime the owner of the Relic of Ages leaves the campaign for any
+        -- reason, choose another investigator and add it to that investigator's deck."
+        --
+        -- Left keyed to the departed investigator the relic is gone for good: ReloadDecks
+        -- only walks campaignDecks, so a storyCards entry whose owner has no deck is never
+        -- dealt in again, and Shattered Aeons' act 3 -- whose every ability needs the relic
+        -- in a deck, discard, or play -- can no longer advance (#5378).
+        --
+        -- Deferred until DoneUpgradingDecks so the choice cannot park a question inside the
+        -- deck window (#5173, #5256), and so the candidates are read once the incoming
+        -- investigator is actually seated. insertAfterMatchingOrNow must run on the real
+        -- queue, not runQueueT's buffer, or it would never see that message.
+        for_ (relicOwnedBy oldIid attrs) \_ ->
+          lift $ insertAfterMatchingOrNow [Do msg] (== DoneUpgradingDecks)
+        lift $ defaultCampaignRunner msg c
+      Do (ReplaceInvestigator oldIid _) -> do
+        for_ (relicOwnedBy oldIid attrs) \relic -> do
+          investigators <- allInvestigators
+          -- No one left to be the new bearer: leave the record alone rather than emitting an
+          -- empty ChooseOne, which would park an unanswerable question.
+          unless (null investigators) do
+            -- Clear the stale entry first: AddCampaignCardToDeck only inserts under the new
+            -- key, and the owner-agnostic getIsAlreadyOwned would still see the old one.
+            removeCardFromDeckForCampaign oldIid relic
+            -- Collapses to a bare AddCampaignCardToDeck (which re-owns the card) when there
+            -- is only one candidate, so solo gets no pointless prompt.
+            forceAddCampaignCardToDeckChoice investigators DoNotShuffleIn relic
+        pure c
       _ -> lift $ defaultCampaignRunner msg c

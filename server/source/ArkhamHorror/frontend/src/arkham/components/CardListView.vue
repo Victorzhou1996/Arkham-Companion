@@ -4,108 +4,41 @@ import { useDbCardStore } from '@/stores/dbCards'
 import type { ArkhamDBCard } from '@/stores/dbCards'
 import * as Arkham from '@/arkham/types/CardDef'
 import { localizeArkhamDBBaseUrl } from '@/arkham/helpers'
-import sets from '@/arkham/data/sets.json'
+import { cardCost, cardGroupKey as groupKey, cardIcons, cardName, cardSetText, cardTraits, cardType, groupCards, levelText } from '@/arkham/cardDetails'
 
-const props = withDefaults(defineProps<{ cards: Arkham.CardDef[], attachments?: Record<string, Arkham.CardDef[]>, showCounts?: boolean }>(), {
+const props = withDefaults(defineProps<{
+  cards: Arkham.CardDef[],
+  attachments?: Record<string, Arkham.CardDef[]>,
+  showCounts?: boolean,
+  /* Editing an overlay: each card gets take-one/put-one-back controls right
+   * where it is listed, rather than in a separate pane. */
+  overlayEditing?: boolean,
+  overlayRemoved?: (card: Arkham.CardDef) => number,
+  /* What the overlay leaves of a card, when that differs from the copies
+   * listed. Zero means it is out but still shown, so it can be put back. */
+  overlayCount?: (card: Arkham.CardDef) => number | null,
+}>(), {
   attachments: () => ({}),
   showCounts: true,
+  overlayEditing: false,
+  overlayRemoved: () => () => 0,
+  overlayCount: () => () => null,
 })
+
+const shownCount = (card: Arkham.CardDef, count: number) => props.overlayCount(card) ?? count
+const isOut = (card: Arkham.CardDef) => props.overlayCount(card) === 0
+
+const emit = defineEmits<{ 'overlay-take': [card: Arkham.CardDef]; 'overlay-restore': [card: Arkham.CardDef] }>()
 
 const store = useDbCardStore()
 
-const cardName = (card: Arkham.CardDef) => {
-  const subtitle = card.name.subtitle === null ? "" : `: ${card.name.subtitle}`
-  return `${card.name.title}${subtitle}`
-}
-
-const levelText = (card: Arkham.CardDef) => {
-  if (!card.level || card.level === 0) return ''
-  return ` (${card.level})`
-}
-
-const cardCost = (card: Arkham.CardDef) => {
-  if (card.cost?.tag === "StaticCost") return card.cost.contents
-  if (card.cost?.tag === "DynamicCost") return -2
-  if (card.cost?.tag === "DeferredCost") return -2
-  if (card.cost?.tag === "DiscardAmountCost") return -2
-  return null
-}
-
-const cardType = (card: Arkham.CardDef) => {
-  switch (card.cardType) {
-    case "PlayerTreacheryType": return "Treachery"
-    case "PlayerEnemyType": return "Enemy"
-    default: return card.cardType.replace(/Type$/, '')
-  }
-}
-
-const cardTraits = (card: Arkham.CardDef) => {
-  if (card.cardTraits.length === 0) return ''
-  return `${card.cardTraits.join('. ')}.`
-}
-
-const cardIcons = (card: Arkham.CardDef) => {
-  return card.skills.map((s) => {
-    if (s.tag === "SkillIcon") {
-      switch (s.contents) {
-        case "SkillWillpower": return "willpower"
-        case "SkillIntellect": return "intellect"
-        case "SkillCombat": return "combat"
-        case "SkillAgility": return "agility"
-        default: return "unknown"
-      }
-    }
-    if (s.tag == "WildIcon" || s.tag == "WildMinusIcon") return "wild"
-    return "unknown"
-  })
-}
-
-const cardSetCache = new Map<string, (typeof sets)[number] | undefined>()
-
-const cardSet = (card: Arkham.CardDef) => {
-  const cached = cardSetCache.get(card.art)
-  if (cached !== undefined || cardSetCache.has(card.art)) return cached
-
-  const cardCode = parseInt(card.art)
-  const set = sets.find((s) => cardCode >= s.min && cardCode <= s.max)
-  cardSetCache.set(card.art, set)
-  return set
-}
-
-const cardSetText = (card: Arkham.CardDef) => {
-  const setNumber = parseInt(card.art.slice(2))
+// The set name is localized from the ArkhamDB card data when we have it.
+const setText = (card: Arkham.CardDef) => {
   const language = localStorage.getItem('language') || 'en'
-  let setName = ''
+  if (language === 'en') return cardSetText(card)
 
-  if (language !== 'en') {
-    const match: ArkhamDBCard | null = store.getDbCard(card.art)
-    if (match) setName = match.pack_name
-  }
-
-  if (!setName) {
-    const set = cardSet(card)
-    if (set) setName = set.name
-  }
-
-  if (setName) return `${setName} ${setNumber % 500}`
-  return "Unknown"
-}
-
-const ungroupedWarOfTheOuterGodsCards = new Set(['c86038a', 'c86044a', 'c86049a'])
-
-const groupKey = (card: Arkham.CardDef) => ungroupedWarOfTheOuterGodsCards.has(card.cardCode) ? card.cardCode : card.art
-
-const groupCards = (cards: Arkham.CardDef[]) => {
-  const grouped = new Map<string, { card: Arkham.CardDef; count: number }>()
-
-  for (const card of cards) {
-    const key = groupKey(card)
-    const existing = grouped.get(key)
-    if (existing) existing.count += 1
-    else grouped.set(key, { card, count: 1 })
-  }
-
-  return Array.from(grouped.values())
+  const match: ArkhamDBCard | null = store.getDbCard(card.art)
+  return cardSetText(card, match?.pack_name)
 }
 
 const groupedCards = computed(() => groupCards(props.cards))
@@ -116,6 +49,10 @@ const groupedAttachedCards = (card: Arkham.CardDef) => groupCards(attachedCards(
 
 const underworldMarketCards = () => props.attachments['09077'] ?? []
 const spiritDeckCards = () => props.attachments['90052'] ?? []
+const stickToThePlanCards = () => props.attachments['03264'] ?? []
+const ancestralKnowledgeCards = () => props.attachments['07303'] ?? []
+const bewitchingCards = () => props.attachments['10079'] ?? []
+const eldritchBrandCards = () => props.attachments['11080'] ?? []
 
 const countCards = (cards: Arkham.CardDef[]) => {
   const counts = new Map<string, number>()
@@ -125,19 +62,36 @@ const countCards = (cards: Arkham.CardDef[]) => {
 
 const marketCardCounts = computed(() => countCards(underworldMarketCards()))
 const spiritCardCounts = computed(() => countCards(spiritDeckCards()))
+const stickToThePlanCardCounts = computed(() => countCards(stickToThePlanCards()))
+const ancestralKnowledgeCardCounts = computed(() => countCards(ancestralKnowledgeCards()))
+const bewitchingCardCounts = computed(() => countCards(bewitchingCards()))
+const eldritchBrandCardCounts = computed(() => countCards(eldritchBrandCards()))
 
 const marketCardCount = (card: Arkham.CardDef) => marketCardCounts.value.get(card.art) ?? 0
 const spiritCardCount = (card: Arkham.CardDef) => spiritCardCounts.value.get(card.art) ?? 0
+const stickToThePlanCardCount = (card: Arkham.CardDef) => stickToThePlanCardCounts.value.get(card.art) ?? 0
+const ancestralKnowledgeCardCount = (card: Arkham.CardDef) => ancestralKnowledgeCardCounts.value.get(card.art) ?? 0
+const bewitchingCardCount = (card: Arkham.CardDef) => bewitchingCardCounts.value.get(card.art) ?? 0
+const eldritchBrandCardCount = (card: Arkham.CardDef) => eldritchBrandCardCounts.value.get(card.art) ?? 0
 
 const marketTooltip = (card: Arkham.CardDef) => `Attached to Market deck (x ${marketCardCount(card)})`
 const spiritTooltip = (card: Arkham.CardDef) => `In Spirit deck (x ${spiritCardCount(card)})`
+const stickToThePlanTooltip = (card: Arkham.CardDef) => `Attached to Stick to the Plan (x ${stickToThePlanCardCount(card)})`
+const ancestralKnowledgeTooltip = (card: Arkham.CardDef) => `Attached to Ancestral Knowledge (x ${ancestralKnowledgeCardCount(card)})`
+const bewitchingTooltip = (card: Arkham.CardDef) => `Attached to Bewitching (x ${bewitchingCardCount(card)})`
+const eldritchBrandTooltip = (card: Arkham.CardDef) => `Branded by Eldritch Brand (x ${eldritchBrandCardCount(card)})`
 
 const isUnderworldMarketCard = (card: Arkham.CardDef) => marketCardCount(card) > 0
 const isSpiritDeckCard = (card: Arkham.CardDef) => spiritCardCount(card) > 0
+const isStickToThePlanCard = (card: Arkham.CardDef) => stickToThePlanCardCount(card) > 0
+const isAncestralKnowledgeCard = (card: Arkham.CardDef) => ancestralKnowledgeCardCount(card) > 0
+const isBewitchingCard = (card: Arkham.CardDef) => bewitchingCardCount(card) > 0
+const isEldritchBrandCard = (card: Arkham.CardDef) => eldritchBrandCardCount(card) > 0
 
 const attachmentHeading = (card: Arkham.CardDef) => {
   if (card.art === '90052') return 'Spirit deck'
   if (card.art === '09077') return 'Underworld Market'
+  if (card.art === '11080') return 'Eldritch Brand'
   return `Attached cards for ${cardName(card)}`
 }
 </script>
@@ -158,14 +112,39 @@ const attachmentHeading = (card: Arkham.CardDef) => {
       </thead>
       <tbody>
         <template v-for="{ card, count } in groupedCards" :key="groupKey(card)">
-          <tr>
+          <tr :class="{ 'card-row--out': isOut(card) }">
             <td>
               <div class="card-name-cell">
-                <span v-if="showCounts" class="deck-card-count">x {{ count }}</span>
+                <span v-if="overlayEditing" class="overlay-controls">
+                  <button type="button" title="Take one out" @click="emit('overlay-take', card)">−</button>
+                  <button
+                    type="button"
+                    title="Put one back"
+                    :disabled="overlayRemoved(card) === 0"
+                    @click="emit('overlay-restore', card)"
+                  >+</button>
+                </span>
+                <span v-if="showCounts" class="deck-card-count">x {{ shownCount(card, count) }}</span>
                 <a target="_blank" :href="`${localizeArkhamDBBaseUrl()}/card/${card.art}`">{{ cardName(card) }}{{ levelText(card) }}</a>
                 <span v-if="isUnderworldMarketCard(card)" class="market-badge" v-tooltip="marketTooltip(card)" :aria-label="marketTooltip(card)">
                   <font-awesome-icon icon="store" />
                   <span>x {{ marketCardCount(card) }}</span>
+                </span>
+                <span v-if="isStickToThePlanCard(card)" class="market-badge" v-tooltip="stickToThePlanTooltip(card)" :aria-label="stickToThePlanTooltip(card)">
+                  <font-awesome-icon icon="paperclip" />
+                  <span>x {{ stickToThePlanCardCount(card) }}</span>
+                </span>
+                <span v-if="isAncestralKnowledgeCard(card)" class="market-badge" v-tooltip="ancestralKnowledgeTooltip(card)" :aria-label="ancestralKnowledgeTooltip(card)">
+                  <font-awesome-icon icon="paperclip" />
+                  <span>x {{ ancestralKnowledgeCardCount(card) }}</span>
+                </span>
+                <span v-if="isBewitchingCard(card)" class="market-badge" v-tooltip="bewitchingTooltip(card)" :aria-label="bewitchingTooltip(card)">
+                  <font-awesome-icon icon="paperclip" />
+                  <span>x {{ bewitchingCardCount(card) }}</span>
+                </span>
+                <span v-if="isEldritchBrandCard(card)" class="market-badge" v-tooltip="eldritchBrandTooltip(card)" :aria-label="eldritchBrandTooltip(card)">
+                  <font-awesome-icon icon="book" />
+                  <span>x {{ eldritchBrandCardCount(card) }}</span>
                 </span>
                 <span v-if="isSpiritDeckCard(card)" class="spirit-badge" v-tooltip="spiritTooltip(card)" :aria-label="spiritTooltip(card)">
                   <font-awesome-icon :icon="['fas', 'ghost']" />
@@ -187,7 +166,7 @@ const attachmentHeading = (card: Arkham.CardDef) => {
               <i v-for="(icon, index) in cardIcons(card)" :key="index" :class="[icon, `${icon}-icon`]"></i>
             </td>
             <td class="traits-col">{{ cardTraits(card) }}</td>
-            <td class="set-col">{{ cardSetText(card) }}</td>
+            <td class="set-col">{{ setText(card) }}</td>
           </tr>
           <tr v-if="attachedCards(card).length > 0" class="attachments-row">
             <td colspan="7">
@@ -195,7 +174,19 @@ const attachmentHeading = (card: Arkham.CardDef) => {
                 <div class="attachments-heading" :class="{ 'attachments-heading--spirit': card.art === '90052' }">
                   <font-awesome-icon :icon="card.art === '90052' ? ['fas', 'ghost'] : 'paperclip'" /> {{ attachmentHeading(card) }}
                 </div>
-                <div class="attachment-pills">
+                <div v-if="card.art === '11080'" class="attachment-pills">
+                  <a
+                    v-for="entry in groupedAttachedCards(card)"
+                    :key="groupKey(entry.card)"
+                    class="attachment-pill"
+                    target="_blank"
+                    :href="`${localizeArkhamDBBaseUrl()}/card/${entry.card.art}`"
+                  >
+                    <span class="attachment-name">{{ cardName(entry.card) }}{{ levelText(entry.card) }} was branded</span>
+                    <span v-if="entry.count > 1" class="attachment-count">x {{ entry.count }}</span>
+                  </a>
+                </div>
+                <div v-else class="attachment-pills">
                   <a
                     v-for="entry in groupedAttachedCards(card)"
                     :key="groupKey(entry.card)"
@@ -434,5 +425,40 @@ a {
 @media (max-width: 768px) {
   .class-text { display: none; }
   .class-icons { display: inline-flex; }
+}
+
+.overlay-controls {
+  display: inline-flex;
+  gap: 0.15rem;
+  margin-right: 0.35rem;
+}
+
+.overlay-controls button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--box-border);
+  border-radius: 3px;
+  color: var(--title);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+}
+
+/* Taken out by the overlay, but still listed so it can be put back. */
+.card-row--out > td {
+  opacity: 0.4;
+}
+
+.card-row--out .overlay-controls {
+  opacity: 1;
 }
 </style>

@@ -2,14 +2,14 @@
   "tokens": {
     "easyStandard": {
       "skull": "-X。X为当前的密谋编号。",
-      "cultist": "-X. X is the number of [[Guest]] assets at your location (to a maximum of 5).",
-      "tablet": "-2. (-4 instead if you are at a [[Private]] location).",
+      "cultist": "-X. X is the number of _Guest_ assets at your location (to a maximum of 5).",
+      "tablet": "-2. (-4 instead if you are at a _Private_ location).",
       "elderThing": "-3。如果你失败，或_无血者_位于你的地点，则受到1点恐惧。"
     },
     "hardExpert": {
       "skull": "-X。X为1加上当前的密谋编号。",
       "cultist": "-X。X为你所在地点的剧情支援数量。",
-      "tablet": "-3 (-5 instead if you are at a [[Private]] location).",
+      "tablet": "-3 (-5 instead if you are at a _Private_ location).",
       "elderThing": "-4。如果你失败，或_无血者_位于你的地点，则受到1点恐惧。"
     }
   },

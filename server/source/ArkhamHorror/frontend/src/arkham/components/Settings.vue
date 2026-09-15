@@ -6,6 +6,8 @@ import { updateGameRaw } from '@/arkham/api'
 import { gameLocalStorageKey, getGameLocalStorageItem, removeGameLocalStorageItem, setGameLocalStorageItem } from '@/arkham/localStorage'
 import campaignJSON from '@/arkham/data/campaigns.json'
 import { BugAntIcon } from '@heroicons/vue/20/solid'
+import { useSettings } from '@/stores/settings'
+import CardOptionsSettings from '@/arkham/components/CardOptionsSettings.vue'
 
 const props = defineProps<{
   game: Game
@@ -22,6 +24,29 @@ const emit = defineEmits<{
 const showOtherHands = computed({
   get: () => props.showOtherPlayersHands,
   set: (v: boolean) => emit('update:showOtherPlayersHands', v),
+})
+
+const settings = useSettings()
+
+// Global player preference, and a per-scenario override that can defer to it.
+// Both live in the settings store; prefers-reduced-motion is folded in there
+// too, which is why the resolved value can be off while both of these read on.
+const extraAnimationsGlobal = computed({
+  get: () => settings.extraAnimationsGlobal,
+  set: (value: boolean) => settings.setExtraAnimationsGlobal(value),
+})
+
+const extraAnimationsOverride = computed<'default' | 'on' | 'off'>({
+  get: () => {
+    if (settings.extraAnimationsOverride === null) return 'default'
+    return settings.extraAnimationsOverride ? 'on' : 'off'
+  },
+  set: (value) => settings.setExtraAnimationsOverride(value === 'default' ? null : value === 'on'),
+})
+
+const hideInertCards = computed({
+  get: () => settings.hideInertCards,
+  set: (value: boolean) => settings.setHideInertCards(value),
 })
 
 const soundsDisabled = ref(localStorage.getItem('arkhamSoundsDisabled') === 'true')
@@ -148,7 +173,7 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
               <div class="toggle-name">{{$t('gameBar.viewSettingShowOtherPlayersHandsTitle')}}</div>
               <div class="toggle-desc">{{$t('gameBar.viewSettingShowOtherPlayersHands')}}</div>
             </div>
-            <div class="segmented segmented-2 toggle-control">
+            <div class="segmented toggle-control">
               <input type="radio" id="opt-showHands-on" name="opt-showHands" :checked="showOtherHands" @change="showOtherHands = true" />
               <label for="opt-showHands-on">{{ $t('On') }}</label>
               <input type="radio" id="opt-showHands-off" name="opt-showHands" :checked="!showOtherHands" @change="showOtherHands = false" />
@@ -158,14 +183,64 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
 
           <div class="toggle-row">
             <div class="toggle-text">
+              <div class="toggle-name">Hide Cards With No Ongoing Effect</div>
+              <div class="toggle-desc">
+                Once setup is over, tuck permanents whose text only applied at deck creation or
+                setup — In the Thick of It, Adaptable, Observed — into a stack beside the play area.
+              </div>
+            </div>
+            <div class="segmented toggle-control">
+              <input type="radio" id="opt-hideInertCards-on" name="opt-hideInertCards" :checked="hideInertCards" @change="hideInertCards = true" />
+              <label for="opt-hideInertCards-on">{{ $t('On') }}</label>
+              <input type="radio" id="opt-hideInertCards-off" name="opt-hideInertCards" :checked="!hideInertCards" @change="hideInertCards = false" />
+              <label for="opt-hideInertCards-off">{{ $t('Off') }}</label>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-text">
               <div class="toggle-name">Sounds</div>
               <div class="toggle-desc">Play sound effects in this browser.</div>
             </div>
-            <div class="segmented segmented-2 toggle-control">
+            <div class="segmented toggle-control">
               <input type="radio" id="opt-sounds-on" name="opt-sounds" :checked="!soundsDisabled" @change="soundsDisabled = false" />
               <label for="opt-sounds-on">{{ $t('On') }}</label>
               <input type="radio" id="opt-sounds-off" name="opt-sounds" :checked="soundsDisabled" @change="soundsDisabled = true" />
               <label for="opt-sounds-off">{{ $t('Off') }}</label>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-text">
+              <div class="toggle-name">Extra Animations</div>
+              <div class="toggle-desc">
+                Decorative effects like burning locations and the Cosmic Emissary beams. Never
+                affects anything you need to see to play.
+                <template v-if="settings.prefersReducedMotion">
+                  Currently off anyway, because this device asks for reduced motion.
+                </template>
+              </div>
+            </div>
+            <div class="segmented toggle-control">
+              <input type="radio" id="opt-extraAnimations-on" name="opt-extraAnimations" :checked="extraAnimationsGlobal" @change="extraAnimationsGlobal = true" />
+              <label for="opt-extraAnimations-on">{{ $t('On') }}</label>
+              <input type="radio" id="opt-extraAnimations-off" name="opt-extraAnimations" :checked="!extraAnimationsGlobal" @change="extraAnimationsGlobal = false" />
+              <label for="opt-extraAnimations-off">{{ $t('Off') }}</label>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-text">
+              <div class="toggle-name">Extra Animations (this scenario)</div>
+              <div class="toggle-desc">Override the setting above for this game only.</div>
+            </div>
+            <div class="segmented toggle-control">
+              <input type="radio" id="opt-extraAnimationsScenario-default" name="opt-extraAnimationsScenario" :checked="extraAnimationsOverride === 'default'" @change="extraAnimationsOverride = 'default'" />
+              <label for="opt-extraAnimationsScenario-default">Default</label>
+              <input type="radio" id="opt-extraAnimationsScenario-on" name="opt-extraAnimationsScenario" :checked="extraAnimationsOverride === 'on'" @change="extraAnimationsOverride = 'on'" />
+              <label for="opt-extraAnimationsScenario-on">{{ $t('On') }}</label>
+              <input type="radio" id="opt-extraAnimationsScenario-off" name="opt-extraAnimationsScenario" :checked="extraAnimationsOverride === 'off'" @change="extraAnimationsOverride = 'off'" />
+              <label for="opt-extraAnimationsScenario-off">{{ $t('Off') }}</label>
             </div>
           </div>
 
@@ -174,7 +249,7 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
               <div class="toggle-name">Enable Cosmic Emissary Animation</div>
               <div class="toggle-desc">Shows animated Cosmic Emissary connection effects for Fate of the Vale.</div>
             </div>
-            <div class="segmented segmented-2 toggle-control">
+            <div class="segmented toggle-control">
               <input type="radio" id="opt-cosmicEmissaryAnimation-on" name="opt-cosmicEmissaryAnimation" :checked="enableCosmicEmissaryAnimation" @change="enableCosmicEmissaryAnimation = true" />
               <label for="opt-cosmicEmissaryAnimation-on">{{ $t('On') }}</label>
               <input type="radio" id="opt-cosmicEmissaryAnimation-off" name="opt-cosmicEmissaryAnimation" :checked="!enableCosmicEmissaryAnimation" @change="enableCosmicEmissaryAnimation = false" />
@@ -184,6 +259,8 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
         </div>
       </section>
 
+      <CardOptionsSettings :game="game" :playerId="playerId" />
+
       <section class="settings-section">
         <h3 class="section-title">Shared Game Settings</h3>
         <div class="toggle-list">
@@ -192,7 +269,7 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
               <div class="toggle-name">"As If" Ruling</div>
               <div class="toggle-desc">Swap between Chapter 1 and Chapter 2 handling for "as if" effects during nested window checks. This affects everyone in the game.</div>
             </div>
-            <div class="segmented segmented-2 toggle-control">
+            <div class="segmented toggle-control">
               <input type="radio" id="opt-asIfRuling-chapter1" name="opt-asIfRuling" :checked="asIfRuling === 'chapter1'" @change="asIfRuling = 'chapter1'" />
               <label for="opt-asIfRuling-chapter1">Chapter 1</label>
               <input type="radio" id="opt-asIfRuling-chapter2" name="opt-asIfRuling" :checked="asIfRuling === 'chapter2'" @change="asIfRuling = 'chapter2'" />
@@ -205,7 +282,7 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
               <div class="toggle-name">{{ $t('ultimatumsAndBoons.settingsToggleTitle') }}</div>
               <div class="toggle-desc">{{ $t('ultimatumsAndBoons.settingsToggleDescription') }}</div>
             </div>
-            <div class="segmented segmented-2 toggle-control">
+            <div class="segmented toggle-control">
               <input type="radio" id="opt-ultimatumsAndBoons-on" name="opt-ultimatumsAndBoons" :checked="ultimatumsAndBoonsEnabled" @change="ultimatumsAndBoonsEnabled = true" />
               <label for="opt-ultimatumsAndBoons-on">{{ $t('On') }}</label>
               <input type="radio" id="opt-ultimatumsAndBoons-off" name="opt-ultimatumsAndBoons" :checked="!ultimatumsAndBoonsEnabled" @change="ultimatumsAndBoonsEnabled = false" />
@@ -223,7 +300,7 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
                 {{ optionDescription(o.option.tag) }}
               </div>
             </div>
-            <div class="segmented segmented-2 toggle-control">
+            <div class="segmented toggle-control">
               <input
                 type="radio"
                 :id="`opt-${o.option.tag}-on`"
@@ -344,9 +421,12 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
   color: var(--background-light);
 }
 
+/* Grow past 150px when the labels need it ("Default", "Chapter 1", …) rather
+   than letting the segments clip or wrap. */
 .toggle-control {
-  width: 150px;
+  min-width: 150px;
   flex-shrink: 0;
+  justify-self: end;
 }
 
 .toggle-icon {
@@ -358,15 +438,13 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
 
 .segmented {
   display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   border-radius: 5px;
   background: var(--background-dark);
   border: 1px solid var(--box-border);
   padding: 2px;
   gap: 2px;
-}
-
-.segmented-2 {
-  grid-template-columns: repeat(2, 1fr);
 }
 
 .segmented input[type='radio'] {
@@ -382,6 +460,7 @@ const setOptionEnabled = async (o: RecommendedToggle, enabled: boolean) => {
   letter-spacing: 0.06em;
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
   user-select: none;
   cursor: pointer;
   border-radius: 3px;

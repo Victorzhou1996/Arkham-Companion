@@ -1,6 +1,18 @@
 import { useSiteSettingsStore } from '@/stores/site_settings'
 import { ref, type Ref } from 'vue'
 import { cardImageSource } from './cardImageSource'
+import { useSettings } from '@/stores/settings'
+import { variantArt } from '@/arkham/artVariants'
+import { replaceHomebrewIcons } from '@/arkham/homebrewAssets'
+import { iconClasses, runePlaceholder } from '@/arkham/icons'
+import {
+  cardArtReference,
+  customCardArt,
+  customCardDef,
+  customCardPlaceholder,
+  isCustomCardCode,
+} from '@/arkham/customCards'
+import { normalizeArkhamBuildDeckCodes } from '@/arkham/arkhamBuildImport'
 
 interface ImageHelper {
   root: string
@@ -101,6 +113,9 @@ const versionedUiAssets = new Set([
 ])
 
 function withUiAssetRevision(url: string, path: string) {
+  if (/^(cards|customizations|tarot|seals)\//.test(path)) {
+    return `${url}${url.includes('?') ? '&' : '?'}v=cards-20260913`
+  }
   if (!versionedUiAssets.has(path)) return url
   return `${url}${url.includes('?') ? '&' : '?'}v=ui-20260721-1`
 }
@@ -116,13 +131,25 @@ export function isLocalized(src: string) {
   return helper.digests.has(path)
 }
 
-export function imgsrc(src: string) {
+export function imgsrc(src: string): string {
+  // A debug-authored card carries its art with it (a URL, or a data URI for a
+  // dropped image) rather than living under the asset host -- unless it names a
+  // printed card's art instead, which resolves down the ordinary path below.
+  if (isCustomCardCode(src)) {
+    const art = customCardArt(src)
+    if (!art) return customCardPlaceholder(src)
+    const reference = cardArtReference(art)
+    return reference ? imgsrc(cardImgPath(reference)) : art
+  }
+
   const store = useSiteSettingsStore()
   const language = imageLanguage(localStorage.getItem('language') || 'en')
-  const path = src.replace(/^\//, '')
+  const path = src.replace(/^\//, '').replace(/^cards\/(.+)\.avif$/, (_, art: string) =>
+    `cards/${variantArt(art, useSettings().useVariants)}.avif`
+  )
   const fullPath = `${store.assetHost}/img/arkham/${path}`
 
-  if (isLocalized(src)) {
+  if (isLocalized(path)) {
     const helper = imgHelper.get(language) || defaultHelper
     const exists = helper.digests.has(path)
 
@@ -148,13 +175,34 @@ export function imgsrc(src: string) {
   )
 }
 
+// Homebrew card art (prefixed codes) lives under its campaign folder.
+// `art` is a c-stripped card code, optionally with suffixes (e.g. "circus-ex-mortis:001b", "dark-matter:063aa").
+export function cardImgPath(art: string): string {
+  // Custom card art is resolved by `imgsrc`, not by path.
+  if (isCustomCardCode(art)) return art
+
+  const homebrewMatch = art.match(/^:(.+):(\d+[a-z]*)$/)
+
+  if (homebrewMatch) {
+    const [, campaign, cardCode] = homebrewMatch
+    return `homebrew/${campaign}/cards/${cardCode}.avif`
+  }
+
+  return `cards/${art}.avif`
+}
+
+export function cardImg(art: string): string {
+  return imgsrc(cardImgPath(art))
+}
+
 export function pluralize(w: string, n: number) {
   const language = localStorage.getItem('language') || 'en'
   switch (language) {
     case 'ko': {
       return `${w} ${n}`
     }
-    case 'zh': {
+    case 'zh':
+    case 'zh-cn': {
       return `${n}${w}${n == 1 ? '' : ''}`
     }
     default:
@@ -166,42 +214,15 @@ export function formatContent(body: string) {
   return replaceIcons(body)
     .replace(/_([^_]*)_/g, '<strong>$1</strong>')
     .replace(/\*([^\*]*)\*/g, '<i>$1</i>')
+    .replace(/{asterisk}/g, '*')
+    .replace(/{underscore}/g, '_')
 }
 
 export function replaceIcons(body: string) {
-  return body
-    .replace(/{action}/g, '<span class="action-icon"></span>')
-    .replace(/{fast}/g, '<span class="fast-icon"></span>')
-    .replace(/{reaction}/g, '<span class="reaction-icon"></span>')
-    .replace(/{willpower}/g, '<span class="willpower-icon"></span>')
-    .replace(/{intellect}/g, '<span class="intellect-icon"></span>')
-    .replace(/{combat}/g, '<span class="combat-icon"></span>')
-    .replace(/{agility}/g, '<span class="agility-icon"></span>')
-    .replace(/{wild}/g, '<span class="wild-icon"></span>')
-    .replace(/{guardian}/g, '<span class="guardian-icon"></span>')
-    .replace(/{seeker}/g, '<span class="seeker-icon"></span>')
-    .replace(/{rogue}/g, '<span class="rogue-icon"></span>')
-    .replace(/{mystic}/g, '<span class="mystic-icon"></span>')
-    .replace(/{survivor}/g, '<span class="survivor-icon"></span>')
-    .replace(/{elderSign}/g, '<span class="elder-sign"></span>')
-    .replace(/{autoFail}/g, '<span class="auto-fail"></span>')
-    .replace(/{skull}/g, '<span class="skull-icon"></span>')
-    .replace(/{cultist}/g, '<span class="cultist-icon"></span>')
-    .replace(/{tablet}/g, '<span class="tablet-icon"></span>')
-    .replace(/{elderThing}/g, '<span class="elder-thing-icon"></span>')
-    .replace(/{bless}/g, '<span class="bless-icon"></span>')
-    .replace(/{curse}/g, '<span class="curse-icon"></span>')
-    .replace(/{frost}/g, '<span class="frost-icon"></span>')
-    .replace(/{sealA}/g, '<span class="seal-a-icon"></span>')
-    .replace(/{sealB}/g, '<span class="seal-b-icon"></span>')
-    .replace(/{sealC}/g, '<span class="seal-c-icon"></span>')
-    .replace(/{sealD}/g, '<span class="seal-d-icon"></span>')
-    .replace(/{sealE}/g, '<span class="seal-e-icon"></span>')
-    .replace(/{codex}/g, '<span class="codex-icon"></span>')
-    .replace(/{day}/g, '<span class="day-icon"></span>')
-    .replace(/{night}/g, '<span class="night-icon"></span>')
-    .replace(/{perPlayer}/g, '<span class="per-player"></span>')
-    .replace(/{rune([A-Z])}/g, '<span class="rune-$1"></span>')
+  return Object.entries(iconClasses).reduce(
+    (acc, [key, cls]) => acc.replaceAll(`{${key}}`, `<span class="${cls}"></span>`),
+    replaceHomebrewIcons(body),
+  ).replace(runePlaceholder, '<span class="rune-$1"></span>')
 }
 
 export type InvestigatorClass = 'guardian' | 'seeker' | 'rogue' | 'mystic' | 'survivor' | 'neutral'
@@ -330,6 +351,13 @@ const CLASS_TO_CODES: Record<InvestigatorClass, Set<string>> = {
 }
 
 export function investigatorClass(code: string): CssClassFlags {
+  // An investigator you built is in no printed set, so its class comes off its
+  // own def rather than the table above.
+  if (isCustomCardCode(code)) {
+    const symbol = customCardDef(code)?.classSymbols?.[0]?.toLowerCase()
+    return symbol && symbol in CLASS_TO_CODES ? { [symbol as InvestigatorClass]: true } : {}
+  }
+
   const flags: CssClassFlags = {}
   for (const cls of Object.keys(CLASS_TO_CODES) as InvestigatorClass[]) {
     if (CLASS_TO_CODES[cls].has(code)) {
@@ -407,5 +435,15 @@ export function processArkhamBuildDeck<T extends { slots?: Record<string, number
     [key: string]: unknown
   }
   const mergedSlots = { ...(data.slots ?? {}), ...(hiddenSlotCards ?? {}) }
-  return { ...data, ...hiddenRest, slots: mergedSlots, url }
+  // arkham.build names a custom card by its own bare UUID; this app only ever
+  // recognizes a custom card by a `*`-prefixed code, so any such code here has
+  // to be rewritten before this deck reaches validation or it will look like
+  // it references cards that don't exist.
+  return normalizeArkhamBuildDeckCodes({ ...data, ...hiddenRest, slots: mergedSlots, url })
+}
+
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
 }

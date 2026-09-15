@@ -1,12 +1,13 @@
 module Arkham.Scenario.Scenarios.RedTideRising (redTideRising) where
 
-import Arkham.Id
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.RedTideRising qualified as Acts
+import Arkham.Agenda.CardDefs.RedTideRising qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Card
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.NightOfTheZealot.Nightgaunts qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.FogOverInnsmouth qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.TheVanishingOfElinaHarper qualified as Enemies
 import Arkham.Exception
 import Arkham.Helpers (unDeck)
 import Arkham.Helpers.Card (getVictoryPoints)
@@ -17,7 +18,8 @@ import Arkham.Helpers.Query (getInvestigators, getLead, getPlayerCount)
 import Arkham.Helpers.SkillTest (getSkillTestAction, getSkillTestTarget)
 import Arkham.Helpers.Xp (toGainXp)
 import Arkham.I18n
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Id
+import Arkham.Location.CardDefs.TheInnsmouthConspiracy.TheVanishingOfElinaHarper qualified as Locations
 import Arkham.Matcher hiding (enemyAt)
 import Arkham.Message.Lifted.Choose
 import Arkham.Modifier (ModifierType (..))
@@ -27,7 +29,7 @@ import Arkham.Scenario.Deck
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenario.Types (Field (..))
 import Arkham.Scenarios.RedTideRising.Helpers
-import Arkham.Scenarios.TheVanishingOfElinaHarper.Helpers (
+import Arkham.Scenarios.TheInnsmouthConspiracy.TheVanishingOfElinaHarper.Helpers (
   getLeadsDeck,
   hideouts,
   shuffleIntoLeadsDeck,
@@ -35,7 +37,9 @@ import Arkham.Scenarios.TheVanishingOfElinaHarper.Helpers (
   suspects,
  )
 import Arkham.Trait (Trait (Hideout, Suspect))
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Treacheries
+import Arkham.Treachery.CardDefs.Standalone qualified as Treacheries
 import Arkham.Xp
 
 newtype RedTideRising = RedTideRising ScenarioAttrs
@@ -161,19 +165,22 @@ instance RunMessage RedTideRising where
 
       playerCount <- getPlayerCount
       let
-        adjusted = playerCount + case attrs.difficulty of
-          Hard -> 1
-          Expert -> 2
-          _ -> 0
+        adjusted =
+          playerCount + case attrs.difficulty of
+            Hard -> 1
+            Expert -> 2
+            _ -> 0
         monsters =
-          [ Enemies.wingedOneFogOverInnsmouth
+          [ Enemies.wingedOne
           , Enemies.huntingNightgaunt
           , Enemies.huntingNightgaunt
           ]
 
       mExtraMonster <-
         if adjusted >= 4
-          then Just <$> sample (Enemies.wingedOneFogOverInnsmouth :| [Enemies.huntingNightgaunt, Enemies.huntingNightgaunt])
+          then
+            Just
+              <$> sample (Enemies.wingedOne :| [Enemies.huntingNightgaunt, Enemies.huntingNightgaunt])
           else pure Nothing
 
       placeDoomOnAgenda $ case adjusted of
@@ -216,16 +223,16 @@ instance RunMessage RedTideRising where
 
       photo <- fromGathered1 Assets.mysteriousPhoto
       lift $ chooseOneM wendy $ scenarioI18n do
-        labeled' "mysteriousPhotoSuspects" $ push $ TakeControlOfSetAsideAsset wendy photo
-        labeled' "mysteriousPhotoHideouts" $ push $ TakeControlOfSetAsideAsset wendy (flipCard photo)
+        labeled "mysteriousPhotoSuspects" $ push $ TakeControlOfSetAsideAsset wendy photo
+        labeled "mysteriousPhotoHideouts" $ push $ TakeControlOfSetAsideAsset wendy (flipCard photo)
     PassedSkillTest iid _ _ (ChaosTokenTarget token) _ _ -> do
       when (token.face == Tablet) do
         cards <- take 1 <$> getLeadsDeck
         unless (null cards) do
           focusCards cards do
             chooseOneM iid $ scenarioI18n do
-              labeled' "shuffleLeadsDeck" shuffleLeadsDeck
-              labeled' "doNotShuffleLeadsDeck" nothing
+              labeled "shuffleLeadsDeck" shuffleLeadsDeck
+              labeled "doNotShuffleLeadsDeck" nothing
       pure s
     FailedSkillTest _ _ _ (ChaosTokenTarget token) _ _ -> do
       when (token.face == ElderThing) do
@@ -274,7 +281,7 @@ gainCustomXp attrs = do
     $ ReportXp
     $ XpBreakdown
       [ InvestigatorGainXp iid
-        $ XpDetail XpFromVictoryDisplay ("$" <> ikey (if isWendy then "xp.wendy" else "xp.other")) n
+          $ XpDetail XpFromVictoryDisplay ("$" <> ikey (if isWendy then "xp.wendy" else "xp.other")) n
       | (iid, isWendy, n) <- details
       ]
   pushAll =<< toGainXp attrs (pure [(iid, n) | (iid, _, n) <- details])
@@ -294,10 +301,10 @@ mustSwapReward = do
     when (canUpgradeWeakness || canDowngradeAmulet) do
       chooseOrRunOneM wendy do
         when canUpgradeWeakness do
-          labeled' "upgradeAbandonedAndAlone"
+          labeled "upgradeAbandonedAndAlone"
             $ swapCards wendy Treacheries.abandonedAndAlone Treacheries.abandonedAndAloneAdvanced
         when canDowngradeAmulet do
-          labeled' "downgradeWendysAmulet"
+          labeled "downgradeWendysAmulet"
             $ swapCards wendy Assets.wendysAmuletAdvanced Assets.wendysAmulet
 
 maySwapReward :: (HasI18n, ReverseQueue m) => m ()
@@ -309,12 +316,12 @@ maySwapReward = do
     when (canUpgradeAmulet || canDowngradeWeakness) do
       chooseOneM wendy do
         when canUpgradeAmulet do
-          labeled' "upgradeWendysAmulet"
+          labeled "upgradeWendysAmulet"
             $ swapCards wendy Assets.wendysAmulet Assets.wendysAmuletAdvanced
         when canDowngradeWeakness do
-          labeled' "downgradeAbandonedAndAlone"
+          labeled "downgradeAbandonedAndAlone"
             $ swapCards wendy Treacheries.abandonedAndAloneAdvanced Treacheries.abandonedAndAlone
-        labeled' "doNotSwap" nothing
+        labeled "doNotSwap" nothing
 
 ownsCard :: ReverseQueue m => InvestigatorId -> CardDef -> m Bool
 ownsCard iid def = selectAny $ OwnedBy (InvestigatorWithId iid) <> basic (cardIs def)

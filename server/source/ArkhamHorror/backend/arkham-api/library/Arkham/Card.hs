@@ -13,6 +13,7 @@ import Arkham.Card.CardDef as X
 import Arkham.Card.CardType as X
 import Arkham.Card.Class as X
 import Arkham.Card.Cost as X
+import Arkham.Card.CustomCard as X
 import Arkham.Card.EncounterCard as X (EncounterCard (..))
 import Arkham.Card.Id as X
 import Arkham.Card.PlayerCard as X (PlayerCard (..))
@@ -46,16 +47,23 @@ import GHC.Records
 lookupCard
   :: (HasCallStack, HasCardCode cardCode) => cardCode -> CardId -> Card
 lookupCard (toCardCode -> cardCode) cardId =
-  case (lookup cardCode allEncounterCards, lookup cardCode (allPlayerCards <> allSpecialEnemyCards)) of
-    (Nothing, Nothing) -> error $ "Missing card " <> show cardCode
-    (Just def, _) -> EncounterCard $ lookupEncounterCard def cardId
-    -- we prefer encounter cards over player cards to handle cases like straitjacket
-    (Nothing, Just def) -> PlayerCard $ lookupPlayerCard def cardId
+  case lookupCustomCardDef cardCode of
+    Just def
+      | cdCardType def `elem` playerCardTypes -> PlayerCard $ lookupPlayerCard def cardId
+      | otherwise -> EncounterCard $ lookupEncounterCard def cardId
+    Nothing ->
+      case (lookup cardCode allEncounterCards, lookup cardCode (allPlayerCards <> allSpecialEnemyCards)) of
+        (Nothing, Nothing) -> error $ "Missing card " <> show cardCode
+        (Just def, _) -> EncounterCard $ lookupEncounterCard def cardId
+        -- we prefer encounter cards over player cards to handle cases like straitjacket
+        (Nothing, Just def) -> PlayerCard $ lookupPlayerCard def cardId
 
 -- we prefer encounter cards over player cards to handle cases like straitjacket
 lookupCardDef :: HasCardCode cardCode => cardCode -> Maybe CardDef
 lookupCardDef (toCardCode -> cardCode) =
-  lookup cardCode allEncounterCards <|> lookup cardCode allPlayerCards
+  lookup cardCode allEncounterCards
+    <|> lookup cardCode allPlayerCards
+    <|> lookupCustomCardDef cardCode
 
 instance HasField "flip" CardDef (Maybe CardDef) where
   getField def = def.otherSide >>= lookupCardDef
@@ -117,8 +125,10 @@ class (HasTraits a, HasCardDef a, HasCardCode a) => IsCard a where
   toTabooList _ = Nothing
   toMutated :: a -> Maybe Text
   toMutated _ = Nothing
+
 sameCard :: (IsCard a, IsCard b) => a -> b -> Bool
 sameCard a b = toCardId a == toCardId b
+
 class MonadRandom m => CardGen m where
   genEncounterCard :: HasCardDef a => a -> m EncounterCard
   genPlayerCard :: HasCardDef a => a -> m PlayerCard
@@ -192,6 +202,7 @@ genFlippedCard a = flipCard <$> genCard a
 
 genCards :: (HasCardDef a, CardGen m, Traversable t) => t a -> m (t Card)
 genCards = traverse genCard
+
 genPlayerCards :: (HasCardDef a, CardGen m, Traversable t) => t a -> m (t PlayerCard)
 genPlayerCards = traverse genPlayerCard
 
@@ -257,7 +268,7 @@ cardMatch a (toCardMatcher -> cardMatcher) = case cardMatcher of
   CardWithClass role -> role `member` cdClassSymbols (toCardDef a)
   CardWithLevel n -> Just n == (toCard a).level
   CardWithMaxLevel n -> maybe False (<= n) $ (toCard a).level
-  CardWithMaxPrintedHealth n -> maybe False (<= n) (cdHealth (toCardDef a) >>= fixedHealth)
+  CardWithMaxPrintedHealth pc n -> maybe False (<= n) (cdHealth (toCardDef a) >>= fixedHealth pc)
   FastCard -> isJust $ cdFastWindow (toCardDef a)
   CardMatches ms -> all (cardMatch a) ms
   CardWithVengeance -> isJust . cdVengeancePoints $ toCardDef a
@@ -280,7 +291,8 @@ cardMatch a (toCardMatcher -> cardMatcher) = case cardMatcher of
   NotCard m -> not (cardMatch a m)
   CardWithAction action -> elem action $ actionsToList $ cdActions $ toCardDef a
   CardWithoutAction -> null $ actionsToList $ cdActions $ toCardDef a
-  CardIsStoryAsset -> and [isJust $ cdEncounterSet (toCardDef a), toCardType a == AssetType]
+  CardIsStoryAsset ->
+    and [isJust $ cdEncounterSet (toCardDef a), toCardType a `elem` [AssetType, EncounterAssetType]]
   CardWithPrintedLocationSymbol sym ->
     (== Just sym) . cdLocationRevealedSymbol $ toCardDef a
   CardWithPrintedLocationConnection sym ->
@@ -338,7 +350,9 @@ setTaboo mtaboo card = do
   pure result
  where
   go = \case
-    PlayerCard pc -> PlayerCard (pc {pcTabooList = mtaboo, pcMutated = tabooMutated mtaboo pc})
+    PlayerCard pc ->
+      PlayerCard
+        (pc {pcTabooList = mtaboo, pcMutated = tabooMutated mtaboo pc, pcChained = tabooChained mtaboo pc})
     other -> other
 
 setFacedown :: CardGen m => Bool -> Card -> m Card
@@ -440,6 +454,12 @@ instance HasField "icons" Card [SkillIcon] where
 
 instance HasField "cost" Card (Maybe CardCost) where
   getField = cdCost . toCardDef
+
+instance HasField "health" Card (Maybe Health) where
+  getField = cdHealth . toCardDef
+
+instance HasField "fixedHealth" Card (Int -> Maybe Int) where
+  getField c pc = fixedHealth pc =<< c.health
 
 instance HasField "printedCost" Card Int where
   getField = (.printedCost) . toCardDef

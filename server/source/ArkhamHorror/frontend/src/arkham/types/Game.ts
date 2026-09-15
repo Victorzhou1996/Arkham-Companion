@@ -1,6 +1,6 @@
 import * as JsonDecoder from 'ts.data.json';
 import { v2Optional, withDefault } from '@/arkham/parser';
-import { AiFocus, UndoMode } from '@/arkham/types/NewGame';
+import { UndoMode } from '@/arkham/types/NewGame';
 import { Investigator, InvestigatorDetails, investigatorDecoder, investigatorDetailsDecoder } from '@/arkham/types/Investigator';
 import { Modifier, modifierDecoder } from '@/arkham/types/Modifier';
 import { ConcealedCard, concealedCardDecoder } from '@/arkham/types/ConcealedCard';
@@ -32,22 +32,10 @@ type GameState = { tag: 'IsPending', contents: string[] } | { tag: 'IsActive' } 
 
 type AsIfRuling = 'chapter1' | 'chapter2'
 
-// Per-seat AI state serialized into the game blob (Arkham.Ai.State.AiPlayerState),
-// surfaced under `settings.aiPlayers` keyed by playerId so the UI can read which
-// seats are AI, their enable flag, focus override, response delay, and priorities.
-export type AiPlayerState = {
-  aiEnabled: boolean
-  aiInvestigatorCode: string
-  aiFocusOverride: AiFocus | null
-  aiPriorities: Target[]
-  aiResponseDelayMs: number
-}
-
 type GameSettings = {
   settingsAbilitiesCannotReactToThemselves: boolean
   settingsAsIfRuling: AsIfRuling
   settingsStrictAsIfAt: boolean
-  settingsAchievementsEnabled: boolean
   settingsUndoMode: UndoMode
   settingsUltimatumsAndBoons: string[]
   settingsUltimatumsAndBoonsEnabled: boolean
@@ -56,25 +44,9 @@ type GameSettings = {
   settingsRolledUltimatumOrBoon: string | null
   // Card codes banned by Ultimatum of The Scream.
   settingsScreamedAllies: string[]
-  aiPlayers: Record<string, AiPlayerState>
+  // Whether official campaign achievements are tracked for this game.
+  settingsAchievementsEnabled: boolean
 }
-
-const aiFocusDecoder = JsonDecoder.oneOf<AiFocus>([
-  JsonDecoder.literal('combat'),
-  JsonDecoder.literal('investigate'),
-  JsonDecoder.literal('evade'),
-  JsonDecoder.literal('support'),
-  JsonDecoder.literal('survival'),
-  JsonDecoder.literal('mobility'),
-], 'AiFocus')
-
-const aiPlayerStateDecoder = JsonDecoder.object<AiPlayerState>({
-  aiEnabled: withDefault(true, JsonDecoder.boolean()),
-  aiInvestigatorCode: JsonDecoder.string(),
-  aiFocusOverride: withDefault<AiFocus | null>(null, aiFocusDecoder),
-  aiPriorities: withDefault<Target[]>([], JsonDecoder.array(targetDecoder, 'Target[]')),
-  aiResponseDelayMs: withDefault(1500, JsonDecoder.number()),
-}, 'AiPlayerState')
 
 const gameSettingsDecoder = JsonDecoder.object<GameSettings>({
   settingsAbilitiesCannotReactToThemselves: JsonDecoder.boolean(),
@@ -83,7 +55,6 @@ const gameSettingsDecoder = JsonDecoder.object<GameSettings>({
     JsonDecoder.literal('chapter2'),
   ], 'AsIfRuling'),
   settingsStrictAsIfAt: JsonDecoder.boolean(),
-  settingsAchievementsEnabled: withDefault(true, JsonDecoder.boolean()),
   settingsUndoMode: withDefault<UndoMode>('full', JsonDecoder.oneOf<UndoMode>([
     JsonDecoder.literal('standard'),
     JsonDecoder.literal('full'),
@@ -95,7 +66,7 @@ const gameSettingsDecoder = JsonDecoder.object<GameSettings>({
   settingsUltimatumsAndBoonsEnabled: withDefault(true, JsonDecoder.boolean()),
   settingsRolledUltimatumOrBoon: withDefault<string | null>(null, JsonDecoder.string()),
   settingsScreamedAllies: withDefault<string[]>([], JsonDecoder.array(JsonDecoder.string(), 'string[]')),
-  aiPlayers: withDefault<Record<string, AiPlayerState>>({}, JsonDecoder.record<AiPlayerState>(aiPlayerStateDecoder, 'Dict<PlayerId, AiPlayerState>')),
+  settingsAchievementsEnabled: withDefault(true, JsonDecoder.boolean()),
 }, 'GameSettings')
 
 export const gameStateDecoder = JsonDecoder.oneOf<GameState>(
@@ -147,9 +118,13 @@ export type Game = {
   enemies: Record<string, Enemy>;
   stories: Record<string, Story>;
   gameState: GameState;
+  /** False once EndSetup has run, i.e. the scenario is actually under way. */
+  inSetup: boolean;
   investigators: Record<string, Investigator>;
   otherInvestigators: Record<string, Investigator>;
   killedInvestigators: Record<string, Investigator>;
+  /** Investigators whose player left the campaign; they can rejoin between scenarios. */
+  retiredInvestigators: Record<string, Investigator>;
   leadInvestigatorId: string;
   activePlayerId: string;
   locations: Record<string, Location>;
@@ -234,6 +209,8 @@ function questionChoices(question: Question): Message[] {
       return questionChoices(question.question);
     case 'Read':
       return question.readChoices.contents;
+    case 'ChooseOneWizard':
+      return question.wizardChoices.map(({ label }) => ({ tag: MessageType.LABEL, label }));
     case 'PickSupplies':
       return question.choices;
     case 'PickDestiny':
@@ -400,9 +377,11 @@ export const gameDecoder: JsonDecoder.Decoder<Game> = JsonDecoder.object(
     enemies: JsonDecoder.record<Enemy>(enemyDecoder, 'Dict<UUID, Enemy>'),
     stories: JsonDecoder.record<Story>(storyDecoder, 'Dict<UUID, Story>'),
     gameState: gameStateDecoder,
+    inSetup: withDefault(false, JsonDecoder.boolean()),
     investigators: JsonDecoder.record<Investigator>(investigatorDecoder, 'Dict<UUID, Investigator>'),
     otherInvestigators: JsonDecoder.record<Investigator>(investigatorDecoder, 'Dict<UUID, Investigator>'),
     killedInvestigators: JsonDecoder.optional(JsonDecoder.record<Investigator>(investigatorDecoder, 'Dict<UUID, Investigator>')),
+    retiredInvestigators: JsonDecoder.optional(JsonDecoder.record<Investigator>(investigatorDecoder, 'Dict<UUID, Investigator>')),
     leadInvestigatorId: JsonDecoder.string(),
     activePlayerId: JsonDecoder.string(),
     locations: JsonDecoder.record<Location>(locationDecoder, 'Dict<UUID, Location>'),
@@ -442,22 +421,22 @@ export const gameDecoder: JsonDecoder.Decoder<Game> = JsonDecoder.object(
     enemyAttackTargets: JsonDecoder.fallback([], JsonDecoder.array(JsonDecoder.object<EnemyAttackTarget>({ enemy: JsonDecoder.string(), target: targetDecoder }, 'EnemyAttackTarget'), 'EnemyAttackTarget[]')),
   },
   'Game',
-).map(({mode, killedInvestigators, settings, gameSettings, inAction, undoActionStep, undoTurnStep, undoPhaseStep, undoRoundStep, roundHistory, phaseHistory, turnHistory, ...game}) => ({
+).map(({mode, killedInvestigators, retiredInvestigators, settings, gameSettings, inAction, undoActionStep, undoTurnStep, undoPhaseStep, undoRoundStep, roundHistory, phaseHistory, turnHistory, ...game}) => ({
   scenario: mode?.That ?? null,
   campaign: mode?.This ?? null,
   killedInvestigators: killedInvestigators ?? {},
+  retiredInvestigators: retiredInvestigators ?? {},
   inAction: inAction ?? false,
   settings: settings ?? gameSettings ?? {
     settingsAbilitiesCannotReactToThemselves: true,
     settingsAsIfRuling: 'chapter1',
     settingsStrictAsIfAt: false,
-    settingsAchievementsEnabled: true,
     settingsUndoMode: 'full',
     settingsUltimatumsAndBoons: [],
     settingsUltimatumsAndBoonsEnabled: true,
     settingsRolledUltimatumOrBoon: null,
     settingsScreamedAllies: [],
-    aiPlayers: {},
+    settingsAchievementsEnabled: true,
   },
   undoActionStep: undoActionStep ?? null,
   undoTurnStep: undoTurnStep ?? null,

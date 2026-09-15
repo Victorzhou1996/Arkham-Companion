@@ -27,7 +27,9 @@ module Arkham.Campaign.Campaigns.TheDrownedCity.Achievements (
 ) where
 
 import Arkham.Achievement
-import Arkham.Act.Cards qualified as Acts
+import Arkham.Act.CardDefs.TheDrownedCity.CourtOfTheAncients qualified as Acts
+import Arkham.Act.CardDefs.TheDrownedCity.OneLastJob qualified as Acts
+import Arkham.Act.CardDefs.TheDrownedCity.TheDrownedQuarter qualified as Acts
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Asset
 import Arkham.Campaign.Types (campaignDifficulty)
@@ -41,7 +43,10 @@ import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDrownedCity.OneLastJob qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDrownedCity.SepulchreOfTheSleeper qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDrownedCity.TheApiary qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDrownedCity.TheInescapable qualified as Enemies
 import Arkham.Enemy.Types (Field (EnemyCard))
 import Arkham.Game.Base
 import Arkham.Game.Settings (activeUltimatumsAndBoons)
@@ -56,13 +61,12 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Trait (Trait (Cultist, Lift))
 import Arkham.UltimatumsAndBoons.Types
 import Data.Aeson.Key qualified as Key
 
 runDrownedCityAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runDrownedCityAchievements msg = whenEligibleCampaign $ case msg of
   -- Enemy defeats. The campaign sees Defeated before the enemy processes it, so
   -- the entity is still in play and queryable.
@@ -73,11 +77,7 @@ runDrownedCityAchievements msg = whenEligibleCampaign $ case msg of
     -- act 3a (Face the Music) parley ability, whose damage is dealt by the act's
     -- ability 1 — so the killing source unwraps to that act.
     when (cardDef `elem` gangBosses) $ whenScenarioIs oneLastJobId do
-      when (isFaceTheMusicAbility source) do
-        defeated <- storedList coupBossesKey
-        let defeated' = nub (toCardCode cardDef : defeated)
-        setStore coupBossesKey defeated'
-        when (length defeated' >= length gangBosses) $ earn ThisIsACoup
+      when (isFaceTheMusicAbility source) $ insertGlobal coupBossesKey (toCardCode cardDef)
 
     -- "Kill the Adds": defeat Mother without ever dealing her damage directly.
     -- Her Forced ability moves damage tokens off the Stowaway adds onto her,
@@ -102,10 +102,7 @@ runDrownedCityAchievements msg = whenEligibleCampaign $ case msg of
   -- display again. Twenty of those in one campaign earns it.
   AddToVictory _ (EnemyTarget eid) -> do
     cardDef <- fieldMap EnemyCard toCardDef eid
-    when (cardDef == Enemies.theInescapable) do
-      n <- storedInt inescapableVictoriesKey
-      setStore inescapableVictoriesKey (n + 1)
-      when (n + 1 >= 20) $ earn WhyWontYouStayDead
+    when (cardDef == Enemies.theInescapable) $ bumpCounter inescapableVictoriesKey 1
 
   -- "Cliff Diver" bookkeeping: the Diving Suit only ever reaches play as an
   -- Expedition Item chosen during a scenario's setup, i.e. brought along.
@@ -123,10 +120,7 @@ runDrownedCityAchievements msg = whenEligibleCampaign $ case msg of
   -- projection for an act's underneath pile, so the rescues are tallied here.
   PlaceUnderneath (ActTarget _) cards -> whenScenarioIs theApiaryId do
     let rescued = count (`cardMatch` CardWithTrait Cultist) cards
-    when (rescued > 0) do
-      n <- storedInt rescuedCultistsKey
-      setStore rescuedCultistsKey (n + rescued)
-      when (n + rescued >= 5) $ earn NoAcolyteLeftBehind
+    when (rescued > 0) $ bumpCounter rescuedCultistsKey rescued
 
   -- "Sorry, Didn't See You There" bookkeeping: the Great Lift only ever changes
   -- level by being re-placed in the grid (both `slideGreatLift` and the
@@ -162,9 +156,7 @@ runDrownedCityAchievements msg = whenEligibleCampaign $ case msg of
   -- "Sky Rider": end five turns in open sky in a single game of Obsidian Canyons.
   EndTurn iid -> whenScenarioIs obsidianCanyonsId do
     whenM (selectAny $ locationIs Locations.openSky <> locationWithInvestigator iid) do
-      n <- storedInt openSkyTurnEndsKey
-      setStore openSkyTurnEndsKey (n + 1)
-      when (n + 1 >= 5) $ earn SkyRider
+      bumpCounter openSkyTurnEndsKey 1
 
   -- Per-game counters reset as their scenario is set up, so "during a single
   -- game" stays true even if a scenario is somehow revisited.
@@ -251,6 +243,19 @@ runDrownedCityAchievements msg = whenEligibleCampaign $ case msg of
 
     completed <- filterM (selectAny . IncludeEliminated . investigatorWithRecord . fst) taskItems
     achievementProgress (TheDrownedCityAchievement Obligations) (map snd completed)
+
+  {- Deferred threshold checks. 'bumpCounter'/'insertGlobal' do their arithmetic
+  when the message is processed, so the stored value only reads back correctly
+  here -- and a read-modify-write would lose entries when both gang bosses are
+  defeated by the same effect.
+  -}
+  CounterBumped k
+    | k == inescapableVictoriesKey -> whenM ((>= 20) <$> storedInt k) $ earn WhyWontYouStayDead
+    | k == rescuedCultistsKey -> whenM ((>= 5) <$> storedInt k) $ earn NoAcolyteLeftBehind
+    | k == openSkyTurnEndsKey -> whenM ((>= 5) <$> storedInt k) $ earn SkyRider
+  GlobalInserted k | k == coupBossesKey -> do
+    defeated <- storedList k
+    when (length defeated >= length gangBosses) $ earn ThisIsACoup
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => TheDrownedCityAchievement -> m ()
@@ -266,7 +271,7 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ TheDrownedCityAchievement OneFirstLastJob
   when (maybe False (`elem` eligible) mCampaignId) body
 
-whenScenarioIs :: (HasGame m, Tracing m) => ScenarioId -> m () -> m ()
+whenScenarioIs :: HasGame m => ScenarioId -> m () -> m ()
 whenScenarioIs sid body = do
   mSid <- selectOne TheScenario
   when (mSid == Just sid) body
@@ -370,11 +375,11 @@ openSkyTurnEndsKey = "tdcAchOpenSkyTurnEnds"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k
 
-storedList :: (HasCallStack, HasGame m, Tracing m) => Text -> m [CardCode]
+storedList :: (HasCallStack, HasGame m) => Text -> m [CardCode]
 storedList k = fromMaybe [] <$> stored k

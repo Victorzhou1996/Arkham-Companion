@@ -6,7 +6,6 @@ import {
   actProgressValue,
   counterValue,
   hasActProgress,
-  pendingActAdvance,
   TOTAL_INVESTIGATORS,
 } from '@/arkham/types/EpicEvent'
 
@@ -28,39 +27,30 @@ const totalInvestigators = computed(
 // Requirement for the current cycle. Guards divide-by-zero downstream.
 const threshold = computed(() => 2 * totalInvestigators.value)
 
-// The current act participates in the shared-clue pool only when a counter exists
-// for its stage (Blob acts 1 & 3, not act 2) and we have a positive threshold.
+// Only the Blob's Epic Act 1 has a global clue threshold. Checking the stage
+// explicitly also prevents legacy events with a stale act-progress:3 cell from
+// presenting Blackwater's Bane as a clue act.
 const sharedClueActive = computed(
   () =>
-    props.currentActStage !== null &&
+    props.currentActStage === 1 &&
     hasActProgress(sharedState.value, props.currentActStage) &&
     threshold.value > 0,
 )
 
-// Cumulative progress wrapped into the current cycle: 0 at the start of each cycle.
+// The shared pool is per-cycle (the backend zeroes act-progress:N on advance), so
+// its raw value IS the current progress. Show the ACTUAL count even when it exceeds
+// the threshold (e.g. "5 / 4") so an over-contributed pool stays visible.
 const sharedClues = computed(() => {
   if (!sharedClueActive.value || props.currentActStage === null) return 0
-  return actProgressValue(sharedState.value, props.currentActStage) % threshold.value
+  return actProgressValue(sharedState.value, props.currentActStage)
 })
-
-// Soft indicator for players/spectators: the pool exceeded the threshold and the
-// organizer must allocate which groups spend. No hard block — just a heads-up.
-const awaitingOrganizer = computed(
-  () =>
-    props.currentActStage !== null &&
-    pendingActAdvance(sharedState.value, props.currentActStage) > 0,
-)
 </script>
 
 <template>
-  <div v-if="sharedClueActive || awaitingOrganizer" class="shared-pools">
-    <div v-if="sharedClueActive" class="shared-pool">
+  <div v-if="sharedClueActive" class="shared-pools">
+    <div class="shared-pool">
       <span class="pool-label">{{ $t('event.sharedClues') }}</span>
       <span class="pool-value">{{ sharedClues }} / {{ threshold }}</span>
-    </div>
-    <div v-if="awaitingOrganizer" class="awaiting-organizer" :title="$t('event.awaitingOrganizer')">
-      <span class="awaiting-dot" aria-hidden="true"></span>
-      <span class="awaiting-text">{{ $t('event.awaitingOrganizer') }}</span>
     </div>
   </div>
 </template>
@@ -91,34 +81,5 @@ const awaitingOrganizer = computed(
   font-size: 1.3em;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-.awaiting-organizer {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 180px;
-  color: var(--important, #d8a657);
-  font-size: 0.72em;
-  line-height: 1.05;
-}
-
-.awaiting-dot {
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--important, #d8a657);
-  animation: awaiting-pulse 1.4s ease-in-out infinite;
-}
-
-.awaiting-text {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-@keyframes awaiting-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
 }
 </style>

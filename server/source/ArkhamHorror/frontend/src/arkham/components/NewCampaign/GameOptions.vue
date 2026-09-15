@@ -2,18 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { BugAntIcon } from '@heroicons/vue/20/solid'
 import { imgsrc } from '@/arkham/helpers'
-import { chaosTokenImage, tokenOrder } from '@/arkham/types/ChaosToken'
+import { chaosTokenImage, compareTokenFaces, type TokenFace } from '@/arkham/types/ChaosToken'
 import type { Difficulty } from '@/arkham/types/Difficulty'
 import type { Scenario, Campaign } from '@/arkham/data'
-import type {
-  GameMode,
-  MultiplayerVariant,
-  CampaignType,
-  AiFocus,
-  AiSlotConfig,
-  UndoMode,
-} from '@/arkham/types/NewGame'
-import { aiFocuses } from '@/arkham/types/NewGame'
+import type { GameMode, MultiplayerVariant, CampaignType, UndoMode } from '@/arkham/types/NewGame'
 import { ACHIEVEMENT_CAMPAIGN_IDS } from '@/arkham/achievements'
 import { useSettings } from '@/stores/settings'
 
@@ -58,7 +50,6 @@ const fullCampaignOptionKey = defineModel<string | null>('fullCampaignOptionKey'
   required: true,
 })
 const sideStoryMode = defineModel<string>('sideStoryMode', { required: true })
-const achievementsEnabled = defineModel<boolean>('achievementsEnabled', { required: true })
 const undoMode = defineModel<UndoMode>('undoMode', { required: true })
 
 // "Epic Multiplayer" side-story flow. Only surfaced for side stories whose data
@@ -73,86 +64,12 @@ const epicGroups = defineModel<EpicGroup[]>('epicGroups', { required: true })
 const imposeTimeLimit = defineModel<boolean>('imposeTimeLimit', { required: true })
 const timeLimitMinutes = defineModel<number>('timeLimitMinutes', { required: true })
 
-// --- AI-investigator configuration (dev-only, Solo/multihanded only) ----------
-// Emits an `aiPlayers` array (length playerCount) of `AiSlotConfig | null` up to
-// NewCampaign, which forwards it to newGame() only for Solo games.
-const aiPlayers = defineModel<(AiSlotConfig | null)[]>('aiPlayers', { required: true })
-
-// MVP: only Roland Banks is offered as an AI profile (single-option select).
-const aiInvestigatorOptions = [{ code: '01001', name: 'Roland Banks' }]
-const aiFocusOptions: Array<'auto' | AiFocus> = ['auto', ...aiFocuses]
-
-type AiSeat = {
-  enabled: boolean
-  investigator: string
-  focus: 'auto' | AiFocus
-  responseDelayMs: number
-}
-
-function defaultAiSeat(): AiSeat {
-  return {
-    enabled: false,
-    investigator: aiInvestigatorOptions[0].code,
-    focus: 'auto',
-    responseDelayMs: 1500,
-  }
-}
-
-const aiSeats = ref<AiSeat[]>([])
+// "Mini-campaign" side-story flow. Surfaced for side stories whose data carries
+// `miniCampaign: true` (src/arkham/data/side-stories.json). Unlike Epic Multiplayer
+// this is not behind a dev flag.
+const miniCampaign = defineModel<boolean>('miniCampaign', { required: true })
 
 const settings = useSettings()
-
-const effectiveCampaignId = computed<string | null>(() => {
-  if (props.gameMode !== 'Campaign') return null
-  if (returnTo.value && props.selectedCampaignReturnTo?.id) return props.selectedCampaignReturnTo.id
-  return props.chosenCampaignId
-})
-
-const supportsAchievements = computed(
-  () => !!effectiveCampaignId.value && ACHIEVEMENT_CAMPAIGN_IDS.includes(effectiveCampaignId.value),
-)
-
-// AI-investigator configuration is gated on the dev-only "AI Investigators"
-// settings flag (Settings → danger zone); defaults OFF, never on in production.
-const showAiConfig = computed(
-  () =>
-    settings.aiInvestigatorsEnabled && multiplayerVariant.value === 'Solo' && playerCount.value > 1,
-)
-
-// Keep one seat row per player, preserving anything already configured.
-watch(
-  playerCount,
-  (count) => {
-    const next = aiSeats.value.slice(0, count)
-    while (next.length < count) next.push(defaultAiSeat())
-    aiSeats.value = next
-  },
-  { immediate: true },
-)
-
-// Project the seat rows into the `aiPlayers` model the backend expects. When AI
-// config isn't applicable (non-Solo, or non-dev) we emit an empty array so a
-// previously-configured Solo selection can't leak into a WithFriends game.
-watch(
-  [aiSeats, showAiConfig, playerCount],
-  () => {
-    if (!showAiConfig.value) {
-      aiPlayers.value = []
-      return
-    }
-    aiPlayers.value = aiSeats.value.slice(0, playerCount.value).map((seat): AiSlotConfig | null =>
-      seat.enabled
-        ? {
-            investigator: seat.investigator,
-            focus: seat.focus === 'auto' ? undefined : seat.focus,
-            responseDelayMs: seat.responseDelayMs,
-          }
-        : null,
-    )
-  },
-  { deep: true, immediate: true },
-)
-
 // The epic play-mode option only appears for an epic-capable side story AND when
 // the dev-only Epic Multiplayer flag is enabled (store value is dev-gated). When
 // off, the side-story flow shows only the normal single-group flow.
@@ -163,6 +80,12 @@ const scenarioSupportsEpic = computed(
     settings.epicMultiplayerEnabled,
 )
 const isEpicActive = computed(() => scenarioSupportsEpic.value && epicMode.value)
+
+// Mini-campaign choice appears for any side story flagged `miniCampaign`, with no
+// dev gating. Hidden while an Epic Multiplayer event is being configured.
+const scenarioSupportsMiniCampaign = computed(
+  () => props.gameMode === 'SideStory' && props.scenario?.miniCampaign === true,
+)
 
 // Keep the per-group rows in sync with the chosen group count, preserving any
 // names/counts the organizer already edited.
@@ -217,9 +140,10 @@ const showDevWarning = computed(() => {
 
 const showReturnToToggle = computed(() => {
   return (
-    (props.gameMode === 'Campaign' || fullCampaign.value === 'Standalone') &&
-    !!props.selectedCampaign &&
-    !!props.selectedCampaignReturnTo
+    (props.gameMode === 'SideStory' && props.scenario?.returnToVariant === true) ||
+    ((props.gameMode === 'Campaign' || fullCampaign.value === 'Standalone') &&
+      !!props.selectedCampaign &&
+      !!props.selectedCampaignReturnTo)
   )
 })
 
@@ -261,36 +185,16 @@ const selectedSideStoryPart = computed(() => {
 const selectionBoxSrc = computed(() => {
   if (!selectionSummary.value) return null
   const part = selectedSideStoryPart.value
-  const id = part ? (part.box ?? part.id) : selectionSummary.value.id
+  const id = part ? part.box ?? part.id : selectionSummary.value.id
+
+  if (id.startsWith(":")) {
+    const homebrew = id.slice(1,)
+    return imgsrc(`homebrew/${homebrew}/boxes/${homebrew}.jpg`)
+  }
   return imgsrc(`boxes/${id}.jpg`)
 })
 
 const selectionKind = computed(() => selectionSummary.value?.kind ?? null)
-
-type TokenFace =
-  | 'PlusOne'
-  | 'Zero'
-  | 'MinusOne'
-  | 'MinusTwo'
-  | 'MinusThree'
-  | 'MinusFour'
-  | 'MinusFive'
-  | 'MinusSix'
-  | 'MinusSeven'
-  | 'MinusEight'
-  | 'Skull'
-  | 'Cultist'
-  | 'Tablet'
-  | 'ElderThing'
-  | 'AutoFail'
-  | 'ElderSign'
-  | 'CurseToken'
-  | 'BlessToken'
-  | 'FrostToken'
-
-function sortTokenFaces(a: TokenFace, b: TokenFace) {
-  return tokenOrder.indexOf(a) - tokenOrder.indexOf(b)
-}
 
 const difficultyLevels = computed<Record<Difficulty, TokenFace[]> | null>(() => {
   const opt = selectedFullCampaignOption.value
@@ -308,7 +212,7 @@ const difficultyLevels = computed<Record<Difficulty, TokenFace[]> | null>(() => 
 const chaosTokensForDifficulty = computed<TokenFace[]>(() => {
   const levels = difficultyLevels.value
   if (!levels) return []
-  return (levels[selectedDifficulty.value] ?? []).slice().sort(sortTokenFaces)
+  return (levels[selectedDifficulty.value] ?? []).slice().sort(compareTokenFaces)
 })
 
 const variants = computed<FullCampaignOption[]>(() => {
@@ -337,6 +241,23 @@ const strictAsIfAt = defineModel<boolean>('strictAsIfAt', { required: true })
 
 const rulesExpanded = ref(false)
 
+// --- Achievement tracking --------------------------------------------------------
+// Only rendered when the effective campaign (Return To swaps the id) has an
+// achievement catalog; unsupported campaigns always create with tracking on.
+const achievementsEnabled = defineModel<boolean>('achievementsEnabled', { required: true })
+
+const effectiveCampaignId = computed<string | null>(() => {
+  if (props.gameMode !== 'Campaign') return null
+  // A standalone scenario creates a game with no campaign, and achievement
+  // detection is gated on the campaign, so nothing can be earned.
+  if (fullCampaign.value === 'Standalone') return null
+  if (returnTo.value && props.selectedCampaignReturnTo?.id) return props.selectedCampaignReturnTo.id
+  return props.chosenCampaignId
+})
+
+const supportsAchievements = computed(
+  () => !!effectiveCampaignId.value && ACHIEVEMENT_CAMPAIGN_IDS.includes(effectiveCampaignId.value)
+)
 // --- Ultimatums and Boons variant selection ------------------------------------
 // Selected enum tags flow up to NewCampaign and into the create-game POST body.
 const ultimatumsAndBoons = defineModel<string[]>('ultimatumsAndBoons', { required: true })
@@ -471,13 +392,6 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
         style="view-transition-name: selected-game-box"
       >
         <img class="selection-img" :src="selectionBoxSrc" :alt="selectionSummary.title" />
-
-        <div class="selection-overlay">
-          <div class="chip">
-            {{ selectionKind === 'Campaign' ? $t('create.campaign') : $t('create.sideStory') }}
-          </div>
-          <div class="selection-title">{{ selectionSummary.title }}</div>
-        </div>
       </div>
     </aside>
 
@@ -548,6 +462,20 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
         </transition>
       </div>
 
+      <div v-if="scenarioSupportsMiniCampaign && !isEpicActive" class="card">
+        <div class="card-title">{{ $t('create.playMode') }}</div>
+        <div class="segmented segmented-2">
+          <input type="radio" v-model="miniCampaign" :value="false" id="singleScenarioMode" />
+          <label for="singleScenarioMode">{{ $t('create.singleScenarioMode') }}</label>
+          <input type="radio" v-model="miniCampaign" :value="true" id="miniCampaignMode" />
+          <label for="miniCampaignMode">{{ $t('create.miniCampaignMode') }}</label>
+        </div>
+
+        <transition name="slide">
+          <div v-if="miniCampaign" class="subcard mini-campaign-desc" v-html="$t('create.miniCampaignDescription')"></div>
+        </transition>
+      </div>
+
       <div v-if="!isEpicActive" class="card">
         <div class="card-title">{{ $t('create.numberOfPlayers') }}</div>
         <div class="segmented segmented-4">
@@ -582,61 +510,6 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
             <div class="callout-body" v-html="$t('create.switchingPerspectivesDescription')"></div>
           </div>
         </transition>
-
-        <transition name="slide">
-          <div v-if="showAiConfig" class="subcard ai-config">
-            <div class="card-title small ai-config-title">
-              AI Investigators <span class="ai-dev-pill">dev</span>
-            </div>
-            <div class="ai-seats">
-              <div
-                v-for="(seat, index) in aiSeats.slice(0, playerCount)"
-                :key="index"
-                class="ai-seat"
-              >
-                <label class="ai-seat-toggle">
-                  <input type="checkbox" v-model="seat.enabled" />
-                  <span>Seat {{ index + 1 }} — AI controlled</span>
-                </label>
-
-                <transition name="slide">
-                  <div v-if="seat.enabled" class="ai-seat-fields">
-                    <label class="ai-field">
-                      <span class="card-title small">Investigator</span>
-                      <select class="text" v-model="seat.investigator">
-                        <option
-                          v-for="inv in aiInvestigatorOptions"
-                          :key="inv.code"
-                          :value="inv.code"
-                        >
-                          {{ inv.name }}
-                        </option>
-                      </select>
-                    </label>
-                    <label class="ai-field">
-                      <span class="card-title small">Focus</span>
-                      <select class="text" v-model="seat.focus">
-                        <option v-for="focus in aiFocusOptions" :key="focus" :value="focus">
-                          {{ focus }}
-                        </option>
-                      </select>
-                    </label>
-                    <label class="ai-field">
-                      <span class="card-title small">Response delay (ms)</span>
-                      <input
-                        class="text"
-                        type="number"
-                        min="0"
-                        step="100"
-                        v-model.number="seat.responseDelayMs"
-                      />
-                    </label>
-                  </div>
-                </transition>
-              </div>
-            </div>
-          </div>
-        </transition>
       </div>
 
       <div v-if="sideStoryScenarios.length > 0" class="card">
@@ -663,7 +536,7 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
           <input type="radio" v-model="returnTo" :value="false" id="normal" />
           <label for="normal">{{ $t('create.normal') }}</label>
           <input type="radio" v-model="returnTo" :value="true" id="returnTo" />
-          <label for="returnTo">{{ $t('create.returnTo') }}</label>
+          <label for="returnTo">{{ scenario?.returnToVariant ? 'The Blob That Ate Everything ELSE!' : $t('create.returnTo') }}</label>
         </div>
       </div>
 
@@ -783,7 +656,6 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
           </label>
         </div>
       </div>
-
       <div class="card rules-card">
         <button type="button" class="rules-toggle" @click="rulesExpanded = !rulesExpanded">
           <span class="card-title" style="margin-bottom: 0">{{
@@ -995,41 +867,6 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
   pointer-events: none;
 }
 
-.selection-overlay {
-  border-radius: 14px;
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 10px;
-  background: linear-gradient(to top, rgba(0 0 0 / 0.85), rgba(0 0 0 / 0.05) 60%, rgba(0 0 0 / 0));
-  pointer-events: none;
-}
-
-.chip {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(6px);
-  margin-bottom: 6px;
-}
-
-.selection-title {
-  font-family: Teutonic;
-  font-size: 18px;
-  letter-spacing: 0.02em;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-}
-
 /* Cards */
 .card {
   border-radius: 12px;
@@ -1051,6 +888,41 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.78);
   margin-bottom: 8px;
+}
+
+.mini-campaign-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mini-campaign-desc :deep(p) {
+  margin: 0 0 10px;
+}
+
+.mini-campaign-desc :deep(ul) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-campaign-desc :deep(li) {
+  position: relative;
+  padding-left: 18px;
+}
+
+.mini-campaign-desc :deep(li)::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.32);
 }
 
 .card-title.small {
@@ -1202,7 +1074,7 @@ input[type='radio']:checked + label {
 }
 
 .scenario-tile:hover img {
-  filter: grayscale(100%) sepia(1);
+  filter: none;
   transform: scale(1.02);
 }
 
@@ -1407,71 +1279,11 @@ input[type='radio']:checked + label {
   width: 120px;
 }
 
-.ai-config-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ai-dev-pill {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 1px 6px;
-  border-radius: 999px;
-  border: 1px solid rgba(184, 134, 11, 0.55);
-  background: rgba(184, 134, 11, 0.25);
-  color: rgba(255, 226, 154, 0.95);
-}
-
-.ai-seats {
-  display: grid;
-  gap: 10px;
-}
-
-.ai-seat {
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.12);
-}
-
-.ai-seat-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
-}
-
-.ai-seat-toggle input[type='checkbox'] {
-  width: 15px;
-  height: 15px;
-  accent-color: rgb(110, 134, 64);
-}
-
-.ai-seat-fields {
+.achievements-desc {
   margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-@media (max-width: 700px) {
-  .ai-seat-fields {
-    grid-template-columns: 1fr;
-  }
-}
-
-.ai-field {
-  display: grid;
-  gap: 4px;
-}
-
-.ai-field select.text,
-.ai-field input.text {
-  text-transform: capitalize;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .achievements-desc {

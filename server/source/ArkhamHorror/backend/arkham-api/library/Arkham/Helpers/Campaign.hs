@@ -9,33 +9,33 @@ import Arkham.Classes.HasQueue (push)
 import Arkham.Classes.Query
 import {-# SOURCE #-} Arkham.Game ()
 import Arkham.Helpers
+import Arkham.Helpers.Deck (partitionReloadedDeck)
 import Arkham.Helpers.Scenario
+import Arkham.I18n
 import Arkham.Id
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Matcher
 import Arkham.Message
-import Arkham.Name
 import Arkham.Message.Lifted.Queue (ReverseQueue)
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Scenario.Types (Field (..))
-import Arkham.Tracing
 import Data.Aeson (Result (..))
 import Data.Map.Strict qualified as Map
 
-completedScenario :: (HasGame m, Tracing m) => ScenarioId -> m Bool
+completedScenario :: HasGame m => ScenarioId -> m Bool
 completedScenario cCode = elem cCode <$> getCompletedScenarios
 
-getCompletedScenarios :: (HasGame m, Tracing m) => m (Set ScenarioId)
+getCompletedScenarios :: HasGame m => m (Set ScenarioId)
 getCompletedScenarios = setFromList <$> getCompletedScenariosList
 
-getCompletedSteps :: (HasGame m, Tracing m) => m [CampaignStep]
+getCompletedSteps :: HasGame m => m [CampaignStep]
 getCompletedSteps =
   selectOne TheCampaign >>= \case
     Nothing -> pure mempty
     Just campaignId -> field CampaignCompletedSteps campaignId
 
-getCompletedScenariosList :: (HasGame m, Tracing m) => m [ScenarioId]
+getCompletedScenariosList :: HasGame m => m [ScenarioId]
 getCompletedScenariosList = do
   selectOne TheCampaign >>= \case
     Nothing -> pure mempty
@@ -47,38 +47,43 @@ getCompletedScenariosList = do
           ScenarioStep scenarioId -> Just scenarioId
           _ -> Nothing
 
-getOwner :: (HasGame m, Tracing m) => CardDef -> m (Maybe InvestigatorId)
+{- | Story-card ownership is asked by 'CardDef', but the card in the map may be a
+different printing of it -- a reprint, or the stand-in a campaign overlay swapped
+in. 'isPrintingOf' answers "same card?" where a structural 'CardDef' comparison
+would say no (and would also go stale the moment the def gains a field).
+-}
+getOwner :: HasGame m => CardDef -> m (Maybe InvestigatorId)
 getOwner cardDef = do
   iids <- select $ IncludeEliminated Anyone
   cardMap <- getCampaignStoryCards
   let inGame = Map.filterWithKey (\k _ -> k `elem` iids) cardMap
-  pure $ findKey (any ((== cardDef) . toCardDef)) inGame
+  pure $ findKey (any $ isPrintingOf cardDef.cardCode) inGame
 
-withOwner :: (HasGame m, Tracing m) => CardDef -> (InvestigatorId -> m ()) -> m ()
+withOwner :: HasGame m => CardDef -> (InvestigatorId -> m ()) -> m ()
 withOwner cardDef f =
   getOwner cardDef >>= \case
     Nothing -> pure ()
     Just iid -> f iid
 
-getCampaignStoryCards :: (HasGame m, Tracing m) => m (Map InvestigatorId [Card])
+getCampaignStoryCards :: HasGame m => m (Map InvestigatorId [Card])
 getCampaignStoryCards = do
   mCampaignId <- selectOne TheCampaign
   case mCampaignId of
     Just campaignId -> field CampaignStoryCards campaignId
     Nothing -> scenarioField ScenarioStoryCards
 
-getCampaignStoryCard :: (HasCallStack, HasGame m, Tracing m) => CardDef -> m Card
+getCampaignStoryCard :: (HasCallStack, HasGame m) => CardDef -> m Card
 getCampaignStoryCard def = fromJustNote "missing card" <$> getMaybeCampaignStoryCard def
 
-getMaybeCampaignStoryCard :: (HasGame m, Tracing m, HasCardCode def) => def -> m (Maybe Card)
+getMaybeCampaignStoryCard :: (HasGame m, HasCardCode def) => def -> m (Maybe Card)
 getMaybeCampaignStoryCard (toCardCode -> cardCode) = do
   cards <- concat . Map.elems <$> getCampaignStoryCards
-  pure $ find ((== toCardCode cardCode) . toCardCode) cards
+  pure $ find (isPrintingOf cardCode) cards
 
-getIsAlreadyOwned :: (HasGame m, Tracing m) => CardDef -> m Bool
-getIsAlreadyOwned cDef = any (any ((== cDef) . toCardDef)) . toList <$> getCampaignStoryCards
+getIsAlreadyOwned :: HasGame m => CardDef -> m Bool
+getIsAlreadyOwned cDef = any (any $ isPrintingOf cDef.cardCode) . toList <$> getCampaignStoryCards
 
-campaignField :: (HasCallStack, HasGame m, Tracing m) => Field Campaign a -> m a
+campaignField :: (HasCallStack, HasGame m) => Field Campaign a -> m a
 campaignField fld = selectJust TheCampaign >>= field fld
 
 {- | "Draw tokens from the chaos bag at random until you have @n@ non-symbol
@@ -123,7 +128,7 @@ replaceCampaignChaosTokens n lower render = do
   replaceFirstMatch _ _ [] = []
   replaceFirstMatch x x' (y : ys) = if x == y then x' : ys else y : replaceFirstMatch x x' ys
 
-getCampaignMeta :: forall a m. (HasCallStack, HasGame m, Tracing m, FromJSON a) => m a
+getCampaignMeta :: forall a m. (HasCallStack, HasGame m, FromJSON a) => m a
 getCampaignMeta = do
   result <- fromJSON @a <$> campaignField CampaignMeta
   case result of
@@ -134,7 +139,7 @@ getCampaignMeta = do
 no @Campaign@ entity at all and 'campaignField' would throw. A malformed meta is
 still an error; only a missing campaign is @Nothing@.
 -}
-getCampaignMetaMaybe :: forall a m. (HasCallStack, HasGame m, Tracing m, FromJSON a) => m (Maybe a)
+getCampaignMetaMaybe :: forall a m. (HasCallStack, HasGame m, FromJSON a) => m (Maybe a)
 getCampaignMetaMaybe =
   selectOne TheCampaign >>= \case
     Nothing -> pure Nothing
@@ -145,13 +150,13 @@ getCampaignMetaMaybe =
         Error e -> error $ "Failed to parse campaign meta: " <> e
 
 withCampaignMeta
-  :: forall a m r. (HasCallStack, HasGame m, Tracing m, FromJSON a) => (a -> r) -> m r
+  :: forall a m r. (HasCallStack, HasGame m, FromJSON a) => (a -> r) -> m r
 withCampaignMeta f = f <$> getCampaignMeta @a
 
-getCampaignStore :: (HasCallStack, HasGame m, Tracing m) => m (Map Text Value)
+getCampaignStore :: (HasCallStack, HasGame m) => m (Map Text Value)
 getCampaignStore = campaignField CampaignStore
 
-stored :: forall a m. (HasCallStack, HasGame m, Tracing m, FromJSON a) => Text -> m (Maybe a)
+stored :: forall a m. (HasCallStack, HasGame m, FromJSON a) => Text -> m (Maybe a)
 stored k = do
   store <- getCampaignStore
   pure $ case lookup k store of
@@ -175,7 +180,7 @@ investigator's starting random one) under story cards rather than the deck.
 Keyed on 'canonicalCardCode', so holding any one printing of Stubborn Detective
 rules out its other printings too — reprints are separate 'CardDef's (#5346).
 -}
-getTakenBasicWeaknesses :: (HasGame m, Tracing m) => InvestigatorId -> m (Set CardCode)
+getTakenBasicWeaknesses :: HasGame m => InvestigatorId -> m (Set CardCode)
 getTakenBasicWeaknesses iid = do
   decks <- withStandalone (field CampaignDecks) (field ScenarioPlayerDecks)
   storyCards <- getCampaignStoryCards
@@ -192,7 +197,7 @@ getTakenBasicWeaknesses iid = do
     <> filter cdUnique everyone
 
 matchingCardsAlreadyInDeck
-  :: (HasGame m, Tracing m) => CardMatcher -> m (Map InvestigatorId (Set CardCode))
+  :: HasGame m => CardMatcher -> m (Map InvestigatorId (Set CardCode))
 matchingCardsAlreadyInDeck matcher = do
   decks <- withStandalone (field CampaignDecks) (field ScenarioPlayerDecks)
   pure $ Map.map (setFromList . map toCardCode . filter (`cardMatch` matcher) . unDeck) decks
@@ -218,27 +223,27 @@ addCampaignCardToDeckChoiceWhenDeclined
   -> (InvestigatorId -> [Message])
   -> [Message]
   -> Message
-addCampaignCardToDeckChoiceWhenDeclined leadPlayer investigators shouldShuffleIn card f declined =
-  questionLabelWithCard ("Add " <> display card.name <> " to a deck") card.cardCode leadPlayer
+addCampaignCardToDeckChoiceWhenDeclined leadPlayer investigators shouldShuffleIn card f declined = withI18n do
+  questionLabelWithCard (cardNameVar card $ ikey' "label.addCardToDeck") card.cardCode leadPlayer
     $ ChooseOne
     $ [ PortraitLabel investigator $ AddCampaignCardToDeck investigator shouldShuffleIn card
           : f investigator
       | investigator <- investigators
       ]
-    <> [Label ("Do not add " <> display card.name <> " to any deck") declined]
+    <> [Label (cardNameVar card $ ikey' "label.doNotAddCardToDeck") declined]
 
 forceAddCampaignCardToDeckChoice
   :: PlayerId -> [InvestigatorId] -> ShuffleIn -> Card -> Message
 forceAddCampaignCardToDeckChoice _ [onlyId] shouldShuffleIn card = AddCampaignCardToDeck onlyId shouldShuffleIn card
-forceAddCampaignCardToDeckChoice leadPlayer investigators shouldShuffleIn card =
-  questionLabelWithCard ("Add " <> display card.name <> " to a deck") card.cardCode leadPlayer
+forceAddCampaignCardToDeckChoice leadPlayer investigators shouldShuffleIn card = withI18n do
+  questionLabelWithCard (cardNameVar card $ ikey' "label.addCardToDeck") card.cardCode leadPlayer
     $ ChooseOne
       [ PortraitLabel investigator [AddCampaignCardToDeck investigator shouldShuffleIn card]
       | investigator <- investigators
       ]
 
 getCurrentDeck
-  :: (HasCallStack, HasGame m, Tracing m, ToId investigator InvestigatorId)
+  :: (HasCallStack, HasGame m, ToId investigator InvestigatorId)
   => investigator -> m (Deck PlayerCard)
 getCurrentDeck (asId -> iid) =
   field InvestigatorDeck iid >>= \case
@@ -249,7 +254,6 @@ getCurrentDeck (asId -> iid) =
         Just deck -> do
           allStoryCards <- withStandalone (field CampaignStoryCards) (field ScenarioStoryCards)
           let storyCards = findWithDefault [] iid allStoryCards
-          let storyCardCodes = map toCardCode storyCards
-          let deck' = filter (\card -> card.cardCode `notElem` storyCardCodes) (unDeck deck)
+          let deck' = fst $ partitionReloadedDeck storyCards [] (unDeck deck)
           pure $ Deck $ deck' <> mapMaybe (preview _PlayerCard) storyCards
     deck -> pure deck

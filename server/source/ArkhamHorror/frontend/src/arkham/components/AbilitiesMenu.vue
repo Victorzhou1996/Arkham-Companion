@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Game } from '@/arkham/types/Game';
 import { OnClickOutside } from '@vueuse/components'
-import { ref, watch, computed, nextTick } from 'vue';
+import { ref, watch, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
 import type { AbilityMessage } from '@/arkham/types/Message';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 
@@ -11,7 +11,9 @@ const props = withDefaults(defineProps<{
   frame: HTMLElement | null;
   position?: 'top' | 'bottom' | 'left' | 'right';
   showMove?: boolean
-}>(), {showMove: true});
+  hostHasSwarm?: boolean
+  playAction?: number
+}>(), {showMove: true, hostHasSwarm: false});
 
 const emits = defineEmits<{
   (e: 'choose', index: number): void;
@@ -29,40 +31,87 @@ const showAbilities = defineModel()
 const abilitiesPosition = ref<Position>({ bottom: '0px', top: '0px', left: '0px' });
 const positionClass = computed(() => props.position || 'top');
 
+// Every property the anchored path relies on has to be tested: anchor-name
+// shipped ahead of position-area (Chromium 125-128 spelled it inset-area), and a
+// browser in that gap would pass an anchor-name-only check, lose position-area,
+// and render the menu at its static position -- far below the viewport, since it
+// is teleported to the end of <body> (#5626).
+const supportsAnchor =
+  typeof CSS !== 'undefined'
+  && !!CSS.supports
+  && CSS.supports('anchor-name: --a')
+  && CSS.supports('position-anchor: --a')
+  && CSS.supports('position-area: right span-bottom')
+  && CSS.supports('position-try-fallbacks: flip-block');
+const anchorFailed = ref(false);
+const useAnchor = computed(() => supportsAnchor && !anchorFailed.value);
+const anchorName = `--ability-anchor-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+const anchorStyle = computed(() => useAnchor.value ? { 'position-anchor': anchorName } : abilitiesPosition.value);
+
+// Anchor positioning keeps the menu pinned when the card moves; browsers without
+// it fall back to the measured fixed position below.
+watch([() => props.frame, showAbilities], ([frame], old) => {
+  if (!useAnchor.value) return;
+  old?.[0]?.style.removeProperty('anchor-name');
+  if (frame && showAbilities.value) frame.style.setProperty('anchor-name', anchorName);
+  else frame?.style.removeProperty('anchor-name');
+}, { immediate: true });
+
+// The anchor can still fail to resolve at runtime (the frame ref is only assigned
+// after the parent mounts, and a forced ability opens the menu during setup). An
+// unresolved anchor leaves the menu fixed at its static position, off screen and
+// unreachable, so measure once after opening and fall back for good if it landed
+// outside the viewport.
+function verifyAnchorPlacement() {
+  if (!useAnchor.value || !abilitiesRef.value) return;
+  const rect = abilitiesRef.value.getBoundingClientRect();
+  const onScreen =
+    rect.bottom > 0 && rect.right > 0
+    && rect.top < window.innerHeight && rect.left < window.innerWidth;
+  if (onScreen) return;
+
+  anchorFailed.value = true;
+  props.frame?.style.removeProperty('anchor-name');
+  window.addEventListener('resize', updatePosition);
+  window.addEventListener('scroll', updatePosition, true);
+  nextTick(() => calculatePosition());
+}
+
 function calculatePosition() {
+  if (useAnchor.value) return;
   if (props.frame) {
     const rect = props.frame.getBoundingClientRect();
     const menuRect = abilitiesRef.value?.getBoundingClientRect();
     const menuWidth = menuRect?.width ?? 160;
     const margin = 8;
     const maxLeft = Math.max(margin, window.innerWidth - menuWidth - margin);
-    const clampedLeft = (left: number) => `${Math.min(Math.max(left, margin), maxLeft) + window.scrollX}px`;
+    const clampedLeft = (left: number) => `${Math.min(Math.max(left, margin), maxLeft)}px`;
     const positionStyle: Record<string, string> = {};
 
     switch (positionClass.value) {
       case 'bottom':
-        positionStyle.top = `${rect.bottom + window.scrollY}px`;
+        positionStyle.top = `${rect.bottom}px`;
         positionStyle.left = clampedLeft(rect.left);
         break;
       case 'left':
-        positionStyle.top = `${rect.top + window.scrollY}px`;
+        positionStyle.top = `${rect.top}px`;
         if (rect.left - menuWidth - margin < 0) {
           positionStyle.left = clampedLeft(rect.right + margin);
         } else {
-          positionStyle.right = `${window.innerWidth - rect.left + window.scrollX}px`;
+          positionStyle.right = `${window.innerWidth - rect.left}px`;
         }
         break;
       case 'right':
-        positionStyle.top = `${rect.top + window.scrollY}px`;
+        positionStyle.top = `${rect.top}px`;
         if (rect.right + menuWidth + margin > window.innerWidth) {
-          positionStyle.right = `${window.innerWidth - rect.left + margin + window.scrollX}px`;
+          positionStyle.right = `${window.innerWidth - rect.left + margin}px`;
         } else {
           positionStyle.left = clampedLeft(rect.right + margin);
         }
         break;
       case 'top':
       default:
-        positionStyle.bottom = `${window.innerHeight - rect.top - window.scrollY}px`;
+        positionStyle.bottom = `${window.innerHeight - rect.top}px`;
         positionStyle.left = clampedLeft(rect.left);
         break;
     }
@@ -80,7 +129,7 @@ watch(
   (newAbilities) => {
     if (newAbilities.some(a => 'ability' in a.contents && a.contents.ability.type.tag === 'ForcedAbility')) {
       showAbilities.value = true;
-      nextTick(() => calculatePosition());
+      nextTick(() => { calculatePosition(); verifyAnchorPlacement(); });
     } else if (newAbilities.length === 0) {
       showAbilities.value = false;
     }
@@ -90,20 +139,44 @@ watch(
 
 watch(showAbilities, (newValue) => {
   if (newValue) {
-    nextTick(() => calculatePosition());
+    nextTick(() => { calculatePosition(); verifyAnchorPlacement(); });
   }
+});
+
+function updatePosition() {
+  if (showAbilities.value) calculatePosition();
+}
+
+onMounted(() => {
+  if (supportsAnchor) return;
+  window.addEventListener('resize', updatePosition);
+  window.addEventListener('scroll', updatePosition, true);
+});
+
+onUnmounted(() => {
+  props.frame?.style.removeProperty('anchor-name');
+  window.removeEventListener('resize', updatePosition);
+  window.removeEventListener('scroll', updatePosition, true);
 });
 </script>
 
 <template>
   <Teleport to="body">
     <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame] }">
-      <div class="abilities" :class="position" :style="abilitiesPosition" ref="abilitiesRef" >
+      <div class="abilities" :class="[positionClass, { anchored: supportsAnchor }]" :style="anchorStyle" ref="abilitiesRef" >
+        <button
+          v-if="playAction !== undefined"
+          class="play-card-button"
+          @click="chooseAbility(playAction)"
+        >
+          <span class="button-label">{{ $t('label.play') }}</span>
+        </button>
         <AbilityButton
           v-for="{index, contents} in abilities"
           :key="index"
           :ability="contents"
           :show-move="showMove"
+          :host-has-swarm="hostHasSwarm"
           :game="game"
           @click="chooseAbility(index)"
         />
@@ -115,17 +188,16 @@ watch(showAbilities, (newValue) => {
 
 <style scoped>
 .abilities {
-  position: absolute;
+  position: fixed;
   padding: min(3px, 1vw);
   background: rgba(0, 0, 0, 0.8);
   border-radius: calc(10px - min(3px, 1vw));
   display: flex;
   flex-direction: column;
   gap: 5px;
-  z-index: var(--z-index-1000);
+  z-index: var(--z-modal-overlay);
   button {
-    padding-block: min(3px, 1vw);
-    padding-inline: min(6px, 2vw);
+    padding: 0;
     margin-top: 0;
     display: flex;
     align-items: center;
@@ -141,6 +213,12 @@ watch(showAbilities, (newValue) => {
     }
   }
 
+  :deep(.button-label),
+  .button-label {
+    padding-block: min(3px, 1vw);
+    padding-inline: min(6px, 2vw);
+  }
+
   :deep(span) {
     @media (max-width: 800px) and (orientation: portrait) {
       &:before {
@@ -148,5 +226,41 @@ watch(showAbilities, (newValue) => {
       }
     }
   }
+}
+
+.abilities.anchored {
+  position: fixed;
+  position-try-fallbacks: flip-block, flip-inline;
+}
+
+.abilities.anchored.top { position-area: top span-right; }
+.abilities.anchored.bottom { position-area: bottom span-right; }
+.abilities.anchored.left { position-area: left span-bottom; margin-right: 8px; }
+.abilities.anchored.right { position-area: right span-bottom; margin-left: 8px; }
+
+.play-card-button {
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 4px;
+  background-color: var(--button);
+  z-index: var(--z-index-1000);
+  width: 100%;
+  min-width: max-content;
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  overflow: hidden;
+}
+
+.play-card-button::before {
+  content: "\1F0CF";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: 3px 6px;
+  background: rgba(255, 255, 255, 0.12);
 }
 </style>

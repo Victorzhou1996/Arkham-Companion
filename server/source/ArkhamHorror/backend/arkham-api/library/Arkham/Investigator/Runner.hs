@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeAbstractions #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Arkham.Investigator.Runner (module Arkham.Investigator.Runner, module X) where
@@ -16,6 +17,7 @@ import Arkham.Helpers.Message as X hiding (
   InvestigatorResigned,
  )
 import Arkham.Helpers.Query as X
+import Arkham.Homebrew.Defs (allTraits)
 import Arkham.Id as X
 import Arkham.Investigator.Types as X
 import Arkham.Name as X
@@ -40,7 +42,6 @@ import Arkham.Card.PlayerCard
 import Arkham.Card.Settings
 import Arkham.Classes.HasGame
 import Arkham.CommitRestriction
-import Arkham.Customization
 import Arkham.Deck qualified as Deck
 import Arkham.DefeatedBy
 import Arkham.Discover
@@ -53,31 +54,27 @@ import {-# SOURCE #-} Arkham.Game (asIfTurn, withoutCanModifiers)
 import Arkham.Game.Settings (settingsStrictAsIfAt)
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers
-import Arkham.Helpers.Ability (
-  getAbilityLimit,
-  getCanAffordUseWith,
-  isForcedAbility,
- )
-import Arkham.Helpers.Action (
-  getActions,
- )
-import Arkham.Helpers.Card (
-  cardIsFast',
-  getModifiedCardCost,
- )
-import Arkham.Helpers.Cost (getCanAffordCost)
+import Arkham.Helpers.Ability (getAbilityLimit, getCanAffordUseWith, isForcedAbility)
+import Arkham.Helpers.Action (getActions)
+import Arkham.Helpers.Campaign (getCampaignStoryCards)
+import Arkham.Helpers.Card (cardIsFast', getModifiedCardCost)
+import Arkham.Helpers.ChaosToken (chaosTokenSymbolEffectsIgnored)
+import Arkham.Helpers.Cost (getAdditionalActionCosts, getCanAffordCost)
 import Arkham.Helpers.Criteria (passesCriteria)
+import Arkham.Helpers.Customization
 import Arkham.Helpers.Discover
 import Arkham.Helpers.Enemy (expandCompositeEnemies, getInteractAsOneOf)
 import Arkham.Helpers.Game (withAlteredGame)
-import Arkham.Helpers.Location (
-  getCanMoveTo,
-  isDiscoveringLastClue,
-  withLocationOf,
- )
+import Arkham.Helpers.Location (getCanMoveTo, isDiscoveringLastClue, withLocationOf)
 import Arkham.Helpers.Log (hasCampaignOption)
 import Arkham.Helpers.Modifiers
-import Arkham.Helpers.Playable (getIsPlayableAfterInitiation, getPlayableCards)
+import Arkham.Helpers.Playable (
+  filterPlayable,
+  getIsPlayableAfterInitiation,
+  getOtherPlayersPlayableCards,
+  getPlayableDiscards,
+ )
+import Arkham.Helpers.Ref (sourceToMaybeCard)
 import Arkham.Helpers.SkillTest
 import Arkham.Helpers.Slot (
   canPutIntoSlot,
@@ -114,6 +111,7 @@ import Arkham.Matcher (
   CardMatcher (..),
   EnemyMatcher (..),
   EventMatcher (..),
+  ExtendedCardMatcher (..),
   ForPlay (..),
   InvestigatorMatcher (..),
   LocationMatcher (..),
@@ -121,12 +119,12 @@ import Arkham.Matcher (
   assetControlledBy,
   assetIs,
   at_,
+  basic,
   cardIs,
   coveredByAnyInPlayEnemy,
   locationWithInvestigator,
   oneOf,
   orConnected,
-  pattern AnyInPlayEnemy,
   pattern AssetWithAnyClues,
  )
 import Arkham.Message qualified as Msg
@@ -134,12 +132,13 @@ import Arkham.Message.Lifted (takeControlOfAsset)
 import Arkham.Message.Lifted qualified as Lifted
 import Arkham.Message.Lifted.Choose qualified as Choose
 import Arkham.Message.Lifted.Move (moveToEdit)
+import Arkham.Metrics (isMetricsEnabled, recordSpan)
 import Arkham.Modifier
 import Arkham.Modifier qualified as Modifier
 import Arkham.Movement
 import Arkham.Phase
 import Arkham.Placement
-import Arkham.Plural
+import Arkham.PlayerCard qualified as PlayerCard
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.ScenarioLogKey
@@ -149,8 +148,9 @@ import Arkham.Slot
 import Arkham.Timing qualified as Timing
 import Arkham.Token
 import Arkham.Token qualified as Token
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheCircleUndone.UnspeakableFate qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheDreamEaters.DarkSideOfTheMoon qualified as DarkSideOfTheMoon
+import Arkham.Treachery.CardDefs.TheDreamEaters.PointOfNoReturn qualified as PointOfNoReturn
 import Arkham.Window (Window (..), mkAfter, mkWhen, mkWindow, primaryWindowTarget)
 import Arkham.Window qualified as Window
 import Arkham.Zone qualified as Zone
@@ -160,10 +160,22 @@ import Data.List qualified as List
 import Data.Map.Strict qualified as Map
 import Data.Monoid
 import Data.Set qualified as Set
+import GHC.Clock (getMonotonicTimeNSec)
 
 instance RunMessage Investigator where
   runMessage msg i@(Investigator (a :: original)) =
     do
+      -- A symbol whose effects are being ignored or replaced (The Black Cat (5))
+      -- must not resolve the investigator's own elder sign effect either. The
+      -- attrs runner only ever matches InvestigatorTarget for these, so nothing
+      -- is lost by short-circuiting here.
+      symbolIgnored <- case msg of
+        PassedSkillTest _ _ _ (ChaosTokenTarget token) _ _ -> chaosTokenSymbolEffectsIgnored token
+        FailedSkillTest _ _ _ (ChaosTokenTarget token) _ _ -> chaosTokenSymbolEffectsIgnored token
+        _ -> pure False
+      if symbolIgnored then pure i else runInvestigator
+   where
+    runInvestigator = do
       modifiers' <- getModifiers (toTarget i)
       let msg' = if Blank `elem` modifiers' then Blanked msg else msg
       case investigatorForm (toAttrs a) of
@@ -240,10 +252,23 @@ onlyCampaignAbilities UsedAbility {..} = case abilityLimitType (abilityLimit use
   Just PerCampaign -> True
   _ -> False
 
+{- | Under the Chapter 2 "as if" ruling (Grimoire) the altered game state applies
+only to the ability being resolved; other abilities triggering during it see the
+actual game state. Bracket the windows where those other abilities get offered.
+Chapter 1 keeps the altered state throughout, so the bracket is a no-op there.
+-}
+withoutAsIfFor :: HasGame m => InvestigatorId -> [Message] -> m [Message]
+withoutAsIfFor iid msgs = do
+  settings <- getSettings
+  pure
+    $ if settingsStrictAsIfAt settings
+      then [SetAsIfAtIgnored iid True] <> msgs <> [SetAsIfAtIgnored iid False]
+      else msgs
+
 -- There are a few conditions that can occur that mean we must need to use an ability.
 -- No valid targets. For example Marksmanship
 -- Can't afford card. For example On Your Own
-getAllAbilitiesSkippable :: (Tracing m, HasGame m) => InvestigatorAttrs -> [Window] -> m Bool
+getAllAbilitiesSkippable :: HasGame m => InvestigatorAttrs -> [Window] -> m Bool
 getAllAbilitiesSkippable attrs windows = allM (getWindowSkippable attrs windows) windows
 
 {- | The PlayCard/PlayEvent reaction window only carries the play itself. The
@@ -258,7 +283,7 @@ getInitiationWindows ws = do
   stack <- concat <$> getWindowStack
   pure $ if null stack then ws else nub (ws <> stack)
 
-getWindowSkippable :: (Tracing m, HasGame m) => InvestigatorAttrs -> [Window] -> Window -> m Bool
+getWindowSkippable :: HasGame m => InvestigatorAttrs -> [Window] -> Window -> m Bool
 getWindowSkippable
   attrs
   ws
@@ -366,7 +391,7 @@ abilityTriggerMode attrs Ability {abilityCardCode, abilityIndex} =
   cardTriggerMode attrs abilityCardCode abilityIndex
 
 triggerModeAllows
-  :: (HasGame m, Tracing m)
+  :: HasGame m
   => InvestigatorId
   -> AbilityTriggerMode
   -> m Bool
@@ -378,7 +403,7 @@ triggerModeAllows iid = \case
     pure $ activeInvestigator == Just iid
 
 abilityTriggerModeAllows
-  :: (HasGame m, Tracing m)
+  :: HasGame m
   => InvestigatorId
   -> InvestigatorAttrs
   -> Ability
@@ -388,7 +413,7 @@ abilityTriggerModeAllows iid attrs ability
   | otherwise = triggerModeAllows iid $ abilityTriggerMode attrs ability
 
 playableCardTriggerModeAllows
-  :: (HasGame m, Tracing m)
+  :: HasGame m
   => InvestigatorId
   -> InvestigatorAttrs
   -> Card
@@ -397,11 +422,28 @@ playableCardTriggerModeAllows iid attrs card =
   triggerModeAllows iid
     $ cardTriggerMode attrs (toCardCode card) playCardTriggerModeIndex
 
+{- | Abilities the investigator has silenced from the hidden-cards stack. Only
+non-forced triggers are dropped -- a forced ability on a silenced card still
+fires, since the game would be wrong without it.
+-}
+dropSilencedAbilities :: HasGame m => InvestigatorAttrs -> [Ability] -> m [Ability]
+dropSilencedAbilities attrs abilities
+  | null silenced = pure abilities
+  | otherwise = flip filterM abilities \ability ->
+      isForcedAbility attrs.id ability >>= \case
+        True -> pure True
+        False ->
+          maybe True ((`notMember` silenced) . toCardCode)
+            <$> sourceToMaybeCard ability.source
+ where
+  silenced = silencedCardCodes attrs.settings
+
 runWindow
-  :: (HasGame m, Tracing m, HasQueue Message m)
+  :: (HasGame m, HasQueue Message m)
   => InvestigatorAttrs -> [Window] -> [Ability] -> [Card] -> m ()
-runWindow attrs windows actions playableCards = do
+runWindow attrs windows allActions playableCards = do
   let iid = toId attrs
+  actions <- dropSilencedAbilities attrs allActions
   unless (null playableCards && null actions) $ do
     anyForced <- anyM (isForcedAbility iid) actions
     player <- getPlayer iid
@@ -464,6 +506,25 @@ runWindow attrs windows actions playableCards = do
               actionsWithMatchingWindows
             <> [SkipTriggersButton iid | skippable]
 
+{- | TEMPORARY profiling instrumentation. 'Arkham.Metrics.withMetric' needs
+'MonadUnliftIO', which @QueueT Message GameT@ is not, so time the span by hand.
+No exception safety: a throwing span is simply not recorded.
+-}
+timedSpan :: MonadIO m => Text -> m a -> m a
+timedSpan name action = do
+  liftIO isMetricsEnabled >>= \case
+    Nothing -> action
+    Just _ -> do
+      t0 <- liftIO getMonotonicTimeNSec
+      result <- action
+      t1 <- liftIO getMonotonicTimeNSec
+      liftIO $ recordSpan name (t1 - t0)
+      pure result
+
+withAssetStillInPlay
+  :: HasGame m => AssetId -> InvestigatorAttrs -> m InvestigatorAttrs -> m InvestigatorAttrs
+withAssetStillInPlay aid a body = fieldMay AssetCardId aid >>= maybe (pure a) (const body)
+
 runInvestigatorMessage :: Runner InvestigatorAttrs
 runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   ClearAbilityUse ref -> do
@@ -472,13 +533,19 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     when (a.id `elem` miid) do
       Lifted.checkWhen (Window.ChaosTokenSealed a.id token)
       Lifted.checkAfter (Window.ChaosTokenSealed a.id token)
+    Lifted.checkWhen (Window.ChaosTokenSealedOn a.id token)
+    Lifted.checkAfter (Window.ChaosTokenSealedOn a.id token)
     pure $ a & sealedChaosTokensL %~ (token :)
   SealedChaosToken token miid _ -> do
     when (a.id `elem` miid) do
       Lifted.checkWhen (Window.ChaosTokenSealed a.id token)
       Lifted.checkAfter (Window.ChaosTokenSealed a.id token)
     pure $ a & sealedChaosTokensL %~ filter (/= token)
-  UnsealChaosToken token -> pure $ a & sealedChaosTokensL %~ filter (/= token)
+  UnsealChaosToken token -> do
+    when (token `elem` investigatorSealedChaosTokens) do
+      Lifted.checkWhen (Window.ChaosTokenReleased a.id token)
+      Lifted.checkAfter (Window.ChaosTokenReleased a.id token)
+    pure $ a & sealedChaosTokensL %~ filter (/= token)
   ReturnChaosTokensToPool tokens -> pure $ a & sealedChaosTokensL %~ filter (`notElem` tokens)
   RemoveAllChaosTokens face -> do
     pure $ a & sealedChaosTokensL %~ filter ((/= face) . chaosTokenFace)
@@ -494,6 +561,16 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     pure attrs'
   UpdateCardSetting iid cCode s | iid == a.id -> do
     let attrs' = a & settingsL %~ updateCardSetting cCode s
+    currentWindows <- concat <$> getWindowStack
+    when (any (\w -> Window.windowType w == Window.FastPlayerWindow) currentWindows) do
+      push $ Do (CheckWindows currentWindows)
+    pure attrs'
+  SetCardOption iid cCode k v | iid == a.id -> do
+    pure $ a & settingsL %~ setCardOption cCode k v
+  SetCardSilenced iid cCode v | iid == a.id -> do
+    let attrs' = a & settingsL %~ setCardSilenced cCode v
+    -- Same reasoning as UpdateGlobalSetting: silencing a card while its window
+    -- is the open question should drop the prompt now, not next window.
     currentWindows <- concat <$> getWindowStack
     when (any (\w -> Window.windowType w == Window.FastPlayerWindow) currentWindows) do
       push $ Do (CheckWindows currentWindows)
@@ -516,6 +593,9 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       %~ (\counts -> insertMap key (max 0 (findWithDefault 0 key counts + n)) counts)
   EndCheckWindow -> do
     depth <- getWindowDepth
+    -- only re-arm records whose window is still open, otherwise a record from a
+    -- closed window at the same depth is marked used again and blocks its ability
+    currentWindows <- concat <$> getWindowStack
     let
       filterAbility UsedAbility {..} = do
         getAbilityLimit (toId a) usedAbility <&> \case
@@ -529,7 +609,10 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         ( \u ->
             if usedDepth u > depth
               then u {usedThisWindow = False}
-              else if usedDepth u == depth && depth > 0 then u {usedThisWindow = True} else u
+              else
+                if usedDepth u == depth && depth > 0 && any (`elem` currentWindows) (usedAbilityWindows u)
+                  then u {usedThisWindow = True}
+                  else u
         )
         <$> filterM filterAbility investigatorUsedAbilities
     pure $ a & usedAbilitiesL .~ usedAbilities
@@ -555,6 +638,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         , investigatorLog = investigatorLog
         , investigatorSideDeck = investigatorSideDeck
         , investigatorTaboo = investigatorTaboo
+        , investigatorCardPool = investigatorCardPool
         , investigatorMutated = investigatorMutated
         , investigatorSlots = defaultSlots a.id
         , investigatorDeckUrl = investigatorDeckUrl
@@ -596,7 +680,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
                   if investigatorId == "05046" && cardDef.cardCode == "05108"
                     then
                       selectOne TheScenario <&> \case
-                        Just "54016" -> Treacheries.fateOfAllFoolsUnspeakableFate
+                        Just "54016" -> Treacheries.fateOfAllFools
                         _ -> cardDef
                     else pure cardDef
                 card <- setOwner investigatorId =<< genCard cardDef'
@@ -617,14 +701,29 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         startsWithDefs
     let (permanentCards, deck'') =
           partition (\c -> cdPermanent (toCardDef c) && not (cannotPutIntoPlay (toCard c))) (unDeck deck')
+
+    -- An earned campaign story card printed on an encounter back never comes
+    -- back with the deck (deck loading keeps only player cards), so a permanent
+    -- one has to start in play from the campaign's story cards instead —
+    -- otherwise it is lost after the scenario it was earned in.
+    encounterPermanentCards <-
+      filter
+        ( and
+            . sequence
+              [isJust . preview _EncounterCard, cdPermanent . toCardDef, not . cannotPutIntoPlay]
+        )
+        . findWithDefault [] investigatorId
+        <$> getCampaignStoryCards
+
     let deck''' =
           filter
             ( and
                 . sequence
-                  [ (`notElem` investigatorStartsWithInHand) . toCardDef
+                  [ (`notElem` map toCardCode investigatorStartsWithInHand) . toCardCode
                   , not
                       . ( `cardMatch`
-                            oneOf [cardIs Treacheries.falseAwakening, cardIs Treacheries.falseAwakeningPointOfNoReturn]
+                            oneOf
+                              [cardIs DarkSideOfTheMoon.falseAwakening, cardIs PointOfNoReturn.falseAwakening]
                         )
                   ]
             )
@@ -639,15 +738,27 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
           cs <- replicateM n (genCard def)
           traverse (Arkham.Card.setTaboo investigatorTaboo <=< setOwner iid) cs
 
+    -- A card that always starts the game on its front side can have been
+    -- persisted flipped (the flip is synced to the campaign's story cards), so
+    -- put its other side into play instead.
+    startingInPlayCards <- for (map PlayerCard permanentCards <> encounterPermanentCards) \card -> do
+      let def = toCardDef card
+      case cdOtherSide def of
+        Just otherSide | startsOnOtherSideTag `elem` cdTags def -> do
+          let card' = lookupCard otherSide (toCardId card)
+          push $ ReplaceCard (toCardId card') card'
+          pure card'
+        _ -> pure card
+
     pushAll
       $ startsWithMsgs
       <> [ PutCardIntoPlay
              investigatorId
-             (PlayerCard card)
+             card
              Nothing
              NoPayment
              (Window.defaultWindows investigatorId)
-         | card <- permanentCards
+         | card <- startingInPlayCards
          ]
       <> [TakeStartingResources investigatorId]
     pure $ a & (deckL .~ Deck deck''') & bondedCardsL .~ bondedCards
@@ -656,20 +767,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   ReturnToHand iid (CardIdTarget cardId) | iid == investigatorId -> handleReturnToHandV3 a iid cardId
   ReturnToHand iid (CardMatcherTarget matcher) | iid == investigatorId -> handleReturnToHandV4 a iid matcher
   CheckAdditionalActionCosts iid target action msgs | iid == investigatorId -> do
-    mods <- getModifiers a
-    targetMods <- getModifiers target
-    let
-      additionalCosts =
-        mapMaybe
-          \case
-            AdditionalActionCostOf (IsAction action') n | action == action' -> Just (ActionCost n)
-            _ -> Nothing
-          mods
-          <> mapMaybe
-            \case
-              AdditionalCostToInvestigate c | action == #investigate -> Just c
-              _ -> Nothing
-            targetMods
+    additionalCosts <- getAdditionalActionCosts iid target action
     if null additionalCosts
       then pushAll msgs
       else do
@@ -813,11 +911,14 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       pushAll [windowMsg, InvestigatorIsDefeated source iid]
     pure a
   InvestigatorIsDefeated source iid | iid == investigatorId -> handleInvestigatorIsDefeated a source iid
+  Msg.InvestigatorNoLongerDefeated iid
+    | iid == investigatorId ->
+        pure $ a & defeatedL .~ False & endedTurnL .~ False
   Msg.InvestigatorResigned iid | iid == investigatorId -> do
     pushAll [InvestigatorWhenEliminated (toSource a) iid (Just $ Do msg)]
     pure $ a & endedTurnL .~ True
   Do (Msg.InvestigatorResigned iid) | iid == investigatorId -> do
-    isLead <- (== iid) <$> getLead
+    isLead <- (== Just iid) <$> getRecordedLead
     pushWhen isLead ChooseLeadInvestigator
     pure $ a & resignedL .~ True
   -- InvestigatorWhenEliminated is handled by the scenario
@@ -966,8 +1067,8 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         _ -> original
       applyMatcherModifiers _ n = n
       canFightMatcher = case overrides of
-        [] -> if choose.overriden then AnyInPlayEnemy else CanFightEnemy source
-        [o] -> CanFightEnemyWithOverride o
+        [] -> if choose.overriden then AnyEnemy <> EnemyCanBeAttackedBy source else CanFightEnemy source
+        [o] -> CanFightEnemyWithOverride o <> EnemyCanBeAttackedBy source
         _ -> error "multiple overrides found"
     smods <- filter (== IgnoreAloof) <$> getModifiers choose.skillTest
     enemyIds <-
@@ -985,11 +1086,16 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     -- Targets that are merely attackable "as if an enemy" (Mist-Pylons, Key Loci) are not
     -- real enemies. Only offer them when the fight is unrestricted; a fight narrowed by
     -- the card's matcher (e.g. Toe to Toe's @EnemyCanAttack You@) must not include them.
-    -- The Runic Axe (Inscription of the Hunt) fight uses a CanFightEnemyWithOverride
-    -- matcher, which coveredByAnyInPlayEnemy treats as "restricted". That override widens
-    -- the fight rather than narrowing it, so it must still offer as-if-enemy targets
-    -- (Mist-Pylons, Key Loci). canMoveToConnected is exactly this Hunt-source case.
-    let includeAsIfEnemy = coveredByAnyInPlayEnemy enemyMatcher || canMoveToConnected
+    -- fightOffersAsIfEnemyTargets looks through a CanFightEnemyWithOverride, since such a
+    -- matcher replaces the standard fight criteria rather than narrowing the enemy set --
+    -- that is how Longbow (3) and British Bull Dog (2) spell "ignore Aloof". Runic Axe's
+    -- Hunt override is the same shape, but canMoveToConnected is still needed for it: it
+    -- also widens where we look for as-if-enemy targets.
+    let includeAsIfEnemy = fightOffersAsIfEnemyTargets enemyMatcher || canMoveToConnected
+    let asIfEnemyLocations =
+          if canMoveToConnected
+            then orConnected ForMovement (locationWithInvestigator investigatorId)
+            else locationWithInvestigator investigatorId
     locationIds <-
       if includeAsIfEnemy
         then
@@ -997,11 +1103,12 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
             $ asIfTurn investigatorId
             $ select
             $ LocationWithModifier CanBeAttackedAsIfEnemy
-            <> if canMoveToConnected
-              then orConnected ForMovement (locationWithInvestigator investigatorId)
-              else locationWithInvestigator investigatorId
+            <> asIfEnemyLocations
         else pure []
-    concealed <- if includeAsIfEnemy then getConcealedIds NotForExpose investigatorId else pure []
+    concealed <-
+      if includeAsIfEnemy
+        then map toId <$> getConcealedChoicesAt NotForExpose asIfEnemyLocations
+        else pure []
     assetIds <-
       if includeAsIfEnemy
         then
@@ -1009,7 +1116,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
             $ asIfTurn investigatorId
             $ select
             $ AssetWithModifier CanBeAttackedAsIfEnemy
-            <> at_ (locationWithInvestigator investigatorId)
+            <> at_ asIfEnemyLocations
         else pure []
     player <- getPlayer investigatorId
     let choices = enemyIds <> map coerce locationIds <> map coerce concealed <> map coerce assetIds
@@ -1122,8 +1229,8 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         _ -> original
       applyMatcherModifiers _ n = n
       canEvadeMatcher = case overrides of
-        [] -> if choose.overriden then AnyInPlayEnemy else CanEvadeEnemy source
-        [o] -> CanEvadeEnemyWithOverride o
+        [] -> if choose.overriden then AnyEnemy <> EnemyCanBeEvadedBy source else CanEvadeEnemy source
+        [o] -> CanEvadeEnemyWithOverride o <> EnemyCanBeEvadedBy source
         _ -> error "multiple overrides found"
     enemyIds <-
       select
@@ -1403,7 +1510,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
                  ]
               <> wrapWindows [locationWindowsAfter]
               <> d.discoverThen
-            send $ format a <> " discovered " <> pluralize clueCount "clue"
+            send $ format a <> " discovered " <> tshow clueCount <> if clueCount == 1 then " clue" else " clues"
 
         -- Investigating and automatically discovering a clue are two separate exposure triggers.
         -- The investigation one is offered up front at ST.7 (see 'withExposeInsteadOfInvestigating'
@@ -1488,24 +1595,26 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       afterPlayCard <- checkWindows [mkAfter (Window.PlayCard iid $ Window.CardPlay card asAction)]
       when shouldAddToHand do
         Lifted.cardResolutionModifier card GameSource iid (AsIfInHandFor NotForPlay card.id)
-      if cdSkipPlayWindows (toCardDef card)
-        then push $ PlayCard iid card mtarget payment windows' asAction
-        else
-          pushAll
-            [ CheckWindows [mkWhen (Window.PlayCard iid $ Window.CardPlay card asAction)]
-            , InitiatePlayCard iid card mtarget payment windows' asAction
-            , afterPlayCard
-            , ResolvedPlayCard iid card
-            ]
+      -- cdSkipPlayWindows suppresses the *#when* window only. The Painted World is its
+      -- sole user: it replaces itself in place with the chosen event and pushes its own
+      -- #when window naming that card, so the one built here would name the wrong card.
+      -- Nothing substitutes for the #after window or ResolvedPlayCard, so they must stay
+      -- on both paths -- this is the only site that opens PlayCard #after, and skipping
+      -- it left "after you play an event" reactions (Marion Tavares) dead, and Shed a
+      -- Light's ResolvedPlayCard anchor missing. Note the #after window here names the
+      -- pre-replacement card; re-deriving it post-resolution is not safe because The
+      -- Painted World has already removed itself from the game by then.
+      pushAll
+        $ [ CheckWindows [mkWhen (Window.PlayCard iid $ Window.CardPlay card asAction)]
+          | not (cdSkipPlayWindows (toCardDef card))
+          ]
+        <> [ InitiatePlayCard iid card mtarget payment windows' asAction
+           , afterPlayCard
+           , ResolvedPlayCard iid card
+           ]
     pure a
-  CardEnteredPlay _ card -> do
-    pure
-      $ a
-      & (handL %~ filter (/= card))
-      & (discardL %~ filter ((/= card) . PlayerCard))
-      & (deckL %~ Deck . filter ((/= card) . PlayerCard) . unDeck)
-      & (cardsUnderneathL %~ filter ((/= card) . toCard))
-      & (foundCardsL . each %~ filter (/= card))
+  CardIsEnteringPlay _ card -> pure $ removeCardFromZones card a
+  CardEnteredPlay _ card -> pure $ removeCardFromZones card a
   InitDeck InitDeckAttrs {initDeckInvestigator = iid, initDeckUrl = murl} | iid == investigatorId -> handleInitDeck a iid murl
   UpgradeDeck iid murl _ | iid == investigatorId -> handleUpgradeDeck a iid murl
   ObtainCard cardId -> handleObtainCard a cardId
@@ -1523,7 +1632,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       , Do (InvestigatorPlayAsset iid aid)
       ]
     pure $ a & slotsL %~ removeFromSlots aid
-  InvestigatorAdjustAssetSlots iid aid | iid == investigatorId -> do
+  InvestigatorAdjustAssetSlots iid aid | iid == investigatorId -> withAssetStillInPlay aid a do
     slots <- field AssetSlots aid
     assetCard <- field AssetCard aid
     let
@@ -1588,7 +1697,9 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         for slots \slot -> do
           case slotItems slot of
             [] -> pure slot
-            assets -> do
+            occupants -> do
+              -- A dangling AssetId must not turn a slot read into MissingEntity (#5593)
+              (assets, missing) <- partitionM (fmap isJust . fieldMay AssetCardId) occupants
               ignored <-
                 assets & filterM \aid -> do
                   cardId <- field AssetCardId aid
@@ -1606,23 +1717,21 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
                   let lessSlots = if seenCount == slotCount then 1 else 0
                   when (lessSlots == 0) $ modify (aid :)
                   pure $ replicate lessSlots aid
-              pure $ foldr removeIfMatchesOnce (foldr removeIfMatches slot ignored) (concat assetsToRemove)
+              pure
+                $ foldr
+                  removeIfMatches
+                  (foldr removeIfMatchesOnce (foldr removeIfMatches slot ignored) (concat assetsToRemove))
+                  missing
       pure (slotType, slots')
     push $ RefillSlots iid xs
     pure $ a & slotsL .~ mapFromList updatedSlots
-  Do (InvestigatorPlayAsset iid aid) | iid == investigatorId -> do
+  Do (InvestigatorPlayAsset iid aid) | iid == investigatorId -> withAssetStillInPlay aid a do
     -- this asset might already be slotted so check first
     fitsSlots <- fitsAvailableSlots aid a
     case fitsSlots of
       FitsSlots -> push (InvestigatorPlayedAsset iid aid)
       MissingSlots missingSlotTypes -> do
-        canHoldMap :: Map SlotType [SlotType] <- do
-          mods <- getModifiers a
-          let
-            canHold = \case
-              SlotCanBe slotType canBeSlotType -> insertWith (<>) slotType [canBeSlotType]
-              _ -> id
-          pure $ foldr canHold mempty mods
+        canHoldMap <- getCanHoldMap a
         let additionalSlots = concatMap (\k -> findWithDefault [] k canHoldMap) missingSlotTypes
         assetsThatCanProvideSlots <-
           select
@@ -1639,8 +1748,14 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         -- hold this asset. It still enters play -- the effect that put it there may be mandatory,
         -- e.g. an act saying to take control of The Black Book -- and is then discarded, since it
         -- is the one that can leave play and whatever holds the slot (Dendromorphosis, ...) cannot.
+        -- Unless it cannot leave play either, in which case nothing here is discardable at all: it
+        -- enters play unslotted and the investigator simply sits over their slot limit (#5424).
+        canDiscardIncoming <- aid <=~> DiscardableAsset
         if null assetsThatCanProvideSlots
-          then pushAll [InvestigatorPlayedAsset iid aid, toDiscardBy iid GameSource aid]
+          then
+            pushAll
+              $ InvestigatorPlayedAsset iid aid
+              : [toDiscardBy iid GameSource aid | canDiscardIncoming]
           else
             push
               $ chooseOne player
@@ -1652,17 +1767,11 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
                 , let assets = assetsInSlotsOf aid'
                 ]
     pure a
-  InvestigatorPlayedAsset iid aid | iid == investigatorId -> do
+  InvestigatorPlayedAsset iid aid | iid == investigatorId -> withAssetStillInPlay aid a do
     slotTypes <- field AssetSlots aid
     assetCard <- field AssetCard aid
 
-    canHoldMap :: Map SlotType [SlotType] <- do
-      mods <- getModifiers a
-      let
-        canHold = \case
-          SlotCanBe slotType canBeSlotType -> insertWith (<>) slotType [canBeSlotType]
-          _ -> id
-      pure $ foldr canHold mempty mods
+    canHoldMap <- getCanHoldMap a
     -- we need to figure out which slots are or aren't available
     -- we've claimed we can play this, but we might need to change the slotType
     let
@@ -1702,11 +1811,11 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
           | damage' == 0 && horror' > 0 ->
               push $ DoStep 1 $ Msg.InvestigatorDamage iid source damage' (horror' - 1)
           | otherwise -> Choose.chooseOneM iid $ withI18n $ countVar 1 do
-              Choose.labeled' "cancelDamage"
+              Choose.labeled "cancelDamage"
                 $ push
                 $ DoStep 1
                 $ Msg.InvestigatorDamage iid source (damage' - 1) horror'
-              Choose.labeled' "cancelHorror"
+              Choose.labeled "cancelHorror"
                 $ push
                 $ DoStep 1
                 $ Msg.InvestigatorDamage iid source damage' (horror' - 1)
@@ -1745,6 +1854,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   HealHorrorDelayed target@(isTarget a -> True) source n | n > 0 -> handleHealHorrorDelayed a target source n msg
   Do (HealHorrorDelayed (isTarget a -> True) source n) -> handleDoHealHorrorDelayed a source n
   Do (HealHorror (isTarget a -> True) source n) -> handleDoHealHorror a source n
+  MoveTokens _s (InvestigatorSource _) target Clue _ | isTarget a target -> pure a
   MoveTokens s _ (isTarget a -> True) tType amount -> liftRunMessage (PlaceTokens s (toTarget a) tType amount) a
   MoveTokens s (isSource a -> True) _target tType amount | amount > 0 -> do
     case tType of
@@ -1852,9 +1962,17 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     push $ RefillSlots a.id []
     pure $ a & slotsL . ix slotType %~ deleteFirstMatch (isSource source . slotSource)
   RefillSlots iid xs | iid == investigatorId && not investigatorEliminated -> do
+    -- An asset can be controlled by an investigator while its card sits on a location
+    -- (Summoned Servitor). It still fills that investigator's slots, so it has to be part of
+    -- the requirements -- otherwise the refill empties every slot and never gives this one
+    -- back (#5660).
+    atLocation <-
+      select (AssetControlledBy (InvestigatorWithId iid))
+        >>= filterM (fieldMap AssetPlacement (isJust . preview _AtLocation))
     assetIds <-
-      select
-        $ oneOf [AssetInPlayAreaOf (InvestigatorWithId iid), AssetInThreatAreaOf (InvestigatorWithId iid)]
+      (<> atLocation)
+        <$> select
+          (oneOf [AssetInPlayAreaOf (InvestigatorWithId iid), AssetInThreatAreaOf (InvestigatorWithId iid)])
     mods <- getModifiers a
     requirements <- concatForM assetIds \assetId -> do
       assetCard <- field AssetCard assetId
@@ -1867,12 +1985,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
     let allSlots' :: [(SlotType, Slot)] = concatMap (\(k, vs) -> (k,) . emptySlot <$> vs) $ Map.assocs (a ^. slotsL)
     let allSlots = foldr (\s -> deleteFirstMatch ((== s) . fst)) allSlots' slotsToRemove
 
-    canHoldMap :: Map SlotType [SlotType] <- do
-      let
-        canHold = \case
-          SlotCanBe slotType canBeSlotType -> insertWith (<>) slotType [canBeSlotType]
-          _ -> id
-      pure $ foldr canHold mempty mods
+    let canHoldMap = toCanHoldMap mods
 
     let
       lookupSlot :: SlotType -> [(SlotType, Slot)] -> [Slot]
@@ -1883,19 +1996,31 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       go ((aid, card, slotType) : rs) slots = do
         (availableSlots1, unused1) <- partitionM (canPutIntoSlot card) (lookupSlot slotType slots)
         case availableSlots1 of
-          [] -> case findWithDefault [] slotType canHoldMap of
-            [] -> (slotType :) <$> go rs slots
-            [other] -> do
-              (availableSlots2, unused2) <- partitionM (canPutIntoSlot card) (lookupSlot other slots)
-              case availableSlots2 of
-                [] -> (slotType :) <$> go rs slots
-                _ -> do
-                  slots' <- placeInAvailableSlot aid card availableSlots2
-                  go rs $ filter ((/= other) . fst) slots <> map (other,) slots' <> map (other,) unused2
-            _ -> error "not designed to work with more than one yet"
+          -- The printed slot type is full, so fall back to whatever may stand in for it (The
+          -- Hierophant V (3)). Walk every candidate rather than assuming there is at most one --
+          -- two copies of the same effect used to reach an `error` here (#5363).
+          [] -> goAlternates aid card slotType rs slots (findWithDefault [] slotType canHoldMap)
           _ -> do
             slots' <- placeInAvailableSlot aid card availableSlots1
             go rs $ filter ((/= slotType) . fst) slots <> map (slotType,) slots' <> map (slotType,) unused1
+
+      goAlternates
+        :: HasGame m
+        => AssetId
+        -> Card
+        -> SlotType
+        -> [(AssetId, Card, SlotType)]
+        -> [(SlotType, Slot)]
+        -> [SlotType]
+        -> m [SlotType]
+      goAlternates _ _ slotType rs slots [] = (slotType :) <$> go rs slots
+      goAlternates aid card slotType rs slots (other : others) = do
+        (availableSlots2, unused2) <- partitionM (canPutIntoSlot card) (lookupSlot other slots)
+        case availableSlots2 of
+          [] -> goAlternates aid card slotType rs slots others
+          _ -> do
+            slots' <- placeInAvailableSlot aid card availableSlots2
+            go rs $ filter ((/= other) . fst) slots <> map (other,) slots' <> map (other,) unused2
 
     let
       fill :: HasGame m => [(AssetId, Card, SlotType)] -> Map SlotType [Slot] -> m (Map SlotType [Slot])
@@ -1906,19 +2031,28 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
           -- N.B. an unplaceable requirement only drops *itself* -- we keep filling the rest.
           -- Bailing out here (suppose we get dendromorphosis and the king in yellow) stranded
           -- every requirement queued behind it, silently unslotting unrelated assets.
-          [] -> case findWithDefault [] slotType canHoldMap of
-            [] -> fill rs slots
-            [other] -> do
-              (availableSlots2, _unused2) <- partitionM (canPutIntoSlot card) (slots ^. at other . non [])
-              case availableSlots2 of
-                [] -> fill rs slots
-                _ -> do
-                  slots' <- placeInAvailableSlot aid card (slots ^. at other . non [])
-                  fill rs (slots & at other . non [] .~ slots')
-            _ -> error "not designed to work with more than one yet"
+          [] -> fillAlternates aid card rs slots (findWithDefault [] slotType canHoldMap)
           _ -> do
             slots' <- placeInAvailableSlot aid card (slots ^. at slotType . non [])
             fill rs (slots & at slotType . non [] .~ slots')
+
+      -- As with `go` above: try every stand-in slot type in turn, never assume exactly one.
+      fillAlternates
+        :: HasGame m
+        => AssetId
+        -> Card
+        -> [(AssetId, Card, SlotType)]
+        -> Map SlotType [Slot]
+        -> [SlotType]
+        -> m (Map SlotType [Slot])
+      fillAlternates _ _ rs slots [] = fill rs slots
+      fillAlternates aid card rs slots (other : others) = do
+        (availableSlots2, _unused2) <- partitionM (canPutIntoSlot card) (slots ^. at other . non [])
+        case availableSlots2 of
+          [] -> fillAlternates aid card rs slots others
+          _ -> do
+            slots' <- placeInAvailableSlot aid card (slots ^. at other . non [])
+            fill rs (slots & at other . non [] .~ slots')
 
     failedSlotTypes <- nub <$> go requirements allSlots
 
@@ -2204,7 +2338,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
         investigators <- getInvestigators
         for_ investigators \i -> do
           mustBeCommitted <- getMustBeCommittableCards i
-          for_ mustBeCommitted $ push . SkillTestCommitCard investigatorId
+          for_ mustBeCommitted $ push . SkillTestCommitCard i
         push $ Do msg
     pure a
   Do (CommitToSkillTest skillTestId triggerMessage') -> do
@@ -2318,12 +2452,21 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   Do (CheckWindows windows)
     | not investigatorSkippedWindow
         && (not (investigatorDefeated || investigatorResigned) || Window.hasEliminatedWindow windows) -> do
-        actions <- getActions a.id windows
+        actions <- timedSpan "window/getActions" $ getActions a.id windows
         playableCards <-
           if not (investigatorDefeated || investigatorResigned)
-            then getPlayableCards a a (UnpaidCost NeedsAction) windows
+            then timedSpan "window/getPlayableCards" $ do
+              -- TEMPORARY: inlined copy of getPlayableCards so each component can
+              -- be timed. Bypasses its `cached` wrapper; restore before shipping.
+              let cs = UnpaidCost NeedsAction
+              asIf <- timedSpan "pc/getAsIfInHandCards" $ getAsIfInHandCards a.id
+              others <- timedSpan "pc/getOtherPlayers" $ getOtherPlayersPlayableCards a.id cs windows
+              discards <- timedSpan "pc/getPlayableDiscards" $ getPlayableDiscards a a.id cs windows
+              hand <- timedSpan "pc/handField" $ field InvestigatorHand a.id
+              handPlayable <- timedSpan "pc/filterPlayable" $ filterPlayable a a cs windows (hand <> asIf)
+              pure $ nub $ handPlayable <> discards <> others
             else pure []
-        runWindow a windows actions playableCards
+        timedSpan "window/runWindow" $ runWindow a windows actions playableCards
         pure a
   SpendActions iid _ _ 0 | iid == investigatorId -> handleSpendActions a iid
   SpendActions iid source mAction n | iid == investigatorId -> handleSpendActionsV2 a iid source mAction n
@@ -2347,6 +2490,83 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   PutCardOnTopOfDeck _ _ card -> handlePutCardOnTopOfDeckV2 a card
   PutCardOnBottomOfDeck _ (Deck.InvestigatorDeck iid) card | iid == toId a -> handlePutCardOnBottomOfDeck a iid card
   PutCardOnBottomOfDeck _ _ card -> handlePutCardOnBottomOfDeckV2 a card
+  DebugCustomize iid cardId | iid == investigatorId -> do
+    card <- getCard cardId
+    case card of
+      PlayerCard pc -> do
+        let customizations = cdCustomizations $ toCardDef card
+        let availableCustomizations = filter (not . hasCustomization_ customizations (pcCustomizations pc)) (keys customizations)
+        player <- getPlayer iid
+        unless (null availableCustomizations) do
+          push
+            $ Msg.chooseOne
+              player
+              [ Label
+                  ("$customizations." <> tshow customization)
+                  [DebugIncreaseCustomization iid card.cardCode customization []]
+              | customization <- availableCustomizations
+              ]
+      _ -> pure ()
+    pure a
+  DebugIncreaseCustomization iid cardCode customization choices | iid == investigatorId -> do
+    mcard <- selectOne $ OwnedBy (InvestigatorWithId iid) <> basic (CardWithCardCode cardCode)
+    for_ mcard \card -> do
+      let requiredChoices = choicesRequired customization
+      -- Debug: enable the customization entirely by filling every remaining check mark
+      let fillAll =
+            pushAll
+              $ replicate
+                (fromMaybe 0 $ cardRemainingCheckMarks card customization)
+                (IncreaseCustomization iid cardCode customization choices)
+      if length choices < length requiredChoices
+        then case drop (length choices) requiredChoices of
+          (CustomizationTraitChoice : _) -> do
+            player <- getPlayer iid
+            push
+              $ Msg.chooseOneDropDown
+                player
+                [ ( displayTrait trait
+                  , DebugIncreaseCustomization iid cardCode customization (ChosenTrait trait : choices)
+                  )
+                | trait <- allTraits
+                ]
+          (CustomizationCardChoice matcher : _) -> do
+            player <- getPlayer iid
+            push
+              $ Msg.chooseOneDropDown
+                player
+                [ ( c
+                  , DebugIncreaseCustomization iid cardCode customization (ChosenCard c : choices)
+                  )
+                | c <-
+                    sort
+                      $ nub
+                      $ map toTitle
+                      $ filter ((`cardMatch` matcher) . (`lookupPlayerCard` nullCardId)) (toList PlayerCard.allPlayerCards)
+                ]
+          (CustomizationSkillChoice : _) -> do
+            player <- getPlayer iid
+            push
+              $ Msg.chooseOneDropDown
+                player
+                [ ( tshow skill
+                  , DebugIncreaseCustomization iid cardCode customization (ChosenSkill skill : choices)
+                  )
+                | skill <- [minBound ..]
+                ]
+          (CustomizationIndexChoice zs : _) -> do
+            player <- getPlayer iid
+            push
+              $ Msg.chooseOneDropDown
+                player
+                [ ( tshow z
+                  , DebugIncreaseCustomization iid cardCode customization (ChosenIndex n : choices)
+                  )
+                | (n, z) <- withIndex zs
+                ]
+          _ -> fillAll
+        else fillAll
+    pure a
   DebugAddToHand iid cardId | iid == investigatorId -> do
     card <- setOwner iid =<< getCard cardId
     bondedCards <- concatForM (cdBondedWith $ toCardDef card) \(n, cCode) -> do
@@ -2404,6 +2624,55 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
           )
       ) | iid' == toId a -> do
       mods <- getModifiers iid
+      let searchAll = SearchAllInvestigators `elem` mods
+      -- SearchAllInvestigators (Leah Atwood Codex 2): fold every OTHER
+      -- investigator's deck/hand/discard into the same plain Zone;
+      -- SearchIncludesDeckOf folds in just that investigator's deck. Merged cards
+      -- keep pcOwner so the frontend can group by owner. Scenario out-of-play
+      -- decks (e.g. The Abyss) are NOT included: this is a player-card effect and
+      -- player-card effects cannot interact with The Abyss.
+      -- You can draw your OWN signature but not another investigator's: drop any
+      -- signature card whose owner isn't the searcher from every merged source.
+      -- (The searcher's own zones are folded in unfiltered below.)
+      -- A deck is only merged if its owner's deck can be searched (The
+      -- Harbinger), and a discard only if its owner's cards can leave it
+      -- (Graveyard Ghouls).
+      let dropOthersSignatures = filter \c -> not (isSignature c) || toCardOwner c == Just iid'
+      -- SearchIncludesDeckOf takes precedence over SearchAllInvestigators for
+      -- deck merging: an extension search may start while the original search's
+      -- SearchAllInvestigators window effect is still live, and must only merge
+      -- the single chosen deck (the searcher's own deck needs no merge -- it is
+      -- folded in natively below, so a self-target only suppresses searchAll).
+      let extendedDeckMods = [i | SearchIncludesDeckOf i <- mods]
+      deckOwners <-
+        if
+          | notNull extendedDeckMods -> pure $ nub $ filter (/= iid') extendedDeckMods
+          | searchAll -> filter (/= iid') <$> getInvestigators
+          | otherwise -> pure []
+      otherDeck <-
+        fmap dropOthersSignatures $ concatForM deckOwners \o -> do
+          omods <- getModifiers o
+          if CannotManipulateDeck `elem` omods
+            then pure []
+            else fieldMap InvestigatorDeck (map toCard . unDeck) o
+      (otherHand, otherDiscard) <-
+        if searchAll
+          then do
+            others <- filter (/= iid') <$> getInvestigators
+            hand <- dropOthersSignatures <$> concatForM others (field InvestigatorHand)
+            discard <- fmap dropOthersSignatures $ concatForM others \o -> do
+              omods <- getModifiers o
+              if CardsCannotLeaveYourDiscardPile `elem` omods
+                then pure []
+                else fieldMap InvestigatorDiscard (map toCard) o
+            pure (hand, discard)
+          else pure ([], [])
+      ownDiscard <-
+        if searchAll
+          then do
+            tmods <- getModifiers iid'
+            pure $ if CardsCannotLeaveYourDiscardPile `elem` tmods then [] else investigatorDiscard
+          else pure investigatorDiscard
       let
         additionalDepth =
           sum [x | searchType == Searching, SearchDepth x <- mods]
@@ -2412,22 +2681,22 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
           foldl'
             ( \hmap (cardSource, _) -> case cardSource of
                 Zone.FromDeck ->
-                  insertWith (<>) Zone.FromDeck (map PlayerCard $ unDeck investigatorDeck) hmap
-                Zone.FromHand -> insertWith (<>) Zone.FromHand investigatorHand hmap
+                  insertWith (<>) Zone.FromDeck (map PlayerCard (unDeck investigatorDeck) <> otherDeck) hmap
+                Zone.FromHand -> insertWith (<>) Zone.FromHand (investigatorHand <> otherHand) hmap
                 Zone.FromTopOfDeck n ->
                   insertWith
                     (<>)
                     Zone.FromDeck
-                    (map PlayerCard . take (n + additionalDepth) $ unDeck investigatorDeck)
+                    (map PlayerCard (take (n + additionalDepth) $ unDeck investigatorDeck) <> otherDeck)
                     hmap
                 Zone.FromBottomOfDeck n ->
                   insertWith
                     (<>)
                     Zone.FromDeck
-                    (map PlayerCard . take (n + additionalDepth) . reverse $ unDeck investigatorDeck)
+                    (map PlayerCard (take (n + additionalDepth) . reverse $ unDeck investigatorDeck) <> otherDeck)
                     hmap
                 Zone.FromDiscard ->
-                  insertWith (<>) Zone.FromDiscard (map PlayerCard investigatorDiscard) hmap
+                  insertWith (<>) Zone.FromDiscard (map PlayerCard ownDiscard <> otherDiscard) hmap
                 other -> error $ mconcat ["Zone ", show other, " not yet handled"]
             )
             mempty
@@ -2435,7 +2704,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
 
       when (searchType == Searching) $ do
         pushBatch batchId
-          $ CheckWindows [Window #when (Window.AmongSearchedCards batchId iid) (Just batchId)]
+          $ CheckWindows [Window #when (Window.AmongSearchedCards batchId iid) (Just batchId) Nothing]
 
       pushBatch batchId $ ResolveSearch (toTarget investigatorId)
       pushBatch batchId $ EndSearch investigatorId source target cardSources
@@ -2528,11 +2797,12 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
               ]
             _ -> []
           else windows
-    pushM
-      $ checkWindows
-      $ mkWhen (Window.FailSkillTest iid n)
-      : mkAfter (Window.FailSkillTest iid n)
-      : windows'
+    windowMsg <-
+      checkWindows
+        $ mkWhen (Window.FailSkillTest iid n)
+        : mkAfter (Window.FailSkillTest iid n)
+        : windows'
+    pushAllM $ withoutAsIfFor iid [windowMsg]
     pure a
   When (PassedSkillTest iid mAction source (InvestigatorTarget iid') _ n) | iid == iid' && iid == toId a -> do
     mTarget <- getSkillTestTarget
@@ -2557,7 +2827,8 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       -- SuccessfulEvadeEnemy fires from the enemy's evade resolution (around
       -- EnemyEvaded) so reactions see the enemy exhausted; see Enemy.Runner.
       _ -> pure []
-    pushM $ checkWindows $ mkWhen (Window.PassSkillTest mAction source iid n) : windows
+    windowMsg <- checkWindows $ mkWhen (Window.PassSkillTest mAction source iid n) : windows
+    pushAllM $ withoutAsIfFor iid [windowMsg]
     pure a
   After (PassedSkillTest iid mAction source (InvestigatorTarget iid') _ n) | iid == iid' && iid == toId a -> do
     mTarget <- getSkillTestTarget
@@ -2582,7 +2853,8 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
       -- SuccessfulEvadeEnemy fires from the enemy's evade resolution (around
       -- EnemyEvaded) so reactions see the enemy exhausted; see Enemy.Runner.
       _ -> pure []
-    pushM $ checkWindows $ mkAfter (Window.PassSkillTest mAction source iid n) : windows
+    windowMsg <- checkWindows $ mkAfter (Window.PassSkillTest mAction source iid n) : windows
+    pushAllM $ withoutAsIfFor iid [windowMsg]
     pure a
   PlayerWindow iid additionalActions isAdditional immediate | iid == investigatorId -> handlePlayerWindow a iid additionalActions isAdditional immediate
   -- investigatorSkippedWindow: the seat declined this window via SkipTriggersButton.
@@ -2662,8 +2934,16 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
   PickSupply iid s | iid == toId a -> pure $ a & suppliesL %~ (s :)
   UseSupply iid s | iid == toId a -> pure $ a & suppliesL %~ deleteFirst s
   Blanked msg' -> liftRunMessage msg' a
-  SetInvestigatorForm iid form | iid == toId a -> pure $ a & formL .~ form
-  RemovedLocation lid | investigatorLocation a == Just lid -> handleRemovedLocation a lid
+  SetInvestigatorForm iid form | iid == toId a -> do
+    -- the form's card front can carry FewerSlots (Marion Tavares)
+    push $ RefillSlots iid []
+    pure $ a & formL .~ form
+  RemovedLocation lid | investigatorLocation a == Just lid -> do
+    -- since we handle the would be defeated window in the previous message we
+    -- skip directly to the is defeated message even though we would normally
+    -- not want to do this
+    pushAll $ resolve $ InvestigatorIsDefeated (LocationSource lid) investigatorId
+    handleRemovedLocation a lid
   PlaceInvestigator iid placement | iid == toId a -> do
     case placement of
       AtLocation lid -> do
@@ -2672,6 +2952,7 @@ runInvestigatorMessage msg a@InvestigatorAttrs {..} = runQueueT $ case msg of
           , Do (WhenWillEnterLocation iid lid)
           , After (WhenWillEnterLocation iid lid)
           , EnterLocation iid lid
+          , CheckEnemyEngagement iid
           ]
         pure a
       _ -> liftRunMessage (Do msg) a

@@ -3,6 +3,7 @@
 // branch maps onto an i18n key in `label.cost.*` (see locale files); unknown tags
 // fall back to a literal "X" so a missing case never breaks the UI.
 import type { Cost } from '@/arkham/types/Cost'
+import { chaosTokenTag, type TokenFace } from '@/arkham/types/ChaosToken'
 import { handleEmbeddedI18n } from '@/arkham/i18n'
 
 type Translate = (key: string, params?: Record<string, unknown>) => string
@@ -105,6 +106,7 @@ const withMultipliedCount = (cost: Cost, multiplier: number): Cost | undefined =
     case 'DiscardFromCost':
     case 'ShuffleDiscardCost':
     case 'EnemyDoomCost':
+    case 'AssetDoomCost':
     case 'SpendTokenKeyCost':
     case 'SealMultiCost':
     case 'ReleaseChaosTokensCost':
@@ -114,6 +116,13 @@ const withMultipliedCount = (cost: Cost, multiplier: number): Cost | undefined =
     case 'ReturnChaosTokensToPoolCost': {
       const parts = Array.isArray(contents) ? [...contents] : []
       parts[0] = multiply(parts[0])
+      return { ...cost, contents: parts }
+    }
+    case 'SourcedCost': {
+      const parts = Array.isArray(contents) ? [...contents] : []
+      const inner = withMultipliedCount(parts[1] as Cost, multiplier)
+      if (!inner) return undefined
+      parts[1] = inner
       return { ...cost, contents: parts }
     }
     case 'ClueCost':
@@ -202,6 +211,7 @@ export function formatCost(cost: Cost, t: Translate): string {
     case 'CostWhenEnemy':
     case 'CostWhenTreachery':
     case 'CostOnlyWhen':
+    case 'SourcedCost':
     case 'AsIfAtLocationCost': {
       const contents = get<unknown[]>(cost, 'contents')
       const inner = Array.isArray(contents) ? (contents[1] as Cost | undefined) : undefined
@@ -276,20 +286,32 @@ export function formatCost(cost: Cost, t: Translate): string {
     }
     case 'ClueCost': {
       const gv = get(cost, 'contents')
-      return t('label.cost.clue', { count: gameValueCount(gv) })
+      const key = gameValueTag(gv) === 'PerPlayer' ? 'label.cost.cluePerPlayer' : 'label.cost.clue'
+      return t(key, { count: gameValueCount(gv) })
     }
     case 'AssetClueCost': {
       const contents = get<unknown[]>(cost, 'contents') ?? []
       return t('label.cost.clue', { count: gameValueCount(contents[2]) })
     }
     case 'GroupClueCostX':
+    // The amount is a backend GameCalculation, so the client can only say that
+    // it varies.
+    case 'CalculatedGroupClueCost':
       return t('label.cost.groupClueX')
     case 'GroupClueCost':
     case 'SameLocationGroupClueCost': {
       const contents = get<unknown[]>(cost, 'contents') ?? []
-      const count = gameValueCount(contents[0])
+      const gameValue = contents[0]
+      const perPlayer = gameValueTag(gameValue) === 'PerPlayer'
+      const count = gameValueCount(gameValue)
       return t(
-        tag === 'SameLocationGroupClueCost' ? 'label.cost.sameLocationGroupClue' : 'label.cost.groupClue',
+        tag === 'SameLocationGroupClueCost'
+          ? perPlayer
+            ? 'label.cost.sameLocationGroupCluePerPlayer'
+            : 'label.cost.sameLocationGroupClue'
+          : perPlayer
+            ? 'label.cost.groupCluePerPlayer'
+            : 'label.cost.groupClue',
         { count }
       )
     }
@@ -300,7 +322,9 @@ export function formatCost(cost: Cost, t: Translate): string {
     }
     case 'GroupResourceCost': {
       const contents = get<unknown[]>(cost, 'contents') ?? []
-      return t('label.cost.groupResource', { count: gameValueCount(contents[0]) })
+      const gameValue = contents[0]
+      const key = gameValueTag(gameValue) === 'PerPlayer' ? 'label.cost.groupResourcePerPlayer' : 'label.cost.groupResource'
+      return t(key, { count: gameValueCount(gameValue) })
     }
     case 'GroupDiscardCost': {
       const contents = get<unknown[]>(cost, 'contents') ?? []
@@ -353,6 +377,8 @@ export function formatCost(cost: Cost, t: Translate): string {
       return t('label.cost.shuffleDiscard', { count: intAt(cost, 0) })
     case 'EnemyDoomCost':
       return t('label.cost.enemyDoom', { count: intAt(cost, 0) })
+    case 'AssetDoomCost':
+      return t('label.cost.assetDoom', { count: intAt(cost, 0) })
     case 'EnemyAttackCost':
       return t('label.cost.enemyAttack')
     case 'RemoveEnemyDamageCost':
@@ -414,6 +440,11 @@ export function formatCost(cost: Cost, t: Translate): string {
       return t('label.cost.seal')
     case 'SealMultiCost':
       return t('label.cost.sealMulti', { count: intAt(cost, 0) })
+    case 'AddTokenCost':
+      return t('label.cost.addToken', {
+        count: intAt(cost, 0),
+        token: chaosTokenTag(get<unknown[]>(cost, 'contents')?.[1] as TokenFace),
+      })
     case 'AddFrostTokenCost':
       return t('label.cost.addFrostTokens', { count: num(cost, 'contents') })
     case 'AddCurseTokenCost':
@@ -444,6 +475,8 @@ export function formatCost(cost: Cost, t: Translate): string {
       return t('label.cost.shuffleAttachedIntoDeck')
     case 'DrawEncounterCardsCost':
       return t('label.cost.drawEncounterCards', { count: num(cost, 'contents') })
+    case 'DiscardEncounterUntilFirstCost':
+      return t('label.cost.discardEncounterUntilFirst')
     case 'GloriaCost':
     case 'ArchiveOfConduitsUnidentifiedCost':
       return t('label.cost.calculated')

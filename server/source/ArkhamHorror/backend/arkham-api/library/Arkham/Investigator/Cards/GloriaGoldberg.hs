@@ -17,7 +17,7 @@ import Arkham.Modifier
 import Arkham.Projection
 import Arkham.Strategy
 import Arkham.Trait (Trait (Elite))
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheDrownedCity qualified as Treacheries
 
 newtype GloriaGoldberg = GloriaGoldberg InvestigatorAttrs
   deriving anyclass (IsInvestigator, HasModifiersFor)
@@ -94,12 +94,12 @@ instance RunMessage GloriaGoldberg where
           else unless (null nonEliteCards) do
             chooseOneM iid $ for_ nonEliteCards \card -> do
               targeting card $ chooseOneM iid $ cardI18n $ scope "gloriaGoldberg" do
-                labeled' "discard" $ Arkham.Message.Lifted.discardCard iid (attrs.ability 1) card
-                labeled' "putOnTop" do
+                labeled "discard" $ Arkham.Message.Lifted.discardCard iid (attrs.ability 1) card
+                labeled "putOnTop" do
                   obtainCard card
                   putCardOnTopOfDeck iid Deck.EncounterDeck card
                 when (cardsUnderneathCount < 3) do
-                  labeled' "placeBeneath" do
+                  labeled "placeBeneath" do
                     obtainCard card
                     placeUnderneath iid [card]
       pure . GloriaGoldberg $ attrs & setMeta (object ["gloria" .= False])
@@ -131,7 +131,7 @@ instance RunMessage GloriaGoldberg where
     SendMessage (isTarget attrs -> True) (ForInvestigators investigators AllDrawEncounterCard) -> do
       unless (null investigators) do
         chooseOrRunOneM attrs.id do
-          cardI18n $ scope "gloriaGoldberg" $ questionLabeled' "chooseDrawer"
+          cardI18n $ scope "gloriaGoldberg" $ questionLabeled "chooseDrawer"
           for_ (eachWithRest investigators) \(x, xs) -> do
             portraitLabeled x do
               forInvestigator x AllDrawEncounterCard

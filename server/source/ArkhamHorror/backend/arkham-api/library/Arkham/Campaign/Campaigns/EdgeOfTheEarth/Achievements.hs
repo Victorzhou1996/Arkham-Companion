@@ -22,7 +22,8 @@ module Arkham.Campaign.Campaigns.EdgeOfTheEarth.Achievements (
 ) where
 
 import Arkham.Achievement
-import Arkham.Act.Cards qualified as Acts
+import Arkham.Act.CardDefs.EdgeOfTheEarth.FatalMirage qualified as Acts
+import Arkham.Act.CardDefs.EdgeOfTheEarth.TheHeartOfMadness qualified as Acts
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Asset
 import Arkham.Campaign.Types (campaignChaosBag, campaignDifficulty)
@@ -40,7 +41,8 @@ import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
 import Arkham.EncounterSet (EncounterSet (MemorialsOfTheLost, Tekelili))
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.EdgeOfTheEarth.Penguins qualified as Enemies
+import Arkham.Enemy.CardDefs.EdgeOfTheEarth.TheHeartOfMadness qualified as Enemies
 import Arkham.Enemy.Types qualified as Enemy
 import Arkham.Game.Base
 import Arkham.Game.Settings (activeUltimatumsAndBoons)
@@ -48,7 +50,7 @@ import Arkham.Helpers.Campaign (stored)
 import Arkham.Helpers.Log (getRecordSet)
 import Arkham.Id
 import Arkham.Key (ArkhamKey)
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.EdgeOfTheEarth.ToTheForbiddenPeaks qualified as Locations
 import Arkham.Location.Types qualified as Location
 import Arkham.Matcher hiding (PerformAction, PlaceUnderneath)
 import Arkham.Message
@@ -60,14 +62,13 @@ import Arkham.Projection
 import Arkham.Scenarios.IceAndDeath.Helpers (camps)
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.UltimatumsAndBoons.Types
 import Data.Aeson.Key qualified as Key
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
 
 runEdgeOfTheEarthAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
   {- "Safe Bet": camping is recording one of the Camp_* keys, which Ice and Death,
   Part I does at its resolution (or when the last investigator resigns). Each key
@@ -119,22 +120,15 @@ runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
   missed every real spend.
   -}
   PlaceKey target k -> whenScenarioIs cityOfTheElderThingsId do
-    collected <- storedInt keysCollectedKey
-    spent <- storedInt keysSpentKey
     held <- storedKeys keysHeldKey
-    -- The bumped values are used directly: setStore only queues the write, so
-    -- reading the store back here would still see the pre-bump number.
-    (collected', spent') <- case target of
+    case target of
       InvestigatorTarget _ -> do
-        setStore keysCollectedKey (collected + 1)
+        bumpCounter keysCollectedKey 1
         setStore keysHeldKey (nub (k : held))
-        pure (collected + 1, spent)
       _ | k `elem` held -> do
-        setStore keysSpentKey (spent + 1)
+        bumpCounter keysSpentKey 1
         setStore keysHeldKey (filter (/= k) held)
-        pure (collected, spent + 1)
-      _ -> pure (collected, spent)
-    when (collected' >= 10 && spent' >= 10) $ earn ChaosChaos
+      _ -> pure ()
 
   {- "Knock, Knock": all five seals collected, activated and placed. This fires as
   the last one goes down rather than at the end of the scenario. The campaign sees
@@ -173,21 +167,14 @@ runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
   'DrewCards' sees them: 'DrewCards' is only emitted for targeted draws (every
   consumer filters on its target), while a plain draw pushes 'DrewTreachery'.
   -}
-  DrewTreachery _ _ card | isTekelili card -> do
-    drawn <- storedInt tekeliliDrawnKey
-    setStore tekeliliDrawnKey (drawn + 1)
-    when (drawn + 1 >= 10) $ earn TheSoundOfMadness
-
+  DrewTreachery _ _ card | isTekelili card -> bumpCounter tekeliliDrawnKey 1
   {- "This Was Your Idea": four horror healed off Danforth by Dyer's ability in one
   scenario. Dyer heals two at a time, so this is two uses on Danforth.
   -}
   HealHorror (AssetTarget aid) source n | n > 0 -> do
     whenM (sourceIsDyersAbility source) do
       cardCode <- field Asset.AssetCardCode aid
-      when (cardCode `elem` danforthCodes) do
-        healed <- storedInt dyerHealedDanforthKey
-        setStore dyerHealedDanforthKey (healed + n)
-        when (healed + n >= 4) $ earn ThisWasYourIdea
+      when (cardCode `elem` danforthCodes) $ bumpCounter dyerHealedDanforthKey n
 
   {- "Wuk Wuk Boom": one Dynamite blast defeating two Giant Albino Penguins. The
   counter is reset as the ability is used, so only penguins killed by the same
@@ -197,10 +184,7 @@ runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
     whenM (isDynamiteSource source) $ setStore dynamitePenguinsKey (0 :: Int)
   Defeated (EnemyTarget eid) _ source _ -> whenM (isDynamiteSource source) do
     cardDef <- fieldMap Enemy.EnemyCard toCardDef eid
-    when (cardDef == Enemies.giantAlbinoPenguin) do
-      n <- storedInt dynamitePenguinsKey
-      setStore dynamitePenguinsKey (n + 1)
-      when (n + 1 >= 2) $ earn WukWukBoom
+    when (cardDef == Enemies.giantAlbinoPenguin) $ bumpCounter dynamitePenguinsKey 1
 
   {- "Kind of a Hat on a Hat". The printed wording is strict: play a Wooden Sledge
   out of a Backpack, and then the very NEXT action you take must be that Sledge's
@@ -229,10 +213,7 @@ runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
       setStore sledgeChainArmedKey True
       setStore sledgeActionsKey (0 :: Int)
   -- Any completed action beyond the Sledge's own play breaks the chain.
-  TakenActions _ _ -> whenM (storedFlag sledgeChainArmedKey) do
-    n <- storedInt sledgeActionsKey
-    setStore sledgeActionsKey (n + 1)
-    when (n + 1 > 1) $ setStore sledgeChainArmedKey False
+  TakenActions _ _ -> whenM (storedFlag sledgeChainArmedKey) $ bumpCounter sledgeActionsKey 1
   -- The payoff: that Sledge attaching another Backpack to itself, still on chain.
   PlaceUnderneath (AssetTarget aid) cards -> do
     -- fieldMay, not field: PlaceUnderneath is also used on assets that are not in
@@ -254,11 +235,8 @@ runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
   HandleTargetChoice _ ScenarioSource (CardCodeTarget cardCode) ->
     for_ (toPartnerCodeMay cardCode) \partnerCode -> do
       setStore broughtAPartnerKey True
-      brought <- storedCodes partnersBroughtKey
-      setStore partnersBroughtKey (nub (partnerCode : brought))
-      selectOne TheScenario >>= traverse_ \sid -> do
-        withPartner <- storedScenarios scenariosWithPartnerKey
-        setStore scenariosWithPartnerKey (nub (sid : withPartner))
+      insertGlobal partnersBroughtKey partnerCode
+      selectOne TheScenario >>= traverse_ (insertGlobal scenariosWithPartnerKey)
 
   -- Per-scenario counters reset as their scenario is set up; the scenario is also
   -- recorded so "brought a partner into every scenario" can be checked later.
@@ -271,9 +249,7 @@ runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
     setStore keysSpentKey (0 :: Int)
     setStore keysHeldKey ([] :: [ArkhamKey])
     setStore pylonsCollapsedKey False
-    selectOne TheScenario >>= traverse_ \sid -> do
-      played <- storedScenarios scenariosPlayedKey
-      setStore scenariosPlayedKey (nub (sid : played))
+    selectOne TheScenario >>= traverse_ (insertGlobal scenariosPlayedKey)
 
   -- Scenario-end detections. See the module header for why these hang off
   -- EndOfGame rather than the resolution.
@@ -321,13 +297,30 @@ runEdgeOfTheEarthAchievements msg = whenEligibleCampaign $ case msg of
 
     {- "There and Back Again": the checklist of expedition members who came home,
     accumulated across playthroughs by the API layer. The final scenario records
-    every surviving partner (and investigator) in this set.
+    every surviving partner (and investigator) in this set, under their Resolute
+    printing's code if they confronted their demons.
     -}
     survivors <- getRecordSet TheSurvivorsOfTheExpeditionWere
-    let came (def, _) = recorded (toCardCode def) `elem` survivors
+    let came (def, _) =
+          any ((`elem` survivors) . recorded) [toCardCode def, toResolute (toCardCode def)]
     achievementProgress (EdgeOfTheEarthAchievement ThereAndBackAgain)
       $ map snd
       $ filter came survivorItems
+
+  {- Deferred threshold checks. 'bumpCounter' does its arithmetic when the message
+  is processed, so the counter only reads its new value here -- a read-modify-write
+  would lose bumps inside a 'Simultaneously' block (two penguins defeated by one
+  Dynamite blast is exactly that shape).
+  -}
+  CounterBumped k
+    | k == keysCollectedKey || k == keysSpentKey -> do
+        collected <- storedInt keysCollectedKey
+        spent <- storedInt keysSpentKey
+        when (collected >= 10 && spent >= 10) $ earn ChaosChaos
+    | k == tekeliliDrawnKey -> whenM ((>= 10) <$> storedInt k) $ earn TheSoundOfMadness
+    | k == dyerHealedDanforthKey -> whenM ((>= 4) <$> storedInt k) $ earn ThisWasYourIdea
+    | k == dynamitePenguinsKey -> whenM ((>= 2) <$> storedInt k) $ earn WukWukBoom
+    | k == sledgeActionsKey -> whenM ((> 1) <$> storedInt k) $ setStore sledgeChainArmedKey False
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => EdgeOfTheEarthAchievement -> m ()
@@ -343,7 +336,7 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ EdgeOfTheEarthAchievement SafeBet
   when (maybe False (`elem` eligible) mCampaignId) body
 
-whenScenarioIs :: (HasGame m, Tracing m) => ScenarioId -> m () -> m ()
+whenScenarioIs :: HasGame m => ScenarioId -> m () -> m ()
 whenScenarioIs sid body = do
   mSid <- selectOne TheScenario
   when (mSid == Just sid) body
@@ -393,7 +386,7 @@ atTheSummit = locationIs Locations.theSummit
 {- | Whether a supply has made it to the top: either sitting on The Summit, or
 still in the hands of somebody standing there.
 -}
-supplyAtSummit :: (HasGame m, Tracing m) => CardDef -> m Bool
+supplyAtSummit :: HasGame m => CardDef -> m Bool
 supplyAtSummit def =
   selectAny
     $ assetIs def
@@ -418,7 +411,7 @@ ability/payment wrappers. Getting this wrong silently disabled Wuk Wuk Boom,
 This Was Your Idea and Kind of a Hat on a Hat, all three of which look for an
 asset's own ability.
 -}
-sourceIsAsset :: (HasGame m, Tracing m) => [CardDef] -> Source -> m Bool
+sourceIsAsset :: HasGame m => [CardDef] -> Source -> m Bool
 sourceIsAsset defs source = case source.asset of
   Nothing -> pure False
   Just aid -> do
@@ -426,18 +419,18 @@ sourceIsAsset defs source = case source.asset of
     pure $ maybe False (`elem` map toCardCode defs) mCardCode
 
 -- | Professor William Dyer's ability; both printings heal the same way.
-sourceIsDyersAbility :: (HasGame m, Tracing m) => Source -> m Bool
+sourceIsDyersAbility :: HasGame m => Source -> m Bool
 sourceIsDyersAbility =
   sourceIsAsset
     [ Assets.professorWilliamDyerProfessorOfGeology
     , Assets.professorWilliamDyerProfessorOfGeologyResolute
     ]
 
-isDynamiteSource :: (HasGame m, Tracing m) => Source -> m Bool
+isDynamiteSource :: HasGame m => Source -> m Bool
 isDynamiteSource = sourceIsAsset [Assets.dynamite]
 
 -- | Whether a card is currently sitting underneath a Backpack in play.
-cardIsUnderABackpack :: (HasGame m, Tracing m) => Card -> m Bool
+cardIsUnderABackpack :: HasGame m => Card -> m Bool
 cardIsUnderABackpack card = do
   packs <- select $ mapOneOf assetIs backpacks
   undernearth <- traverse (field Asset.AssetCardsUnderneath) packs
@@ -446,7 +439,7 @@ cardIsUnderABackpack card = do
 {- | Recheck the two "have N of these in play at once" achievements for an
 investigator who just gained an asset.
 -}
-checkAssetBoard :: (HasGame m, HasQueue Message m, Tracing m) => InvestigatorId -> m ()
+checkAssetBoard :: (HasGame m, HasQueue Message m) => InvestigatorId -> m ()
 checkAssetBoard iid = do
   controlled <- select $ assetControlledBy iid
   defs <- traverse (fieldMap Asset.AssetCard toCardDef) controlled
@@ -516,17 +509,17 @@ scenariosPlayedKey = "eoteAchScenariosPlayed"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k
 
-storedKeys :: (HasCallStack, HasGame m, Tracing m) => Text -> m [ArkhamKey]
+storedKeys :: (HasCallStack, HasGame m) => Text -> m [ArkhamKey]
 storedKeys k = fromMaybe [] <$> stored k
 
-storedCodes :: (HasCallStack, HasGame m, Tracing m) => Text -> m [CardCode]
+storedCodes :: (HasCallStack, HasGame m) => Text -> m [CardCode]
 storedCodes k = fromMaybe [] <$> stored k
 
-storedScenarios :: (HasCallStack, HasGame m, Tracing m) => Text -> m [ScenarioId]
+storedScenarios :: (HasCallStack, HasGame m) => Text -> m [ScenarioId]
 storedScenarios k = fromMaybe [] <$> stored k

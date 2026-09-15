@@ -2,29 +2,64 @@ import { RouteLocationNormalized } from 'vue-router';
 
 export default [
   {
-    path: '/decks',
-    name: 'Decks',
-    component: () => import('@/arkham/views/Decks.vue'),
-    meta: { requiresAuth: true, title: "Arkham Horror: Decks" },
+    path: '/card-builder',
+    name: 'CardBuilder',
+    component: () => import('@/arkham/views/CardBuilder.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Custom Card Sets" },
+    props: true,
   },
   {
-    path: '/decks/:deckId',
+    // Nested under the card builder's path, so the marketplace reads as part of
+    // the same section rather than a separate corner of the app.
+    path: '/card-builder/marketplace',
+    name: 'CardMarketplace',
+    component: () => import('@/arkham/views/CardMarketplace.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Card Marketplace" },
+    props: true,
+  },
+  {
+    // One published set, in full. The listing only carries a row's worth of
+    // cards, so seeing the rest is its own page rather than a taller row.
+    path: '/card-builder/marketplace/:publishedId',
+    name: 'CardMarketplaceSet',
+    component: () => import('@/arkham/views/MarketplaceSet.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Card Marketplace" },
+    props: true,
+  },
+  {
+    path: '/cards',
+    name: 'Cards',
+    component: () => import('@/arkham/views/Cards.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Cards" },
+    props: true,
+  },
+  {
+    path: '/deck/:deckId',
+    alias: '/decks/:deckId',
     name: 'Deck',
     component: () => import('@/arkham/views/Deck.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: Deck" },
     props: true,
   },
   {
-    path: '/achievements',
-    name: 'Achievements',
-    component: () => import('@/arkham/views/Achievements.vue'),
-    meta: { requiresAuth: true, title: "Arkham Horror: Achievements" },
+    path: '/decks',
+    name: 'Decks',
+    component: () => import('@/arkham/views/Decks.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Decks" },
+    props: true,
   },
   {
     path: '/bugs',
     name: 'Bugs',
     component: () => import('@/arkham/views/Bugs.vue'),
     meta: { requiresAuth: true, title: "Arkham Horror: Bugs" },
+  },
+  {
+    path: '/achievements',
+    name: 'Achievements',
+    component: () => import('@/arkham/views/Achievements.vue'),
+    meta: { requiresAuth: true, title: "Arkham Horror: Achievements" },
+    props: true,
   },
   {
     path: '/campaigns/new',

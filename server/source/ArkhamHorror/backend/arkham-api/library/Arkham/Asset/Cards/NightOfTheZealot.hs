@@ -26,11 +26,12 @@ daisysToteBag =
 
 theNecronomicon :: CardDef
 theNecronomicon =
-  (weakness "01009" ("The Necronomicon" <:> "John Dee Translation"))
-    { cdCardTraits = setFromList [Item, Tome]
-    , cdSlots = [#hand]
-    , cdAlternateCardCodes = ["01509"]
-    }
+  signature "01002"
+    $ (weakness "01009" ("The Necronomicon" <:> "John Dee Translation"))
+      { cdCardTraits = setFromList [Item, Tome]
+      , cdSlots = [#hand]
+      , cdAlternateCardCodes = ["01509"]
+      }
 
 heirloomOfHyperborea :: CardDef
 heirloomOfHyperborea =
@@ -97,6 +98,10 @@ machete =
     , cdCardTraits = setFromList [Item, Weapon, Melee]
     , cdSlots = [#hand]
     , cdAlternateCardCodes = ["01520", "12020"]
+    , cdAlternateErrata =
+        singletonMap
+          "12020"
+          "This card’s ability should read “If you succeed and the attacked enemy is the only enemy engaged with you...”"
     }
 
 guardDog :: CardDef

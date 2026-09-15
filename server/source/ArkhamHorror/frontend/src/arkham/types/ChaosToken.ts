@@ -7,6 +7,7 @@ export type ChaosToken = {
   face: TokenFace;
   id: string;
   modifiers?: Modifier[];
+  modifiedFaces?: TokenFace[];
 }
 
 export const tokenOrder = [
@@ -14,10 +15,49 @@ export const tokenOrder = [
   'MinusOne', 'MinusTwo', 'MinusThree', 'MinusFour', 'MinusFive', 'MinusSix', 'MinusSeven', 'MinusEight',
   'Skull', 'Cultist', 'Tablet', 'ElderThing',
   'AutoFail', 'ElderSign',
-  'CurseToken', 'BlessToken', 'FrostToken',
+  'CurseToken', 'BlessToken', 'FrostToken', 'BloodToken'
 ] as const
 
-export type TokenFace = typeof tokenOrder[number]
+// Custom homebrew tokens arrive as slugs like ":circus-ex-mortis:moon"; the
+// segment after the last colon is the icon key (ct-<key>.png).
+export type TokenFace = typeof tokenOrder[number] | string
+
+const tokenOrderIndex = new Map<string, number>(tokenOrder.map((face, index) => [face, index]))
+
+/**
+ * The single source of truth for chaos token ordering. Faces we don't know
+ * about (custom homebrew slugs) sort after every known face.
+ */
+export function compareTokenFaces(a: TokenFace, b: TokenFace): number {
+  return (tokenOrderIndex.get(a) ?? tokenOrder.length) - (tokenOrderIndex.get(b) ?? tokenOrder.length)
+}
+
+/**
+ * Multiset difference: the faces in `xs` that `ys` does not account for. Used to
+ * turn a before/after pair of chaos bags into what was added and removed.
+ */
+export function tokenFaceDifference(xs: TokenFace[], ys: TokenFace[]): TokenFace[] {
+  const remaining = [...ys]
+  const difference: TokenFace[] = []
+  for (const face of xs) {
+    const index = remaining.indexOf(face)
+    if (index === -1) difference.push(face)
+    else remaining.splice(index, 1)
+  }
+  return difference
+}
+
+/** The standard chaos tokens, i.e. everything before the campaign-specific ones. */
+export const standardTokenFaces: readonly TokenFace[] = tokenOrder.slice(0, tokenOrderIndex.get('CurseToken'))
+
+/** Faces whose art already states their value. */
+export const numericTokenFaces: readonly TokenFace[] = tokenOrder.slice(0, tokenOrderIndex.get('Skull'))
+
+export function customTokenKey(face: string): string | null {
+  if (!face.includes(':')) return null
+  const parts = face.split(':')
+  return parts[parts.length - 1] ?? null
+}
 
 export const tokenFaceDecoder = JsonDecoder.oneOf<TokenFace>([
   JsonDecoder.literal('PlusOne'),
@@ -39,56 +79,65 @@ export const tokenFaceDecoder = JsonDecoder.oneOf<TokenFace>([
   JsonDecoder.literal('CurseToken'),
   JsonDecoder.literal('BlessToken'),
   JsonDecoder.literal('FrostToken'),
+  JsonDecoder.literal('BloodToken'),
+  JsonDecoder.string(), // custom homebrew token slug
 ], 'TokenFace');
 
 export const chaosTokenDecoder = JsonDecoder.object({
   chaosTokenId: JsonDecoder.string(),
   chaosTokenFace: tokenFaceDecoder,
   modifiers: v2Optional(JsonDecoder.array<Modifier>(modifierDecoder, 'Modifier[]')),
-}, 'ChaosToken').map(({chaosTokenId, chaosTokenFace, modifiers}) => ({ id: chaosTokenId, face: chaosTokenFace, modifiers }));
+  modifiedFaces: v2Optional(JsonDecoder.array<TokenFace>(tokenFaceDecoder, 'TokenFace[]')),
+}, 'ChaosToken').map(({chaosTokenId, chaosTokenFace, modifiers, modifiedFaces}) => ({
+  id: chaosTokenId,
+  face: chaosTokenFace,
+  modifiers,
+  modifiedFaces,
+}));
 
-export function chaosTokenImage(face: TokenFace): string {
-  switch (face) {
-    case 'PlusOne':
-      return imgsrc("ct_plus1.png");
-    case 'Zero':
-      return imgsrc("ct_0.png");
-    case 'MinusOne':
-      return imgsrc("ct_minus1.png");
-    case 'MinusTwo':
-      return imgsrc("ct_minus2.png");
-    case 'MinusThree':
-      return imgsrc("ct_minus3.png");
-    case 'MinusFour':
-      return imgsrc("ct_minus4.png");
-    case 'MinusFive':
-      return imgsrc("ct_minus5.png");
-    case 'MinusSix':
-      return imgsrc("ct_minus6.png");
-    case 'MinusSeven':
-      return imgsrc("ct_minus7.png");
-    case 'MinusEight':
-      return imgsrc("ct_minus8.png");
-    case 'AutoFail':
-      return imgsrc("ct_autofail.png");
-    case 'ElderSign':
-      return imgsrc("ct_eldersign.png");
-    case 'Skull':
-      return imgsrc("ct_skull.png");
-    case 'Cultist':
-      return imgsrc("ct_cultist.png");
-    case 'Tablet':
-      return imgsrc("ct_tablet.png");
-    case 'ElderThing':
-      return imgsrc("ct_elderthing.png");
-    case 'CurseToken':
-      return imgsrc("ct_curse.png");
-    case 'BlessToken':
-      return imgsrc("ct_bless.png");
-    case 'FrostToken':
-      return imgsrc("ct_frost.png");
-    default:
-      return imgsrc("ct_blank.png");
-  }
+// Every face in `tokenOrder` must name an image here, so adding a token face
+// fails to compile until its art is wired up.
+const tokenImageNames: Record<typeof tokenOrder[number], string> = {
+  PlusOne: 'plus1',
+  Zero: '0',
+  MinusOne: 'minus1',
+  MinusTwo: 'minus2',
+  MinusThree: 'minus3',
+  MinusFour: 'minus4',
+  MinusFive: 'minus5',
+  MinusSix: 'minus6',
+  MinusSeven: 'minus7',
+  MinusEight: 'minus8',
+  Skull: 'skull',
+  Cultist: 'cultist',
+  Tablet: 'tablet',
+  ElderThing: 'elderthing',
+  AutoFail: 'autofail',
+  ElderSign: 'eldersign',
+  CurseToken: 'curse',
+  BlessToken: 'bless',
+  FrostToken: 'frost',
+  BloodToken: 'blood',
 }
 
+/** The `{blood}`-style format tag for a face, homebrew faces included. */
+export function chaosTokenTag(face: TokenFace): string {
+  const name = tokenImageNames[face as typeof tokenOrder[number]]
+  if (name) return `{${name}}`
+
+  const key = face.split(':').pop()
+  return key ? `{${key}}` : ''
+}
+
+/** The single source of truth for chaos token art, homebrew faces included. */
+export function chaosTokenImage(face: TokenFace): string {
+  const name = tokenImageNames[face as typeof tokenOrder[number]]
+  if (name) return imgsrc(`chaos-tokens/ct-${name}.png`)
+
+  if (face.includes(':')) {
+    const [, campaign, key] = face.split(':')
+    if (campaign && key) return imgsrc(`homebrew/${campaign}/chaos-tokens/${key}.png`)
+  }
+
+  return imgsrc("chaos-tokens/ct-blank.png")
+}

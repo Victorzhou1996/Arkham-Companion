@@ -6,7 +6,7 @@ import Arkham.Asset.Import.Lifted
 import Arkham.Card
 import Arkham.ChaosBag.RevealStrategy
 import Arkham.ChaosToken
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.Standalone qualified as Enemies
 import Arkham.Enemy.Types qualified as Field
 import Arkham.Helpers.Investigator (canHaveHorrorHealed)
 import Arkham.Helpers.Message (createEnemyWithPlacement_)
@@ -42,7 +42,10 @@ instance HasAbilities TheBeyondBleakNetherworld where
 
 instance HasModifiersFor TheBeyondBleakNetherworld where
   getModifiersFor (TheBeyondBleakNetherworld (With a _)) = for_ a.controller \iid -> do
-    modifySelect a (AssetAttachedToAsset $ be a) [AsIfUnderControlOf iid, IsSpirit iid, DoNotTakeUpSlots]
+    modifySelect
+      a
+      (AssetAttachedToAsset $ be a)
+      [AsIfUnderControlOf iid, IsSpirit iid, DoNotTakeUpSlots]
 
 instance RunMessage TheBeyondBleakNetherworld where
   runMessage msg a@(TheBeyondBleakNetherworld (With attrs meta)) = runQueueT $ case msg of
@@ -130,35 +133,38 @@ instance RunMessage TheBeyondBleakNetherworld where
           ElderSign -> do
             canHeal <- canHaveHorrorHealed attrs iid
             chooseOneM iid $ cardI18n $ scope "theBeyondBleakNetherworld" do
-              when canHeal $ labeled' "elderSignHealHorror" $ healHorror iid attrs 1
+              when canHeal $ labeled "elderSignHealHorror" $ healHorror iid attrs 1
               when (notNull $ spiritDeck meta)
-                $ labeled' "elderSignAttachSpirit"
+                $ labeled "elderSignAttachSpirit"
                 $ doStep 1 msg
-              labeled' "elderSignDoNothing" nothing
+              labeled "elderSignDoNothing" nothing
           AutoFail -> do
             chooseOneM iid $ cardI18n $ scope "theBeyondBleakNetherworld" do
-              labeled' "autoFailTakeDirectDamage" do
+              labeled "autoFailTakeDirectDamage" do
                 pushAll discardSpiritMsgs
                 directDamage iid attrs 1
-              labeled' "autoFailTakeDirectHorror" do
+              labeled "autoFailTakeDirectHorror" do
                 pushAll discardSpiritMsgs
                 directHorror iid attrs 1
           Skull -> do
             canHeal <- canHaveHorrorHealed attrs iid
             chooseOneM iid $ cardI18n $ scope "theBeyondBleakNetherworld" do
               if canHeal
-                then labeled' "skullDiscardSpiritHealHorror" do
+                then labeled "skullDiscardSpiritHealHorror" do
                   pushAll discardSpiritMsgs
                   healHorror iid attrs 1
-                else labeled' "skullDiscardSpirit" $ pushAll discardSpiritMsgs
+                else labeled "skullDiscardSpirit" $ pushAll discardSpiritMsgs
           other | other `elem` [Cultist, ElderThing, Tablet, CurseToken] -> do
             chooseOneM iid $ cardI18n $ scope "theBeyondBleakNetherworld" do
-              labeled' "symbolDiscardSpirit" $ pushAll discardSpiritMsgs
-              labeled' "symbolTakeDirectDamage" $ directDamage iid attrs 1
+              labeled "symbolDiscardSpirit" $ pushAll discardSpiritMsgs
+              labeled "symbolTakeDirectDamage" $ directDamage iid attrs 1
           _ -> do
             chooseOneM iid $ cardI18n $ scope "theBeyondBleakNetherworld" do
-              labeled' "otherDiscardSpirit" $ pushAll discardSpiritMsgs
-      pure . TheBeyondBleakNetherworld $ attrs `with` meta {selectedSpirit = Nothing, selectedEnemySpirit = Nothing}
+              labeled "otherDiscardSpirit" $ pushAll discardSpiritMsgs
+      pure
+        . TheBeyondBleakNetherworld
+        $ attrs
+        `with` meta {selectedSpirit = Nothing, selectedEnemySpirit = Nothing}
     DoStep 1 (RequestedChaosTokens (isAbilitySource attrs 1 -> True) (Just iid) _) -> do
       case spiritDeck meta of
         [] -> pure a

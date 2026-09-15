@@ -213,9 +213,30 @@ test('an error body is not treated as a decklist', async () => {
   const { calls, actions } = recorder()
 
   const result = loadUpgradeDeckFromJsonText('{"message":"No share was found for this deck"}', actions)
-
   assert.deepEqual(result, { ok: false, reason: 'notADecklist' })
   assert.deepEqual(calls, [])
   assert.equal(isUsableDecklist({ message: 'No share was found for this deck' }), false)
   assert.equal(isUsableDecklist({ investigator_code: '01001', slots: { '01016': 'x' } }), false)
+})
+
+test('missing investigator name stays absent for server-side resolution', async () => {
+  const { loadUpgradeDeckFromJsonText } = await importTsModule(modulePath)
+  const { calls, actions } = recorder()
+  const deck = { investigator_code: '01001', slots: { '01016': 1 } }
+  assert.deepEqual(loadUpgradeDeckFromJsonText(JSON.stringify(deck), actions), { ok: true })
+  assert.equal(Object.hasOwn(calls[1][1], 'investigator_name'), false)
+})
+
+test('local exports preserve trauma and custom deck metadata', async () => {
+  const { loadUpgradeDeckFromJsonText } = await importTsModule(modulePath)
+  const { calls, actions } = recorder()
+  const meta = { physical_trauma: 2, mental_trauma: 3, alternate_front: '90024' }
+  const list = {
+    investigator_code: '01001', slots: { '01016': 1 },
+    meta, custom_definition: { note: 'preserve me' },
+  }
+  assert.deepEqual(loadUpgradeDeckFromJsonText(JSON.stringify({ name: 'Local', list }), actions), { ok: true })
+  assert.deepEqual(calls[1][1].meta, meta)
+  assert.deepEqual(calls[1][1].custom_definition, list.custom_definition)
+  assert.equal(calls[4][1], '90024')
 })

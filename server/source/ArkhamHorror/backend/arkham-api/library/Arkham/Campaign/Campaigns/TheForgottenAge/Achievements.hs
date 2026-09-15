@@ -28,7 +28,9 @@ import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.ReturnToTheForgottenAge.ReturnToTheDoomOfEztli qualified as Enemies
+import Arkham.Enemy.CardDefs.TheForgottenAge.TheDepthsOfYoth qualified as Enemies
+import Arkham.Enemy.CardDefs.TheForgottenAge.TheDoomOfEztli qualified as Enemies
 import Arkham.Enemy.Types (Field (EnemyCard))
 import Arkham.Game.Base
 import Arkham.Helpers.Campaign (stored)
@@ -41,23 +43,19 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.ScenarioLogKey
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Trait (Trait (Serpent))
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheForgottenAge.Poison qualified as Treacheries
 import Data.Aeson.Key qualified as Key
 
 runForgottenAgeAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runForgottenAgeAchievements msg = whenEligibleCampaign $ case msg of
   -- Enemy defeats. The campaign sees Defeated before the enemy processes it,
   -- so the entity is still in play and queryable.
   Defeated (EnemyTarget eid) _ _ traits -> do
     -- "Why Did It Have to Be Snakes?": defeat twenty Serpent enemies across
     -- the campaign (Yig himself carries the Serpent trait, so he counts too).
-    when (Serpent `elem` traits) do
-      n <- storedInt serpentsDefeatedKey
-      setStore serpentsDefeatedKey (n + 1)
-      when (n + 1 >= 20) $ earn WhyDidItHaveToBeSnakes
+    when (Serpent `elem` traits) $ bumpCounter serpentsDefeatedKey 1
 
     -- "Patricide": defeat Yig in The Depths of Yoth.
     whenDepthsOfYoth do
@@ -80,12 +78,10 @@ runForgottenAgeAchievements msg = whenEligibleCampaign $ case msg of
   -- "Who Needs Any of This Junk?" bookkeeping: purchasing a supply (at the
   -- prologue or a Resupply Point) pushes PickSupply.
   PickSupply _ _ -> setStore boughtSupplyKey True
-
   -- "Scenario 5-What?": skip Heart of the Elders, Part 1. There is no record
   -- for the skip; Part 1's setup short-circuits (pushing R1 with no play) when
-  -- 6 paths are already known. Detect that condition at Part 1 setup. Only the
-  -- Return-to Part 1 scenario has a distinct id (the base Part 1/Part 2 share
-  -- "04205a"), and this list is Return-to only anyway.
+  -- 6 paths are already known. Detect that condition at Part 1 setup. This list
+  -- is Return-to only, so only the Return-to Part 1 id is checked.
   Setup -> whenReturnHeartOfTheEldersPart1 do
     paths <- getRecordCount PathsAreKnownToYou
     when (paths == 6) $ earn Scenario5What
@@ -165,6 +161,11 @@ runForgottenAgeAchievements msg = whenEligibleCampaign $ case msg of
     -- "Yoth Expertise": win on Expert.
     let mDifficulty = campaignDifficulty . toAttrs <$> currentCampaign (gameMode g)
     when (mDifficulty == Just Expert) $ earn YothExpertise
+
+  -- Deferred threshold check: 'bumpCounter' does its arithmetic when the
+  -- message is processed, so the counter only reads its new value here.
+  CounterBumped k | k == serpentsDefeatedKey -> do
+    whenM ((>= 20) <$> storedInt k) $ earn WhyDidItHaveToBeSnakes
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => TheForgottenAgeAchievement -> m ()
@@ -180,15 +181,15 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ TheForgottenAgeAchievement WhyDidItHaveToBeSnakes
   when (maybe False (`elem` eligible) mCampaignId) body
 
-whenScenarioIn :: (HasGame m, Tracing m) => [ScenarioId] -> m () -> m ()
+whenScenarioIn :: HasGame m => [ScenarioId] -> m () -> m ()
 whenScenarioIn sids body = do
   mSid <- selectOne TheScenario
   when (maybe False (`elem` sids) mSid) body
 
-whenDepthsOfYoth :: (HasGame m, Tracing m) => m () -> m ()
+whenDepthsOfYoth :: HasGame m => m () -> m ()
 whenDepthsOfYoth = whenScenarioIn ["04277", "53059"]
 
-whenReturnHeartOfTheEldersPart1 :: (HasGame m, Tracing m) => m () -> m ()
+whenReturnHeartOfTheEldersPart1 :: HasGame m => m () -> m ()
 whenReturnHeartOfTheEldersPart1 = whenScenarioIn ["53045"]
 
 -- Winning campaign-log records (the surviving Shattered Aeons resolutions plus
@@ -232,8 +233,8 @@ boughtSupplyKey = "tfaAchBoughtSupply"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k

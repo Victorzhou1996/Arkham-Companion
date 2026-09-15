@@ -1,0 +1,45 @@
+module Arkham.Agenda.Cards.TheInnsmouthConspiracy.TheVanishingOfElinaHarper.DecrepitDecay (DecrepitDecay (..), decrepitDecay) where
+
+import Arkham.Ability
+import Arkham.Agenda.CardDefs.TheInnsmouthConspiracy.TheVanishingOfElinaHarper qualified as Cards
+import Arkham.Agenda.Import.Lifted
+import Arkham.Asset.Cards qualified as Assets
+import Arkham.Campaigns.TheInnsmouthConspiracy.Helpers
+import Arkham.Campaigns.TheInnsmouthConspiracy.Memory
+import Arkham.Enemy.CardDefs.NightOfTheZealot.Nightgaunts qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.FogOverInnsmouth qualified as Enemies
+import Arkham.Helpers.Query
+import Arkham.Helpers.Window
+import Arkham.Matcher
+import Arkham.Message.Lifted.Choose
+import Arkham.Modifier
+import Arkham.Scenarios.TheInnsmouthConspiracy.TheVanishingOfElinaHarper.Helpers
+
+newtype DecrepitDecay = DecrepitDecay AgendaAttrs
+  deriving anyclass (IsAgenda, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+decrepitDecay :: AgendaCard DecrepitDecay
+decrepitDecay = agenda (1, A) DecrepitDecay Cards.decrepitDecay (Static 6)
+
+instance HasAbilities DecrepitDecay where
+  getAbilities (DecrepitDecay a) =
+    [forcedAbility a 1 $ EnemyDefeated #when You (BySource $ SourceUsedBy You) notKidnapper]
+
+instance RunMessage DecrepitDecay where
+  runMessage msg a@(DecrepitDecay attrs) = runQueueT $ case msg of
+    AdvanceAgenda (isSide B attrs -> True) -> do
+      shuffleSetAsideIntoEncounterDeck [Enemies.wingedOne, Enemies.huntingNightgaunt]
+      shuffleEncounterDiscardBackIn
+      whenRecoveredMemory ADecisionToStickTogether do
+        lead <- getLead
+        thomasDawson <- createAsset =<< getSetAsideCard Assets.thomasDawsonSoldierInANewWar
+        gameModifier attrs thomasDawson (DoNotTakeUpSlot #ally)
+        chooseFromM lead UneliminatedInvestigator (`takeControlOfAsset` thomasDawson)
+      advanceAgendaDeck attrs
+      pure a
+    UseCardAbility iid (isSource attrs -> True) 1 (defeatedEnemy -> enemy) _ -> do
+      moveAllTokens (attrs.ability 1) enemy iid #clue
+      outForBlood enemy
+      pure a
+    _ -> DecrepitDecay <$> liftRunMessage msg attrs
