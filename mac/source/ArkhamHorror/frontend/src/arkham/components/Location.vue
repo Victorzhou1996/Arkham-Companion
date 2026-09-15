@@ -2,18 +2,19 @@
 import { useI18n } from 'vue-i18n'
 import { onBeforeUnmount, ComputedRef, ref, computed, watch, nextTick } from 'vue'
 import { useDebug } from '@/arkham/debug'
-import { useAi } from '@/arkham/ai'
 import { Game } from '@/arkham/types/Game'
 import { imgsrc } from '@/arkham/helpers'
 import { cardArt, cardImage } from '@/arkham/cardImages'
 import { keyToId } from '@/arkham/types/Key'
-import { useGameChoices } from '@/arkham/composables/useGameChoices'
+import { useGameChoices, useStickyChoicesSource } from '@/arkham/composables/useGameChoices'
+import { proxyOriginId } from '@/arkham/types/Source'
 import { useGameIndexes } from '@/arkham/composables/useGameIndexes'
 import { useCardFlip } from '@/arkham/composables/useCardFlip'
 import DebugLocation from '@/arkham/components/debug/Location.vue'
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message'
 import { actionsToList } from '@/arkham/types/Action'
 import ConcealedCard from '@/arkham/components/ConcealedCard.vue'
+import FlameWrap from '@/arkham/components/FlameWrap.vue'
 import KeyToken from '@/arkham/components/Key.vue'
 import Seal from '@/arkham/components/Seal.vue'
 import Locus from '@/arkham/components/Locus.vue'
@@ -31,7 +32,6 @@ import {
   normalizeCardCode,
   triggerModeAbilitiesForCard,
 } from '@/arkham/abilityTriggerModeEligibility'
-import AiTargetMenu from '@/arkham/components/AiTargetMenu.vue'
 import PoolItem from '@/arkham/components/PoolItem.vue'
 import TokenPool from '@/arkham/components/TokenPool.vue'
 import * as Arkham from '@/arkham/types/Location'
@@ -40,6 +40,7 @@ import { cardFacedown, Card } from '../types/Card'
 import useHighlighter from '@/composable/useHighlighter'
 import { IsMobile } from '@/arkham/isMobile'
 import { useDbCardStore } from '@/stores/dbCards'
+import { useSettings } from '@/stores/settings'
 import { isCthulhuBoardEnemy } from '@/arkham/components/TheDrownedCity/cthulhuBoard'
 
 export interface Props {
@@ -51,14 +52,14 @@ export interface Props {
 const { t } = useI18n()
 const explosionPNG = `url(${imgsrc('explosion.png')})`
 const frame = ref(null)
+const innerFrame = ref<HTMLElement | null>(null)
 const debugging = ref(false)
 const showAbilities = ref<boolean>(false)
 const abilitiesEl = ref<HTMLElement | null>(null)
 const highlighter = useHighlighter()
 const { isMobile } = IsMobile()
 const dbCards = useDbCardStore()
-const ai = useAi()
-const aiMenuOpen = ref(false)
+const settings = useSettings()
 
 const dragover = (e: DragEvent) => {
   e.preventDefault()
@@ -83,7 +84,6 @@ const image = computed(() => {
 const { displayedImage, flipping } = useCardFlip(image)
 
 const id = computed(() => props.location.id)
-const aiTarget = computed(() => ({ tag: 'LocationTarget', contents: id.value }))
 const isExhausted = computed(() => props.location.enemyLocation && props.location.exhausted)
 const choices = useGameChoices(
   () => props.game,
@@ -154,10 +154,6 @@ onBeforeUnmount(() => {
 })
 
 async function clicked(e: MouseEvent) {
-  if (ai.targeting) {
-    aiMenuOpen.value = true
-    return
-  }
   clickCount++
   if (clickTimeout) {
     clearTimeout(clickTimeout)
@@ -385,6 +381,37 @@ const explosion = computed(() => {
   )
 })
 
+// Driven by UIModifier OnFire rather than by card code, so any card can set a
+// location alight without the frontend knowing anything about it. Both Fire!
+// treacheries apply it today; up to five locations can burn at once.
+const onFire = computed(
+  () =>
+    settings.extraAnimations &&
+    (modifiers.value?.some((m) => m.type.tag === 'UIModifier' && m.type.contents === 'OnFire') ??
+      false),
+)
+
+// Tuned down hard from the library defaults, which assume a full-page card: a
+// location on the map is only ~60px wide. The rim in particular is dialled way
+// back (0.8 vs 2.5) — at this size the default molten halo bleeds over the
+// neighbouring locations and reads as a neon outline rather than fire.
+const fireOptions = computed(() => ({
+  color: [1, 0.42, 0.1] as [number, number, number],
+  intensity: 1.1,
+  height: 60,
+  spread: 8,
+  radius: 3,
+  speed: 0.5,
+  scale: 1,
+  turbulence: 0.8,
+  melt: 2,
+  rim: 0.8,
+  sparks: 2,
+  sparkSize: 0.45,
+  sparkDensity: 1.4,
+  smoke: 1.4,
+}))
+
 const keys = computed(() => props.location.keys)
 const seals = computed(() => props.location.seals)
 const chaosTokensOnLocation = computed(() => [
@@ -461,13 +488,18 @@ const floodLevel = computed(() => {
     case 'Unflooded':
       return null
     case 'PartiallyFlooded':
-      return imgsrc('partially-flooded.png')
+      return imgsrc('tokens/partially-flooded.png')
     case 'FullyFlooded':
-      return imgsrc('fully-flooded.png')
+      return imgsrc('tokens/fully-flooded.png')
     default:
       return null
   }
 })
+const { displayedImage: displayedFloodLevel, flipping: floodLevelFlipping } = useCardFlip(
+  floodLevel,
+  (nextFloodLevel, previousFloodLevel) =>
+    nextFloodLevel != null && previousFloodLevel != null && nextFloodLevel !== previousFloodLevel,
+)
 
 const debug = useDebug()
 
@@ -529,6 +561,20 @@ const showCardsUnderneath = () => emits('show', cardsUnderneathToShow, 'Cards Un
 const isAttackTarget = computed(() => props.game.enemyAttackTargets.some((e) => e.target.contents === props.location.id))
 const highlighted = computed(() => highlighter.highlighted.value === props.location.id || isAttackTarget.value)
 
+// Yellow marks the actor/source of what is happening. Two cases put this location there:
+// a pending question wrapped in QuestionWithSource (e.g. the location charging an
+// additional cost to leave it), and an offered proxied ability this location granted to
+// the card it now sits on.
+const choicesSource = useStickyChoicesSource(() => props.game, () => props.playerId)
+const sourceHighlighted = computed(() => {
+  const source = choicesSource.value
+  if (source !== null && 'contents' in source && source.contents === props.location.id) return true
+
+  return choices.value.some(
+    (c) => c.tag === MessageType.ABILITY_LABEL && proxyOriginId(c.ability.source) === props.location.id
+  )
+})
+
 function isVehicleAsset(assetId: string): boolean {
   const asset = props.game.assets[assetId]
   if (!asset) return false
@@ -548,7 +594,13 @@ const hasAnyLocationVehicleAssets = computed(() =>
   <div>
     <div class="location-container" :class="{ 'location-container--has-vehicle-column': hasAnyLocationVehicleAssets }">
       <div class="location-investigator-column">
-        <div v-for="investigator in investigators" :key="investigator.cardCode">
+        <div
+          v-for="investigator in investigators"
+          :key="investigator.id"
+          :data-investigator-mini="investigator.id"
+          :style="{ viewTransitionName: `investigator-${investigator.id}` }"
+          class="investigator-mini-mover"
+        >
           <Investigator
             :game="game"
             :choices="choices"
@@ -598,8 +650,9 @@ const hasAnyLocationVehicleAssets = computed(() =>
           </span>
 
           <div
+            ref="innerFrame"
             class="card-frame-inner"
-            :class="{ highlighted, blocked, exhausted: isExhausted, 'card--flipping': flipping && !locationStory }"
+            :class="{ highlighted, blocked, 'blocked--selectable': blocked && canInteract && !hasObjective, exhausted: isExhausted, 'card--flipping': flipping && !locationStory }"
             :style="{ '--ui-rotation': `${uiRotation}deg` }"
             :data-rotation="uiRotation || undefined"
           >
@@ -620,7 +673,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
                 :data-id="id"
                 class="card card--locations"
                 :src="displayedImage"
-                :class="{ 'location--can-interact': canInteract && !hasObjective, 'location--can-interact-cursor': canInteract, 'ai-target-hover': ai.targeting }"
+                :class="{ 'location--can-interact': canInteract && !hasObjective && !blocked, 'location--can-interact-cursor': canInteract, 'source-highlight': sourceHighlighted }"
                 draggable="false"
                 @drop="onDrop"
                 @dragover.prevent="dragover"
@@ -637,19 +690,34 @@ const hasAnyLocationVehicleAssets = computed(() =>
             :abilities="dreamGateTriggerModeAbilities"
           />
 
+          <FlameWrap
+            v-if="onFire"
+            class="on-fire"
+            :target="innerFrame"
+            :options="fireOptions"
+          />
+
           <div v-if="!flipping && cluesAroundPositions.length > 0" class="clues-around">
             <img
               v-for="(pos, idx) in cluesAroundPositions"
               :key="idx"
-              :src="imgsrc('clue.png')"
+              :src="imgsrc('tokens/clue.png')"
               class="clue-around"
               :style="pos"
             />
           </div>
 
-          <div class="clues pool location-pool" v-if="!flipping && ((clues ?? 0) > 0 || floodLevel)">
+          <div
+            class="clues pool location-pool"
+            v-if="!flipping && ((clues ?? 0) > 0 || displayedFloodLevel)"
+          >
             <PoolItem v-if="clues && clues > 0" type="clue" :amount="clues" />
-            <img v-if="floodLevel" :src="floodLevel" class="flood-level" />
+            <img
+              v-if="displayedFloodLevel"
+              :src="displayedFloodLevel"
+              class="flood-level"
+              :class="{ 'card--flipping': floodLevelFlipping }"
+            />
           </div>
 
           <div class="pool location-pool" v-if="!flipping && hasPool">
@@ -703,16 +771,6 @@ const hasAnyLocationVehicleAssets = computed(() =>
           :game="game"
           :position="isMobile ? 'top' : 'left'"
           @choose="chooseAbility"
-        />
-
-        <AiTargetMenu
-          v-model="aiMenuOpen"
-          :frame="frame"
-          kind="location"
-          :target="aiTarget"
-          :seat="ai.selectedSeat"
-          :game-id="game.id"
-          :position="isMobile ? 'top' : 'left'"
         />
 
         <button v-if="canShowCardsUnderneath" @click="showCardsUnderneath">
@@ -775,6 +833,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
           v-for="enemyId in enemies"
           :key="enemyId"
           :enemy="game.enemies[enemyId]"
+          :style="{ viewTransitionName: `enemy-${enemyId}` }"
           :game="game"
           :playerId="playerId"
           :atLocation="true"
@@ -824,18 +883,8 @@ const hasAnyLocationVehicleAssets = computed(() =>
   cursor: pointer;
 }
 
-/* Dev-only "AI targeting mode": class is only bound while targeting is on, so
-   normal play is untouched. Green border + pale green wash on hover. */
-.ai-target-hover {
-  cursor: pointer;
-  transition: box-shadow 120ms ease, filter 120ms ease;
-}
-
-.ai-target-hover:hover {
-  border: 2px solid var(--ai-target);
-  border-radius: 3px;
-  box-shadow: 0 0 0 2px var(--ai-target), 0 0 12px 3px rgba(74, 222, 128, 0.55);
-  filter: brightness(1.05) sepia(0.35) hue-rotate(55deg) saturate(1.3);
+img.card.source-highlight {
+  box-shadow: 0 0 0 2px var(--important), 0 0 6px 1px var(--important), var(--card-shadow);
 }
 
 .location--can-interact-cursor {
@@ -995,6 +1044,10 @@ const hasAnyLocationVehicleAssets = computed(() =>
   border-radius: 5px;
 }
 
+.investigator-mini-mover {
+  position: relative;
+}
+
 .location-investigator-column {
   grid-area: investigators;
   justify-self: end;
@@ -1144,8 +1197,24 @@ const hasAnyLocationVehicleAssets = computed(() =>
     &.exhausted {
       transform: rotate(calc(90deg + var(--ui-rotation))) translateX(-10px);
     }
-    &.blocked {
+    /* Dim the art, not the affordance. `filter` applies to the whole subtree, so
+       a blocked location that is also the pending choice used to render its
+       --select border in muted grey (#5592). */
+    &.blocked :deep(.card) {
       filter: grayscale(0.5) brightness(0.85);
+    }
+
+    /* A pseudo-element, not `outline`: an inset outline is swallowed by the
+       frame's `overflow: hidden`, and a non-inset one grows the tile. */
+    &.blocked--selectable::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      border: 2px solid var(--select);
+      border-radius: 3px;
+      pointer-events: none;
+      z-index: var(--z-index-1);
     }
     --gradient-glow: #bde038, rebeccapurple, rebeccapurple, #bde038;
   }

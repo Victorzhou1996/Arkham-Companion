@@ -24,6 +24,7 @@ import Arkham.Field
 import Arkham.Id
 import Arkham.Json
 import Arkham.Keyword
+import Arkham.LocationSymbol (LocationSymbol)
 import Arkham.Matcher.Types
 import Arkham.Phase
 import {-# SOURCE #-} Arkham.Placement
@@ -66,6 +67,12 @@ data ModifierType
   | NoAdditionalCosts
   | AdditionalPlayCostOf ExtendedCardMatcher Cost
   | AdditionalCostToCommit InvestigatorId Cost
+  | {- | An extra cost to take a particular action while at the location that
+    carries this modifier (Dark Matter's Cold Wastes taxes the Scan action).
+    Gathered from the acting investigator's location, like
+    'AdditionalCostToResign'.
+    -}
+    AdditionalCostToPerformAction ActionTarget Cost
   | AdditionalCostToEnter Cost
   | AdditionalCostToEnterMatching LocationMatcher Cost
   | AdditionalCostToExplore Cost
@@ -73,6 +80,12 @@ data ModifierType
   | AdditionalCostToLeave Cost
   | AdditionalCostToResign Cost
   | AdditionalResources Int
+  | {- | "Resolve its revelation effect an additional time." Adds N extra copies
+    of the revelation itself; the surrounding @When@/@After (Revelation ...)@
+    pair still runs exactly once, so the card is still discarded once, marked
+    resolved once, and surges at most once.
+    -}
+    AdditionalRevelations Int
   | AdditionalSlot SlotType
   | AdditionalStartingCards [Card]
   | AdditionalStartingUses Int
@@ -87,6 +100,11 @@ data ModifierType
   | AnySkillValue Int
   | AnySkillValueCalculated GameCalculation
   | AsIfAt LocationId
+  | {- | "as if you were at that location in addition to your location". Unlike
+    'AsIfAt' this does not replace 'InvestigatorLocation'; both the physical
+    location and this one satisfy the @Here@ criterion.
+    -}
+    AsIfAlsoAt LocationId
   | CanBeAttackedAsIfEnemy
   | CanPlayUnderControlOf CardMatcher InvestigatorMatcher
   | AsIfEnemyFight Int
@@ -200,6 +218,11 @@ data ModifierType
   | CannotDrawCardsFromPlayerCardEffects
   | CannotEngage InvestigatorId
   | CannotEnter LocationId
+  | {- | "You cannot enter X except by <source>". Unlike 'CannotEnter' this is
+    source-aware, so it is only honored by 'getCanMoveToLocations_', the one
+    move query that knows which effect is doing the moving.
+    -}
+    CannotEnterExcept LocationId SourceMatcher
   | CannotEnterVehicle AssetMatcher
   | CannotEvade EnemyMatcher
   | CannotExplore
@@ -287,7 +310,15 @@ data ModifierType
   | DoubleDifficulty
   | DoubleNegativeModifiersOnChaosTokens
   | DoubleModifiersOnChaosTokens
+  | {- | Notify the card this many extra times when a chaos token it is waiting
+    on is revealed, so its "when/if/after you reveal" effect resolves again.
+    -}
+    ResolveEffectsAdditionalTimes Int
   | DoubleSkillIcons
+  | {- | Double only the listed icons on a committed card, leaving the rest
+    (notably @WildIcon@) counted once.
+    -}
+    DoubleSkillIconsOf [SkillIcon]
   | DoubleSuccess
   | DuringEnemyPhaseMustMoveToward Target
   | EffectsCannotBeCanceled
@@ -339,6 +370,11 @@ data ModifierType
   | IgnoreChaosToken
   | IgnoreChaosTokenEffects
   | IgnoreChaosTokenModifier
+  | {- | The symbol's revealed effects do not resolve, but the token's numeric
+    modifier is untouched, so a replacement value (see The Black Cat (5))
+    still applies. 'IgnoreChaosTokenEffects' would zero the value as well.
+    -}
+    IgnoreChaosTokenSymbolEffects
   | IgnoreCommitOneRestriction
   | IgnoreDoomOnThis Int
   | IgnoreEngagementRequirement
@@ -369,6 +405,7 @@ data ModifierType
   | LeaveCardWhereItIs
   | LookAtDepth Int
   | LosePatrol
+  | LosesConnectionSymbol LocationSymbol
   | ForcePatrol LocationMatcher
   | LoseVictory
   | MaxCluesDiscovered Int
@@ -380,6 +417,7 @@ data ModifierType
   | MayIgnoreLocationEffectsAndKeywords
   | MetaModifier Value
   | ModifierIfSucceededBy Int Modifier
+  | MovingToDoesNotProvokeAttacksOfOpportunity LocationMatcher
   | Mulligans Int
   | MustBeCommitted
   | MustChooseEnemy EnemyMatcher
@@ -400,10 +438,11 @@ data ModifierType
   | Persist
   | OnlyFirstCopyCardCountsTowardMaximumHandSize
   | OtherDoomSubtracts
-  | -- | Like 'ForceSpawn', but only replaces an enemy's normal spawn location
-    -- (a scenario rule, e.g. Dead Heat forcing Ghoul/Risen enemies to a random
-    -- location). A 'ForceSpawn' from a drawing effect (On the Hunt, Kicking the
-    -- Hornet's Nest) takes precedence over this.
+  | {- | Like 'ForceSpawn', but only replaces an enemy's normal spawn location
+    (a scenario rule, e.g. Dead Heat forcing Ghoul/Risen enemies to a random
+    location). A 'ForceSpawn' from a drawing effect (On the Hunt, Kicking the
+    Hornet's Nest) takes precedence over this.
+    -}
     OverwrittenSpawn SpawnAt
   | PlaceOnBottomOfDeckInsteadOfDiscard
   | -- | Player cards that would be discarded are placed beneath the target instead
@@ -438,6 +477,16 @@ data ModifierType
   | ScenarioModifier Text
   | ScenarioModifierValue Text Value
   | SearchDepth Int
+  | {- | When searching, also fold in every other investigator's matching
+    deck/hand/discard cards, keyed under the same plain Zone. See Leah Atwood
+    Codex 2 (Fate of the Vale).
+    -}
+    SearchAllInvestigators
+  | {- | When searching, also fold this investigator's deck into the FromDeck
+    zone (their cards keep pcOwner). Used to extend a search into a single
+    chosen deck. See Leah Atwood Codex 2 (Fate of the Vale).
+    -}
+    SearchIncludesDeckOf InvestigatorId
   | Semaphore
   | SetAbilityCost Cost
   | SetAbilityCriteria CriteriaOverride
@@ -483,12 +532,14 @@ data ModifierType
   | VehicleCannotMove
   | WillCancelHorror Int
   | XPModifier Text Int
+  | TreatFullyFloodedAsPartiallyFlooded
   | UIModifier UIModifier
   | BecomeHomunculusWhenDefeated
   | BecomeInvestigator InvestigatorId
   | DrawsEachEncounterCard
-  | -- | When drawing encounter cards (e.g. the mythos draw), present this target
-    -- to click instead of the encounter deck. The draw itself is unchanged.
+  | {- | When drawing encounter cards (e.g. the mythos draw), present this target
+    to click instead of the encounter deck. The draw itself is unchanged.
+    -}
     DrawEncounterCardsVia TargetMatcher
   deriving stock (Show, Eq, Ord, Data)
 
@@ -496,6 +547,7 @@ data UIModifier
   = Ethereal -- from Ethereal Form
   | Explosion -- from Dyanamite Blast
   | Locus -- from Prophesiae Profana
+  | OnFire -- from Fire!, and anything else that should look like it is burning
   | ImportantToScenario Text
   | OverlayCheckmark {left :: Double, top :: Double} -- See The Stakeout for example
   | Rotated Int
@@ -539,6 +591,9 @@ instance IsLabel "alert" ModifierType where
 
 instance IsLabel "aloof" ModifierType where
   fromLabel = AddKeyword Aloof
+
+instance IsLabel "hunter" ModifierType where
+  fromLabel = AddKeyword Arkham.Keyword.Hunter
 
 data Modifier = Modifier
   { modifierSource :: Source

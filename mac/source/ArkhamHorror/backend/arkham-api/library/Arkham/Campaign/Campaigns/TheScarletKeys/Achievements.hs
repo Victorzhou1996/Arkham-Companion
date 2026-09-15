@@ -22,8 +22,8 @@ module Arkham.Campaign.Campaigns.TheScarletKeys.Achievements (
 ) where
 
 import Arkham.Achievement
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.TheScarletKeys.DogsOfWar qualified as Acts
+import Arkham.Agenda.CardDefs.TheScarletKeys.SanguineShadows qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Asset
 import Arkham.Campaign.Types (Field (CampaignChaosBag), campaignDifficulty)
@@ -40,7 +40,10 @@ import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheScarletKeys.DancingMad qualified as Enemies
+import Arkham.Enemy.CardDefs.TheScarletKeys.DogsOfWar qualified as Enemies
+import Arkham.Enemy.CardDefs.TheScarletKeys.OnThinIce qualified as Enemies
+import Arkham.Enemy.CardDefs.TheScarletKeys.ShadesOfSuffering qualified as Enemies
 import Arkham.Enemy.Types qualified as Enemy
 import Arkham.Game.Base
 import Arkham.Game.Settings (activeUltimatumsAndBoons)
@@ -48,7 +51,8 @@ import Arkham.Helpers.Campaign (stored)
 import Arkham.Helpers.Log (getRecordCount, scenarioCount)
 import Arkham.Id
 import Arkham.Investigator.Types (Field (InvestigatorClues))
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.TheScarletKeys.DancingMad qualified as Locations
+import Arkham.Location.CardDefs.TheScarletKeys.ShadesOfSuffering qualified as Locations
 import Arkham.Location.Types qualified as Location
 import Arkham.Matcher hiding (AssetDefeated, PlaceUnderneath)
 import Arkham.Message
@@ -58,12 +62,12 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.ScenarioLogKey (ScenarioCountKey (CiviliansSlain))
 import Arkham.Source
-import Arkham.Story.Cards qualified as Stories
+import Arkham.Story.CardDefs.TheScarletKeys.DealingsInTheDark qualified as Stories
 import Arkham.Story.Types (Field (StoryClues))
 import Arkham.Target
 import Arkham.Timing qualified as Timing
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheScarletKeys.StrangeHappenings qualified as Treacheries
 import Arkham.UltimatumsAndBoons.Types
 import Arkham.Window (Window (..))
 import Arkham.Window qualified as Window
@@ -71,7 +75,7 @@ import Data.Aeson.Key qualified as Key
 import Data.Aeson.Types (parseMaybe)
 
 runScarletKeysAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runScarletKeysAchievements msg = whenEligibleCampaign $ case msg of
   {- "Trust Nobody" / "Trust Everybody" bookkeeping. The campaign's only routine
   bag change is 'swapTokens', which removes one face and adds the other, so a
@@ -147,10 +151,7 @@ runScarletKeysAchievements msg = whenEligibleCampaign $ case msg of
   Only the After window is counted; 'shiftKey' brackets the shift with a When one
   too. Keys are tallied by id so shifting the same key repeatedly is not five.
   -}
-  CheckWindows ws | Just kid <- firstShiftedKey ws -> do
-    shifted <- nub . (kid :) <$> storedTexts shiftedKeysKey
-    setStore shiftedKeysKey shifted
-    when (length shifted >= 5) $ earn ScarletWithYourPowersCombined
+  CheckWindows ws | Just kid <- firstShiftedKey ws -> insertGlobal shiftedKeysKey kid
   -- "in a single turn" — cleared at both ends, per the per-turn counter convention.
   BeginTurn _ -> setStore shiftedKeysKey ([] :: [CardCode])
   EndTurn _ -> setStore shiftedKeysKey ([] :: [CardCode])
@@ -161,9 +162,7 @@ runScarletKeysAchievements msg = whenEligibleCampaign $ case msg of
   says nothing of the kind.
   -}
   DoStep n (CampaignStep (InterludeStep 37 _)) | n `elem` [1, 3] -> do
-    talks <- storedInt taylorTalksKey
-    setStore taylorTalksKey (talks + 1)
-    when (talks + 1 >= 3) $ earn GiftOfGab
+    bumpCounter taylorTalksKey 1
     -- Tokyo's cuisine moment is Special Delivery 1, which IS the in-Tokyo branch
     -- (branch 3 is the same handover in Lagos).
     when (n == 1) $ sampled Tokyo
@@ -202,9 +201,7 @@ runScarletKeysAchievements msg = whenEligibleCampaign $ case msg of
   Defeated (EnemyTarget eid) _ _ _ -> do
     cardDef <- fieldMap Enemy.EnemyCard toCardDef eid
     whenScenarioIs onThinIceId $ when (cardDef `elem` voidChimeraForms) do
-      forms <- nub . (toCardCode cardDef :) <$> storedTexts' chimeraFormsKey
-      setStore chimeraFormsKey forms
-      when (length forms >= length voidChimeraForms) $ earn MoreLikeDestroyedChimera
+      insertGlobal chimeraFormsKey (toCardCode cardDef)
 
     {- "Porque No Los Dos?": both copies of Desi defeated by the same damage
     assignment. One effect killing both queues BOTH Defeated messages before either
@@ -281,11 +278,7 @@ runScarletKeysAchievements msg = whenEligibleCampaign $ case msg of
   -}
   CampaignSpecific "setBearer" v
     | Just (cCode, KeyWithInvestigator _) <- parseMaybe (parseJSON @(CardCode, KeyStatus)) v ->
-        for_ (lookup cCode keyChecklist) \item -> do
-          collected <- nub . (item :) <$> storedTexts collectedKeysKey
-          setStore collectedKeysKey collected
-          achievementProgress (TheScarletKeysAchievement KeyToMyHeart) collected
-
+        for_ (lookup cCode keyChecklist) (insertGlobal collectedKeysKey)
   -- "What's in a Name?": Dead Heat's Resolution 3, the only writer of this record,
   -- is telling Amaranth who she really is.
   Record key | key == toCampaignLogKey AmaranthHasLeftTheCoterie -> earn WhatsInAName
@@ -328,6 +321,26 @@ runScarletKeysAchievements msg = whenEligibleCampaign $ case msg of
 
     -- "Global Expertise": win on Expert.
     when (difficulty == Just Expert) $ earn GlobalExpertise
+
+  {- Deferred threshold checks. 'bumpCounter'/'insertGlobal' do their arithmetic
+  when the message is processed, so the stored value only reads back correctly
+  here; a read-modify-write would lose entries inside a 'Simultaneously' block
+  (all five Void Chimera forms defeated by one effect is exactly that shape).
+  -}
+  CounterBumped k | k == taylorTalksKey -> whenM ((>= 3) <$> storedInt k) $ earn GiftOfGab
+  GlobalInserted k
+    | k == shiftedKeysKey -> do
+        shifted <- storedTexts k
+        when (length shifted >= 5) $ earn ScarletWithYourPowersCombined
+    | k == chimeraFormsKey -> do
+        forms <- storedTexts' k
+        when (length forms >= length voidChimeraForms) $ earn MoreLikeDestroyedChimera
+    | k == collectedKeysKey -> do
+        collected <- storedTexts k
+        achievementProgress (TheScarletKeysAchievement KeyToMyHeart) collected
+    | k == cuisineKey -> do
+        cities <- storedTexts k
+        when (all ((`elem` cities) . tshow) cuisineCities) $ earn ImJustHereForTheLocalCuisine
   _ -> pure ()
 
 earn :: (HasGame m, HasQueue Message m) => TheScarletKeysAchievement -> m ()
@@ -343,7 +356,7 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ TheScarletKeysAchievement SpeedDemon
   when (maybe False (`elem` eligible) mCampaignId) body
 
-whenScenarioIs :: (HasGame m, Tracing m) => ScenarioId -> m () -> m ()
+whenScenarioIs :: HasGame m => ScenarioId -> m () -> m ()
 whenScenarioIs sid body = do
   mSid <- selectOne TheScenario
   when (mSid == Just sid) body
@@ -440,11 +453,8 @@ cuisineCities = [Marrakesh, Havana, BuenosAires, Tokyo, KualaLumpur]
 {- | Record a city's cuisine moment, earning once all five are collected. Cities
 are stored by name so the set survives across scenarios and interludes.
 -}
-sampled :: (HasGame m, HasQueue Message m, Tracing m) => MapLocationId -> m ()
-sampled city = do
-  cities <- nub . (tshow city :) <$> storedTexts cuisineKey
-  setStore cuisineKey cities
-  when (all ((`elem` cities) . tshow) cuisineCities) $ earn ImJustHereForTheLocalCuisine
+sampled :: HasQueue Message m => MapLocationId -> m ()
+sampled city = insertGlobal cuisineKey (tshow city)
 
 {- | The id of the key being shifted, out of the After half of the window
 'Arkham.Campaigns.TheScarletKeys.Key.Import.Lifted.shiftKey' raises around every
@@ -476,7 +486,7 @@ clueSpendingTreacheries = [Treacheries.pinchInReality, Treacheries.huntingShadow
 {- | Disqualify "Clued In" when the clues that just left an investigator were taken
 by a treachery. Scoped to Riddles and Rain here rather than at both call sites.
 -}
-treacheryTookClues :: (HasGame m, HasQueue Message m, Tracing m) => Source -> m ()
+treacheryTookClues :: (HasGame m, HasQueue Message m) => Source -> m ()
 treacheryTookClues source = whenScenarioIs riddlesAndRainId do
   when (isJust source.treachery) $ setStore cluesLostToTreacheryKey True
 
@@ -505,11 +515,11 @@ trustAchievement = \case
   Tablet -> TrustEverybody
   _ -> TrustNobody
 
-bagCount :: (HasGame m, Tracing m) => ChaosTokenFace -> m Int
+bagCount :: HasGame m => ChaosTokenFace -> m Int
 bagCount face =
   selectOne TheCampaign >>= maybe (pure 0) (fieldMap CampaignChaosBag (count (== face)))
 
-bagContains :: (HasGame m, Tracing m) => ChaosTokenFace -> m Bool
+bagContains :: HasGame m => ChaosTokenFace -> m Bool
 bagContains face = (> 0) <$> bagCount face
 
 -- Campaign store plumbing. Writes go through the queue ('SetGlobal' is handled
@@ -535,14 +545,14 @@ removedKey face = "tskAchRemoved[" <> tshow face <> "]"
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ Priority $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
 
-storedFlag :: (HasCallStack, HasGame m, Tracing m) => Text -> m Bool
+storedFlag :: (HasCallStack, HasGame m) => Text -> m Bool
 storedFlag k = fromMaybe False <$> stored k
 
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
+storedInt :: (HasCallStack, HasGame m) => Text -> m Int
 storedInt k = fromMaybe 0 <$> stored k
 
-storedTexts :: (HasCallStack, HasGame m, Tracing m) => Text -> m [Text]
+storedTexts :: (HasCallStack, HasGame m) => Text -> m [Text]
 storedTexts k = fromMaybe [] <$> stored k
 
-storedTexts' :: (HasCallStack, HasGame m, Tracing m) => Text -> m [CardCode]
+storedTexts' :: (HasCallStack, HasGame m) => Text -> m [CardCode]
 storedTexts' k = fromMaybe [] <$> stored k

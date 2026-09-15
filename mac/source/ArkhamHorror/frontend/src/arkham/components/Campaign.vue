@@ -37,23 +37,16 @@ async function choose(idx: number) {
 
 const chooseDeck = computed(() => {
   if (props.game.campaign && props.game.campaign.step?.tag === 'ChooseDecksStep') return true
-  const question = Object.values(props.game.question)[0]
-
-  if (question === null || question == undefined) {
-    return false
-  }
-
-  const { tag } = question
-
-  if (tag === 'ChooseDeck' || props.game.gameState.tag === 'IsChooseDecks') {
-    return true
-  }
-
-  if (tag === 'QuestionLabel') {
-    return question.question.tag === 'ChooseDeck'
-  }
-
-  return false
+  // Deck screen only while someone actually has a ChooseDeck question parked.
+  // gameState alone is not enough: it can be stuck at IsChooseDecks with a
+  // different question pending (e.g. after a lost DoneChoosingDecks), and
+  // rendering by state would mask that question behind an inert deck screen.
+  return Object.values(props.game.question).some((q) => {
+    if (!q) return false
+    if (q.tag === 'ChooseDeck' || q.tag === 'ChooseJoinDeck') return true
+    return q.tag === 'QuestionLabel'
+      && (q.question.tag === 'ChooseDeck' || q.question.tag === 'ChooseJoinDeck')
+  })
 })
 
 
@@ -114,25 +107,15 @@ const continueCampaign = computed(() => {
 })
 
 const upgradeDeck = computed(() => {
-  if (props.game.campaign && props.game.campaign.step?.tag === 'UpgradeDeckStep') return true
-
-  const question = Object.values(props.game.question)[0]
-
-  if (question === null || question == undefined) {
-    return false
-  }
-
-  const { tag } = question
-
-  if (tag === 'ChooseUpgradeDeck' && props.game.gameState.tag === 'IsChooseDecks') {
-    return true
-  }
-
-  if (tag === 'QuestionLabel') {
-    return question.question.tag === 'ChooseUpgradeDeck'
-  }
-
-  return false
+  // The campaign step can remain parked on UpgradeDeckStep while killed/insane
+  // investigator handling advances through its continuation. Render this screen
+  // only while an upgrade question actually exists; otherwise it can mask the
+  // newly produced question behind a permanent "waiting" panel.
+  return Object.values(props.game.question).some((question) => {
+    if (!question) return false
+    if (question.tag === 'ChooseUpgradeDeck') return true
+    return question.tag === 'QuestionLabel' && question.question.tag === 'ChooseUpgradeDeck'
+  })
 })
 
 const pickDestiny = computed(() => {
@@ -169,14 +152,26 @@ const continueScenario = computed(() => {
   return null
 })
 
+const scenarioContinuationStep = computed(() => {
+  const step = props.game.scenario?.campaignStep
+  if (!step) return null
+  if (['ScenarioStep', 'ScenarioStepWithOptions'].includes(step.tag)) return step
+  return null
+})
+
 const inScenarioStep = computed(() => {
   return !!props.game.scenario?.campaignStep
 })
+
+// A question can be parked while gameState is still IsChooseDecks (e.g. Boon
+// of the Morrígan's weakness swap asked between deck loads). It must render
+// through the same question branches as an active game, or the screen is blank.
+const hasQuestion = computed(() => Object.keys(props.game.question).length > 0)
 </script>
 
 <template>
   <div v-if="upgradeDeck" id="game" class="game">
-    <UpgradeDeck :game="game" :playerId="playerId" @choose="choose" />
+    <UpgradeDeck :game="game" :playerId="playerId" @choose="choose" @update="update" />
   </div>
   <div v-else-if="chooseDeck" id="game" class="game">
     <h2 v-if="questionLabel" class="title question-label">{{ questionLabel }}</h2>
@@ -186,14 +181,15 @@ const inScenarioStep = computed(() => {
     <ContinueCampaign
       :game="game"
       :campaign="campaign"
-      :canUpgradeDecks="continueCampaign.canUpgradeDecks"
+      :scenario="game.scenario ?? undefined"
       :playerId="playerId"
-      :step="continueCampaign.nextStep"
+      :canUpgradeDecks="continueCampaign.canUpgradeDecks"
+      :step="scenarioContinuationStep || continueCampaign.nextStep"
       :chooseSideStory="continueCampaign.chooseSideStory"
       :canChooseSideStory="continueCampaign.canChooseSideStory"
     />
   </div>
-  <div v-else-if="game.gameState.tag === 'IsActive'" id="game" class="game">
+  <div v-else-if="game.gameState.tag === 'IsActive' || hasQuestion" id="game" class="game">
     <UltimatumsAndBoonsQuestion
       v-if="ultimatumsAndBoonsQuestion"
       :game="game"
@@ -215,7 +211,7 @@ const inScenarioStep = computed(() => {
       :canChooseSideStory="continueScenario.canChooseSideStory"
     />
     <Scenario
-      v-else-if="game.scenario && game.scenario.started && Object.entries(game.investigators).length > 0 && !inScenarioStep"
+      v-else-if="(game.gameState.tag === 'IsActive' || game.gameState.tag === 'IsOver') && game.scenario && game.scenario.started && Object.entries(game.investigators).length > 0 && !inScenarioStep"
       :game="game"
       :scenario="game.scenario"
       :playerId="playerId"

@@ -35,5 +35,9 @@
     "skippingPrompt": "Are you sure you want to skip upgrading this deck?",
     "unspendableXp": "Unspendable XP",
     "xp": "{total} XP",
-    "victoryDisplay": "Victory Display"
+    "victoryDisplay": "Victory Display",
+    "tally": {
+      "vengeance": "Vengeance"
+    }
+
 }

@@ -6,18 +6,14 @@ import * as Arkham from '@/arkham/types/Deck'
 import { fetchDecks, newGame, createEvent } from '@/arkham/api'
 import { useEventStore } from '@/arkham/stores/event'
 import type { Difficulty } from '@/arkham/types/Difficulty'
+import { campaignChapter } from '@/arkham/data'
 import type { Scenario, Campaign } from '@/arkham/data'
 import { storeToRefs } from 'pinia'
-import type {
-  GameMode,
-  MultiplayerVariant,
-  CampaignType,
-  AiSlotConfig,
-  UndoMode,
-} from '@/arkham/types/NewGame'
+import type { GameMode, MultiplayerVariant, CampaignType, UndoMode } from '@/arkham/types/NewGame'
 
 import { ACHIEVEMENT_CAMPAIGN_IDS } from '@/arkham/achievements'
-import campaignJSON from '@/arkham/data/campaigns'
+import officialCampaignJSON from '@/arkham/data/campaigns'
+import { homebrewCampaigns } from '@/arkham/homebrewData'
 import scenarioJSON from '@/arkham/data/scenarios'
 import sideStoriesJSON from '@/arkham/data/side-stories'
 import { filterDisplayable, isDevBuild } from '@/arkham/displayRules'
@@ -26,6 +22,7 @@ import ChooseMode from '@/arkham/components/NewCampaign/ChooseMode.vue'
 import GameOptions from '@/arkham/components/NewCampaign/GameOptions.vue'
 
 type Step = 'ChooseMode' | 'GameOptions'
+type CampaignGroup = 'chapter1' | 'chapter2' | 'homebrew'
 
 const store = useUserStore()
 const { currentUser } = storeToRefs(store)
@@ -47,6 +44,7 @@ const displayRuleOptions = computed(() => ({
 }))
 const gate = <T extends { alpha?: boolean; beta?: boolean; dev?: boolean }>(items: T[]) =>
   filterDisplayable(items, displayRuleOptions.value)
+const campaignJSON = devBuild ? [...officialCampaignJSON, ...homebrewCampaigns] : officialCampaignJSON
 const campaignDefinitions = campaignJSON.map((campaign) => {
   if (campaign.id === '10') return { ...campaign, alpha: false, beta: false, dev: false }
   if (campaign.id === '11') return { ...campaign, alpha: false, beta: true, dev: false }
@@ -54,6 +52,7 @@ const campaignDefinitions = campaignJSON.map((campaign) => {
 })
 
 const step = ref<Step>('ChooseMode')
+const campaignGroup = ref<CampaignGroup>('chapter1')
 const gameMode = ref<GameMode>('Campaign')
 const includeTarotReadings = ref(false)
 const strictAsIfAt = ref(false)
@@ -73,9 +72,6 @@ const selectedScenario = ref<string | null>(null)
 const campaignName = ref<string | null>(null)
 const multiplayerVariant = ref<MultiplayerVariant>('WithFriends')
 const returnTo = ref(false)
-
-// Per-seat AI configuration (dev-only, Solo games only); see GameOptions.vue.
-const aiPlayers = ref<(AiSlotConfig | null)[]>([])
 
 const fullCampaignOptionKey = ref<string | null>(null)
 const recommendedOptionState = ref<Record<string, boolean>>({})
@@ -97,6 +93,10 @@ const epicGroups = ref<EpicGroup[]>([
 // Shared time limit (epic only). On by default; sends 0 minutes when off.
 const imposeTimeLimit = ref(true)
 const timeLimitMinutes = ref(180)
+
+// "Mini-campaign" side-story mode (only meaningful for side stories flagged
+// `miniCampaign` in side-stories.json, e.g. The Labyrinths of Lunacy).
+const miniCampaign = ref(false)
 
 const scenarios = computed<Scenario[]>(() => gate(scenarioJSON))
 const sideStories = computed<Scenario[]>(() => gate(sideStoriesJSON))
@@ -161,6 +161,10 @@ const defaultCampaignName = computed(() => {
   }
 
   if (gameMode.value === 'SideStory' && scenario.value) {
+    if (returnTo.value && scenario.value.returnToVariant) {
+      return 'The Blob That Ate Everything ELSE!'
+    }
+
     if (scenario.value.scenarios && sideStoryMode.value !== 'campaign') {
       const part = scenario.value.scenarios.find((s) => s.id === sideStoryMode.value)
       if (part) return part.name
@@ -215,6 +219,7 @@ function goBack() {
 }
 
 async function goNext() {
+  if (creating.value || nextDisabled.value) return
   if (step.value === 'ChooseMode') {
     setStep('GameOptions')
     return
@@ -270,10 +275,12 @@ watch(selectedScenario, () => {
   if (gameMode.value === 'SideStory') sideStoryMode.value = 'campaign'
   // Re-arm to the default single-group mode whenever the chosen side story changes.
   epicMode.value = false
+  miniCampaign.value = false
 })
 
 watch(gameMode, () => {
   epicMode.value = false
+  miniCampaign.value = false
 })
 
 watch(selectedCampaign, (id) => {
@@ -281,7 +288,7 @@ watch(selectedCampaign, (id) => {
   returnTo.value = false
   recommendedOptionState.value = {}
   ultimatumsAndBoons.value = []
-  strictAsIfAt.value = id != null && id >= '11'
+  strictAsIfAt.value = campaignChapter(campaignJSON.find((c) => c.id === id), id) === 2
 
   if (id === '09') fullCampaign.value = 'FullCampaign'
 })
@@ -322,9 +329,13 @@ fetchDecks().then((result) => {
 })
 
 // The toggle is only rendered for supported campaigns; a stale "off" from a
-// supported selection must not leak into an unsupported one.
+// supported selection must not leak into an unsupported one. A standalone
+// scenario has no campaign at all, and achievements are gated on the campaign,
+// so tracking is off rather than reported as on.
 const achievementsForCreate = (campaignId: string | null) =>
-  campaignId && ACHIEVEMENT_CAMPAIGN_IDS.includes(campaignId) ? achievementsEnabled.value : true
+  campaignId
+    ? ACHIEVEMENT_CAMPAIGN_IDS.includes(campaignId) ? achievementsEnabled.value : true
+    : false
 
 async function start() {
   const enabledRecommendedOptions = Object.entries(recommendedOptionState.value)
@@ -335,10 +346,12 @@ async function start() {
     ? [{ tag: 'CampaignVariant', contents: fullCampaignOptionKey.value }]
     : []
 
-  const options = [...enabledRecommendedOptions, ...variant]
-
-  // AI seats are only meaningful (and only sent) for Solo/multihanded games.
-  const aiPlayersForCreate = multiplayerVariant.value === 'Solo' ? aiPlayers.value : undefined
+  const options = [
+    ...enabledRecommendedOptions,
+    ...variant,
+    ...(miniCampaign.value ? [{ tag: 'PlayAsMiniCampaign' }] : []),
+    ...(returnTo.value && scenario.value?.returnToVariant ? [{ tag: 'PlayWithTheBlobThatAteEverythingElse' }] : [])
+  ]
 
   // Epic Multiplayer side story: spin up an event aggregate (N group games +
   // shared state) instead of a single game, and land on the organizer dashboard.
@@ -355,6 +368,7 @@ async function start() {
       scenarioId: scenario.value.id,
       difficulty: selectedDifficulty.value,
       includeTarotReadings: includeTarotReadings.value,
+      playWithBlobElse: returnTo.value && scenario.value?.returnToVariant === true,
       timeLimitMinutes: minutes,
       groups: epicGroups.value.map((g, i) => ({
         name: g.name.trim() === '' ? `Group ${String.fromCharCode(65 + i)}` : g.name.trim(),
@@ -394,9 +408,8 @@ async function start() {
         includeTarotReadings.value,
         options,
         strictAsIfAt.value,
-        aiPlayersForCreate,
-        achievementsForCreate(campaignId),
         ultimatumsAndBoons.value,
+        achievementsForCreate(campaignId),
         undoMode.value,
       )
       router.push(`/games/${game.id}`)
@@ -417,9 +430,8 @@ async function start() {
         includeTarotReadings.value,
         options,
         strictAsIfAt.value,
-        aiPlayersForCreate,
-        achievementsForCreate(campaignId),
         ultimatumsAndBoons.value,
+        achievementsForCreate(campaignId),
         undoMode.value,
       )
       router.push(`/games/${game.id}`)
@@ -441,6 +453,7 @@ async function start() {
         v-model:gameMode="gameMode"
         v-model:selectedCampaign="selectedCampaign"
         v-model:selectedScenario="selectedScenario"
+        v-model:campaignGroup="campaignGroup"
         :campaigns="campaigns"
         :sideStories="sideStories"
         :campaign="campaign"
@@ -470,7 +483,7 @@ async function start() {
         v-model:epicGroups="epicGroups"
         v-model:imposeTimeLimit="imposeTimeLimit"
         v-model:timeLimitMinutes="timeLimitMinutes"
-        v-model:aiPlayers="aiPlayers"
+        v-model:miniCampaign="miniCampaign"
         :gameMode="gameMode"
         :campaign="campaign"
         :scenario="scenario"
@@ -511,10 +524,14 @@ async function start() {
 
 <style scoped>
 .new-campaign-content {
-  width: 70vw;
-  max-width: 98vw;
-  min-width: 60vw;
-  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  min-height: 0;
+  box-sizing: border-box;
+  padding-top: 20px;
+  padding-bottom: 10px;
 }
 
 .creation-error {
@@ -523,10 +540,12 @@ async function start() {
 }
 
 #new-campaign {
-  width: 100%;
+  width: 70vw;
+  max-width: 98vw;
+  min-width: 60vw;
   color: #fff;
   border-radius: 3px;
-  margin-bottom: 20px;
+  margin: 0 auto 20px;
   display: grid;
   gap: 10px;
 }
@@ -582,10 +601,14 @@ h2 {
 }
 
 header {
+  width: 70vw;
+  max-width: 98vw;
+  min-width: 60vw;
+  margin: 0 auto 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  gap: 12px;
 }
 
 header h2 {
@@ -735,7 +758,7 @@ input[type='image'] {
 }
 
 .wizard-actions .action:active:not(:disabled) {
-  transform: translateY(0px);
+  transform: translateY(0px) scale(0.97);
 }
 
 .wizard-actions .action.primary {

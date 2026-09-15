@@ -12,17 +12,17 @@ import Arkham.Placement as X
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Treachery.Types (Field (..))
 import Arkham.Window qualified as Window
 
-placedInThreatArea :: (HasCallStack, HasGame m, Tracing m) => Placement -> m (Maybe InvestigatorId)
+placedInThreatArea :: (HasCallStack, HasGame m) => Placement -> m (Maybe InvestigatorId)
 placedInThreatArea = \case
   AtLocation _ -> pure Nothing
   AttachedToLocation _ -> pure Nothing
   InPlayArea _ -> pure Nothing
   InVehicle _ -> pure Nothing
   InThreatArea iid -> pure $ Just iid
+  FacedownInThreatArea iid -> pure $ Just iid
   StillInHand _ -> pure Nothing
   StillInDiscard _ -> pure Nothing
   StillInEncounterDiscard -> pure Nothing
@@ -42,11 +42,12 @@ placedInThreatArea = \case
   OnTopOfDeck _ -> pure Nothing
   NextToAgenda -> pure Nothing
   NextToAct -> pure Nothing
+  NextToScenarioReference -> pure Nothing
   InTheShadows -> pure Nothing
   OutOfGame _ -> pure Nothing
   InPosition _ -> pure Nothing
 
-checkEntersThreatArea :: (HasGame m, Tracing m, HasQueue Message m, IsCard a) => a -> Placement -> m ()
+checkEntersThreatArea :: (HasGame m, HasQueue Message m, IsCard a) => a -> Placement -> m ()
 checkEntersThreatArea a p =
   placedInThreatArea p >>= traverse_ \iid -> do
     pushM $ checkAfter $ Window.EntersThreatArea iid (toCard a)
@@ -61,7 +62,7 @@ attachTo t = case toTarget t of
   InvestigatorTarget iid -> AttachedToInvestigator iid
   _ -> error $ "cannot attach to target: " <> show t
 
-onSameLocation :: (HasCallStack, HasGame m, Tracing m) => InvestigatorId -> Placement -> m Bool
+onSameLocation :: (HasCallStack, HasGame m) => InvestigatorId -> Placement -> m Bool
 onSameLocation iid = \case
   AttachedToLocation lid -> fieldMap InvestigatorLocation (== Just lid) iid
   AtLocation lid -> fieldMap InvestigatorLocation (== Just lid) iid
@@ -77,6 +78,13 @@ onSameLocation iid = \case
         l2 <- join <$> fieldMay InvestigatorLocation iid'
         pure $ isJust l1 && l1 == l2
   InThreatArea iid' ->
+    if iid == iid'
+      then pure True
+      else do
+        l1 <- join <$> fieldMay InvestigatorLocation iid
+        l2 <- join <$> fieldMay InvestigatorLocation iid'
+        pure $ isJust l1 && l1 == l2
+  FacedownInThreatArea iid' ->
     if iid == iid'
       then pure True
       else do
@@ -115,6 +123,7 @@ onSameLocation iid = \case
   OnTopOfDeck _ -> pure False
   NextToAgenda -> pure False
   NextToAct -> pure False
+  NextToScenarioReference -> pure False
   Near _ -> pure False
   InTheShadows -> pure False
   OutOfGame _ -> pure False

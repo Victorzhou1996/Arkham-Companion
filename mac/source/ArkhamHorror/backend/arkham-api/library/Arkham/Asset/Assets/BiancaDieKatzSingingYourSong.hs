@@ -3,10 +3,11 @@ module Arkham.Asset.Assets.BiancaDieKatzSingingYourSong (biancaDieKatzSingingYou
 import Arkham.Ability
 import Arkham.Asset.Cards qualified as Cards
 import Arkham.Asset.Import.Lifted
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheFeastOfHemlockVale qualified as Enemies
 import Arkham.Helpers.Investigator (searchBonded)
 import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Helpers.SkillTest.Lifted
+import Arkham.I18n
 import Arkham.Investigator.Types (Field (..))
 import Arkham.Message.Lifted.Log
 import Arkham.Name
@@ -33,9 +34,9 @@ instance RunMessage BiancaDieKatzSingingYourSong where
   runMessage msg a@(BiancaDieKatzSingingYourSong (With attrs meta)) = runQueueT $ case msg of
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       let resources = attrs.use Resource
-      chooseAmount iid "Resources" "Resources" 0 (min 5 resources) attrs
+      withI18n $ chooseAmount iid "resources" "$resources" 0 (min 5 resources) attrs
       pure a
-    ResolveAmounts iid (getChoiceAmount "Resources" -> n) (isTarget attrs -> True) -> do
+    ResolveAmounts iid (getChoiceAmount "$resources" -> n) (isTarget attrs -> True) -> do
       moveTokens (attrs.ability 1) attrs iid Resource n
       sid <- getRandom
       parley sid iid (attrs.ability 1) iid #agility (Fixed n)

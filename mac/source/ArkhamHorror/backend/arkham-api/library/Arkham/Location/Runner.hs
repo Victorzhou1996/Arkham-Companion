@@ -74,7 +74,6 @@ import Arkham.Projection
 import Arkham.Spawn
 import Arkham.Timing qualified as Timing
 import Arkham.Token
-import Arkham.Tracing
 import Arkham.Trait
 import Arkham.Window (mkWindow)
 import Arkham.Window qualified as Window
@@ -111,7 +110,7 @@ extendUnrevealed = withUnrevealedAbilities
 extendUnrevealed1 :: LocationAttrs -> Ability -> [Ability]
 extendUnrevealed1 attrs ability = extendUnrevealed attrs [ability]
 getModifiedRevealClueCountWithMods
-  :: (HasGame m, Tracing m) => [ModifierType] -> LocationAttrs -> m Int
+  :: HasGame m => [ModifierType] -> LocationAttrs -> m Int
 getModifiedRevealClueCountWithMods mods attrs =
   if CannotPlaceClues `elem` mods
     then pure 0
@@ -171,6 +170,7 @@ instance RunMessage LocationAttrs where
       option <-
         withExposeInsteadOfInvestigating
           iid
+          source
           locationId
           [ UpdateHistory iid (HistoryItem HistorySuccessfulInvestigations 1)
           , Successful (Action.Investigate, toTarget a) iid source (toTarget a) n
@@ -188,6 +188,7 @@ instance RunMessage LocationAttrs where
       option <-
         withExposeInsteadOfInvestigating
           iid
+          source
           locationId
           [Successful (Action.Investigate, toTarget a) iid source actual n]
       push
@@ -213,6 +214,9 @@ instance RunMessage LocationAttrs where
       pure a
     PlaceUnderneath (isTarget a -> True) cards -> do
       pure $ a & cardsUnderneathL %~ (nubBy ((==) `on` toCardId) . (<> cards))
+    RemoveFromUnderneath (isTarget a -> True) cards -> do
+      let removedIds = map toCardId cards
+      pure $ a & cardsUnderneathL %~ filter ((`notElem` removedIds) . toCardId)
     SetLocationLabel lid label' | lid == locationId -> do
       pure $ a & labelL .~ label'
     PlacedLocationDirection lid direction lid2 | lid2 == locationId -> do
@@ -238,7 +242,12 @@ instance RunMessage LocationAttrs where
       pure $ a & beingRemovedL .~ True
     RemoveLocation lid | lid == locationId -> do
       liftRunMessage (RemovedFromPlay $ toSource a) a
-    Discard _ source target | isTarget a target -> do
+    -- A location already on its way out must not restart the removal chain: these
+    -- messages go to the FRONT of the queue, jumping ahead of rescue moves that a
+    -- leave-play interrupt (Another Dimension) has already queued for the
+    -- investigators still on it, so RemovedLocation defeats them, #5388. Mirrors the
+    -- `not_ LocationBeingRemoved` guard in Arkham.Message.Lifted.Location.removeLocation.
+    Discard _ source target | isTarget a target && not locationBeingRemoved -> do
       pushAll
         $ windows [Window.WouldBeDiscarded (toTarget a)]
         <> [Discarded (toTarget a) source (toCard a)]
@@ -342,7 +351,7 @@ instance RunMessage LocationAttrs where
     RemoveAllClues _ target | isTarget a target -> do
       pure $ a & tokensL %~ removeAllTokens Clue & withoutCluesL .~ True
     RemoveAllDoom _ target | isTarget a target -> pure $ a & tokensL %~ removeAllTokens Doom
-    RemoveAllTokens _ target | isTarget a target -> pure $ a & tokensL %~ mempty
+    RemoveAllTokens _ target | isTarget a target -> pure $ a & tokensL %~ mempty & withoutCluesL .~ locationRevealed
     PlaceTokens source target tType n | isTarget a target -> do
       if tType == Clue
         then do
@@ -398,10 +407,13 @@ instance RunMessage LocationAttrs where
                   then locationClueCount' `div` 2
                   else locationClueCount'
           let currentClues = countTokens Clue locationTokens
+          -- A location re-entering play keeps the clues already on it and is topped up
+          -- to its clue value, not stocked afresh (FAQ 1.39), #5560
+          let cluesToPlace = max 0 (locationClueCount - currentClues)
 
           pushAll
-            $ [ PlaceClues (toSource a) (toTarget a) locationClueCount
-              | locationClueCount > 0
+            $ [ PlaceClues (toSource a) (toTarget a) cluesToPlace
+              | cluesToPlace > 0
               ]
           doPlace
           pure $ a & withoutCluesL .~ (locationClueCount + currentClues == 0)
@@ -602,11 +614,11 @@ instance RunMessage LocationAttrs where
       pure $ a & concealedCardsL %~ filter (/= card)
     _ -> pure a
 
-locationInvestigatorsWithClues :: (HasGame m, Tracing m) => LocationAttrs -> m [InvestigatorId]
+locationInvestigatorsWithClues :: HasGame m => LocationAttrs -> m [InvestigatorId]
 locationInvestigatorsWithClues attrs =
   filterM (fieldMap InvestigatorClues (> 0)) =<< select (investigatorAt $ toId attrs)
 
-getModifiedShroudValueFor :: (HasCallStack, HasGame m, Tracing m) => LocationAttrs -> m Int
+getModifiedShroudValueFor :: (HasCallStack, HasGame m) => LocationAttrs -> m Int
 getModifiedShroudValueFor attrs = do
   modifiers' <- getModifiers (toTarget attrs)
   base <- getGameValue (fromJustNote "Missing shroud" $ locationShroud attrs)
@@ -654,7 +666,7 @@ withDrawCardUnderneathAction x =
 
 instance HasAbilities LocationAttrs where
   getAbilities l =
-    [ basicAbility $ investigateAbility l AbilityInvestigate mempty (onLocation l)
+    [ basicAbility $ investigateAbilityAt l (LocationWithId l.id) AbilityInvestigate mempty (onLocation l)
     , basicAbility
         $ restricted
           l
@@ -692,7 +704,7 @@ getShouldSpawnNonEliteAtConnectingInstead attrs = do
     SpawnNonEliteAtConnectingInstead {} -> True
     _ -> False
 
-locationEnemiesWithTrait :: (HasGame m, Tracing m) => LocationAttrs -> Trait -> m [EnemyId]
+locationEnemiesWithTrait :: HasGame m => LocationAttrs -> Trait -> m [EnemyId]
 locationEnemiesWithTrait attrs trait = select $ enemyAt (toId attrs) <> EnemyWithTrait trait
 
 veiled1 :: LocationAttrs -> Ability -> [Ability]

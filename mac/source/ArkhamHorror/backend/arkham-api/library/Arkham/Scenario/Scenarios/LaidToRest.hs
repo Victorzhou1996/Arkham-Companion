@@ -1,13 +1,15 @@
 module Arkham.Scenario.Scenarios.LaidToRest (laidToRest) where
 
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.LaidToRest qualified as Acts
+import Arkham.Agenda.CardDefs.LaidToRest qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Card
 import Arkham.Classes.HasGame
 import Arkham.Cost (Payment (NoPayment))
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.LaidToRest qualified as Enemies
+import Arkham.Enemy.CardDefs.Standalone qualified as Enemies
+import Arkham.Enemy.CardDefs.TheCircleUndone.TheWagesOfSin qualified as Enemies
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.Campaign (getCampaignStoryCards, matchingCardsAlreadyInDeck)
 import Arkham.Helpers.Card (ConvertToCard (..), getVictoryPoints)
@@ -16,7 +18,7 @@ import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Helpers.Modifiers hiding (roundModifiers)
 import Arkham.Id
 import Arkham.Investigator.Types (Field (InvestigatorTaboo))
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.TheCircleUndone.TheWagesOfSin qualified as Locations
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Name (toTitle)
@@ -27,9 +29,9 @@ import Arkham.Scenario.Deck
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenario.Types (Field (..))
 import Arkham.Scenarios.LaidToRest.Helpers
-import Arkham.Tracing
 import Arkham.Trait (Trait (Ally, Geist, Spectral))
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.Standalone qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheDunwichLegacy qualified as Treacheries
 import Arkham.Window (defaultWindows)
 import Arkham.Xp
 import Data.Aeson.Types (parseMaybe)
@@ -100,7 +102,7 @@ expertTokens =
 {- FOURMOLU_ENABLE -}
 
 hasCampaignCard
-  :: (HasGame m, Tracing m, HasCardDef def) => InvestigatorId -> def -> m Bool
+  :: (HasGame m, HasCardDef def) => InvestigatorId -> def -> m Bool
 hasCampaignCard iid (toCardDef -> def) = do
   inDeck <- matchingCardsAlreadyInDeck (cardIs def)
   storyCards <- getCampaignStoryCards
@@ -317,13 +319,13 @@ instance RunMessage LaidToRest where
             hasTrumpet <- hasCampaignCard jim Assets.jimsTrumpet
             hasAdvancedRhapsody <- hasCampaignCard jim Treacheries.finalRhapsodyAdvanced
             scenarioI18n $ scope "label" $ chooseOneM jim do
-              when hasTrumpet $ labeled' "upgradeJimsTrumpet" do
+              when hasTrumpet $ labeled "upgradeJimsTrumpet" do
                 removeCampaignCardFromDeck jim Assets.jimsTrumpet
                 addCampaignCardToDeck jim DoNotShuffleIn Assets.jimsTrumpetAdvanced
-              when hasAdvancedRhapsody $ labeled' "downgradeFinalRhapsody" do
+              when hasAdvancedRhapsody $ labeled "downgradeFinalRhapsody" do
                 removeCampaignCardFromDeck jim Treacheries.finalRhapsodyAdvanced
                 addCampaignCardToDeck jim DoNotShuffleIn Treacheries.finalRhapsody
-              labeled' "doNotSwap" nothing
+              labeled "doNotSwap" nothing
           endOfScenario
         Resolution 2 -> do
           (jimXp, otherXp) <- gainLaidToRestXp attrs
@@ -334,10 +336,10 @@ instance RunMessage LaidToRest where
             hasAdvancedTrumpet <- hasCampaignCard jim Assets.jimsTrumpetAdvanced
             when (hasRhapsody || hasAdvancedTrumpet) do
               scenarioI18n $ scope "label" $ chooseOrRunOneM jim do
-                when hasRhapsody $ labeled' "upgradeFinalRhapsody" do
+                when hasRhapsody $ labeled "upgradeFinalRhapsody" do
                   removeCampaignCardFromDeck jim Treacheries.finalRhapsody
                   addCampaignCardToDeck jim DoNotShuffleIn Treacheries.finalRhapsodyAdvanced
-                when hasAdvancedTrumpet $ labeled' "downgradeJimsTrumpet" do
+                when hasAdvancedTrumpet $ labeled "downgradeJimsTrumpet" do
                   removeCampaignCardFromDeck jim Assets.jimsTrumpetAdvanced
                   addCampaignCardToDeck jim DoNotShuffleIn Assets.jimsTrumpet
           endOfScenario

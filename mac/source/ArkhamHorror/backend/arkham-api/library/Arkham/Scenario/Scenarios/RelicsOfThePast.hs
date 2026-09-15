@@ -1,15 +1,16 @@
 module Arkham.Scenario.Scenarios.RelicsOfThePast (relicsOfThePast) where
 
-import Arkham.Id
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.RelicsOfThePast qualified as Acts
+import Arkham.Agenda.CardDefs.RelicsOfThePast qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaigns.TheForgottenAge.Helpers
 import Arkham.Campaigns.TheForgottenAge.Supply
 import Arkham.Card
 import Arkham.Classes.HasGame
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.TheForgottenAge.AgentsOfYig qualified as Enemies
+import Arkham.Enemy.CardDefs.TheForgottenAge.Serpents qualified as Enemies
+import Arkham.Enemy.CardDefs.TheForgottenAge.TheDoomOfEztli qualified as Enemies
 import Arkham.Helpers.Campaign (getCampaignStoryCards, matchingCardsAlreadyInDeck)
 import Arkham.Helpers.Card (ConvertToCard, convertToCard, getVictoryPoints)
 import Arkham.Helpers.FlavorText
@@ -18,8 +19,10 @@ import Arkham.Helpers.Modifiers (ModifierType (..), getModifiers)
 import Arkham.Helpers.Query
 import Arkham.Helpers.Scenario hiding (getIsReturnTo)
 import Arkham.I18n
+import Arkham.Id
 import Arkham.Investigator.Types (Field (InvestigatorName))
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.RelicsOfThePast qualified as Locations
+import Arkham.Location.CardDefs.TheForgottenAge.TheDoomOfEztli qualified as Locations
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Name (toTitle)
@@ -28,9 +31,15 @@ import Arkham.Resolution
 import Arkham.Scenario.Deck
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenarios.RelicsOfThePast.Helpers
-import Arkham.Tracing
 import Arkham.Trait (Trait (Ancient, Serpent))
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.EdgeOfTheEarth qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot.LockedDoors qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Treacheries
+import Arkham.Treachery.CardDefs.RelicsOfThePast qualified as Treacheries
+import Arkham.Treachery.CardDefs.Standalone qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheForgottenAge.DeadlyTraps qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheForgottenAge.ForgottenRuins qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheForgottenAge.Poison qualified as Treacheries
 import Arkham.Window qualified as Window
 import Arkham.Xp
 
@@ -88,17 +97,17 @@ moveNearestSerpentToward iid = do
     chooseOrRunOneM iid $ targets enemies \enemy ->
       push $ MoveToward (toTarget enemy) (locationWithInvestigator iid)
 
-hasCampaignCard :: (HasGame m, Tracing m) => InvestigatorId -> CardDef -> m Bool
+hasCampaignCard :: HasGame m => InvestigatorId -> CardDef -> m Bool
 hasCampaignCard iid def = do
   inDeck <-
     member (toCardCode def) . findWithDefault mempty iid <$> matchingCardsAlreadyInDeck (cardIs def)
   storyCards <- findWithDefault [] iid <$> getCampaignStoryCards
   pure $ inDeck || any ((== def) . toCardDef) storyCards
 
-isMontereyJack :: (HasGame m, Tracing m) => InvestigatorId -> m Bool
+isMontereyJack :: HasGame m => InvestigatorId -> m Bool
 isMontereyJack = fieldMap InvestigatorName ((== "Monterey Jack") . toTitle)
 
-toVictoryEntries :: (ConvertToCard c, HasGame m, Tracing m) => [c] -> m [(Text, Int)]
+toVictoryEntries :: (ConvertToCard c, HasGame m) => [c] -> m [(Text, Int)]
 toVictoryEntries = mapMaybeM \c -> do
   card <- convertToCard c
   mPoints <- getVictoryPoints card
@@ -119,10 +128,10 @@ instance RunMessage RelicsOfThePast where
       let pickedSupplies = toResultDefault @(Map InvestigatorId [Supply]) mempty attrs.meta
       let available = filter (`notElem` concat (toList pickedSupplies)) scenarioSupplies
       chooseOneM iid $ scenarioI18n do
-        questionLabeled' "supplies.question"
-        unscoped $ labeled' "skip" nothing
+        questionLabeled "supplies.question"
+        unscoped $ labeled "skip" nothing
         for_ available \supply ->
-          labeled' (supplyKey supply)
+          labeled (supplyKey supply)
             $ push
             $ ForInvestigator iid (ScenarioSpecific "pickedSupply" (toJSON supply))
       pure s
@@ -297,16 +306,16 @@ instance RunMessage RelicsOfThePast where
             hasOriginalBullwhip <- hasCampaignCard monterey Assets.trustyBullwhip
             hasAdvancedSecrets <- hasCampaignCard monterey Treacheries.buriedSecretsAdvanced
             chooseOneM monterey $ scenarioI18n do
-              questionLabeled' "swap.question"
+              questionLabeled "swap.question"
               when hasOriginalBullwhip do
-                labeled' "swap.upgradeTrustyBullwhip" do
+                labeled "swap.upgradeTrustyBullwhip" do
                   removeCampaignCardFromDeck monterey Assets.trustyBullwhip
                   addCampaignCardToDeck monterey DoNotShuffleIn Assets.trustyBullwhipAdvanced
               when hasAdvancedSecrets do
-                labeled' "swap.downgradeBuriedSecrets" do
+                labeled "swap.downgradeBuriedSecrets" do
                   removeCampaignCardFromDeck monterey Treacheries.buriedSecretsAdvanced
                   addCampaignCardToDeck monterey DoNotShuffleIn Treacheries.buriedSecrets
-              labeled' "swap.doNotSwap" nothing
+              labeled "swap.doNotSwap" nothing
 
           returnSupplies
           endOfScenario
@@ -318,13 +327,13 @@ instance RunMessage RelicsOfThePast where
             hasAdvancedBullwhip <- hasCampaignCard monterey Assets.trustyBullwhipAdvanced
             when (hasOriginalSecrets || hasAdvancedBullwhip) do
               chooseOrRunOneM monterey $ scenarioI18n do
-                questionLabeled' "swap.questionMust"
+                questionLabeled "swap.questionMust"
                 when hasOriginalSecrets do
-                  labeled' "swap.upgradeBuriedSecrets" do
+                  labeled "swap.upgradeBuriedSecrets" do
                     removeCampaignCardFromDeck monterey Treacheries.buriedSecrets
                     addCampaignCardToDeck monterey DoNotShuffleIn Treacheries.buriedSecretsAdvanced
                 when hasAdvancedBullwhip do
-                  labeled' "swap.downgradeTrustyBullwhip" do
+                  labeled "swap.downgradeTrustyBullwhip" do
                     removeCampaignCardFromDeck monterey Assets.trustyBullwhipAdvanced
                     addCampaignCardToDeck monterey DoNotShuffleIn Assets.trustyBullwhip
 

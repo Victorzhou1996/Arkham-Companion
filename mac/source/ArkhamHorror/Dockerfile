@@ -61,7 +61,7 @@ RUN \
 RUN chmod +x /usr/bin/ghcup && \
     ghcup config set gpg-setting GPGNone
 
-ARG GHC=9.12.2
+ARG GHC=9.14.1
 ARG CABAL=3.16.0.0
 ARG STACK=3.7.1
 ARG CACHE_ID="${TARGETARCH}-${GHC}-${CABAL}-${STACK}"
@@ -83,17 +83,18 @@ RUN mkdir -p \
   /opt/arkham/src/backend/cards-discover
 
 WORKDIR /opt/arkham/src/backend
+ARG ARKHAM_BUILD_JOBS=2
 COPY ./backend/stack.yaml ./backend/stack.yaml.lock /opt/arkham/src/backend/
 COPY ./backend/arkham-api/package.yaml /opt/arkham/src/backend/arkham-api/package.yaml
 COPY ./backend/validate/package.yaml /opt/arkham/src/backend/validate/package.yaml
 COPY ./backend/cards-discover/package.yaml /opt/arkham/src/backend/cards-discover/package.yaml
 RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
     --mount=type=cache,id=stack-work-shared-${CACHE_ID},target=/opt/arkham/src/backend/.stack-work \
-    stack build --system-ghc --dependencies-only --no-terminal --ghc-options '-fno-write-ide-info -j4 +RTS -A128m -n2m -RTS'
+    stack build --system-ghc --jobs "${ARKHAM_BUILD_JOBS}" --dependencies-only --no-terminal --ghc-options "-fno-write-ide-info -j${ARKHAM_BUILD_JOBS} +RTS -A128m -n2m -RTS"
 
 FROM dependencies AS api
 
-ARG ARKHAM_BUILD_JOBS=4
+ARG ARKHAM_BUILD_JOBS=2
 
 RUN mkdir -p \
   /opt/arkham/src/backend \
@@ -105,9 +106,17 @@ WORKDIR /opt/arkham/src/backend/cards-discover
 RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
     --mount=type=cache,id=stack-work-shared-${CACHE_ID},target=/opt/arkham/src/backend/.stack-work \
     --mount=type=cache,id=stack-discover-${CACHE_ID},target=/opt/arkham/src/backend/cards-discover/.stack-work \
-    stack build --system-ghc --no-terminal --ghc-options '-fno-write-ide-info -j4 +RTS -A128m -n2m -RTS' cards-discover
+    stack build --system-ghc --jobs "${ARKHAM_BUILD_JOBS}" --no-terminal --ghc-options "-fno-write-ide-info -j${ARKHAM_BUILD_JOBS} +RTS -A128m -n2m -RTS" cards-discover
 
 WORKDIR /opt/arkham/src/backend/arkham-api
+ARG GIT_SHA1
+ENV GIT_SHA1=${GIT_SHA1}
+# The build itself lives in scripts/docker-build-api.sh, which repairs a
+# .stack-work cache left dirty by a cancelled build before compiling. Keep this
+# RUN a bare script invocation: BuildKit keys a cache mount's *contents* by the
+# text of the RUN that mounts it, so editing the command here throws away the
+# cached .stack-work and forces a cold rebuild of all ~6800 modules. Editing the
+# script does not.
 RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
     --mount=type=cache,id=stack-work-shared-${CACHE_ID},target=/opt/arkham/src/backend/.stack-work \
     --mount=type=cache,id=stack-api-${CACHE_ID},target=/opt/arkham/src/backend/arkham-api/.stack-work \
@@ -116,10 +125,7 @@ RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
     --mount=type=cache,id=stack-api-hie-${CACHE_ID},target=/opt/arkham/src/backend/arkham-api/.hie \
     --mount=type=cache,id=stack-validate-hie-${CACHE_ID},target=/opt/arkham/src/backend/validate/.hie \
     --mount=type=cache,id=stack-discover-hie-${CACHE_ID},target=/opt/arkham/src/backend/cards-discover/.hie \
-  ghc_build_options="-rtsopts -with-rtsopts=-V0 -j${ARKHAM_BUILD_JOBS} +RTS -V0 -A128m -n2m -RTS"; \
-  stack build --jobs "$ARKHAM_BUILD_JOBS" --no-terminal --system-ghc --ghc-options "$ghc_build_options" && \
-  stack --no-terminal --system-ghc --local-bin-path /opt/arkham/bin \
-    install arkham-api --jobs "$ARKHAM_BUILD_JOBS" --ghc-options "$ghc_build_options"
+  sh /opt/arkham/src/backend/scripts/docker-build-api.sh
 
 FROM scratch AS api-artifact
 

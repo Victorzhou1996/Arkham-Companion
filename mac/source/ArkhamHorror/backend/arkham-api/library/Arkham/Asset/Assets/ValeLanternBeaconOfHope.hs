@@ -8,7 +8,9 @@ import Arkham.Helpers.Location (withLocationOf)
 import Arkham.Helpers.Modifiers (ModifierType (..), maybeModified_, modifySelect)
 import Arkham.Helpers.Window (getRevealedLocation)
 import Arkham.Matcher
-import Arkham.Scenarios.TheTwistedHollow.Helpers (placeValeLanternAtNearestLocation)
+import Arkham.Scenarios.TheFeastOfHemlockVale.TheTwistedHollow.Helpers (
+  placeValeLanternAtNearestLocation,
+ )
 import Arkham.Trait (Trait (Dark, Forest))
 import Arkham.Window (Window (..))
 import Arkham.Window qualified as Window
@@ -43,7 +45,7 @@ instance HasAbilities ValeLanternBeaconOfHope where
                   #when
                   You
                   (LocationWithTrait Forest <> LocationWithAbility AbilityIsForcedAbility)
-                  Nothing
+                  (Just Anywhere)
               ]
           )
           (exhaust a)

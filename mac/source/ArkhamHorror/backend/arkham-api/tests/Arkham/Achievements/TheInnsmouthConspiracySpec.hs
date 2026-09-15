@@ -14,7 +14,8 @@ what "Don't Wake Daddy" needs to span The Lair of Dagon and Into the Maelstrom.
 -}
 module Arkham.Achievements.TheInnsmouthConspiracySpec (spec) where
 
-import Arkham.Act.Cards qualified as Acts
+import Arkham.Act.CardDefs.TheInnsmouthConspiracy.HorrorInHighGear qualified as Acts
+import Arkham.Act.CardDefs.TheInnsmouthConspiracy.TheVanishingOfElinaHarper qualified as Acts
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Asset
 import Arkham.CampaignLogKey (recorded, toCampaignLogKey)
@@ -22,13 +23,16 @@ import Arkham.CampaignStep (CampaignStep (EpilogueStep))
 import Arkham.Campaigns.TheInnsmouthConspiracy.Key
 import Arkham.Campaigns.TheInnsmouthConspiracy.Memory
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.NightOfTheZealot.Nightgaunts qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.CreaturesOfTheDeep qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.IntoTheMaelstrom qualified as Enemies
+import Arkham.Enemy.CardDefs.TheInnsmouthConspiracy.ThePitOfDespair qualified as Enemies
 import Arkham.Game.Settings (settingsAchievementsEnabled)
 import Arkham.Investigator.Cards qualified as Investigators
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.TheInnsmouthConspiracy.HorrorInHighGear qualified as Locations
 import Arkham.Placement
 import Arkham.ScenarioLogKey (ScenarioCountKey (Barriers))
-import Arkham.Scenarios.InTooDeep.Helpers qualified as InTooDeep
+import Arkham.Scenarios.TheInnsmouthConspiracy.InTooDeep.Helpers qualified as InTooDeep
 import Arkham.SortedPair (sortedPair)
 import Arkham.Trait (Trait (DeepOne))
 import Data.Map.Strict qualified as Map

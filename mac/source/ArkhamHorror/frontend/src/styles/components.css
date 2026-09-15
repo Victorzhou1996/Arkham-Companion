@@ -1,3 +1,61 @@
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(*) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card--flipping {
+  animation: card-flip 450ms ease-in-out;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+@keyframes card-flip {
+  0% {
+    transform: perspective(900px) rotateY(0deg);
+  }
+
+  50% {
+    transform: perspective(900px) rotateY(90deg);
+  }
+
+  100% {
+    transform: perspective(900px) rotateY(0deg);
+  }
+}
+
+/* Faces that land in the other orientation (a sideways agenda over a vertical
+   enemy) turn about the 45-degree diagonal: 180 degrees about that axis maps a
+   w-by-h card onto h-by-w, so it flips into the shape it is becoming. Carried
+   through rather than bounced back, with the direction reversed at the edge-on
+   midpoint where nothing is visible, which keeps the art unmirrored. */
+.card--flipping.card--flipping-diagonal {
+  animation-name: card-flip-diagonal;
+}
+
+@keyframes card-flip-diagonal {
+  0% { transform: perspective(700px) rotate3d(1, 1, 0, 0deg); }
+  49.9% { transform: perspective(700px) rotate3d(1, 1, 0, 90deg); }
+  50% { transform: perspective(700px) rotate3d(1, 1, 0, -90deg); }
+  100% { transform: perspective(700px) rotate3d(1, 1, 0, 0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card--flipping {
+    animation: none;
+  }
+}
+
 h2.title {
   color: var(--title);
   font-size: 2em;
@@ -143,4 +201,25 @@ h2.title {
 
 .pool .poolItem span {
   font-size: calc(var(--card-token-width) * 0.62) !important;
+}
+
+.count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9em;
+  padding: 0.1em 0.55em;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: sans-serif;
+  font-size: 0.72em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-transform: none;
+  vertical-align: middle;
 }

@@ -2,29 +2,52 @@
 import { computed } from 'vue'
 import * as Arkham from '@/arkham/types/CardDef'
 import { localizeArkhamDBBaseUrl } from '@/arkham/helpers'
+import { cardGroupKey as groupKey, groupCards } from '@/arkham/cardDetails'
 import CardImage from '@/arkham/components/CardImage.vue'
 
-const props = withDefaults(defineProps<{ cards: Arkham.CardDef[], attachments?: Record<string, Arkham.CardDef[]>, showCounts?: boolean }>(), {
+const props = withDefaults(defineProps<{
+  cards: Arkham.CardDef[],
+  attachments?: Record<string, Arkham.CardDef[]>,
+  showCounts?: boolean,
+  unimplemented?: Set<string>,
+  selectable?: boolean,
+  /* Editing an overlay: each card gets take-one/put-one-back controls right on
+   * the card, rather than in a separate pane. */
+  overlayEditing?: boolean,
+  overlayRemoved?: (card: Arkham.CardDef) => number,
+  /* What the overlay leaves of a card, when that differs from the copies
+   * listed. Zero means it is out but still shown, so it can be put back. */
+  overlayCount?: (card: Arkham.CardDef) => number | null,
+}>(), {
   attachments: () => ({}),
   showCounts: true,
+  unimplemented: () => new Set(),
+  selectable: false,
+  overlayEditing: false,
+  overlayRemoved: () => () => 0,
+  overlayCount: () => () => null,
 })
 
-const ungroupedWarOfTheOuterGodsCards = new Set(['c86038a', 'c86044a', 'c86049a'])
+const shownCount = (card: Arkham.CardDef, count: number) => props.overlayCount(card) ?? count
+const isOut = (card: Arkham.CardDef) => props.overlayCount(card) === 0
 
-const groupKey = (card: Arkham.CardDef) => ungroupedWarOfTheOuterGodsCards.has(card.cardCode) ? card.cardCode : card.art
+// When selectable, clicking a card asks the parent to show its details instead
+// of following the link out to ArkhamDB.
+const emit = defineEmits<{
+  select: [card: Arkham.CardDef]
+  'overlay-take': [card: Arkham.CardDef]
+  'overlay-restore': [card: Arkham.CardDef]
+}>()
 
-const groupCards = (cards: Arkham.CardDef[]) => {
-  const grouped = new Map<string, { card: Arkham.CardDef; count: number }>()
-
-  for (const card of cards) {
-    const key = groupKey(card)
-    const existing = grouped.get(key)
-    if (existing) existing.count += 1
-    else grouped.set(key, { card, count: 1 })
-  }
-
-  return Array.from(grouped.values())
+const onCardClick = (event: MouseEvent, card: Arkham.CardDef) => {
+  if (!props.selectable) return
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
+  event.preventDefault()
+  emit('select', card)
 }
+
+// Cards shown for completeness that the engine doesn't implement yet.
+const isUnimplemented = (card: Arkham.CardDef) => props.unimplemented.has(card.art)
 
 const groupedCards = computed(() => groupCards(props.cards))
 
@@ -34,6 +57,10 @@ const groupedAttachedCards = (card: Arkham.CardDef) => groupCards(attachedCards(
 
 const underworldMarketCards = () => props.attachments['09077'] ?? []
 const spiritDeckCards = () => props.attachments['90052'] ?? []
+const stickToThePlanCards = () => props.attachments['03264'] ?? []
+const ancestralKnowledgeCards = () => props.attachments['07303'] ?? []
+const bewitchingCards = () => props.attachments['10079'] ?? []
+const eldritchBrandCards = () => props.attachments['11080'] ?? []
 
 const countCards = (cards: Arkham.CardDef[]) => {
   const counts = new Map<string, number>()
@@ -43,19 +70,36 @@ const countCards = (cards: Arkham.CardDef[]) => {
 
 const marketCardCounts = computed(() => countCards(underworldMarketCards()))
 const spiritCardCounts = computed(() => countCards(spiritDeckCards()))
+const stickToThePlanCardCounts = computed(() => countCards(stickToThePlanCards()))
+const ancestralKnowledgeCardCounts = computed(() => countCards(ancestralKnowledgeCards()))
+const bewitchingCardCounts = computed(() => countCards(bewitchingCards()))
+const eldritchBrandCardCounts = computed(() => countCards(eldritchBrandCards()))
 
 const marketCardCount = (card: Arkham.CardDef) => marketCardCounts.value.get(card.art) ?? 0
 const spiritCardCount = (card: Arkham.CardDef) => spiritCardCounts.value.get(card.art) ?? 0
+const stickToThePlanCardCount = (card: Arkham.CardDef) => stickToThePlanCardCounts.value.get(card.art) ?? 0
+const ancestralKnowledgeCardCount = (card: Arkham.CardDef) => ancestralKnowledgeCardCounts.value.get(card.art) ?? 0
+const bewitchingCardCount = (card: Arkham.CardDef) => bewitchingCardCounts.value.get(card.art) ?? 0
+const eldritchBrandCardCount = (card: Arkham.CardDef) => eldritchBrandCardCounts.value.get(card.art) ?? 0
 
 const marketTooltip = (card: Arkham.CardDef) => `Attached to Market deck (x ${marketCardCount(card)})`
 const spiritTooltip = (card: Arkham.CardDef) => `In Spirit deck (x ${spiritCardCount(card)})`
+const stickToThePlanTooltip = (card: Arkham.CardDef) => `Attached to Stick to the Plan (x ${stickToThePlanCardCount(card)})`
+const ancestralKnowledgeTooltip = (card: Arkham.CardDef) => `Attached to Ancestral Knowledge (x ${ancestralKnowledgeCardCount(card)})`
+const bewitchingTooltip = (card: Arkham.CardDef) => `Attached to Bewitching (x ${bewitchingCardCount(card)})`
+const eldritchBrandTooltip = (card: Arkham.CardDef) => `Branded by Eldritch Brand (x ${eldritchBrandCardCount(card)})`
 
 const isUnderworldMarketCard = (card: Arkham.CardDef) => marketCardCount(card) > 0
 const isSpiritDeckCard = (card: Arkham.CardDef) => spiritCardCount(card) > 0
+const isStickToThePlanCard = (card: Arkham.CardDef) => stickToThePlanCardCount(card) > 0
+const isAncestralKnowledgeCard = (card: Arkham.CardDef) => ancestralKnowledgeCardCount(card) > 0
+const isBewitchingCard = (card: Arkham.CardDef) => bewitchingCardCount(card) > 0
+const isEldritchBrandCard = (card: Arkham.CardDef) => eldritchBrandCardCount(card) > 0
 
 const attachmentTitle = (card: Arkham.CardDef) => {
   if (card.art === '90052') return 'Spirit deck'
   if (card.art === '09077') return 'Underworld Market'
+  if (card.art === '11080') return 'Eldritch Brand'
   return 'Attached cards'
 }
 
@@ -71,15 +115,32 @@ const cardName = (card: Arkham.CardDef) => {
       v-for="{ card, count } in groupedCards"
       :key="groupKey(card)"
       class="card-tile"
-      :class="{ 'has-attachments': attachedCards(card).length > 0 }"
+      :class="{ 'has-attachments': attachedCards(card).length > 0, 'card-tile--unimplemented': isUnimplemented(card), 'card-tile--out': isOut(card) }"
+      v-tooltip="isUnimplemented(card) ? 'Not yet implemented' : undefined"
     >
-      <a target="_blank" :href="`${localizeArkhamDBBaseUrl()}/card/${card.art}`">
+      <a target="_blank" :href="`${localizeArkhamDBBaseUrl()}/card/${card.art}`" @click="onCardClick($event, card)">
         <CardImage :card="card" />
         <span class="card-badges">
-          <span v-if="showCounts" class="deck-card-count">x {{ count }}</span>
+          <span v-if="showCounts" class="deck-card-count">x {{ shownCount(card, count) }}</span>
           <span v-if="isUnderworldMarketCard(card)" class="market-badge" v-tooltip="marketTooltip(card)" :aria-label="marketTooltip(card)">
             <font-awesome-icon icon="store" />
             <span>x {{ marketCardCount(card) }}</span>
+          </span>
+          <span v-if="isStickToThePlanCard(card)" class="market-badge" v-tooltip="stickToThePlanTooltip(card)" :aria-label="stickToThePlanTooltip(card)">
+            <font-awesome-icon icon="paperclip" />
+            <span>x {{ stickToThePlanCardCount(card) }}</span>
+          </span>
+          <span v-if="isAncestralKnowledgeCard(card)" class="market-badge" v-tooltip="ancestralKnowledgeTooltip(card)" :aria-label="ancestralKnowledgeTooltip(card)">
+            <font-awesome-icon icon="paperclip" />
+            <span>x {{ ancestralKnowledgeCardCount(card) }}</span>
+          </span>
+          <span v-if="isBewitchingCard(card)" class="market-badge" v-tooltip="bewitchingTooltip(card)" :aria-label="bewitchingTooltip(card)">
+            <font-awesome-icon icon="paperclip" />
+            <span>x {{ bewitchingCardCount(card) }}</span>
+          </span>
+          <span v-if="isEldritchBrandCard(card)" class="market-badge" v-tooltip="eldritchBrandTooltip(card)" :aria-label="eldritchBrandTooltip(card)">
+            <font-awesome-icon icon="book" />
+            <span>x {{ eldritchBrandCardCount(card) }}</span>
           </span>
           <span v-if="isSpiritDeckCard(card)" class="spirit-badge" v-tooltip="spiritTooltip(card)" :aria-label="spiritTooltip(card)">
             <font-awesome-icon :icon="['fas', 'ghost']" />
@@ -87,6 +148,15 @@ const cardName = (card: Arkham.CardDef) => {
           </span>
         </span>
       </a>
+      <div v-if="overlayEditing" class="overlay-controls">
+        <button type="button" title="Take one out" @click="emit('overlay-take', card)">−</button>
+        <button
+          type="button"
+          title="Put one back"
+          :disabled="overlayRemoved(card) === 0"
+          @click="emit('overlay-restore', card)"
+        >+</button>
+      </div>
       <div v-if="attachedCards(card).length > 0" class="attachments-panel">
         <div class="attachments-title" :class="{ 'attachments-title--spirit': card.art === '90052' }">
           <font-awesome-icon :icon="card.art === '90052' ? ['fas', 'ghost'] : 'paperclip'" /> {{ attachmentTitle(card) }}
@@ -102,8 +172,8 @@ const cardName = (card: Arkham.CardDef) => {
           >
             <CardImage :card="entry.card" />
             <span class="attachment-label">
-              <span class="attachment-name">{{ cardName(entry.card) }}</span>
-              <span class="attachment-count">x {{ entry.count }}</span>
+              <span class="attachment-name">{{ cardName(entry.card) }}{{ card.art === '11080' ? ' was branded' : '' }}</span>
+              <span v-if="card.art !== '11080' || entry.count > 1" class="attachment-count">x {{ entry.count }}</span>
             </span>
           </a>
         </div>
@@ -135,11 +205,23 @@ const cardName = (card: Arkham.CardDef) => {
   flex-direction: column;
   gap: 8px;
   align-self: start;
+  position: relative;
 
   > a {
     position: relative;
     display: flex;
     justify-content: center;
+  }
+}
+
+.card-tile--unimplemented {
+  opacity: 0.42;
+  filter: grayscale(0.55);
+  transition: opacity 0.15s, filter 0.15s;
+
+  &:hover {
+    opacity: 0.85;
+    filter: grayscale(0);
   }
 }
 
@@ -277,5 +359,42 @@ const cardName = (card: Arkham.CardDef) => {
   }
 
   &:hover { opacity: 0.82; }
+}
+
+/* Sits on the card rather than beside it, so the grid keeps its shape. */
+.overlay-controls {
+  bottom: 6px;
+  display: flex;
+  gap: 0.15rem;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.overlay-controls button {
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--box-border);
+  border-radius: 3px;
+  color: #eee;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0.1rem 0.45rem;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.95);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+}
+
+/* Taken out by the overlay, but still shown so it can be put back. */
+.card-tile--out > a {
+  filter: grayscale(0.7);
+  opacity: 0.35;
 }
 </style>

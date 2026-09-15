@@ -41,6 +41,7 @@ logfile
 # Large image assets (served from CloudFront CDN in both dev and prod)
 # Run `make fetch-images` to download locally if needed
 frontend/public/img/arkham/cards/
+frontend/homebrew/*/img/cards/
 frontend/public/img/arkham/es/
 frontend/public/img/arkham/fr/
 frontend/public/img/arkham/ita/
@@ -89,9 +90,13 @@ CLAUDE.md
 .mcp.json
 AGENTS.md
 tmp/
+.buildx-cache/
 .agents/
 .windsurf/
 skills-lock.json
 
 # Manual rebuild outputs (binaries, frontend bundles, logs, and reports)
 build-artifacts/
+# Local homebrew working data (guide transcriptions, codegen maps); the
+# checked-in guide is docs/homebrew.md
+docs/homebrew/

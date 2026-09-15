@@ -24,7 +24,7 @@ import Arkham.Prelude
 import {-# SOURCE #-} Arkham.Source
 import {-# SOURCE #-} Arkham.Target
 import Arkham.Trait (Trait)
-import Control.Lens (over, transform)
+import Control.Lens (anyOf, over, transform)
 import Data.Data.Lens (biplate)
 import GHC.Records
 
@@ -180,6 +180,14 @@ instance WithTrait TreacheryMatcher where
   withTrait = TreacheryWithTrait
   {-# INLINE withTrait #-}
 
+instance WithTrait StoryMatcher where
+  withTrait = StoryWithTrait
+  {-# INLINE withTrait #-}
+
+instance WithTrait InvestigatorMatcher where
+  withTrait = InvestigatorWithTrait
+  {-# INLINE withTrait #-}
+
 -- ** Investigator Helpers **
 
 investigatorIs :: HasCardCode a => a -> InvestigatorMatcher
@@ -279,6 +287,9 @@ enemyIsExact = EnemyIsExact . toCardCode
 
 enemyAt :: (AsId a, IdOf a ~ LocationId) => a -> EnemyMatcher
 enemyAt = EnemyAt . LocationWithId . asId
+
+enemyWasAt :: (AsId a, IdOf a ~ LocationId) => a -> EnemyMatcher
+enemyWasAt = EnemyWasAt . LocationWithId . asId
 
 enemyAtLocationWith :: InvestigatorId -> EnemyMatcher
 enemyAtLocationWith = EnemyAt . locationWithInvestigator
@@ -475,7 +486,7 @@ sourceUsedBy = SourceUsedBy . InvestigatorWithId . asId
 
 performableAbilityWithoutActionBy :: InvestigatorId -> AbilityMatcher -> AbilityMatcher
 performableAbilityWithoutActionBy iid a =
-  PerformableAbilityBy (InvestigatorWithId iid) [ActionCostModifier (-1)] <> a
+  a <> PerformableAbilityBy (InvestigatorWithId iid) [ActionCostModifier (-1)]
 
 -- ** Replacements
 
@@ -498,6 +509,10 @@ replaceThisLocation lid = replaceLocationMatcher lid ThisLocation
 replaceThatLocation :: Data a => LocationId -> a -> a
 replaceThatLocation lid = replaceLocationMatcher lid ThatLocation
 
+-- | Whether a matcher still needs 'replaceThatLocation' run over it.
+mentionsThatLocation :: Data a => a -> Bool
+mentionsThatLocation = anyOf biplate (== ThatLocation)
+
 replaceEnemyMatcher :: Data a => EnemyId -> EnemyMatcher -> a -> a
 replaceEnemyMatcher lid m = over biplate (transform go)
  where
@@ -512,7 +527,7 @@ defaultRemoveDoomMatchers =
   RemoveDoomMatchers
     { removeDoomLocations = Anywhere
     , removeDoomInvestigators = Anyone
-    , removeDoomEnemies = InPlayEnemy AnyEnemy
+    , removeDoomEnemies = AnyEnemy
     , removeDoomAssets = AnyAsset
     , removeDoomActs = AnyAct
     , removeDoomAgendas = AnyAgenda

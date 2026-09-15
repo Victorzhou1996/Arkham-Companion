@@ -189,6 +189,7 @@ shrewdAnalysis =
   permanent
     $ (asset "04106" "Shrewd Analysis" 0 Seeker)
       { cdCardTraits = singleton Talent
+      , cdTags = [noGameplayEffectTag]
       }
 
 luckyCigaretteCase :: CardDef
@@ -214,6 +215,7 @@ arcaneResearch =
     $ (asset "04109" "Arcane Research" 0 Mystic)
       { cdCardTraits = singleton Talent
       , cdPurchaseTrauma = PurchaseMentalTrauma 1
+      , cdTags = [noGameplayEffectTag]
       }
 
 harlanEarnstone :: CardDef
@@ -222,6 +224,7 @@ harlanEarnstone =
     { cdCardTraits = setFromList [Bystander, Miskatonic]
     , cdCost = Nothing
     , cdUnique = True
+    , cdOtherSide = Just "04118"
     }
 
 henryDeveau :: CardDef
@@ -230,6 +233,7 @@ henryDeveau =
     { cdCardTraits = singleton Bystander
     , cdCost = Nothing
     , cdUnique = True
+    , cdOtherSide = Just "04125"
     }
 
 mariaDeSilva :: CardDef
@@ -238,6 +242,7 @@ mariaDeSilva =
     { cdCardTraits = singleton Bystander
     , cdCost = Nothing
     , cdUnique = True
+    , cdOtherSide = Just "04134"
     }
 
 ichtacaTheForgottenGuardian :: CardDef
@@ -591,6 +596,7 @@ merleGarvinUnhelpfulGuide =
     { cdCardTraits = setFromList [Bystander, Wayfarer]
     , cdCost = Nothing
     , cdUnique = True
+    , cdOtherSide = Just "53030"
     }
 
 clintonFreemanShouldHaveStayedHome :: CardDef
@@ -599,6 +605,7 @@ clintonFreemanShouldHaveStayedHome =
     { cdCardTraits = setFromList [Bystander, Wayfarer]
     , cdCost = Nothing
     , cdUnique = True
+    , cdOtherSide = Just "53032"
     }
 
 vedaWhitsleySkilledBotanist :: CardDef

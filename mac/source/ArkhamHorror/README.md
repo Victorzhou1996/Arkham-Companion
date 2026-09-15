@@ -38,14 +38,35 @@ please file a bug.
 * The Dream-Eaters
 * The Innsmouth Conspiracy
 * Edge of the Earth
+* The Scarlet Keys
+* The Feast of Hemlock Vale
+* Brethren of Ash
+* The Drowned City (Beta)
 
 ### Side Stories
 
 * The Curse of the Rougarou
 * Carnevale of Horrors
+* The Labyrinths of Lunacy (Beta)
 * Murder at the Excelsior Hotel
+* Guardians of the Abyss (Beta)
+* The Blob That Ate Everything
+* War of the Outer Gods (Beta)
+* Machinations Through Time (Beta)
+* Fortune and Folly
 * The Midwinter Gala
 * Film Fatale
+
+### Challenge Scenarios
+
+* Read or Die
+* All or Nothing
+* Bad Blood
+* By the Book
+* Red Tide Rising
+* Laid to Rest
+* Relics of the Past
+* Enthralling Encore
 
 ## I just want to try this out on my computer
 
@@ -139,9 +160,36 @@ To switch back to CDN at any time, add this to the `web` service environment in 
 
 ### Updating
 
+Use the upgrade script. It auto-detects your install type (Docker or git
+checkout), refreshes control files, pulls the latest images, applies database
+migrations, recreates the containers, and re-syncs local images if you have
+them.
+
+Run it from anywhere:
+
 ```
-docker compose pull
-docker compose up -d
+curl -fsSL https://raw.githubusercontent.com/halogenandtoast/ArkhamHorror/main/upgrade.sh | bash
+```
+
+Or, from inside your install directory (or a git checkout):
+
+```
+./upgrade.sh
+```
+
+Options (environment variables):
+
+| Variable | Purpose |
+| --- | --- |
+| `ARKHAM_INSTALL_DIR` | Install directory to upgrade (default: `arkham-horror`). Set this if you installed somewhere else. |
+| `ARKHAM_IMAGE_TARGET` | Force an image-sync target (e.g. `en`, `en+fr`, `all`) instead of auto-detecting from what's already on disk. |
+
+```
+# Upgrade an install in a custom directory
+ARKHAM_INSTALL_DIR=~/games/arkham curl -fsSL https://raw.githubusercontent.com/halogenandtoast/ArkhamHorror/main/upgrade.sh | bash
+
+# Force re-syncing English + French images
+ARKHAM_IMAGE_TARGET=en+fr ./upgrade.sh
 ```
 
 ## Local dev
@@ -240,7 +288,14 @@ table statements and run them manually, you will want to specifically run the
 ### Running the server
 
 * start the backend with `cd backend && make api.watch`
-* start the frontend with `cd frontend && npm run serve`
+* start the frontend with `cd frontend && npm run dev`
+
+## Homebrew content
+
+Want to build your own campaign, scenario, or custom content? See
+[Writing homebrew content](./docs/homebrew.md) — a hands-on guide to adding
+cards, campaigns, traits, actions, tokens, and more without touching the base
+game.
 
 ## Copyright Disclaimer
 

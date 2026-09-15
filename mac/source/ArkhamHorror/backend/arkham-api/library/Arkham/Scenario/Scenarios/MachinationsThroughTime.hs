@@ -1,25 +1,27 @@
 module Arkham.Scenario.Scenarios.MachinationsThroughTime (machinationsThroughTime) where
 
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.MachinationsThroughTime qualified as Acts
+import Arkham.Agenda.CardDefs.MachinationsThroughTime qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Field
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.MachinationsThroughTime qualified as Enemies
 import Arkham.Exception
 import Arkham.Helpers.FlavorText
 import Arkham.Helpers.GameValue (perPlayer)
 import Arkham.Helpers.Query
+import Arkham.Helpers.Window (wouldDo)
 import Arkham.I18n
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.MachinationsThroughTime qualified as Locations
 import Arkham.Matcher hiding (assetAt)
 import Arkham.Message.Lifted.Choose
 import Arkham.Projection
 import Arkham.Resolution
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenarios.MachinationsThroughTime.Helpers
-import Arkham.Story.Cards qualified as Stories
+import Arkham.Story.CardDefs.MachinationsThroughTime qualified as Stories
 import Arkham.Trait (Trait (Ally, Scientist))
+import Arkham.Window qualified as Window
 
 newtype MachinationsThroughTime = MachinationsThroughTime ScenarioAttrs
   deriving anyclass (IsScenario, HasModifiersFor)
@@ -78,6 +80,19 @@ instance HasChaosTokenValue MachinationsThroughTime where
 
 instance RunMessage MachinationsThroughTime where
   runMessage msg s@(MachinationsThroughTime attrs) = runQueueT $ scenarioI18n $ case msg of
+    ScenarioSpecific "machinationsThroughTime.abduct" (maybeResult -> Just aid) -> do
+      isEdwin <- aid <=~> assetIs Assets.edwinBennetAstuteAssociate
+      let event = if isEdwin then "edwinWouldBeAbducted" else "wouldAbduct"
+      wouldDo
+        msg
+        (Window.ScenarioEvent event Nothing $ toJSON aid)
+        (Window.ScenarioEvent "abducted" Nothing $ toJSON aid)
+      pure s
+    DoBatch _ (ScenarioSpecific "machinationsThroughTime.abduct" (maybeResult -> Just aid)) -> do
+      card <- fetchCard aid
+      removeFromGame (AssetTarget aid)
+      setCardAside card
+      pure s
     PreScenarioSetup -> scope "intro" do
       flavor $ h "title" >> p "body"
       pure s
@@ -92,8 +107,8 @@ instance RunMessage MachinationsThroughTime where
       setup $ ul do
         li "gatherSets"
         li "corriganIndustries"
-        li "placeLocations"
-        li "startAt"
+        li.nested "placeLocations" do
+          li "startAt"
         li "nobleLegacy"
         li "machination"
         li "plot"
@@ -131,12 +146,16 @@ instance RunMessage MachinationsThroughTime where
 
       startAt tindalos
 
+      lead <- getLead
       -- A Noble Legacy (Past, Present, Future)
-      placeStory Stories.aNobleLegacyPast
+      past <- placeStoryCapture Stories.aNobleLegacyPast
+      leadChooseOneM $ targeting past $ flipOver lead past
       assetAt_ Assets.nikolaTesla riverDocksPast
-      placeStory Stories.aNobleLegacyPresent
+      present <- placeStoryCapture Stories.aNobleLegacyPresent
+      leadChooseOneM $ targeting present $ flipOver lead present
       assetAt_ Assets.ezraGraves arkhamAdvertiserPresent
-      placeStory Stories.aNobleLegacyFuture
+      future <- placeStoryCapture Stories.aNobleLegacyFuture
+      leadChooseOneM $ targeting future $ flipOver lead future
       setAside [Assets.dimensionalBeamMachine]
 
       -- Choose one Machination story at random
@@ -144,7 +163,7 @@ instance RunMessage MachinationsThroughTime where
         sample
           $ Stories.aBitterRivalry
           :| [Stories.redeemAFormerColleague, Stories.uneasyAlliance]
-      placeStory machination
+      machinationStory <- placeStoryCapture machination
       removeEvery
         $ deleteFirst
           machination
@@ -152,6 +171,7 @@ instance RunMessage MachinationsThroughTime where
 
       if
         | machination == Stories.aBitterRivalry -> do
+            leadChooseOneM $ targeting machinationStory nothing
             setAside
               [ Assets.thomasCorriganPast
               , Assets.thomasCorriganPresent
@@ -162,6 +182,7 @@ instance RunMessage MachinationsThroughTime where
             setAside [Enemies.edwinBennetBitterAdversary]
             assetAt_ Assets.maryZielinskiPast arkhamGazette
         | machination == Stories.redeemAFormerColleague -> do
+            leadChooseOneM $ targeting machinationStory $ flipOver lead machinationStory
             setAside
               [ Assets.maryZielinskiPast
               , Assets.thomasCorriganPresent
@@ -172,6 +193,7 @@ instance RunMessage MachinationsThroughTime where
             assetAt_ Assets.thomasCorriganPast childhoodHome
             enemyAt_ Enemies.edwinBennetBitterAdversary miskatonicUniversityPresent
         | otherwise -> do
+            leadChooseOneM $ targeting machinationStory $ flipOver lead machinationStory
             -- Uneasy Alliance
             setAside
               [ Assets.thomasCorriganPresent
@@ -190,7 +212,7 @@ instance RunMessage MachinationsThroughTime where
         sample
           $ Stories.anomaliesInSpacetime
           :| [Stories.mobTroubles, Stories.unspeakableAbomination]
-      placeStory plot
+      plotStory <- placeStoryCapture plot
       removeEvery
         $ deleteFirst
           plot
@@ -198,11 +220,11 @@ instance RunMessage MachinationsThroughTime where
 
       if
         | plot == Stories.anomaliesInSpacetime -> do
+            leadChooseOneM $ targeting plotStory $ flipOver lead plotStory
             removeEvery [Enemies.tyrthrha, Enemies.oldSadieSheldon, Enemies.sheldonGang]
-            anomalies <- perPlayer 1
-            universities <- select $ LocationWithTitle "Miskatonic University"
-            for_ universities \lid -> placeTokens ScenarioSource lid #horror anomalies
+            doStep 1 Setup
         | plot == Stories.mobTroubles -> do
+            leadChooseOneM $ targeting plotStory nothing
             setAside
               [ Enemies.oldSadieSheldon
               , Enemies.sheldonGang
@@ -212,6 +234,7 @@ instance RunMessage MachinationsThroughTime where
             removeEvery [Enemies.tyrthrha]
             eachInvestigator \iid -> gainResources iid ScenarioSource 2
         | otherwise -> do
+            leadChooseOneM $ targeting plotStory nothing
             -- Unspeakable Abomination
             setAside [Enemies.tyrthrha]
             removeEvery [Enemies.oldSadieSheldon, Enemies.sheldonGang]
@@ -225,6 +248,12 @@ instance RunMessage MachinationsThroughTime where
           Hard -> 1
           Expert -> 2
       placeDoomOnAgenda (max 0 (doomCount + difficultyDoom))
+    DoStep 1 Setup -> do
+      selectForMaybeM (storyIs Stories.anomaliesInSpacetime) flippedOver
+      anomalies <- perPlayer 1
+      universities <- select $ LocationWithTitle "Miskatonic University"
+      for_ universities \lid -> placeTokens ScenarioSource lid #horror anomalies
+      pure s
     ResolveChaosToken _ Cultist iid -> do
       atTindalos <- iid <=~> InvestigatorAt (locationIs Locations.tindalos)
       when atTindalos failSkillTest
@@ -235,8 +264,8 @@ instance RunMessage MachinationsThroughTime where
         when (notNull allies) do
           chooseTargetM iid allies \ally -> do
             chooseOneM iid $ withI18n do
-              countVar 1 $ labeled' "dealDamage" $ dealAssetDamage ally ElderThing 1
-              countVar 1 $ labeled' "dealHorror" $ dealAssetHorror ally ElderThing 1
+              countVar 1 $ labeled "dealDamage" $ dealAssetDamage ally ElderThing 1
+              countVar 1 $ labeled "dealHorror" $ dealAssetHorror ally ElderThing 1
       pure s
     ScenarioResolution r -> scope "resolutions" do
       case r of
@@ -277,7 +306,7 @@ rewardAssets (MachinationsThroughTime _attrs) = do
     for_ minPlay \aid -> do
       card <- field Field.AssetCard aid
       chooseOneM lead $ withI18n do
-        labeled' "skip" nothing
+        labeled "skip" nothing
         questionLabeledCard def
         portraits investigators \iid -> do
           removeFromGame aid

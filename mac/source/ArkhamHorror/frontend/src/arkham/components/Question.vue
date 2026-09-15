@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { useDbCardStore } from '@/stores/dbCards'
-import { chaosTokenImage } from '@/arkham/types/ChaosToken';
+import { chaosTokenImage, type ChaosToken } from '@/arkham/types/ChaosToken';
 import { useI18n } from 'vue-i18n';
 import { useDebouncedRef } from '@/composable/debouncedRef';
-import { handleEmbeddedI18n } from '@/arkham/i18n';
+import { handleEmbeddedI18n, parseInput } from '@/arkham/i18n';
 import { formatCost } from '@/arkham/cost';
 import { choiceRequiresModal, MessageType, CardLabel, ChaosTokenLabel, type Message, type TargetLabel } from '@/arkham/types/Message';
 import { computed, inject, ref, watch, onMounted } from 'vue';
@@ -25,6 +25,8 @@ import CardImage from '@/arkham/components/CardImage.vue';
 import type { FlavorText } from '@/arkham/types/FlavorText'
 import { setCurrentNarration } from '@/arkham/narration'
 import { flavorTextNarration } from '@/arkham/narrationText'
+import CardPoolPicker from '@/arkham/components/CardPoolPicker.vue';
+import { cardPoolForLabelKey } from '@/arkham/cardPools';
 
 export interface Props {
   game: Game
@@ -33,9 +35,9 @@ export interface Props {
 }
 
 const grunge = `url(${imgsrc('grunge.png')})`
-const black_fleur = `url(${imgsrc('fleur.png')})`
-const checkpoint_fleur = `url(${imgsrc('checkpoint_fleur.png')})`
-const resolution_fleur = `url(${imgsrc('resolution_fleur.png')})`
+const black_fleur = `url(${imgsrc('fleurs/fleur.png')})`
+const checkpoint_fleur = `url(${imgsrc('fleurs/checkpoint_fleur.png')})`
+const resolution_fleur = `url(${imgsrc('fleurs/resolution_fleur.png')})`
 const props = withDefaults(defineProps<Props>(), { isSkillTest: false })
 const emit = defineEmits(['choose'])
 const { t, locale } = useI18n()
@@ -55,6 +57,8 @@ const inSkillTest = computed(() => props.game.skillTest !== null)
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 const toChoiceEntry = (c: Message, idx: number): [Message, number] => [c, idx]
 const questionChoices = computed(() => {
+  if (props.game.question[props.playerId]?.tag === QuestionType.CHOOSE_ONE_WIZARD) return []
+
   const withoutDone = choices.value.map(toChoiceEntry).filter(([choice, _]) => {
     const { tag } = choice
     if (tag === MessageType.ABILITY_LABEL) return !abilityLabelHandledElsewhere(choice)
@@ -65,6 +69,7 @@ const questionChoices = computed(() => {
     if (tag === MessageType.INVALID_LABEL) return true
     if (tag === MessageType.SKILL_LABEL) return true
     if (tag === MessageType.SKILL_LABEL_WITH_LABEL) return true
+    if (tag === MessageType.CONNECTION_LABEL) return true
     if (tag === MessageType.COST_LABEL) return true
 
     return false
@@ -91,6 +96,35 @@ watch(
   },
   { immediate: true },
 )
+const wizardQuestion = computed(() =>
+  question.value?.tag === QuestionType.CHOOSE_ONE_WIZARD ? question.value : null
+)
+const wizardSelectedIndex = ref<number | null>(null)
+const wizardFlavorText = computed(() => {
+  if (!wizardQuestion.value) return null
+  if (wizardSelectedIndex.value === null) return wizardQuestion.value.flavorText
+  return wizardQuestion.value.wizardChoices[wizardSelectedIndex.value]?.flavorText ?? null
+})
+const wizardDisplayChoices = computed<[Message, number][]>(() => {
+  if (!wizardQuestion.value) return []
+  const labels = wizardSelectedIndex.value === null
+    ? wizardQuestion.value.wizardChoices.map((choice) => choice.label)
+    : [wizardQuestion.value.confirmLabel, wizardQuestion.value.backLabel]
+  return labels.map((choiceLabel, index) => [
+    { tag: MessageType.LABEL, label: choiceLabel },
+    index,
+  ])
+})
+const chooseWizard = (index: number) => {
+  if (!wizardQuestion.value) return
+  if (wizardSelectedIndex.value === null) {
+    wizardSelectedIndex.value = index
+  } else if (index === 0) {
+    emit('choose', wizardSelectedIndex.value)
+  } else if (index === 1) {
+    wizardSelectedIndex.value = null
+  }
+}
 const focusedChaosTokens = computed(() => props.game.focusedChaosTokens)
 
 // A multi-token reveal opens a separate reaction window for each token. Read the
@@ -124,6 +158,9 @@ type SearchedCardGroup = {
   zone: string
   label: string
   cards: ArkhamCard[]
+  // Placeholder group for a deck the search can be extended into: no cards,
+  // just a button that submits the choice at this index.
+  extendIndex?: number
 }
 
 function searchedZoneLabel(zone: string, source: 'player' | 'encounter') {
@@ -137,10 +174,81 @@ function searchedZoneLabel(zone: string, source: 'player' | 'encounter') {
   return zoneToLabel(zone)
 }
 
+const cardOwner = (card: ArkhamCard): string | null => toCardContents(card).owner ?? null
+
+function ownerName(owner: string): string {
+  const inv = props.game.investigators[owner] ?? props.game.otherInvestigators[owner]
+  return inv?.name.title ?? owner
+}
+
+function ownerZoneLabel(owner: string, zone: string): string {
+  const name = ownerName(owner)
+  switch (zone) {
+    case 'FromDeck': return t('fromInvestigatorDeck', { name })
+    case 'FromHand': return t('fromInvestigatorHand', { name })
+    case 'FromDiscard': return t('fromInvestigatorDiscard', { name })
+    default: return searchedZoneLabel(zone, 'player')
+  }
+}
+
 const searchedCards = computed<SearchedCardGroup[]>(() => {
-  const playerCards = Object.entries(investigator.value?.foundCards ?? {})
+  const foundEntries = Object.entries(investigator.value?.foundCards ?? {})
     .filter(([, cards]) => cards.length > 0)
-    .map(([zone, cards]) => ({ key: `player-${zone}`, zone, label: searchedZoneLabel(zone, 'player'), cards }))
+
+  // When a search spans other investigators' zones (e.g. Leah Atwood Codex 2),
+  // each card carries its owner id. Split each zone by owner when any card
+  // belongs to someone other than the searching investigator; otherwise keep
+  // the plain "From Deck/Hand/Discard". The searcher's own groups keep plain
+  // labels; other investigators' groups are labeled with their name.
+  const activeId = investigator.value?.id
+  const foreignOwner = foundEntries.some(([, cards]) =>
+    cards.some((card) => cardOwner(card) !== null && cardOwner(card) !== activeId))
+
+  // Decks the search can be extended into (choices targeting LabeledTarget
+  // "extendSearchDeck") render as placeholder sections: no cards, just a
+  // button. They share the key and sort position of the real "From X's Deck"
+  // group, so extending fills the section in place instead of re-laying-out.
+  const extendPlaceholders = choices.value.flatMap((choice, index) => {
+    if (choice.tag !== MessageType.TARGET_LABEL) return []
+    const target = choice.target
+    if (target.tag !== 'LabeledTarget' || target.label !== 'extendSearchDeck') return []
+    if (target.innerTag !== 'InvestigatorTarget' || typeof target.contents !== 'string') return []
+    return [{ owner: target.contents, extendIndex: index }]
+  })
+
+  let playerCards: SearchedCardGroup[]
+  if (!foreignOwner && extendPlaceholders.length === 0) {
+    playerCards = foundEntries.map(([zone, cards]) => ({ key: `player-${zone}`, zone, label: searchedZoneLabel(zone, 'player'), cards }))
+  } else {
+    // Groups are ordered: yours first, then other investigators by name,
+    // zone-ordered Hand / Discard / Deck within each owner (a deck — real or
+    // placeholder — closes out its owner's cluster).
+    const zoneOrder = ['FromHand', 'FromDiscard', 'FromDeck']
+    const ownerRank = (o: string | null) => (o === activeId ? 0 : o === null ? 2 : 1)
+    const split: { owner: string | null; zone: string; cards: ArkhamCard[]; extendIndex?: number }[] = []
+    for (const [zone, cards] of foundEntries) {
+      const byOwner = new Map<string | null, ArkhamCard[]>()
+      for (const card of cards) {
+        const owner = cardOwner(card)
+        byOwner.set(owner, [...(byOwner.get(owner) ?? []), card])
+      }
+      for (const [owner, ownerCards] of byOwner) split.push({ owner, zone, cards: ownerCards })
+    }
+    for (const { owner, extendIndex } of extendPlaceholders) {
+      split.push({ owner, zone: 'FromDeck', cards: [], extendIndex })
+    }
+    split.sort((a, b) =>
+      ownerRank(a.owner) - ownerRank(b.owner)
+      || (a.owner && b.owner ? ownerName(a.owner).localeCompare(ownerName(b.owner)) : 0)
+      || zoneOrder.indexOf(a.zone) - zoneOrder.indexOf(b.zone))
+    playerCards = split.map(({ owner, zone, cards, extendIndex }) => ({
+      key: `player-${owner ?? 'unowned'}-${zone}`,
+      zone,
+      label: owner === null || owner === activeId ? searchedZoneLabel(zone, 'player') : ownerZoneLabel(owner, zone),
+      cards,
+      extendIndex,
+    }))
+  }
 
   const encounterCards = Object.entries({
     ...(props.game.scenario?.foundCards ?? {}),
@@ -153,11 +261,10 @@ const searchedCards = computed<SearchedCardGroup[]>(() => {
 })
 
 const focusedCards = computed(() => {
-  if (searchedCards.value.length > 0) {
-    return []
-  }
-
-  return props.game.focusedCards
+  const searchedCardIds = new Set(
+    searchedCards.value.flatMap((group) => group.cards.map((card) => toCardContents(card).id)),
+  )
+  return props.game.focusedCards.filter((card) => !searchedCardIds.has(toCardContents(card).id))
 })
 
 function zoneTag(zone: unknown): string | null {
@@ -236,6 +343,45 @@ const isSummitDeckView = computed(() =>
     && question.value.label.includes('searchTheSpires.')
 )
 
+// Setup questions that build a set-aside pool from your own deck (Joe Diamond's
+// hunch deck, Underworld Market, Stick to the Plan) get their own panel so the
+// destination -- and how much of it is left -- is obvious.
+const cardPoolPick = computed(() => {
+  const q = question.value
+  if (q?.tag !== QuestionType.QUESTION_LABEL || !q.label.startsWith('$')) return null
+  const { key, params } = parseInput(q.label)
+  const pool = cardPoolForLabelKey(key)
+  if (!pool) return null
+
+  // ChooseN re-asks with the count decremented, so it is its own progress
+  // counter. One-at-a-time picks (ChooseUpToN) carry `remaining` on the label.
+  const remaining = q.question.tag === QuestionType.CHOOSE_N
+    ? q.question.amount
+    : typeof params.remaining === 'number' ? params.remaining : null
+  if (remaining === null) return null
+
+  return { pool, remaining, chosen: pool.chosen(props.game, props.playerId) }
+})
+
+// The cards the pool question is actually offering. Taking them from the
+// choices rather than from every revealed card keeps a deck-wide search (Stick
+// to the Plan) from showing cards that cannot be picked.
+const cardPoolCandidates = computed(() => {
+  const byId = new Map<string, ArkhamCard>()
+  for (const card of [...focusedCards.value, ...searchedCards.value.flatMap((g) => g.cards)]) {
+    byId.set(toCardContents(card).id, card)
+  }
+
+  return choices.value.flatMap((choice) => {
+    if (choice.tag !== MessageType.TARGET_LABEL) return []
+    const { target } = choice
+    if (target.tag !== 'CardIdTarget' || typeof target.contents !== 'string') return []
+    const card = byId.get(target.contents)
+    return card ? [card] : []
+  })
+})
+
+const cardPoolActive = computed(() => cardPoolPick.value !== null && cardPoolCandidates.value.length > 0)
 const focusedCardGroups = computed<SearchedCardGroup[]>(() => {
   if (focusedCardsForGroups.value.length === 0) return []
 
@@ -265,16 +411,78 @@ const focusedCardGroups = computed<SearchedCardGroup[]>(() => {
   }))
 })
 
-const visibleCardIds = computed(() => new Set([
-  ...(investigator.value?.hand ?? []).map((card) => toCardContents(card).id),
-  ...focusedCards.value.map((card) => toCardContents(card).id),
-  ...searchedCards.value.flatMap((group) => group.cards.map((card) => toCardContents(card).id)),
-  ...(props.game.scenario?.victoryDisplay ?? []).map((card) => toCardContents(card).id),
-  ...Object.values(props.game.assets).flatMap((asset) => asset.cardsUnderneath.map((card) => toCardContents(card).id)),
-  // Committed cards are rendered (and clickable) by CommittedSkills, so a
-  // CardIdTarget on one must not also fall through to a generic Continue button.
-  ...(props.game.skillTest?.committedCards ?? []).map((card) => toCardContents(card).id),
-]))
+const cardIds = (cards: ArkhamCard[]) => cards.map((card) => toCardContents(card).id)
+
+const cardChoiceHandledElsewhereIds = computed(() => {
+  const scenario = props.game.scenario
+
+  return new Set([
+    ...(investigator.value?.hand ?? []).map((card) => toCardContents(card).id),
+    ...Object.values(props.game.investigators).flatMap((i) => [
+      ...i.discard.map((card) => card.id),
+      ...cardIds(i.cardsUnderneath),
+    ]),
+    ...focusedCards.value.map((card) => toCardContents(card).id),
+    ...searchedCards.value.flatMap((group) => cardIds(group.cards)),
+    ...cardIds(props.game.removedFromPlay),
+    ...Object.values(props.game.assets).flatMap((asset) => cardIds(asset.cardsUnderneath)),
+    ...Object.values(props.game.events).flatMap((event) => cardIds(event.cardsUnderneath)),
+    ...Object.values(props.game.locations).flatMap((location) => cardIds(location.cardsUnderneath)),
+    ...Object.values(props.game.acts).flatMap((act) => cardIds(act.cardsUnderneath)),
+    ...(scenario ? [
+      ...scenario.discard.map((card) => card.id),
+      ...cardIds(scenario.victoryDisplay),
+      ...cardIds(scenario.setAsideCards),
+      ...cardIds(scenario.cardsUnderScenarioReference),
+      ...cardIds(scenario.cardsUnderAgendaDeck),
+      ...cardIds(scenario.cardsUnderActDeck),
+      ...cardIds(scenario.cardsNextToAgendaDeck),
+      ...cardIds(scenario.cardsNextToActDeck),
+      ...scenario.deckDiscards.flatMap(([, cards]) => cardIds(cards)),
+    ] : []),
+    // Committed cards are rendered (and clickable) by CommittedSkills, so a
+    // CardIdTarget on one must not also fall through to a generic Continue button.
+    ...(props.game.skillTest?.committedCards ?? []).map((card) => toCardContents(card).id),
+  ])
+})
+
+// Scarlet keys draw their own ability buttons next to the key art. Collect the
+// keys that are actually on screen, so a key with no anchor still falls through
+// to the generic button list instead of losing its ability entirely.
+const renderedScarletKeyIds = computed(() => {
+  const ids = new Set<string>()
+  const add = (keys?: string[]) => keys?.forEach((id) => ids.add(id))
+
+  Object.values(props.game.investigators).forEach((i) => add(i.scarletKeys))
+  Object.values(props.game.enemies).forEach((e) => add(e.scarletKeys))
+  Object.values(props.game.assets).forEach((a) => add(a.scarletKeys))
+  Object.values(props.game.locations).forEach((l) =>
+    l.scarletKeys?.forEach((id) => {
+      if (props.game.scarletKeys[id]?.placement.tag === 'AttachedToLocation') ids.add(id)
+    })
+  )
+  Object.values(props.game.scarletKeys).forEach((k) => {
+    if (k.placement.tag === 'NextToAct') ids.add(k.id)
+  })
+
+  return ids
+})
+
+// Skills draw their own ability buttons on the skill card, wherever it is shown:
+// a player's play area, an enemy it is attached to, or the committed-cards row
+// of the skill test (matched there by card id).
+const renderedSkillIds = computed(() => {
+  const ids = new Set<string>()
+  Object.values(props.game.investigators).forEach((i) => i.skills.forEach((id) => ids.add(id)))
+  Object.values(props.game.enemies).forEach((e) => e.skills.forEach((id) => ids.add(id)))
+
+  const committed = new Set((props.game.skillTest?.committedCards ?? []).map((c) => toCardContents(c).id))
+  Object.values(props.game.skills).forEach((s) => {
+    if (committed.has(s.cardId)) ids.add(s.id)
+  })
+
+  return ids
+})
 
 function abilityLabelHandledElsewhere(choice: Message) {
   if (choice.tag !== MessageType.ABILITY_LABEL) return false
@@ -299,16 +507,39 @@ function abilitySourceHandledElsewhere(source: any) {
     case 'TreacherySource': return source.contents in props.game.treacheries
     case 'ActSource': return source.contents in props.game.acts
     case 'AgendaSource': return source.contents in props.game.agendas
-    case 'EventSource': return source.contents in props.game.events || visibleCardIds.value.has(source.contents)
+    case 'EventSource': return source.contents in props.game.events || cardChoiceHandledElsewhereIds.value.has(source.contents)
     case 'StorySource': return source.contents in props.game.stories
     case 'InvestigatorSource': return source.contents in props.game.investigators || source.contents in props.game.otherInvestigators
+    case 'ScarletKeySource': return renderedScarletKeyIds.value.has(source.contents)
+    case 'SkillSource': return renderedSkillIds.value.has(source.contents)
     default: return false
   }
 }
 
+// Chaos tokens that already have a clickable representation on the board: everything
+// SealedChaosTokens mounts (investigators, assets, enemies, locations). Token.vue turns
+// those into active tokens for a matching TargetLabel, so the modal needs no button.
+const boardChaosTokenIds = computed(() => {
+  const ids = new Set<string>()
+  const add = (tokens: ChaosToken[] | undefined) => tokens?.forEach((token) => ids.add(token.id))
+
+  Object.values(props.game.investigators).forEach((i) => add(i.sealedChaosTokens))
+  Object.values(props.game.assets).forEach((a) => add(a.sealedChaosTokens))
+  Object.values(props.game.enemies).forEach((e) => add(e.sealedChaosTokens))
+  Object.values(props.game.locations).forEach((l) => {
+    add(l.sealedChaosTokens)
+    add(l.placedChaosTokens)
+  })
+
+  return ids
+})
+
 function targetLabelHandledElsewhere(choice: TargetLabel) {
   const target = choice.target
   const contents = target.contents
+
+  // Rendered as placeholder deck groups inside the searched-cards modal.
+  if (target.tag === 'LabeledTarget' && target.label === 'extendSearchDeck') return true
 
   if (typeof contents === 'string') {
     switch (target.tag) {
@@ -325,14 +556,15 @@ function targetLabelHandledElsewhere(choice: TargetLabel) {
       case 'ScarletKeyTarget': return contents in props.game.scarletKeys
       case 'ConcealedCardTarget':
       case 'ConcealedTarget': return contents in props.game.concealed
-      case 'CardIdTarget': return visibleCardIds.value.has(contents)
+      case 'CardIdTarget': return cardChoiceHandledElsewhereIds.value.has(contents)
       case 'ChaosTokenFaceTarget': return props.game.focusedChaosTokens.some((token) => token.face === contents)
       default: return false
     }
   }
 
   if (target.tag === 'ChaosTokenTarget' && typeof contents === 'object' && contents !== null && 'id' in contents) {
-    return props.game.focusedChaosTokens.some((token) => token.id === contents.id)
+    const id = contents.id as string
+    return props.game.focusedChaosTokens.some((token) => token.id === id) || boardChaosTokenIds.value.has(id)
   }
 
   return false
@@ -354,13 +586,18 @@ const label = function(body: string) {
   return formatContent(handleEmbeddedI18n(body, t))
 }
 
+const payCostLabel = function(costValue: Parameters<typeof formatCost>[0]) {
+  const cost = formatCost(costValue, t)
+  return cost.startsWith('Spend ') ? cost : t('label.cost.pay', { cost })
+}
+
 const paymentAmountsLabel = computed(() => {
   if (question.value?.tag === QuestionType.CHOOSE_PAYMENT_AMOUNTS) {
     return label(question.value.label)
   }
 
   if (question.value?.tag === QuestionType.PAY_COST_QUESTION && question.value.question.tag === QuestionType.CHOOSE_PAYMENT_AMOUNTS) {
-    return label(t('label.cost.pay', { cost: formatCost(question.value.cost, t) }))
+    return label(payCostLabel(question.value.cost))
   }
 
   return null
@@ -407,14 +644,14 @@ const chooseAmountsChoices = computed<AmountChoice[]>(() => {
 const amountSelections = ref<Record<string, number>>({})
 
 const setInitialAmounts = () => {
-    const labels = question.value?.tag === QuestionType.CHOOSE_AMOUNTS
-      ? question.value.amountChoices.map((choice) => choice.choiceId)
-      : (paymentAmountsChoices.value ?? []).map((choice) => choice.choiceId)
-    amountSelections.value = labels.reduce<Record<string, number>>((previousValue, currentValue) => {
-      previousValue[currentValue] = 0
-      return previousValue
-    }, {})
-  }
+  const amountChoices = chooseAmountsChoices.value.length > 0
+    ? chooseAmountsChoices.value
+    : paymentAmountsChoices.value
+  amountSelections.value = amountChoices.reduce<Record<string, number>>((selections, choice) => {
+    selections[choice.choiceId] = 0
+    return selections
+  }, {})
+}
 
 const doneLabel = computed(() => {
   const doneIndex = choices.value.findIndex((c) => c.tag === MessageType.DONE)
@@ -446,8 +683,8 @@ const traumaKind = (text: string) => {
 
 const traumaIcon = (text: string) => {
   switch (traumaKind(text)) {
-    case 'health': return imgsrc('health-icon.png')
-    case 'horror': return imgsrc('horror-icon.png')
+    case 'health': return imgsrc('icons/health-icon.png')
+    case 'horror': return imgsrc('icons/horror-icon.png')
     default: return null
   }
 }
@@ -475,9 +712,16 @@ onMounted(() => {
   void store.initDbCards()
 })
 
+// Polling while decks are being chosen replaces the decoded question object even
+// when the server-side question has not changed. Reset only when the question
+// version or owner changes so an in-progress amount entry is preserved.
 watch(
-  () => props.game.question[props.playerId],
-  setInitialAmounts)
+  [() => props.game.scenarioSteps, () => props.playerId],
+  () => {
+    setInitialAmounts()
+    wizardSelectedIndex.value = null
+  },
+)
 
 const unmetAmountRequirements = computed(() => {
   const q = question.value
@@ -628,6 +872,23 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
 
 <template>
   <div class='question-wrapper' data-game-actionable="true">
+    <template v-if="wizardFlavorText">
+      <div class="intro-text">
+        <div class="intro-text-body">
+          <FormattedEntry
+            v-for="(paragraph, index) in wizardFlavorText.body"
+            :key="index"
+            :entry="paragraph"
+          />
+        </div>
+      </div>
+      <QuestionChoices
+        :choices="wizardDisplayChoices"
+        :game="game"
+        :playerId="playerId"
+        @choose="chooseWizard"
+      />
+    </template>
     <ChaosBagChoice v-if="chaosBagChoice" :choice="chaosBagChoice" :game="game" :playerId="playerId" @choose="choose" />
     <div v-if="cardPiles.length > 0" class="cardPiles">
       <div v-for="{pile, index} in cardPiles" :key="index" class="card-pile" @click="choose(index)">
@@ -713,7 +974,7 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
         <img :src="questionImage" class="card" />
       </div>
 
-      <legend>{{ t('label.cost.pay', { cost: formatCost(question.cost, t) }) }}</legend>
+      <legend>{{ payCostLabel(question.cost) }}</legend>
       <DropDown @choose="choose" :options="question.question.options" />
     </div>
 
@@ -740,7 +1001,19 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
         </div>
 
         <div class='question-content'>
-          <div v-if="focusedCardGroups.length > 0 && choices.length > 0" class="modal">
+          <CardPoolPicker
+            v-if="cardPoolActive && cardPoolPick"
+            :game="game"
+            :playerId="playerId"
+            :cards="cardPoolCandidates"
+            :chosen="cardPoolPick.chosen"
+            :remaining="cardPoolPick.remaining"
+            :titleKey="cardPoolPick.pool.titleKey"
+            :candidatesKey="cardPoolPick.pool.candidatesKey"
+            :accent="cardPoolPick.pool.accent"
+            @choose="$emit('choose', $event)"
+          />
+          <div v-else-if="focusedCardGroups.length > 0 && choices.length > 0" class="modal">
             <div class="modal-contents searched-cards focused-cards">
               <div v-for="group in focusedCardGroups" :key="group.key" class="group">
                 <h2>{{ group.label }}</h2>
@@ -762,11 +1035,16 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
               </div>
             </div>
           </div>
-          <div v-if="searchedCards.length > 0 && choices.length > 0" class="modal">
+          <div v-if="searchedCards.length > 0 && choices.length > 0 && !cardPoolActive" class="modal">
             <div class="modal-contents searched-cards">
               <div v-for="group in searchedCards" :key="group.key" class="group">
                 <h2>{{ group.label }}</h2>
-                <div class="group-cards">
+                <div v-if="group.extendIndex !== undefined" class="group-cards">
+                  <button class="extend-search" @click="choose(group.extendIndex)">
+                    {{ t('searchThisDeck') }}
+                  </button>
+                </div>
+                <div v-else class="group-cards">
                   <div
                     v-for="card in group.cards"
                     :key="`${group.key}-${toCardContents(card).id}`"
@@ -892,7 +1170,7 @@ const filteredCards = computed<{ choice: CardLabel; index: number }[]>(() => {
         <img :src="questionImage" class="card" />
       </div>
     </template>
-    <div v-if="doneLabel && doneIsFooter">
+    <div v-if="doneLabel && doneIsFooter" class="done-choice">
       <button class="done" @click="$emit('choose', doneLabel.index)" v-html="label(doneLabel.label)"></button>
     </div>
   </div>
@@ -957,6 +1235,7 @@ section {
   color: white;
   border: 1px solid #666;
   cursor: pointer;
+  transition: transform 80ms ease;
 }
 
 .button:hover {
@@ -966,6 +1245,7 @@ section {
 .button:active {
   background-color: #666;
   border-color: #111;
+  transform: scale(0.97);
 }
 
 .intro-text {
@@ -1365,8 +1645,8 @@ h2 {
   overflow: hidden;
   align-items: stretch;
   background: #735e7b;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 18px;
+  border: 0;
+  border-radius: 0;
 }
 
 .amount-form {
@@ -1572,6 +1852,33 @@ h2 {
 
 .searched-card {
   display: flex;
+}
+
+/* Placeholder group for a deck the search can be extended into */
+.extend-search {
+  flex: 1;
+  min-height: 64px;
+  padding: 10px 14px;
+  border: 1px dashed rgba(214, 205, 174, 0.4);
+  border-radius: 8px;
+  background: rgba(214, 205, 174, 0.06);
+  color: var(--title);
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.extend-search:hover {
+  background: rgba(214, 205, 174, 0.14);
+  border-color: rgba(214, 205, 174, 0.7);
+}
+
+/* Keep focus rings inside clipped panels without changing button spacing. */
+.done:focus-visible,
+:deep(.question-choices button:focus-visible),
+:deep(.question-choices a.button:focus-visible) {
+  outline-offset: -4px;
 }
 
 .done {
@@ -1929,8 +2236,13 @@ h2 {
   gap: 10px;
 }
 
-.question-wrapper:has(.haunted) {
+.question-wrapper:has(.haunted, .token-reveal) {
   gap: 0;
+
+  :deep(button:active:not(:disabled)),
+  :deep(a.button:active) {
+    transform: none !important;
+  }
 
   :deep(.question-choices) {
     gap: 0;
@@ -1942,6 +2254,9 @@ h2 {
     padding: 0;
   }
 
+}
+
+.question-wrapper:has(.haunted) {
   .done,
   :deep(.question-choices button),
   :deep(.question-choices a.button) {

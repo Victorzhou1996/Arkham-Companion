@@ -57,7 +57,6 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Trait (Trait (Ally))
 import Arkham.UltimatumsAndBoons.Types
 import Arkham.Window (mkAfter, revealedChaosTokens)
@@ -230,7 +229,7 @@ screamedAllyCleanupMessages iids = do
 @RunMessage@ catch-all (mirroring how tarot ability uses are dispatched).
 -}
 runUltimatumsAndBoonsMessage
-  :: (HasGame m, HasQueue Message m, Tracing m, CardGen m)
+  :: (HasGame m, HasQueue Message m, CardGen m)
   => Message
   -> m ()
 runUltimatumsAndBoonsMessage msg = case msg of
@@ -256,17 +255,14 @@ runUltimatumsAndBoonsMessage msg = case msg of
       -- Ultimatum of the Spiral: a defeated investigator's deck gains a
       -- random basic weakness.
       whenM (hasUltimatum UltimatumOfTheSpiral) do
-        investigatorClass <- field InvestigatorClass iid
-        playerCount <- getPlayerCount
-        weakness <-
-          genCard
-            =<< sampleRandomBasicWeakness
-              RandomBasicWeaknessContext
-                { rbwInvestigatorClass = investigatorClass
-                , rbwPlayerCount = playerCount
-                , rbwDecklist = Nothing
-                , rbwStandalone = False
-                }
+        ctx <-
+          RandomBasicWeaknessContext
+            <$> field InvestigatorClass iid
+            <*> getPlayerCount
+            <*> field InvestigatorTaboo iid
+            <*> field InvestigatorCardPool iid
+            <*> getIsStandalone
+        weakness <- genCard =<< sampleRandomBasicWeakness ctx
         push $ AddCampaignCardToDeck iid DoNotShuffleIn weakness
   -- Ultimatum of The Scream: a defeated unique non-story, non-weakness ally
   -- is removed from the game and banned for the rest of the campaign.
@@ -396,7 +392,7 @@ the card database), so the choices are independent per player.
 one message shape covers both @InitDeck@ call sites.
 -}
 morriganWeaknessMessages
-  :: (HasGame m, MonadRandom m, Tracing m)
+  :: (HasGame m, MonadRandom m)
   => InvestigatorId
   -> m Card
   -> m [Message]

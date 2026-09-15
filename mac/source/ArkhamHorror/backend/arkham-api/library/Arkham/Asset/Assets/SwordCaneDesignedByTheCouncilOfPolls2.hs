@@ -44,7 +44,7 @@ instance RunMessage SwordCaneDesignedByTheCouncilOfPolls2 where
       enemies <- select $ enemyEngagedWith iid <> EnemyCanBeDamagedBySource (attrs.ability 2)
 
       chooseOneM iid do
-        (cardI18n $ labeled' "swordCaneDesignedByTheCouncilOfPolls2.doNotDealDamage") nothing
+        (cardI18n $ labeled "swordCaneDesignedByTheCouncilOfPolls2.doNotDealDamage") nothing
         targets enemies (nonAttackEnemyDamage (Just iid) (attrs.ability 2) 1)
 
       push $ UseCardAbility iid (toSource attrs) 2 windows' payments
@@ -61,20 +61,14 @@ instance RunMessage SwordCaneDesignedByTheCouncilOfPolls2 where
           chooseOneM iid do
             for_ [#willpower, #agility] \sk -> do
               skillLabeled sk
-                $ chooseEvadeEnemyEdit
-                  sid
-                  iid
-                  source
-                  (\ce -> ce {chooseEvadeSkillType = sk, chooseEvadeIsAction = True, chooseEvadePayCost = False})
+                $ chooseEvadeEnemyEdit sid iid source \ce ->
+                  ce {chooseEvadeSkillType = sk, chooseEvadeIsAction = True, chooseEvadePayCost = False}
         when canFight $ labeledI "fight" do
           narrowTakenActions [#evade]
           chooseOneM iid do
             for_ [#willpower, #combat] \sk -> do
               skillLabeled sk
-                $ chooseFightEnemyEdit
-                  sid
-                  iid
-                  source
-                  (\cf -> cf {chooseFightSkillType = sk, chooseFightIsAction = True, chooseFightPayCost = False})
+                $ chooseFightEnemyEdit sid iid source \cf ->
+                  cf {chooseFightSkillType = sk, chooseFightIsAction = True, chooseFightPayCost = False}
       pure a
     _ -> SwordCaneDesignedByTheCouncilOfPolls2 <$> liftRunMessage msg attrs

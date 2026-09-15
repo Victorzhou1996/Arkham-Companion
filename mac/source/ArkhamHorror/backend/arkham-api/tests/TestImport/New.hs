@@ -47,6 +47,7 @@ import Arkham.Helpers.Investigator qualified as Helpers
 import Arkham.Helpers.Message qualified as Helpers
 import Arkham.Helpers.Playable
 import Arkham.Helpers.Use (asStartingUses)
+import Arkham.I18n
 import Arkham.Investigate.Types
 import Arkham.Investigator.Types qualified as Field
 import Arkham.Keyword qualified as Keyword
@@ -109,7 +110,8 @@ useAbility i a = run $ UseAbility (toId i) a []
 
 clickLabel :: Text -> TestAppT ()
 clickLabel txt = chooseOptionMatching (T.unpack txt) \case
-  Label label _ -> label == txt
+  -- i18n vars ride along as "$key var=...", compare the key
+  Label label _ -> T.takeWhile (/= ' ') label == T.takeWhile (/= ' ') txt
   _ -> False
 
 useReaction :: HasCallStack => TestAppT ()
@@ -522,7 +524,7 @@ chooseSkill :: HasCallStack => SkillType -> TestAppT ()
 chooseSkill sType =
   chooseOptionMatching "choose self" \case
     SkillLabel sType' _ -> sType == sType'
-    Label lbl _ -> lookup lbl labeledSkills == Just sType
+    Label lbl _ -> lbl == withI18n (skillVar sType $ "$" <> labelKey "chooseSkill")
     _ -> False
 
 evadedBy :: Enemy -> Investigator -> TestAppT Bool
@@ -702,7 +704,32 @@ withEach xs f = for_ xs $ withRewind . f
 commit :: (HasCallStack, IsCard card) => card -> TestAppT ()
 commit = chooseTarget . toCardId
 
--- | Assert that no pending question offers a reaction from this source.
+{- | Commit a card on behalf of an investigator who is not performing the test.
+Their commit options live under their own key in the question map, so
+'commit' (which looks at the active question) can't reach them.
+-}
+commitFor :: (HasCallStack, IsCard card) => Investigator -> card -> TestAppT ()
+commitFor i (toCardId -> cid) = do
+  pid <- getPlayer (toId i)
+  questionMap <- gameQuestion <$> getGame
+  case lookup pid questionMap of
+    Just q -> go q
+    Nothing -> error "no commit question for that investigator"
+ where
+  go q = case stripQuestionWrappers q of
+    ChooseOne msgs -> case find isMatching msgs of
+      Just msg -> push (uiToRun msg) >> runMessages
+      Nothing -> error "card not in commit options"
+    _ -> error "expected ChooseOne for commit question"
+  isMatching = \case
+    TargetLabel (CardIdTarget c) _ -> c == cid
+    _ -> False
+
+{- | Like 'assertNoReaction', but scoped to a single source and scanning every
+pending question rather than requiring exactly one. Use this when another
+investigator may hold the window open, so the absence being asserted is real
+rather than an artifact of there being no question at all.
+-}
 assertNoReactionOf :: (HasCallStack, Sourceable source) => source -> TestAppT ()
 assertNoReactionOf (toSource -> source) = do
   questionMap <- gameQuestion <$> getGame
@@ -719,7 +746,33 @@ assertNoReactionOf (toSource -> source) = do
       _ -> False
   case find isReaction (concatMap (choicesOf . snd) (mapToList questionMap)) of
     Nothing -> pure ()
-    Just choice -> expectationFailure $ "expected no reaction from " <> show source <> ", but found:\n\n" <> show choice
+    Just choice ->
+      expectationFailure
+        $ "expected no reaction from "
+        <> show source
+        <> ", but found:\n\n"
+        <> show choice
+
+{- | Like 'assertNoReactionOf', but matches any ability from the source, forced
+abilities included. A forced trigger that fires for the wrong investigator shows
+up as an 'AbilityLabel' in someone's pending question, not as a reaction.
+-}
+assertNoAbilityOf :: (HasCallStack, Sourceable source) => source -> TestAppT ()
+assertNoAbilityOf (toSource -> source) = do
+  questionMap <- gameQuestion <$> getGame
+  let
+    choicesOf question = case stripQuestionWrappers question of
+      ChooseOne msgs -> msgs
+      PlayerWindowChooseOne msgs -> msgs
+      WindowChooseOne msgs -> msgs
+      _ -> []
+    isAbility = \case
+      AbilityLabel {ability} -> abilitySource ability == source
+      _ -> False
+  case find isAbility (concatMap (choicesOf . snd) (mapToList questionMap)) of
+    Nothing -> pure ()
+    Just choice ->
+      expectationFailure $ "expected no ability from " <> show source <> ", but found:\n\n" <> show choice
 
 assertNoReaction :: TestAppT ()
 assertNoReaction = do
@@ -739,6 +792,25 @@ assertNoReaction = do
   case find isReaction choices of
     Nothing -> pure ()
     Just choice -> expectationFailure $ "expected no reaction, but found:\n\n" <> show choice
+
+{- | Assert that the skill test cannot be started yet, e.g. because a card with
+a compulsion to commit is still uncommitted.
+-}
+assertCannotStartSkillTest :: TestAppT ()
+assertCannotStartSkillTest = do
+  questionMap <- gameQuestion <$> getGame
+  let
+    choicesOf question = case stripQuestionWrappers question of
+      ChooseOne msgs -> msgs
+      PlayerWindowChooseOne msgs -> msgs
+      _ -> []
+    isStart = \case
+      StartSkillTestButton {} -> True
+      _ -> False
+  case find isStart (concatMap (choicesOf . snd) (mapToList questionMap)) of
+    Nothing -> pure ()
+    Just choice ->
+      expectationFailure $ "expected to be unable to start the skill test, but found:\n\n" <> show choice
 
 moveAllTo :: Location -> TestAppT ()
 moveAllTo = run . Old.moveAllTo
@@ -761,6 +833,9 @@ assertTarget (toTarget -> target) = do
         EnemyTarget eid' -> eid == eid'
         _ -> False
       FightLabelWithSkill eid _ _ -> case target of
+        EnemyTarget eid' -> eid == eid'
+        _ -> False
+      EvadeLabel eid _ -> case target of
         EnemyTarget eid' -> eid == eid'
         _ -> False
       _ -> False
@@ -787,6 +862,9 @@ assertNotTarget (toTarget -> target) = do
         EnemyTarget eid' -> eid == eid'
         _ -> False
       FightLabel eid _ -> case target of
+        EnemyTarget eid' -> eid == eid'
+        _ -> False
+      EvadeLabel eid _ -> case target of
         EnemyTarget eid' -> eid == eid'
         _ -> False
       _ -> False
@@ -936,9 +1014,10 @@ assertMaxAmountChoice n = do
     TotalAmountTarget _ -> expectationFailure "expected MaxAmountTarget"
     AmountOneOf _ -> expectationFailure "expected MaxAmountTarget"
 
--- | Resolve a "spend up to" cost (a 'PayCostQuestion' wrapping a single-choice
--- 'ChoosePaymentAmounts', e.g. Watch This' additional cost). Asserts the
--- offered maximum equals @expectedMax@, then pays @amount@ units of it.
+{- | Resolve a "spend up to" cost (a 'PayCostQuestion' wrapping a single-choice
+'ChoosePaymentAmounts', e.g. Watch This' additional cost). Asserts the
+offered maximum equals @expectedMax@, then pays @amount@ units of it.
+-}
 payUpTo :: HasCallStack => Int -> Int -> TestAppT ()
 payUpTo expectedMax amount = do
   questionMap <- gameQuestion <$> getGame

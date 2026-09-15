@@ -1,4 +1,5 @@
 import * as JsonDecoder from 'ts.data.json';
+import { cardImgPath } from '@/arkham/helpers';
 import { Tokens } from '@/arkham/types/Token';
 import { customizationsDecoder, Customization } from '@/arkham/types/Customization';
 import { v2Optional } from '@/arkham/parser';
@@ -62,12 +63,12 @@ export function cardId(card: Card | CardContents): string {
 
 export function cardImage(card: Card | CardContents) {
   if (cardFacedown(card)) {
-    return card.tag === 'PlayerCard' || card.tag === 'CardContents' ? 'player_back.jpg' : 'encounter_back.jpg'
+    return card.tag === 'PlayerCard' || card.tag === 'CardContents' ? 'backs/back_player.jpg' : 'backs/back_encounter.jpg'
   }
   const side = cardIsFlipped(card) ? 'b' : ''
   // TODO, send art with cards next to
-  const art = cardArt(card) || asCardCode(card).replace('c', '')
-  return `cards/${art}${side}.avif`
+  const art = cardArt(card) || asCardCode(card).replace(/^c/, '')
+  return cardImgPath(`${art}${side}`)
 }
 
 export function toCardContents(card: Card | CardContents): CardContents {
@@ -97,6 +98,8 @@ export type CardContents = {
   mutated?: string
   chained?: string
   meta?: Record<string, any>
+  // owner === searching investigator => their own zone; another id => that
+  // investigator's zone; null/absent => the scenario "Abyss" deck (owner-less).
   owner?: string
 }
 

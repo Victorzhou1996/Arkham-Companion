@@ -9,9 +9,7 @@ messages, read back with 'stored'); the whole module is additionally gated to
 achievement-eligible campaigns so base Dunwich Legacy games don't accumulate
 tracker keys in their store.
 -}
-module Arkham.Campaign.Campaigns.TheDunwichLegacy.Achievements (
-  runDunwichAchievements,
-) where
+module Arkham.Campaign.Campaigns.TheDunwichLegacy.Achievements (runDunwichAchievements) where
 
 import Arkham.Achievement
 import Arkham.Asset.Cards qualified as Assets
@@ -21,16 +19,22 @@ import Arkham.CampaignLogKey
 import Arkham.Campaigns.TheDunwichLegacy.Key
 import Arkham.Card (CardDef, toCardCode, toCardDef)
 import Arkham.ChaosToken (ChaosTokenFace (..))
-import Arkham.Classes.Entity (toAttrs)
+import Arkham.Classes.Entity (toAttrs, toId)
 import Arkham.Classes.HasGame
 import Arkham.Classes.HasQueue
 import Arkham.Classes.Query
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.ReturnToTheDunwichLegacy.ReturnToLostInTimeAndSpace qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDunwichLegacy.ExtracurricularActivity qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDunwichLegacy.TheMiskatonicMuseum qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDunwichLegacy.WhereDoomAwaits qualified as Enemies
+import Arkham.Enemy.CardDefs.TheDunwichLegacy.Whippoorwills qualified as Enemies
 import Arkham.Enemy.Types (Field (..))
 import Arkham.Game.Base
+import Arkham.Game.Settings (activeUltimatumsAndBoons)
 import Arkham.Helpers.Campaign (stored)
 import Arkham.Helpers.ChaosBag (getAllChaosTokens)
+import Arkham.Helpers.History (HistoryField (..), getAllHistoryField)
 import Arkham.Helpers.Log (getHasRecord, getRecordSet)
 import Arkham.Id
 import Arkham.Investigator.Types (Field (..))
@@ -39,14 +43,13 @@ import Arkham.Message
 import Arkham.Message qualified as Msg
 import Arkham.Prelude
 import Arkham.Projection
-import Arkham.Resolution
 import Arkham.Target
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.TheDunwichLegacy.Sorcery qualified as Treacheries
+import Arkham.UltimatumsAndBoons.Types
 import Data.Aeson.Key qualified as Key
 
 runDunwichAchievements
-  :: (HasGame m, HasQueue Message m, Tracing m) => Message -> m ()
+  :: (HasGame m, HasQueue Message m) => Message -> m ()
 runDunwichAchievements msg = whenEligibleCampaign $ case msg of
   -- "First Rule of Arkham": the lead chose to burn the Necronomicon when act 4
   -- advanced (only The Miskatonic Museum's Resolution 1 writes this record).
@@ -105,6 +108,10 @@ runDunwichAchievements msg = whenEligibleCampaign $ case msg of
       earnAchievement $ TheDunwichLegacyAchievement TabulaRasa
 
     g <- getGame
+    -- "Dunwich Line in the Sand": win with at least 3 Ultimatums active.
+    let ultimatums = length [u | Ultimatum u <- toList $ activeUltimatumsAndBoons (gameSettings g)]
+    when (ultimatums >= 3) do
+      earnAchievement $ TheDunwichLegacyAchievement DunwichLineInTheSand
     -- "Dunwich Expertise": win on Expert.
     let mDifficulty = campaignDifficulty . toAttrs <$> currentCampaign (gameMode g)
     when (mDifficulty == Just Expert) do
@@ -140,16 +147,18 @@ runDunwichAchievements msg = whenEligibleCampaign $ case msg of
       whenM (selectAny $ assetIs Assets.naomiOBannionRuthlessTactician <> AssetControlledBy Anyone) do
         earnAchievement $ TheDunwichLegacyAchievement RemindMeNotToPissHerOff
 
-    -- "Bird Hunting": 3 Whippoorwills defeated in a single turn (counter
-    -- resets on the turn boundaries below).
+    -- "Bird Hunting": 3 Whippoorwills defeated in a single turn. Counted off
+    -- the turn history instead of a campaign-store counter: a store write rides
+    -- the queue, and a batch of simultaneous defeats (Stir the Pot damaging
+    -- every enemy at once) loses all but the first bump. 'runGameMessage'
+    -- records this defeat after the campaign sees 'Defeated', so add it in.
     when (cardDef == Enemies.whippoorwill) do
-      kills <- storedInt whippoorwillKillsKey
-      setStore whippoorwillKillsKey (kills + 1)
-      when (kills + 1 >= 3) do
+      defeated <- getAllHistoryField #turn HistoryEnemiesDefeated
+      let
+        isBird = (== Enemies.whippoorwill) . toCardDef . toAttrs
+        birds = length (filter isBird defeated) + (if any ((== eid) . toId) defeated then 0 else 1)
+      when (birds >= 3) do
         earnAchievement $ TheDunwichLegacyAchievement BirdHunting
-  BeginTurn _ -> setStore whippoorwillKillsKey (0 :: Int)
-  EndTurn _ -> setStore whippoorwillKillsKey (0 :: Int)
-
   -- "All Aboard": no Helpless Passenger may leave play in The Essex County
   -- Express. Every leave-play path (defeat, or its train car being removed)
   -- routes through a Discard of the asset; rescuing (taking control) does
@@ -199,24 +208,24 @@ whenEligibleCampaign body = do
   let eligible = achievementCampaigns $ TheDunwichLegacyAchievement AllAboard
   when (maybe False (`elem` eligible) mCampaignId) body
 
-checkHereWeGoAgain :: (HasGame m, HasQueue Message m, Tracing m) => m ()
+checkHereWeGoAgain :: (HasGame m, HasQueue Message m) => m ()
 checkHereWeGoAgain = do
   allInPlay <- and <$> traverse (selectAny . assetIs) professors
   when allInPlay do
     earnAchievement $ TheDunwichLegacyAchievement HereWeGoAgain
 
-checkNoVoidForYou :: (HasGame m, HasQueue Message m, Tracing m) => m ()
+checkNoVoidForYou :: (HasGame m, HasQueue Message m) => m ()
 checkNoVoidForYou = do
   defeated <- fromMaybe False <$> stored @Bool huntingHorrorDefeatedKey
   unless defeated do
     earnAchievement $ TheDunwichLegacyAchievement NoVoidForYou
 
-flagPassengerLeft :: (HasGame m, HasQueue Message m, Tracing m) => AssetId -> m ()
+flagPassengerLeft :: (HasGame m, HasQueue Message m) => AssetId -> m ()
 flagPassengerLeft aid =
   whenM (selectAny $ AssetWithId aid <> assetIs Assets.helplessPassenger) do
     setStore passengerLeftPlayKey True
 
-whenEssexCountyExpress :: (HasGame m, Tracing m) => m () -> m ()
+whenEssexCountyExpress :: HasGame m => m () -> m ()
 whenEssexCountyExpress body = do
   mSid <- selectOne TheScenario
   when (maybe False (`elem` theEssexCountyExpressIds) mSid) body
@@ -240,13 +249,9 @@ professors = [Assets.drHenryArmitage, Assets.professorWarrenRice, Assets.drFranc
 -- Campaign store plumbing. Writes go through the queue ('SetGlobal' is
 -- handled by the campaign runner); reads see all previously processed writes.
 
-huntingHorrorDefeatedKey, passengerLeftPlayKey, whippoorwillKillsKey :: Text
+huntingHorrorDefeatedKey, passengerLeftPlayKey :: Text
 huntingHorrorDefeatedKey = "dunwichAchHuntingHorrorDefeated"
 passengerLeftPlayKey = "dunwichAchPassengerLeftPlay"
-whippoorwillKillsKey = "dunwichAchWhippoorwillKills"
 
 setStore :: (HasQueue Message m, ToJSON a) => Text -> a -> m ()
 setStore k v = push $ SetGlobal CampaignTarget (Key.fromText k) (toJSON v)
-
-storedInt :: (HasCallStack, HasGame m, Tracing m) => Text -> m Int
-storedInt k = fromMaybe 0 <$> stored k

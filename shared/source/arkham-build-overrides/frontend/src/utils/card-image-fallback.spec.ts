@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { cardImageFallbackUrls } from "./card-utils";
+import { arkhamImageUrl, cardImageFallbackUrls } from "./card-utils";
 
 describe("card image fallbacks in embedded Arkham Horror mode", () => {
+  it("versions local card scans without changing other image paths", () => {
+    expect(arkhamImageUrl("zh/cards/01014.avif")).toContain("/img/arkham/zh/cards/01014.avif?v=cards-20260913");
+    expect(arkhamImageUrl("portraits/03001.jpg")).not.toContain("?v=");
+  });
   it("keeps historical taboo scans exact instead of substituting the base card", () => {
     expect(cardImageFallbackUrls("01033-10", "optimized")).toEqual([
       "https://assets.arkham.build/optimized/01033-10.avif",

@@ -15,6 +15,7 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as TE
 import Data.UUID (nil)
 import Entity.Arkham.Game
+import Entity.Arkham.Deck (arkhamDeckOverlay, arkhamDeckLastUsedAt)
 
 spec :: Spec
 spec = describe "campaign deck metadata" do
@@ -53,6 +54,16 @@ spec = describe "campaign deck metadata" do
             pure value
       filter (`Map.notMember` allPlayerCards) codes `shouldBe` []
       notes `shouldSatisfy` maybe False (not . Text.null)
+
+  it "initializes the new fields on registration starter decks" do
+    case Aeson.fromJSON (Aeson.Number 1) of
+      Aeson.Error err -> expectationFailure err
+      Aeson.Success userId -> do
+        let decks = Registration.starterDecks userId
+        length decks `shouldBe` 2
+        for_ decks \deck -> do
+          arkhamDeckOverlay deck `shouldSatisfy` isNothing
+          arkhamDeckLastUsedAt deck `shouldBe` Nothing
 
 gameId :: ArkhamGameId
 gameId = ArkhamGameKey nil

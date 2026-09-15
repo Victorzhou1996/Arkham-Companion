@@ -90,6 +90,16 @@ data AppSettings = AppSettings
     , appMailtrapApiToken :: Token
     , appBugsnagApiKey :: Text
     , appAssetHost :: Maybe Text
+    , appCustomCardArtDir :: Maybe FilePath
+    -- ^ Persistent custom card art, served by this deployment at /img/custom/.
+    -- Production must configure this directory; uploads never use upstream S3.
+    , appWebsocketCompression :: Bool
+    -- ^ permessage-deflate on the game/event websockets. Defaults on; it takes
+    -- a 206 KB 'PublicGame' update to ~33 KB. It is also the one thing on that
+    -- path that costs CPU and allocation per message, and the load only shows
+    -- up under real concurrency, so keep it switchable in production without a
+    -- rebuild: @ARKHAM_WS_COMPRESSION=false@. See
+    -- 'Api.Handler.Arkham.Games.Shared.websocketConnectionOptions'.
     }
 
 instance FromJSON AppSettings where
@@ -118,7 +128,13 @@ instance FromJSON AppSettings where
         appMailtrapApiToken <- o .: "mailtrap-api-token"
         appBugsnagApiKey <- o .: "bugsnag-api-token"
         appAssetHost <- o .:? "asset-host"
-
+        mArtDir <- o .:? "custom-card-art-dir"
+        let appCustomCardArtDir = case mArtDir of
+                Just "" -> if dev then Just "../../frontend/public/img/custom" else Nothing
+                Just dir -> Just dir
+                -- Relative to the api package, which is where it is run from.
+                Nothing -> if dev then Just "../../frontend/public/img/custom" else Nothing
+        appWebsocketCompression <- o .:? "websocket-compression" .!= True
         pure AppSettings {..}
 
 -- | Raw bytes at compile time of @config/settings.yml@

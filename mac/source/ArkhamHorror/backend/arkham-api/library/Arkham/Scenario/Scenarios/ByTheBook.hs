@@ -1,18 +1,19 @@
 module Arkham.Scenario.Scenarios.ByTheBook (byTheBook, ByTheBook (..)) where
 
-import Arkham.Act.Cards qualified as Acts
-import Arkham.Agenda.Cards qualified as Agendas
+import Arkham.Act.CardDefs.ByTheBook qualified as Acts
+import Arkham.Agenda.CardDefs.ByTheBook qualified as Agendas
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Card
 import Arkham.ChaosToken
 import Arkham.Classes
 import Arkham.Difficulty
 import Arkham.EncounterSet qualified as Set
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.ByTheBook qualified as Enemies
 import Arkham.Helpers.ChaosBag (getBagChaosTokens)
 import Arkham.Helpers.EncounterSet
 import Arkham.Helpers.FlavorText
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.ByTheBook qualified as Locations
+import Arkham.Location.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Locations
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Modifier (ModifierType (StartingHand))
@@ -20,7 +21,8 @@ import Arkham.Resolution
 import Arkham.Scenario.Import.Lifted
 import Arkham.Scenarios.ByTheBook.Helpers
 import Arkham.Trait qualified as Trait
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot qualified as Treacheries
+import Arkham.Treachery.CardDefs.Standalone qualified as Treacheries
 
 {- FOURMOLU_DISABLE -}
 easyTokens, standardTokens, hardTokens, expertTokens :: [ChaosTokenFace]
@@ -132,10 +134,10 @@ instance RunMessage ByTheBook where
             conspirators <- traverse (setFacedown True) =<< shuffle pool
             zipWithM_ (\lid c -> placeUnderneath lid [c]) conspiratorLocations conspirators
       scenarioI18n $ leadChooseOneM do
-        labeled' "returnTo.include" do
+        labeled "returnTo.include" do
           returnEnemies <- map toCard <$> gatherEncounterSet Set.ReturnCultOfUmordhoth
           placeConspirators (cultistEnemies <> returnEnemies)
-        labeled' "returnTo.exclude" $ placeConspirators cultistEnemies
+        labeled "returnTo.exclude" $ placeConspirators cultistEnemies
 
       selectOne rolandBanks >>= traverse_ \roland -> gainClues roland ScenarioSource 1
     ResolveChaosToken _ Cultist iid -> do
@@ -173,7 +175,7 @@ instance RunMessage ByTheBook where
             faces <- sort . nub . filter isNumberChaosToken . map (.face) <$> getBagChaosTokens
             for_ mRoland \roland ->
               chooseOneM roland do
-                questionLabeled' "removeChaosToken"
+                questionLabeled "removeChaosToken"
                 for_ faces \face -> chaosTokenLabeled face $ push $ RemoveChaosToken face
           mrGreyCaptured <- selectAny $ VictoryDisplayCardMatch $ basic $ cardIs Enemies.mrGrey
           when mrGreyCaptured $ for_ mRoland \roland -> do
@@ -181,13 +183,13 @@ instance RunMessage ByTheBook where
             hasAdvancedCoverUp <- hasDeckCard roland Treacheries.coverUpAdvanced
             when (hasRolands38Special || hasAdvancedCoverUp) do
               chooseOneM roland do
-                questionLabeled' "advancedReward"
-                labeled' "doNotSwap" nothing
+                questionLabeled "advancedReward"
+                labeled "doNotSwap" nothing
                 when hasRolands38Special do
-                  labeled' "upgradeRolands38Special"
+                  labeled "upgradeRolands38Special"
                     $ swapCampaignCard roland Assets.rolands38Special Assets.rolands38SpecialAdvanced
                 when hasAdvancedCoverUp do
-                  labeled' "downgradeCoverUp"
+                  labeled "downgradeCoverUp"
                     $ swapCampaignCard roland Treacheries.coverUpAdvanced Treacheries.coverUp
           endOfScenario
         Resolution 2 -> do
@@ -199,10 +201,10 @@ instance RunMessage ByTheBook where
             hasAdvancedRolands38Special <- hasDeckCard roland Assets.rolands38SpecialAdvanced
             case (hasCoverUp, hasAdvancedRolands38Special) of
               (True, True) -> chooseOneM roland do
-                questionLabeled' "advancedPenalty"
-                labeled' "upgradeCoverUp"
+                questionLabeled "advancedPenalty"
+                labeled "upgradeCoverUp"
                   $ swapCampaignCard roland Treacheries.coverUp Treacheries.coverUpAdvanced
-                labeled' "downgradeRolands38Special"
+                labeled "downgradeRolands38Special"
                   $ swapCampaignCard roland Assets.rolands38SpecialAdvanced Assets.rolands38Special
               (True, False) -> swapCampaignCard roland Treacheries.coverUp Treacheries.coverUpAdvanced
               (False, True) ->

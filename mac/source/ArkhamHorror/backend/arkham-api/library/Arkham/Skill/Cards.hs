@@ -1,6 +1,7 @@
 module Arkham.Skill.Cards (module Arkham.Skill.Cards, module X) where
 
 import Arkham.Skill.CardDefs.Base as X
+import Arkham.Homebrew.Defs qualified as Homebrew
 import Arkham.Skill.CardDefs.NightOfTheZealot as X
 import Arkham.Skill.CardDefs.TheDunwichLegacy as X
 import Arkham.Skill.CardDefs.ThePathToCarcosa as X
@@ -22,7 +23,7 @@ import Arkham.Card.CardDef
 import Arkham.Prelude
 
 allPlayerSkillCards :: Map CardCode CardDef
-allPlayerSkillCards =
+allPlayerSkillCards = (Homebrew.playerSkillsMap <>) $
   mapFromList
     $ concatMap
       toCardCodePairs

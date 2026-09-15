@@ -1,9 +1,8 @@
-{-# OPTIONS_GHC -Wno-unused-record-wildcards -Wno-unused-imports -Wno-unused-matches -Wno-missing-signatures -Wno-orphans #-}
 {-# LANGUAGE TypeAbstractions #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-unused-record-wildcards -Wno-unused-imports -Wno-unused-matches -Wno-missing-signatures -Wno-orphans #-}
 
 module Arkham.Investigator.Runner.Card where
-
 
 import Arkham.Ability as X hiding (PaidCost)
 import Arkham.ChaosToken as X
@@ -31,7 +30,6 @@ import Arkham.Action (Action)
 import Arkham.Action qualified as Action
 import Arkham.Action.Additional
 import Arkham.Actions (actionsToList)
-import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types (Field (..))
 import Arkham.Campaign.Option
 import Arkham.CampaignLog
@@ -84,7 +82,7 @@ import Arkham.Helpers.Cost (getCanAffordCost, getSpendableResources, hasSkillTes
 import Arkham.Helpers.Criteria (passesCriteria)
 import Arkham.Helpers.Deck qualified as Deck
 import Arkham.Helpers.Discover
-import Arkham.Helpers.Game (withAlteredGame)
+import Arkham.Helpers.Game (getRemovedFromPlayCards, withAlteredGame)
 import Arkham.Helpers.Location (
   getCanMoveTo,
   getCanMoveToMatchingLocations,
@@ -121,12 +119,12 @@ import Arkham.History
 import Arkham.I18n (countVar, ikey', withI18n)
 import Arkham.Investigate.Types
 import {-# SOURCE #-} Arkham.Investigator
+import Arkham.Investigator.Runner.Damage
 import Arkham.Investigator.Types qualified as Attrs
 import Arkham.Key
 import Arkham.Keyword (Keyword (Starting))
 import Arkham.Location.Types (Field (..))
 import Arkham.Matcher (
-  basic,
   AssetMatcher (..),
   CardMatcher (..),
   EnemyMatcher (..),
@@ -141,6 +139,7 @@ import Arkham.Matcher (
   assetControlledBy,
   assetIs,
   at_,
+  basic,
   cardIs,
   colocatedWith,
   enemyEngagedWith,
@@ -161,7 +160,6 @@ import Arkham.Modifier qualified as Modifier
 import Arkham.Movement
 import Arkham.Phase
 import Arkham.Placement
-import Arkham.Plural
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.ScenarioLogKey
@@ -173,8 +171,6 @@ import Arkham.Slot
 import Arkham.Timing qualified as Timing
 import Arkham.Token
 import Arkham.Token qualified as Token
-import Arkham.Tracing
-import Arkham.Treachery.Cards qualified as Treacheries
 import Arkham.Window (Window (..), defaultWindows, mkAfter, mkWhen, mkWindow, primaryWindowTarget)
 import Arkham.Window qualified as Window
 import Arkham.Zone qualified as Zone
@@ -186,32 +182,31 @@ import Data.Map.Strict qualified as Map
 import Data.Monoid
 import Data.Set qualified as Set
 import Data.UUID (nil)
-import Arkham.Investigator.Runner.Damage
 
-handleReturnToHand a@InvestigatorAttrs{..} iid aid = do
+handleReturnToHand a@InvestigatorAttrs {..} iid aid = do
   pushWhen (providedSlot a aid) $ RefillSlots a.id []
   pure $ a & (slotsL %~ removeFromSlots aid)
 
-handleReturnToHandV2 a@InvestigatorAttrs{..} iid aid = do
+handleReturnToHandV2 a@InvestigatorAttrs {..} iid aid = do
   pushWhen (providedSlot a aid) $ RefillSlots a.id []
   pure a
 
-handleReturnToHandV3 a@InvestigatorAttrs{..} iid cardId = do
+handleReturnToHandV3 a@InvestigatorAttrs {..} iid cardId = do
   card <- getCard cardId
   pushAll [ObtainCard card.id, AddToHand iid [card]]
   pure a
 
-handleReturnToHandV4 a@InvestigatorAttrs{..} iid matcher = do
+handleReturnToHandV4 a@InvestigatorAttrs {..} iid matcher = do
   cards <- select matcher
   for_ cards \card ->
     pushAll [ObtainCard card.id, AddToHand iid [card]]
   pure a
 
-handleShuffleDeck a@InvestigatorAttrs{..} iid = do
+handleShuffleDeck a@InvestigatorAttrs {..} iid = do
   deck' <- shuffle (unDeck investigatorDeck)
   pure $ a & deckL .~ Deck deck' & foundCardsL . at Zone.FromDeck .~ mempty
 
-handleShuffleDiscardBackIn a@InvestigatorAttrs{..} iid = do
+handleShuffleDiscardBackIn a@InvestigatorAttrs {..} iid = do
   mods <- getModifiers a
   if null investigatorDiscard || CardsCannotLeaveYourDiscardPile `elem` mods
     then pure a
@@ -219,7 +214,7 @@ handleShuffleDiscardBackIn a@InvestigatorAttrs{..} iid = do
       deck <- shuffle (investigatorDiscard <> coerce investigatorDeck)
       pure $ a & discardL .~ [] & deckL .~ Deck deck
 
-handleChooseAndDiscardAsset a@InvestigatorAttrs{..} iid source assetMatcher = do
+handleChooseAndDiscardAsset a@InvestigatorAttrs {..} iid source assetMatcher = do
   discardableAssetIds <- select $ assetControlledBy iid <> DiscardableAsset <> assetMatcher
   player <- getPlayer iid
   pushWhen (notNull discardableAssetIds)
@@ -227,7 +222,7 @@ handleChooseAndDiscardAsset a@InvestigatorAttrs{..} iid source assetMatcher = do
     $ targetLabels discardableAssetIds (Only . toDiscardBy iid source)
   pure a
 
-handleAddToDiscard a@InvestigatorAttrs{..} iid pc0 = do
+handleAddToDiscard a@InvestigatorAttrs {..} iid pc0 = do
   -- Normalize ownership to this investigator's canonical id. The card may have
   -- been imported under an alternate investigator code (e.g. a Revised Core
   -- printing), which would otherwise leave a mismatched owner on the discarded
@@ -250,7 +245,7 @@ handleAddToDiscard a@InvestigatorAttrs{..} iid pc0 = do
     & discardF
     & (foundCardsL . each %~ filter (/= PlayerCard pc))
 
-handleDiscardFromHand a@InvestigatorAttrs{..} handDiscard msg = do
+handleDiscardFromHand a@InvestigatorAttrs {..} handDiscard msg = do
   discardableHand <-
     select $ inHandOf NotForPlay investigatorId
       <> CardWithoutModifier CannotLeaveYourHand
@@ -260,7 +255,7 @@ handleDiscardFromHand a@InvestigatorAttrs{..} handDiscard msg = do
     pushAll [wouldDiscard, Do msg]
   pure a
 
-handleDoDiscardFromHand a@InvestigatorAttrs{..} handDiscard = do
+handleDoDiscardFromHand a@InvestigatorAttrs {..} handDiscard = do
   player <- getPlayer investigatorId
   let mkMsg card = case handDiscard.destination of
         ToDiscardPile -> DiscardCard investigatorId handDiscard.source (toCardId card)
@@ -313,14 +308,14 @@ handleDoDiscardFromHand a@InvestigatorAttrs{..} handDiscard = do
   push $ DoneDiscarding investigatorId
   pure $ a & discardingL ?~ handDiscard
 
-handleDiscard a@InvestigatorAttrs{..} source cardId = do
+handleDiscard a@InvestigatorAttrs {..} source cardId = do
   push (DiscardCard investigatorId source cardId)
   pure a
 
-handleDiscardV2 a@InvestigatorAttrs{..} cardId = do
+handleDiscardV2 a@InvestigatorAttrs {..} cardId = do
   pure $ a & foundCardsL . each %~ filter ((/= cardId) . toCardId)
 
-handleDiscardCard a@InvestigatorAttrs{..} iid source cardId msg = do
+handleDiscardCard a@InvestigatorAttrs {..} iid source cardId msg = do
   case find ((== cardId) . toCardId) investigatorHand of
     Just card -> do
       inMulligan <- getInMulligan
@@ -328,9 +323,18 @@ handleDiscardCard a@InvestigatorAttrs{..} iid source cardId msg = do
       afterWindowMsg <- checkWindows [mkAfter (Window.Discarded (Just iid) source card)]
       beforeHandWindowMsg <- checkWindows [mkWhen (Window.DiscardedFromHand iid source card)]
       afterHandWindowMsg <- checkWindows [mkAfter (Window.DiscardedFromHand iid source card)]
+      -- A bare DiscardCard outside a DiscardFromHand batch never reaches
+      -- DoneDiscarding, so it opens its own single-card batch window here.
+      batchWindowMsgs <-
+        if isJust investigatorDiscarding
+          then pure []
+          else pure <$> checkWindows [mkAfter (Window.DiscardedFromHandBatch iid source [card])]
       if inMulligan
         then push (Do msg)
-        else pushAll [beforeWindowMsg, beforeHandWindowMsg, Do msg, afterWindowMsg, afterHandWindowMsg]
+        else
+          pushAll
+            $ [beforeWindowMsg, beforeHandWindowMsg, Do msg, afterWindowMsg, afterHandWindowMsg]
+            <> batchWindowMsgs
     Nothing -> do
       card <- getCard cardId
       beforeWindowMsg <- checkWindows [mkWhen (Window.Discarded (Just iid) source card)]
@@ -338,7 +342,7 @@ handleDiscardCard a@InvestigatorAttrs{..} iid source cardId msg = do
       pushAll [beforeWindowMsg, Do msg, afterWindowMsg]
   pure a
 
-handleDoDiscardCard a@InvestigatorAttrs{..} iid cardId = do
+handleDoDiscardCard a@InvestigatorAttrs {..} iid cardId = do
   case find ((== cardId) . toCardId) investigatorHand of
     Just card -> case card of
       PlayerCard pc -> do
@@ -346,6 +350,7 @@ handleDoDiscardCard a@InvestigatorAttrs{..} iid cardId = do
           updateHandDiscard handDiscard =
             handDiscard
               { discardAmount = max 0 (discardAmount handDiscard - 1)
+              , discardBatchCards = discardBatchCards handDiscard <> [card]
               }
         push $ AddToDiscard iid pc
         pure $ a & handL %~ filter (/= card) & discardingL %~ fmap updateHandDiscard
@@ -355,17 +360,24 @@ handleDoDiscardCard a@InvestigatorAttrs{..} iid cardId = do
       push $ DiscardedCard cardId
       pure a
 
-handleDoneDiscarding a@InvestigatorAttrs{..} iid = case investigatorDiscarding of
+handleDoneDiscarding a@InvestigatorAttrs {..} iid = case investigatorDiscarding of
   Nothing -> pure a
   Just handDiscard -> do
+    -- One window for the whole discard: "discard 1 or more cards from hand" is a
+    -- single event, so responders must not fire once per card.
+    unless (null $ discardBatchCards handDiscard) do
+      batchWindowMsg <-
+        checkWindows
+          [mkAfter (Window.DiscardedFromHandBatch iid handDiscard.source (discardBatchCards handDiscard))]
+      push batchWindowMsg
     when (discardAmount handDiscard == 0)
       $ for_ (discardThen handDiscard) push
     pure $ a & discardingL .~ Nothing
 
-handleRemoveCardFromHand a@InvestigatorAttrs{..} iid cardId = do
+handleRemoveCardFromHand a@InvestigatorAttrs {..} iid cardId = do
   pure $ a & handL %~ filter ((/= cardId) . toCardId)
 
-handleShuffleIntoDeck a@InvestigatorAttrs{..} iid aid msg = do
+handleShuffleIntoDeck a@InvestigatorAttrs {..} iid aid msg = do
   if null investigatorDeck
     then do
       mIsDefeated <- fieldMay AssetIsDefeated aid
@@ -381,7 +393,7 @@ handleShuffleIntoDeck a@InvestigatorAttrs{..} iid aid msg = do
       pushWhen (providedSlot a aid) $ RefillSlots a.id []
       pure $ a & (slotsL %~ removeFromSlots aid)
 
-handleShuffleIntoDeckV2 a@InvestigatorAttrs{..} iid eid msg = do
+handleShuffleIntoDeckV2 a@InvestigatorAttrs {..} iid eid msg = do
   if null investigatorDeck
     then do
       placement <- field EventPlacement eid
@@ -394,7 +406,7 @@ handleShuffleIntoDeckV2 a@InvestigatorAttrs{..} iid eid msg = do
       pushWhen (providedSlot a eid) $ RefillSlots a.id []
   pure a
 
-handleShuffleIntoDeckV3 a@InvestigatorAttrs{..} iid aid msg = do
+handleShuffleIntoDeckV3 a@InvestigatorAttrs {..} iid aid msg = do
   card <- field SkillCard aid
   obtainCard card
   if toCardCode card == "06113"
@@ -407,40 +419,41 @@ handleShuffleIntoDeckV3 a@InvestigatorAttrs{..} iid aid msg = do
           push $ After msg
       pure a
 
-handleShuffleIntoDeckV4 a@InvestigatorAttrs{..} iid cid = do
+handleShuffleIntoDeckV4 a@InvestigatorAttrs {..} iid cid = do
   card <- getCard cid
   push $ ShuffleCardsIntoDeck (Deck.InvestigatorDeck iid) [card]
   pure a
 
-handlePutOnTopOfDeck a@InvestigatorAttrs{..} iid cid = do
+handlePutOnTopOfDeck a@InvestigatorAttrs {..} iid cid = do
   card <- getCard cid
   push $ PutCardOnTopOfDeck iid (Deck.InvestigatorDeck iid) card
   pure a
 
-handlePutOnBottomOfDeck a@InvestigatorAttrs{..} iid cid = do
+handlePutOnBottomOfDeck a@InvestigatorAttrs {..} iid cid = do
   card <- getCard cid
   push $ PutCardOnBottomOfDeck iid (Deck.InvestigatorDeck iid) card
   pure a
 
--- | An investigator "owns" a card when its owner is the investigator's canonical
--- id, or any of the investigator's card codes (primary or alternate).
---
--- The alternate-code match handles alternate printings such as the Revised Core
--- Set, where a card imported from the Revised decklist carries the Revised
--- investigator code (e.g. Roland @01501@) while the investigator entity keeps its
--- canonical id (e.g. @01001@).
---
--- The canonical-id match handles the inverse case, where the investigator's
--- current form differs from its true identity: in Yithian form 'toCardDef'
--- resolves to Body of a Yithian (@04244@), so its 'cardCodes' no longer contain
--- the investigator's own id while the cards remain owned by that canonical id.
--- Plain 'InvestigatorId' equality treats these as distinct, so without this the
--- owner-routed discard would never match and the card would be lost.
+{- | An investigator "owns" a card when its owner is the investigator's canonical
+id, or any of the investigator's card codes (primary or alternate).
+
+The alternate-code match handles alternate printings such as the Revised Core
+Set, where a card imported from the Revised decklist carries the Revised
+investigator code (e.g. Roland @01501@) while the investigator entity keeps its
+canonical id (e.g. @01001@).
+
+The canonical-id match handles the inverse case, where the investigator's
+current form differs from its true identity: in Yithian form 'toCardDef'
+resolves to Body of a Yithian (@04244@), so its 'cardCodes' no longer contain
+the investigator's own id while the cards remain owned by that canonical id.
+Plain 'InvestigatorId' equality treats these as distinct, so without this the
+owner-routed discard would never match and the card would be lost.
+-}
 investigatorOwnsCardCode :: InvestigatorAttrs -> InvestigatorId -> Bool
 investigatorOwnsCardCode a iid =
   iid == investigatorId a || unInvestigatorId iid `elem` (toCardDef a).cardCodes
 
-handleDiscarded a@InvestigatorAttrs{..} aid card = do
+handleDiscarded a@InvestigatorAttrs {..} aid card = do
   -- TODO: This message is ugly, we should do something different
   -- TODO: There are a number of messages here that mean the asset is no longer in play, we should consolidate to a singular message
   let slotAssets = concatMap (concatMap slotItems) (Map.elems investigatorSlots)
@@ -462,28 +475,32 @@ handleDiscarded a@InvestigatorAttrs{..} aid card = do
   -- Normalize ownership to this investigator's canonical id so the discarded
   -- copy doesn't retain a mismatched alternate-printing owner code.
   let discardedCard = card {pcOwner = Just investigatorId}
-  pure $ a & (if shouldDiscard then discardL %~ (discardedCard :) else id) & (slotsL %~ removeFromSlots aid)
-  -- Discarded _ _ (PlayerCard card) -> do
-  --   let shouldDiscard = pcOwner card == Just investigatorId && card `notElem` investigatorDiscard
-  --   if shouldDiscard
-  --     then pure $ a & discardL %~ (card :) & handL %~ filter (/= PlayerCard card)
-  --     else pure a
+  pure
+    $ a
+    & (if shouldDiscard then discardL %~ (discardedCard :) else id)
+    & (slotsL %~ removeFromSlots aid)
 
-handleDiscardedV2 a@InvestigatorAttrs{..} aid = do
+-- Discarded _ _ (PlayerCard card) -> do
+--   let shouldDiscard = pcOwner card == Just investigatorId && card `notElem` investigatorDiscard
+--   if shouldDiscard
+--     then pure $ a & discardL %~ (card :) & handL %~ filter (/= PlayerCard card)
+--     else pure a
+
+handleDiscardedV2 a@InvestigatorAttrs {..} aid = do
   pushWhen (providedSlot a aid) $ RefillSlots a.id []
   pure $ a & (slotsL %~ removeFromSlots aid)
 
-handleDiscardedV3 a@InvestigatorAttrs{..} aid = do
+handleDiscardedV3 a@InvestigatorAttrs {..} aid = do
   pushWhen (providedSlot a aid) $ RefillSlots a.id []
   pure a
 
-handleInitDeck a@InvestigatorAttrs{..} iid murl = do
+handleInitDeck a@InvestigatorAttrs {..} iid murl = do
   pure $ a & deckUrlL .~ murl
 
-handleUpgradeDeck a@InvestigatorAttrs{..} iid murl = do
+handleUpgradeDeck a@InvestigatorAttrs {..} iid murl = do
   pure $ a & deckUrlL .~ murl & spentXpL .~ investigatorXp
 
-handleObtainCard a@InvestigatorAttrs{..} cardId = do
+handleObtainCard a@InvestigatorAttrs {..} cardId = do
   pure
     $ a
     & (handL %~ filter ((/= cardId) . toCardId))
@@ -494,7 +511,7 @@ handleObtainCard a@InvestigatorAttrs{..} cardId = do
     & (bondedCardsL %~ filter ((/= cardId) . toCardId))
     & (decksL . each %~ filter ((/= cardId) . toCardId))
 
-handleReplaceCard a@InvestigatorAttrs{..} cardId card = do
+handleReplaceCard a@InvestigatorAttrs {..} cardId card = do
   let doReplace c = if c.id == cardId then card else c
   let
     doReplaceP c =
@@ -511,19 +528,24 @@ handleReplaceCard a@InvestigatorAttrs{..} cardId card = do
     & (bondedCardsL %~ map doReplace)
     & (decksL . each %~ map doReplace)
 
-handlePutCampaignCardIntoPlay a@InvestigatorAttrs{..} iid cardDef = do
-  let mcard = find ((== cardDef) . toCardDef) (unDeck investigatorDeck)
-  case mcard of
+handlePutCampaignCardIntoPlay a@InvestigatorAttrs {..} iid cardDef = do
+  -- The card may have been drawn into hand (e.g. an opening-hand draw) or
+  -- discarded before setup puts it into play, so search all three zones.
+  let candidates =
+        map PlayerCard (unDeck investigatorDeck)
+          <> investigatorHand
+          <> map PlayerCard investigatorDiscard
+  case find ((== cardDef) . toCardDef) candidates of
     Nothing ->
       sendError $ "The game expected to find "
         <> toTitle cardDef
         <> " in the deck of "
         <> toTitle a
         <> ", but was unable to find it."
-    Just card -> push $ PutCardIntoPlay iid (PlayerCard card) Nothing NoPayment []
+    Just card -> push $ PutCardIntoPlay iid card Nothing NoPayment []
   pure a
 
-handleRemoveAllCopiesOfCardFromGame a@InvestigatorAttrs{..} iid cardCode = do
+handleRemoveAllCopiesOfCardFromGame a@InvestigatorAttrs {..} iid cardCode = do
   assets <- select $ assetControlledBy iid
   for_ assets $ \assetId -> do
     cardCode' <- field AssetCardCode assetId
@@ -540,7 +562,7 @@ handleRemoveAllCopiesOfCardFromGame a@InvestigatorAttrs{..} iid cardCode = do
 
   pure a
 
-handlePutCardIntoPlay a@InvestigatorAttrs{..} card = do
+handlePutCardIntoPlay a@InvestigatorAttrs {..} card = do
   pure
     $ a
     & (deckL %~ Deck . filter ((/= card) . PlayerCard) . unDeck)
@@ -548,7 +570,16 @@ handlePutCardIntoPlay a@InvestigatorAttrs{..} card = do
     & (handL %~ filter (/= card))
     & (bondedCardsL %~ filter (/= card))
 
-handleDiscardTopOfDeck a@InvestigatorAttrs{..} iid n source mTarget = do
+removeCardFromZones :: Card -> InvestigatorAttrs -> InvestigatorAttrs
+removeCardFromZones card a =
+  a
+    & (handL %~ filter (/= card))
+    & (discardL %~ filter ((/= card) . PlayerCard))
+    & (deckL %~ Deck . filter ((/= card) . PlayerCard) . unDeck)
+    & (cardsUnderneathL %~ filter ((/= card) . toCard))
+    & (foundCardsL . each %~ filter (/= card))
+
+handleDiscardTopOfDeck a@InvestigatorAttrs {..} iid n source mTarget = do
   ok <- can.manipulate.deck iid
   if ok
     then do
@@ -561,7 +592,7 @@ handleDiscardTopOfDeck a@InvestigatorAttrs{..} iid n source mTarget = do
       pure a
     else pure a
 
-handleDoDiscardTopOfDeck a@InvestigatorAttrs{..} iid n source mTarget = do
+handleDoDiscardTopOfDeck a@InvestigatorAttrs {..} iid n source mTarget = do
   ok <- can.manipulate.deck iid
   if ok
     then do
@@ -592,7 +623,7 @@ handleDoDiscardTopOfDeck a@InvestigatorAttrs{..} iid n source mTarget = do
         & (foundCardsL . each %~ filter (`notElem` map toCard cs'))
     else pure a
 
-handleDrawStartingHand a@InvestigatorAttrs{..} iid = do
+handleDrawStartingHand a@InvestigatorAttrs {..} iid = do
   modifiers' <- getModifiers (toTarget a)
   if any (`elem` modifiers') [CannotDrawCards, CannotManipulateDeck]
     then pure a
@@ -610,7 +641,7 @@ handleDrawStartingHand a@InvestigatorAttrs{..} iid = do
         & (deckL .~ Deck deck)
         & (excludeFromMulliganL .~ preExistingHand)
 
-handleDrawCards a@InvestigatorAttrs{..} iid cardDraw = do
+handleDrawCards a@InvestigatorAttrs {..} iid cardDraw = do
   cid <- getRandom
   phase <- getPhase
   wouldDrawCard <-
@@ -644,20 +675,20 @@ handleDrawCards a@InvestigatorAttrs{..} iid cardDraw = do
         : [drawEncounterCardWindow | cardDraw.isEncounterDraw] <> [DoDrawCards iid, DrawEnded cid iid]
   pure $ a & drawingL ?~ cardDraw
 
-handleMoveTopOfDeckToBottom a@InvestigatorAttrs{..} iid n = do
+handleMoveTopOfDeckToBottom a@InvestigatorAttrs {..} iid n = do
   let (cards, deck) = draw n investigatorDeck
   pure $ a & deckL .~ Deck.withDeck (<> cards) deck
 
-handleDoDrawCards a@InvestigatorAttrs{..} iid = do
+handleDoDrawCards a@InvestigatorAttrs {..} iid = do
   for_ (a ^. drawingL) \d -> do
     push $ Do (DrawCards iid d)
     for_ (cardDrawAndThen d) push
   pure $ a & drawingL .~ Nothing
 
-handleReplaceCurrentCardDraw a@InvestigatorAttrs{..} iid drawing = do
+handleReplaceCurrentCardDraw a@InvestigatorAttrs {..} iid drawing = do
   pure $ a & drawingL ?~ drawing
 
-handleDoDrawCardsV2 a@InvestigatorAttrs{..} iid cardDraw = do
+handleDoDrawCardsV2 a@InvestigatorAttrs {..} iid cardDraw = do
   case cardDraw.kind of
     StartingHandCardDraw -> do
       modifiers' <- getModifiers (toTarget a)
@@ -806,10 +837,14 @@ handleDoDrawCardsV2 a@InvestigatorAttrs{..} iid cardDraw = do
               push $ continueDraw (n - length deck)
               pure $ a & deckL .~ mempty & drawnCardsL %~ (<> deck)
             else do
-              let (drawn, deck') = splitAt n deck
+              -- A bottom draw comes off the other end, bottom-most card first.
+              let (drawn, deck') = case cardDraw.position of
+                    DrawFromTop -> splitAt n deck
+                    DrawFromBottom ->
+                      let (kept, bottom) = splitAt (length deck - n) deck in (reverse bottom, kept)
               finalizedDraw (investigatorDrawnCards <> drawn) deck'
 
-handleInvestigatorDrewPlayerCardFrom a@InvestigatorAttrs{..} iid card mDeck msg = do
+handleInvestigatorDrewPlayerCardFrom a@InvestigatorAttrs {..} iid card mDeck msg = do
   hasForesight <- hasModifier iid (Foresight $ toTitle card)
   let uiRevelation = getPlayer iid >>= (`sendRevelation` (toJSON $ toCard card))
   -- Non-treachery revelation cards are shown when their CardIdSource
@@ -858,7 +893,7 @@ handleInvestigatorDrewPlayerCardFrom a@InvestigatorAttrs{..} iid card mDeck msg 
     else pushAll $ FocusCards [toCard card] : maybeToList mWhenDraw <> [UnfocusCards, Do msg]
   pure a
 
-handleDoInvestigatorDrewPlayerCardFrom a@InvestigatorAttrs{..} iid card mdeck = do
+handleDoInvestigatorDrewPlayerCardFrom a@InvestigatorAttrs {..} iid card mdeck = do
   afterDraw <-
     checkWindows [mkAfter $ Window.DrawCard iid (toCard card) (fromMaybe Deck.NoDeck mdeck)]
   inLimit <- passesLimits iid (toCard card)
@@ -907,20 +942,20 @@ handleDoInvestigatorDrewPlayerCardFrom a@InvestigatorAttrs{..} iid card mdeck = 
           & (discardL %~ cardFilter)
           & (bondedCardsL %~ cardFilter)
 
-handleEmptyDeck a@InvestigatorAttrs{..} iid = do
+handleEmptyDeck a@InvestigatorAttrs {..} iid = do
   modifiers' <- getModifiers (toTarget a)
   pushWhen (CardsCannotLeaveYourDiscardPile `notElem` modifiers')
     $ ShuffleDiscardBackIn iid
   pure a
 
-handleLoadDeck a@InvestigatorAttrs{..} iid deck = do
+handleLoadDeck a@InvestigatorAttrs {..} iid deck = do
   let deck' = flip map (unDeck deck) \card -> card {pcOwner = Just iid}
   pure $ a & deckL .~ Deck deck'
 
-handleLoadSideDeck a@InvestigatorAttrs{..} iid deck = do
+handleLoadSideDeck a@InvestigatorAttrs {..} iid deck = do
   pure $ a & sideDeckL ?~ deck
 
-handlePutCardOnTopOfDeck a@InvestigatorAttrs{..} iid card = do
+handlePutCardOnTopOfDeck a@InvestigatorAttrs {..} iid card = do
   case card of
     PlayerCard pc ->
       pure
@@ -936,7 +971,7 @@ handlePutCardOnTopOfDeck a@InvestigatorAttrs{..} iid card = do
     VengeanceCard _ ->
       error "Can not put vengeance card on top of investigator deck"
 
-handlePutCardOnTopOfDeckV2 a@InvestigatorAttrs{..} card = case card of
+handlePutCardOnTopOfDeckV2 a@InvestigatorAttrs {..} card = case card of
   PlayerCard pc ->
     pure
       $ a
@@ -947,7 +982,7 @@ handlePutCardOnTopOfDeckV2 a@InvestigatorAttrs{..} card = case card of
   EncounterCard _ -> pure $ a & handL %~ filter (/= card)
   VengeanceCard vcard -> pure $ a & handL %~ filter (/= vcard)
 
-handlePutCardOnBottomOfDeck a@InvestigatorAttrs{..} iid card = do
+handlePutCardOnBottomOfDeck a@InvestigatorAttrs {..} iid card = do
   case card of
     PlayerCard pc ->
       pure
@@ -961,7 +996,7 @@ handlePutCardOnBottomOfDeck a@InvestigatorAttrs{..} iid card = do
     VengeanceCard _ ->
       error "Can not put vengeance card on bottom of investigator deck"
 
-handlePutCardOnBottomOfDeckV2 a@InvestigatorAttrs{..} card = case card of
+handlePutCardOnBottomOfDeckV2 a@InvestigatorAttrs {..} card = case card of
   PlayerCard pc ->
     pure
       $ a
@@ -972,7 +1007,7 @@ handlePutCardOnBottomOfDeckV2 a@InvestigatorAttrs{..} card = case card of
   EncounterCard _ -> pure a
   VengeanceCard _ -> pure a
 
-handleDrawToHandFrom a@InvestigatorAttrs{..} iid deck cards = do
+handleDrawToHandFrom a@InvestigatorAttrs {..} iid deck cards = do
   let (before, _, after) = frame $ Window.DrawCards iid $ map toCard cards
   push before
   for_ (reverse cards) \case
@@ -999,7 +1034,7 @@ handleDrawToHandFrom a@InvestigatorAttrs{..} iid deck cards = do
     & (bondedCardsL %~ filter (`notElem` cards))
     & (searchL . _Just . Search.drawnCardsL %~ (<> cards))
 
-handleDrawToHand a@InvestigatorAttrs{..} iid cards = do
+handleDrawToHand a@InvestigatorAttrs {..} iid cards = do
   let (before, _, after) = frame $ Window.DrawCards iid $ map toCard cards
   push before
   for_ (reverse cards) \case
@@ -1018,12 +1053,15 @@ handleDrawToHand a@InvestigatorAttrs{..} iid cards = do
     & (bondedCardsL %~ filter (`notElem` cards))
     & (searchL . _Just . Search.drawnCardsL %~ (<> cards))
 
-handleAddToHand a@InvestigatorAttrs{..} iid cards msg = do
-  for_ cards obtainCard
-  push $ Do msg
+handleAddToHand a@InvestigatorAttrs {..} iid cards msg = do
+  -- a card removed from the game stays removed, even if a delayed effect returns it
+  removed <- map toCardId <$> getRemovedFromPlayCards
+  let cards' = filter ((`notElem` removed) . toCardId) cards
+  for_ cards' obtainCard
+  unless (null cards') $ push $ Do (AddToHand iid cards')
   pure a
 
-handleDoAddToHand a@InvestigatorAttrs{..} iid cards = do
+handleDoAddToHand a@InvestigatorAttrs {..} iid cards = do
   assetIds <- catMaybes <$> for cards (selectOne . AssetWithCardId . toCardId)
   for_ cards \card -> do
     inLimit <- passesLimits iid (toCard card)
@@ -1044,11 +1082,11 @@ handleDoAddToHand a@InvestigatorAttrs{..} iid cards = do
     & (handL %~ (<> cards))
     & (decksL . each %~ filter (`notElem` cards))
 
-handleShuffleCardsIntoDeck a@InvestigatorAttrs{..} iid = do
+handleShuffleCardsIntoDeck a@InvestigatorAttrs {..} iid = do
   -- can't shuffle zero cards
   pure a
 
-handleShuffleCardsIntoDeckV2 a@InvestigatorAttrs{..} iid cards = do
+handleShuffleCardsIntoDeckV2 a@InvestigatorAttrs {..} iid cards = do
   let (cards', essenceOfTheDreams) = partition ((/= "06113") . toCardCode) $ mapMaybe (preview _PlayerCard) cards
   deck <- shuffleM $ cards' <> filter (`notElem` cards') (unDeck investigatorDeck)
   pure
@@ -1067,42 +1105,59 @@ handleShuffleCardsIntoDeckV2 a@InvestigatorAttrs{..} iid cards = do
     %~ filter ((`notElem` cards) . PlayerCard)
     & (foundCardsL . each %~ filter (`notElem` cards))
 
-handleAddFocusedToHand a@InvestigatorAttrs{..} iid' cardSource cardId = do
-  let
-    card =
-      fromJustNote "missing card"
-        $ find ((== cardId) . toCardId) (findWithDefault [] cardSource $ a ^. foundCardsL)
-    foundCards' = Map.map (filter ((/= cardId) . toCardId)) (a ^. foundCardsL)
-  push $ addToHand iid' card
-  pure $ a & foundCardsL .~ foundCards' & (deckL %~ Deck . filter ((/= card) . toCard) . unDeck)
+handleAddFocusedToHand a@InvestigatorAttrs {..} iid' cardSource cardId = do
+  case findFocusedCard a cardSource cardId of
+    Nothing -> pure a
+    Just card -> do
+      let foundCards' = Map.map (filter ((/= cardId) . toCardId)) (a ^. foundCardsL)
+      push $ addToHand iid' card
+      pure $ a & foundCardsL .~ foundCards' & (deckL %~ Deck . filter ((/= card) . toCard) . unDeck)
 
-handleDrawFocusedToHand a@InvestigatorAttrs{..} iid' cardSource cardId = do
-  let
-    card =
-      fromJustNote "missing card"
-        $ find ((== cardId) . toCardId) (findWithDefault [] cardSource $ a ^. foundCardsL)
-    foundCards' = Map.map (filter ((/= cardId) . toCardId)) (a ^. foundCardsL)
-  push $ case zoneToDeck a.id cardSource of
-    Nothing -> drawToHand iid' card
-    Just deck -> drawToHandFrom iid' deck card
-  pure $ a & foundCardsL .~ foundCards' & (deckL %~ Deck . filter ((/= card) . toCard) . unDeck)
+handleDrawFocusedToHand a@InvestigatorAttrs {..} iid' cardSource cardId = do
+  case findFocusedCard a cardSource cardId of
+    Nothing -> pure a
+    Just card -> do
+      let
+        foundCards' = Map.map (filter ((/= cardId) . toCardId)) (a ^. foundCardsL)
+        -- SearchAllInvestigators can surface cards from another investigator's zone or
+        -- a scenario deck (FromCollection). Those aren't in the drawer's own deck, so
+        -- the normal draw-from-deck removal would leave a duplicate. Route them through
+        -- the global obtain path (addToHand -> obtainCard), which clears the card from
+        -- any owner's hand/deck/discard and scenario decks while preserving pcOwner.
+        -- The own-zone case is left byte-for-byte identical (same draw-trigger windows).
+        inOwnZone = case cardSource of
+          Zone.FromDeck -> card `elem` map toCard (unDeck investigatorDeck)
+          Zone.FromTopOfDeck _ -> card `elem` map toCard (unDeck investigatorDeck)
+          Zone.FromBottomOfDeck _ -> card `elem` map toCard (unDeck investigatorDeck)
+          Zone.FromHand -> card `elem` investigatorHand
+          Zone.FromDiscard -> card `elem` map toCard investigatorDiscard
+          _ -> False
+      push
+        $ if inOwnZone
+          then case zoneToDeck a.id cardSource of
+            Nothing -> drawToHand iid' card
+            Just deck -> drawToHandFrom iid' deck card
+          else addToHand iid' card
+      pure $ a & foundCardsL .~ foundCards' & (deckL %~ Deck . filter ((/= card) . toCard) . unDeck)
 
-handleAddFocusedToTopOfDeck a@InvestigatorAttrs{..} iid' cardId = do
+handleAddFocusedToTopOfDeck a@InvestigatorAttrs {..} iid' cardId = do
   let
-    card =
-      fromJustNote "missing card"
-        $ find ((== cardId) . toCardId) (concat $ toList $ a ^. foundCardsL)
+    mcard =
+      find ((== cardId) . toCardId) (concat (toList $ a ^. foundCardsL) <> zoneCards a Zone.FromDeck)
         >>= toPlayerCard
-    foundCards = Map.map (filter ((/= cardId) . toCardId)) $ a ^. foundCardsL
-  push $ PutCardOnTopOfDeck iid' (Deck.InvestigatorDeck iid') (toCard card)
-  pure $ a & foundCardsL .~ foundCards
+  case mcard of
+    Nothing -> pure a
+    Just card -> do
+      let foundCards = Map.map (filter ((/= cardId) . toCardId)) $ a ^. foundCardsL
+      push $ PutCardOnTopOfDeck iid' (Deck.InvestigatorDeck iid') (toCard card)
+      pure $ a & foundCardsL .~ foundCards
 
-handleShuffleAllFocusedIntoDeck a@InvestigatorAttrs{..} iid' = do
+handleShuffleAllFocusedIntoDeck a@InvestigatorAttrs {..} iid' = do
   let cards = findWithDefault [] Zone.FromDeck $ a ^. foundCardsL
   push $ ShuffleCardsIntoDeck (Deck.InvestigatorDeck iid') cards
   pure $ a & foundCardsL %~ deleteMap Zone.FromDeck
 
-handlePutAllFocusedIntoDiscard a@InvestigatorAttrs{..} iid' = do
+handlePutAllFocusedIntoDiscard a@InvestigatorAttrs {..} iid' = do
   let cards = onlyPlayerCards $ findWithDefault [] Zone.FromDiscard $ a ^. foundCardsL
   let (cards', essenceOfTheDreams) = partition ((/= "06113") . toCardCode) cards
   pure
@@ -1114,13 +1169,13 @@ handlePutAllFocusedIntoDiscard a@InvestigatorAttrs{..} iid' = do
     & bondedCardsL
     <>~ map toCard essenceOfTheDreams
 
-handleRemoveFromDiscard a@InvestigatorAttrs{..} iid cardId = do
+handleRemoveFromDiscard a@InvestigatorAttrs {..} iid cardId = do
   pure $ a & discardL %~ filter ((/= cardId) . toCardId)
 
-handleRemoveFromBearersDeckOrDiscard a@InvestigatorAttrs{..} card = do
+handleRemoveFromBearersDeckOrDiscard a@InvestigatorAttrs {..} card = do
   pure $ a & (discardL %~ filter (/= card)) & (deckL %~ Deck . filter (/= card) . unDeck)
 
-handleRemovePlayerCardFromGame a@InvestigatorAttrs{..} card = do
+handleRemovePlayerCardFromGame a@InvestigatorAttrs {..} card = do
   case preview _PlayerCard card of
     Just pc ->
       pure
@@ -1132,6 +1187,26 @@ handleRemovePlayerCardFromGame a@InvestigatorAttrs{..} card = do
     Nothing ->
       -- encounter cards can only be in hand
       pure $ a & (handL %~ filter (/= card))
+
+-- A focused-card question can outlive its search: a raw message re-parks the open
+-- question behind itself (Entity.Answer), so a second search's EndSearch clears
+-- foundCards before the first one is answered (#5615). Fall back to the zone the
+-- message names, and let the caller no-op when the card is gone for good.
+findFocusedCard :: InvestigatorAttrs -> Zone.Zone -> CardId -> Maybe Card
+findFocusedCard a zone cardId =
+  find ((== cardId) . toCardId) (findWithDefault [] zone $ a ^. foundCardsL)
+    <|> find ((== cardId) . toCardId) (zoneCards a zone)
+
+zoneCards :: InvestigatorAttrs -> Zone.Zone -> [Card]
+zoneCards a = \case
+  Zone.FromDeck -> map toCard (unDeck a.deck)
+  Zone.FromTopOfDeck {} -> map toCard (unDeck a.deck)
+  Zone.FromBottomOfDeck {} -> map toCard (unDeck a.deck)
+  Zone.FromHand -> investigatorHand a
+  Zone.FromDiscard -> map toCard a.discard
+  Zone.FromPlay -> []
+  Zone.FromOutOfPlay {} -> []
+  Zone.FromCollection -> []
 
 zoneToDeck :: InvestigatorId -> Zone.Zone -> Maybe Deck.DeckSignifier
 zoneToDeck iid = \case

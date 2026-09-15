@@ -22,8 +22,10 @@ function entryStyles(entry: FlavorTextEntry): { [key: string]: boolean } {
     case 'TarotEntry': return {"card": true, "no-overlay": true}
     case 'ChaosTokenEntry': return {"chaos-token": true}
     case 'CardEntry': {
-      const mods = entry.imageModifiers.reduce((acc, m) => { return { [imageModifierToStyle(m)]: true, ...acc }}, {})
-      return {"card": true, "no-overlay": true, ...mods}
+      const mods: { [key: string]: boolean } = entry.imageModifiers.reduce((acc, m) => { return { [imageModifierToStyle(m)]: true, ...acc }}, {})
+      // A small card is a reference rather than the focus of the entry, so it
+      // keeps the hover overlay to read it at a usable size.
+      return {"card": true, ...mods, "no-overlay": !mods.small}
     }
 
     default: return {}
@@ -34,6 +36,7 @@ function imageModifierToStyle(modifier: ImageModifier): string {
   switch (modifier) {
     case 'RemoveImage': return 'remove'
     case 'SelectImage': return 'select'
+    case 'SmallImage': return 'small'
     default: throw new Error("Unknown modifier")
   }
 }
@@ -50,6 +53,7 @@ function modifierToStyle(modifier: FlavorTextModifier): string {
     case 'CheckpointEntry': return 'checkpoint'
     case 'InterludeEntry': return 'interlude'
     case 'HauntedEntry': return 'haunted'
+    case 'TokenRevealEntry': return 'token-reveal'
     case 'RightAligned': return 'right'
     case 'CenteredEntry': return 'center'
     case 'NoUnderline': return 'no-underline'
@@ -86,7 +90,10 @@ function formatEntry(t: ComposerTranslation, entry: FlavorTextEntry, classes: { 
       } else {
         return h('h3', { class: classes, innerHTML: formatContent(t(entry.key)) })
       }
-    case 'I18nEntry': return h('div', { innerHTML: formatContent(t(entry.key, {...entry.variables, setImgPath: `${baseUrl}/img/arkham/encounter-sets` })) })
+    // `setImgPath` points at the core encounter-set icons; homebrew campaigns keep
+    // their icons under their own directory (see vite.config.js), so they build the
+    // path from `imgPath` instead: {imgPath}/homebrew/<campaign>/sets/<set>.png
+    case 'I18nEntry': return h('div', { innerHTML: formatContent(t(entry.key, {...entry.variables, imgPath: `${baseUrl}/img/arkham`, setImgPath: `${baseUrl}/img/arkham/encounter-sets` })) })
     case 'ModifyEntry': {
       const styles = entryStyles(entry)
       if (styles.codex) {
@@ -116,7 +123,7 @@ export default defineComponent({
     return formatEntry(t, entry)
   },
   data() {
-    return { green_fleur: `url(${imgsrc('green_fleur.png')})` }
+    return { green_fleur: `url(${imgsrc('fleurs/green_fleur.png')})` }
   }
 })
 </script>
@@ -252,6 +259,10 @@ export default defineComponent({
       border-bottom: 0;
     }
   }
+}
+
+.green.trace, :deep(.green.trace) {
+  margin-block: 20px;
 }
 
 .green, :deep(.green), p.green, :deep(p.green) {
@@ -392,6 +403,7 @@ p.billenia, :deep(p.billenia) {
   font-family: "Billenia";
   font-weight: 500;
   font-size: 1.4em;
+  font-style: normal;
   margin: 10px;
 }
 
@@ -414,36 +426,34 @@ p.billenia, :deep(p.billenia) {
 }
 
 .intro-text {
-  div, :deep(div) {
-    &:has(.note-green) {
-      min-height: fit-content;
-      margin-block: 20px;
-      margin-inline: 50px;
-      box-shadow: unset;
-      overflow: hidden;
-      padding: 50px;
-      position: relative;
-      &::after {
-        position: absolute;
-        inset: 0px;
-        box-sizing: border-box;
-        content: "";
-        filter: blur(0.25em);
-        margin: 20px;
-        background-color: #E1E4DF;
-        mix-blend-mode: multiply;
-      }
-      &::before {
-        z-index: var(--z-index-2);
-        pointer-events: none;
-        position: absolute;
-        inset: 10px;
-        border-image-source: v-bind(green_fleur);
-        border-image-slice: 49.9%;
-        border-image-repeat: no-repeat;
-        border-image-width: 50px;
-        content: "";
-      }
+  .note-green, :deep(.note-green) {
+    min-height: fit-content;
+    margin-block: 20px;
+    margin-inline: 50px;
+    box-shadow: unset;
+    overflow: hidden;
+    padding: 50px;
+    position: relative;
+    &::after {
+      position: absolute;
+      inset: 0px;
+      box-sizing: border-box;
+      content: "";
+      filter: blur(0.25em);
+      margin: 20px;
+      background-color: #E1E4DF;
+      mix-blend-mode: multiply;
+    }
+    &::before {
+      z-index: var(--z-index-2);
+      pointer-events: none;
+      position: absolute;
+      inset: 10px;
+      border-image-source: v-bind(green_fleur);
+      border-image-slice: 49.9%;
+      border-image-repeat: no-repeat;
+      border-image-width: 50px;
+      content: "";
     }
   }
 }
@@ -455,7 +465,7 @@ p.billenia, :deep(p.billenia) {
 }
 
 .invalid, :deep(.invalid) {
-  align-items: center;
+  align-items: flex-start;
   color: #666;
   width: 100%;
   > div {
@@ -470,15 +480,17 @@ p.billenia, :deep(p.billenia) {
   &:not(.right)::before {
     content: '';
     display: inline-block;
-    width: 20px;
-    min-width: 20px;
-    height: 20px;
+    width: 15px;
+    min-width: 15px;
+    height: 15px;
     margin-right: 8px; /* Adjust spacing between the circle and the element */
     border-radius: 50%;
-    background-size: 12px 12px; /* Adjust size of the X and checkmark */
+    background-size: 9px 9px;
     background-position: center;
     background-repeat: no-repeat;
+    transform: translateY(2px);
     background-color: var(--survivor-dark);
+    opacity: 0.7;
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"%3E%3Cpath d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636l4.95 4.95z"/%3E%3C/svg%3E');
   }
 
@@ -496,7 +508,7 @@ p.billenia, :deep(p.billenia) {
 
   &:has(> .composite)::before,
   &:has(> ul)::before {
-    margin-top: 10px;
+    margin-top: 0;
   }
 
   > .composite {
@@ -506,15 +518,17 @@ p.billenia, :deep(p.billenia) {
   &.right::after {
     content: '';
     display: inline-block;
-    width: 20px;
-    min-width: 20px;
-    height: 20px;
+    width: 15px;
+    min-width: 15px;
+    height: 15px;
     margin-left: 8px; /* Adjust spacing between the circle and the element */
     border-radius: 50%;
-    background-size: 12px 12px; /* Adjust size of the X and checkmark */
+    background-size: 9px 9px;
     background-position: center;
     background-repeat: no-repeat;
+    transform: translateY(2px);
     background-color: var(--survivor-dark);
+    opacity: 0.7;
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"%3E%3Cpath d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636l4.95 4.95z"/%3E%3C/svg%3E');
   }
 }
@@ -541,7 +555,7 @@ h3, :deep(h3) {
   > div {
     width: 100%;
   }
-  align-items: center;
+  align-items: flex-start;
   &:not(li) {
     display: inline-flex;
     &:has(.right) {
@@ -551,15 +565,17 @@ h3, :deep(h3) {
   &:not(.right)::before {
     content: '';
     display: inline-block;
-    width: 20px;
-    min-width: 20px;
-    height: 20px;
+    width: 15px;
+    min-width: 15px;
+    height: 15px;
     margin-right: 8px; /* Adjust spacing between the circle and the element */
     border-radius: 50%;
-    background-size: 12px 12px; /* Adjust size of the X and checkmark */
+    background-size: 9px 9px;
     background-position: center;
     background-repeat: no-repeat;
+    transform: translateY(2px);
     background-color: green;
+    opacity: 0.7;
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"%3E%3Cpath d="M9 19l-6-6 1.414-1.414L9 16.172l10.586-10.586L21 7.586z"/%3E%3C/svg%3E');
   }
 
@@ -578,7 +594,7 @@ h3, :deep(h3) {
 
   &:has(> .composite)::before,
   &:has(> ul)::before {
-    margin-top: 10px;
+    margin-top: 0;
   }
 
   > .composite {
@@ -588,22 +604,40 @@ h3, :deep(h3) {
   &.right::after {
     content: '';
     display: inline-block;
-    width: 20px;
-    min-width: 20px;
-    height: 20px;
+    width: 15px;
+    min-width: 15px;
+    height: 15px;
     margin-left: 8px; /* Adjust spacing between the circle and the element */
     border-radius: 50%;
-    background-size: 12px 12px; /* Adjust size of the X and checkmark */
+    background-size: 9px 9px;
     background-position: center;
     background-repeat: no-repeat;
+    transform: translateY(2px);
     background-color: green;
+    opacity: 0.7;
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"%3E%3Cpath d="M9 19l-6-6 1.414-1.414L9 16.172l10.586-10.586L21 7.586z"/%3E%3C/svg%3E');
   }
+}
+
+/* Keep prose and adjacent lists visually distinct without adding outer list
+   margins that would offset valid/invalid status markers. */
+p + ul, :deep(p + ul),
+div + ul, :deep(div + ul),
+ul + p, :deep(ul + p),
+ul + div, :deep(ul + div) {
+  margin-block-start: 10px;
 }
 
 ul, :deep(ul) {
   list-style-type: "\0059";
   margin-inline: 10px;
+  &.level-2 {
+    margin-block: 10px;
+    list-style-type: "\e91a";
+    li::marker {
+      font-family: "ArkhamIcons";
+    }
+  }
   li {
     padding-left: 10px;
     margin-left: 10px;
@@ -788,6 +822,23 @@ ul, :deep(ul) {
   }
 }
 
+/* Share the token-result layout, not Predation's haunted color theme. */
+.token-reveal, :deep(.token-reveal) {
+  .columns, :deep(.columns) {
+    justify-content: space-evenly;
+    gap: 0;
+
+    > * {
+      flex: 0 1 auto;
+      padding: 10px 8px;
+    }
+
+    .composite:has(.chaos-token), :deep(.composite:has(.chaos-token)) {
+      gap: 56px;
+    }
+  }
+}
+
 @keyframes haunted-token-pulse {
   0%, 100% {
     filter:
@@ -894,11 +945,15 @@ ul, :deep(ul) {
   }
 
   &.grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 10px 20px;
-    justify-content: stretch;
+    justify-content: center;
+    max-width: 700px;
+    margin-inline: auto;
+    /* flex, not grid: a short last row centers instead of hanging left */
     > div {
+      flex: 0 0 calc((100% - 44px) / 3);
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -907,6 +962,8 @@ ul, :deep(ul) {
       img {
         width: 36px;
         max-width: 36px;
+        height: 36px;
+        object-fit: contain;
         flex-shrink: 0;
       }
       span {
@@ -1222,6 +1279,18 @@ img.remove {
   filter: brightness(81%) saturate(113%);
 }
 
+img.card.small {
+  width: clamp(160px, 20vw, 260px);
+  cursor: zoom-in;
+}
+
+/* Small cards sit on their own centered row under the text they illustrate. */
+div:has(> img.card.small) {
+  flex-basis: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 div:has(> img.remove) {
   position: relative;
   &::before {
@@ -1382,6 +1451,38 @@ div:has(> img.remove) {
     --card-w: 140px;
     --spread: 11deg;
     --shift: -44px;
+  }
+}
+
+:deep(.story-card-rule) {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+
+  > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  > img {
+    flex: 0 1 min(33.333%, 200px);
+    width: min(33.333%, 200px);
+    min-width: 0;
+    max-width: 200px;
+    height: auto;
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 300px) {
+  :deep(.story-card-rule) {
+    flex-direction: column;
+
+    > img {
+      flex-basis: auto;
+      width: 100%;
+      min-width: 0;
+    }
   }
 }
 

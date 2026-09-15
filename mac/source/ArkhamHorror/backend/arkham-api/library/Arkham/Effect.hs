@@ -19,24 +19,37 @@ import Arkham.Modifier
 import Arkham.Prelude
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 
-import Arkham.Act.Acts (
+import Arkham.Act.Cards.GuardiansOfTheAbyss.TheEternalSlumber.CurseOfEndlessSleep (
   curseOfEndlessSleepEffect,
-  infiltratingTheLodgeEffect,
-  theStrangerACityAflameEffect,
-  theStrangerAlaranMistsEffect,
-  theStrangerHereIsMyReplyEffect,
-  theStrangerThePathIsMineEffect,
-  theStrangerTheShoresOfHaliEffect,
-  theStrangerUnderTheCityEffect,
-  theYithianRelicEffect,
  )
-import Arkham.Agenda.Agendas (
-  awakeningEffect,
-  showbusinessAsUsualEffect,
-  theLoversVIEffect,
-  theRedDepthsEffect,
+import Arkham.Act.Cards.ReturnToThePathToCarcosa.ReturnToCurtainCall.TheStrangerAlaranMists (
+  theStrangerAlaranMistsEffect,
+ )
+import Arkham.Act.Cards.ReturnToThePathToCarcosa.ReturnToCurtainCall.TheStrangerHereIsMyReply (
+  theStrangerHereIsMyReplyEffect,
+ )
+import Arkham.Act.Cards.ReturnToThePathToCarcosa.ReturnToCurtainCall.TheStrangerUnderTheCity (
+  theStrangerUnderTheCityEffect,
+ )
+import Arkham.Act.Cards.TheCircleUndone.ForTheGreaterGood.InfiltratingTheLodge (
+  infiltratingTheLodgeEffect,
+ )
+import Arkham.Act.Cards.TheForgottenAge.ShatteredAeons.TheYithianRelic (theYithianRelicEffect)
+import Arkham.Act.Cards.ThePathToCarcosa.CurtainCall.TheStrangerACityAflame (
+  theStrangerACityAflameEffect,
+ )
+import Arkham.Act.Cards.ThePathToCarcosa.CurtainCall.TheStrangerThePathIsMine (
+  theStrangerThePathIsMineEffect,
+ )
+import Arkham.Act.Cards.ThePathToCarcosa.CurtainCall.TheStrangerTheShoresOfHali (
+  theStrangerTheShoresOfHaliEffect,
+ )
+import Arkham.Agenda.Cards.FilmFatale.ShowbusinessAsUsual (showbusinessAsUsualEffect)
+import Arkham.Agenda.Cards.TheCircleUndone.UnionAndDisillusion.TheLoversVI (theLoversVIEffect)
+import Arkham.Agenda.Cards.TheForgottenAge.TheDepthsOfYoth.TheRedDepths (theRedDepthsEffect)
+import Arkham.Agenda.Cards.TheInnsmouthConspiracy.ThePitOfDespair.Awakening (awakeningEffect)
+import Arkham.Agenda.Cards.TheInnsmouthConspiracy.ThePitOfDespair.TheWaterRises (
   theWaterRisesEffect,
  )
 import Arkham.Asset.Assets (
@@ -105,13 +118,11 @@ import Arkham.Campaigns.TheScarletKeys.Key.Cards.TheWellspringOfFortune (
 import Arkham.Campaigns.TheScarletKeys.Key.Cards.TheShadeReaper (
   theShadeReaperEffect,
  )
-import Arkham.Enemy.Enemies (
-  alejandroVelaEffect,
-  corruptedOrderlyEffect,
-  ichtacaScionOfYigEffect,
-  tommyMalloyEffect,
-  yogSothothEffect,
- )
+import Arkham.Enemy.Cards.TheDreamEaters.WakingNightmare.CorruptedOrderly (corruptedOrderlyEffect)
+import Arkham.Enemy.Cards.TheDunwichLegacy.LostInTimeAndSpace.YogSothoth (yogSothothEffect)
+import Arkham.Enemy.Cards.TheForgottenAge.ShatteredAeons.AlejandroVela (alejandroVelaEffect)
+import Arkham.Enemy.Cards.TheForgottenAge.ShatteredAeons.IchtacaScionOfYig (ichtacaScionOfYigEffect)
+import Arkham.Enemy.Cards.TommyMalloy (tommyMalloyEffect)
 import Arkham.Event.Events (
   atACrossroads1Effect,
   backstab3Effect,
@@ -166,16 +177,24 @@ import Arkham.Investigator.Investigators (
   williamYorickEffect,
   winifredHabbamockEffect,
  )
-import Arkham.Location.Locations (
-  coterieLibrarySanctumEffect,
-  cursedShoresEffect,
-  enchantedWoodsLostWoodsEffect,
-  longWayAroundEffect,
-  restaurantEffect,
-  theCornicheEffect,
+import Arkham.Location.Cards.CurseOfTheRougarou.CursedShores (cursedShoresEffect)
+import Arkham.Location.Cards.MurderAtTheExcelsiorHotel.Restaurant (restaurantEffect)
+import Arkham.Location.Cards.TheCircleUndone.UnionAndDisillusion.UnvisitedIsleMossCoveredSteps (
   unvisitedIsleMossCoveredStepsEffect,
+ )
+import Arkham.Location.Cards.TheCircleUndone.UnionAndDisillusion.UnvisitedIsleStandingStones (
   unvisitedIsleStandingStonesEffect,
  )
+import Arkham.Location.Cards.TheDreamEaters.BeyondTheGatesOfSleep.EnchantedWoodsLostWoods (
+  enchantedWoodsLostWoodsEffect,
+ )
+import Arkham.Location.Cards.TheInnsmouthConspiracy.HorrorInHighGear.LongWayAround (
+  longWayAroundEffect,
+ )
+import Arkham.Location.Cards.TheScarletKeys.CongressOfTheKeys.CoterieLibrarySanctum (
+  coterieLibrarySanctumEffect,
+ )
+import Arkham.Location.Cards.TheScarletKeys.DogsOfWar.TheCorniche (theCornicheEffect)
 import Arkham.Skill.Skills (
   copycat3Effect,
   defiance2Effect,
@@ -188,27 +207,39 @@ import Arkham.Skill.Skills (
   prescientEffect,
   theEyeOfTruth5Effect,
  )
-import Arkham.Story.Stories (
-  gavriellasFateEffect,
-  jeromesFateEffect,
-  josefsPlanEffect,
-  pennysFateEffect,
+import Arkham.Story.Cards.TheCircleUndone.AtDeathsDoorstep.JosefsPlan (josefsPlanEffect)
+import Arkham.Story.Cards.TheCircleUndone.TheWagesOfSin.UnfinishedBusiness_J (
   unfinishedBusiness_JEffect,
-  valentinosFateEffect,
  )
-import Arkham.Treachery.Treacheries (
-  chillingPresenceEffect,
-  mesmerizeEffect,
+import Arkham.Story.Cards.TheCircleUndone.UnionAndDisillusion.GavriellasFate (gavriellasFateEffect)
+import Arkham.Story.Cards.TheCircleUndone.UnionAndDisillusion.JeromesFate (jeromesFateEffect)
+import Arkham.Story.Cards.TheCircleUndone.UnionAndDisillusion.PennysFate (pennysFateEffect)
+import Arkham.Story.Cards.TheCircleUndone.UnionAndDisillusion.ValentinosFate (valentinosFateEffect)
+import Arkham.Treachery.Cards.CarnevaleOfHorrors.Mesmerize (mesmerizeEffect)
+import Arkham.Treachery.Cards.EdgeOfTheEarth.Tekelili.Tekelili_227 (tekelili_227Effect)
+import Arkham.Treachery.Cards.RealityAcid5U21 (realityAcid5U21Effect)
+import Arkham.Treachery.Cards.SinsOfThePast.ChillingPresence (chillingPresenceEffect)
+import Arkham.Treachery.Cards.TheBlobThatAteEverything.RealityAcid (realityAcidEffect)
+import Arkham.Treachery.Cards.TheCircleUndone.SilverTwilightLodge.MysteriesOfTheLodge (
   mysteriesOfTheLodgeEffect,
-  pushedIntoTheBeyondEffect,
-  realityAcid5U21Effect,
-  realityAcidEffect,
+ )
+import Arkham.Treachery.Cards.TheDreamEaters.WhereTheGodsDwell.RestlessJourneyFallacy (
   restlessJourneyFallacyEffect,
+ )
+import Arkham.Treachery.Cards.TheDreamEaters.WhereTheGodsDwell.RestlessJourneyHardship (
   restlessJourneyHardshipEffect,
+ )
+import Arkham.Treachery.Cards.TheDreamEaters.WhereTheGodsDwell.RestlessJourneyLies (
   restlessJourneyLiesEffect,
-  tekelili_227Effect,
-  theKingsEdictEffect,
+ )
+import Arkham.Treachery.Cards.TheDreamEaters.WhispersOfHypnos.WhispersOfHypnos (
   whispersOfHypnosEffect,
+ )
+import Arkham.Treachery.Cards.TheDunwichLegacy.TheBeyond.PushedIntoTheBeyond (
+  pushedIntoTheBeyondEffect,
+ )
+import Arkham.Treachery.Cards.ThePathToCarcosa.CultOfTheYellowSign.TheKingsEdict (
+  theKingsEdictEffect,
  )
 
 noop :: CardCode -> EffectArgs -> NoEffect
@@ -221,13 +252,31 @@ newtype NoEffect = NoEffect EffectAttrs
 instance RunMessage NoEffect where
   runMessage msg (NoEffect a) = NoEffect <$> runMessage msg a
 
+{- | Enemies only re-run their engagement check at @BeginRoundWindow@ and
+@After (EndTurn _)@, so an effect that makes an investigator unengageable and
+expires mid-round would leave the enemies at their location detached until the
+turn ended. Attach the re-check to the effect itself at creation so no card has
+to remember it.
+-}
+withEngagementRecheck :: Effect -> Effect
+withEngagementRecheck = overAttrs \a -> case (a.metadata, a.target) of
+  (Just (EffectModifiers mods), InvestigatorTarget iid)
+    | any (bansEngagement . modifierType) mods ->
+        a {effectOnDisable = Just $ CheckEnemyEngagement iid : fromMaybe [] (effectOnDisable a)}
+  _ -> a
+ where
+  bansEngagement = \case
+    CannotBeEngaged -> True
+    CannotBeEngagedBy _ -> True
+    _ -> False
+
 createEffect :: MonadRandom m => EffectBuilder -> m (EffectId, Effect)
 createEffect builder = do
   eid <- maybe getRandom pure (effectBuilderEffectId builder)
-  pure (eid, lookupEffect eid builder)
+  pure (eid, withEngagementRecheck $ lookupEffect eid builder)
 
 createChaosTokenValueEffect
-  :: (HasGame m, Tracing m, MonadRandom m)
+  :: (HasGame m, MonadRandom m)
   => SkillTestId -> Int -> Source -> Target -> m (EffectId, Effect)
 createChaosTokenValueEffect sid n source target = do
   eid <- getRandom
@@ -244,7 +293,7 @@ createWindowModifierEffect effectWindow effectMetadata source target = do
   eid <- getRandom
   pure
     ( eid
-    , buildWindowModifierEffect eid effectMetadata effectWindow source target
+    , withEngagementRecheck $ buildWindowModifierEffect eid effectMetadata effectWindow source target
     )
 
 createChaosTokenEffect
@@ -258,7 +307,7 @@ createChaosTokenEffect effectMetadata source token = do
   pure (eid, buildChaosTokenEffect eid effectMetadata source token)
 
 createOnSucceedByEffect
-  :: (MonadRandom m, HasGame m, Tracing m)
+  :: (MonadRandom m, HasGame m)
   => SkillTestId
   -> ValueMatcher
   -> Source
@@ -272,7 +321,7 @@ createOnSucceedByEffect sid matchr source target messages = do
   pure (eid, updateAttrs effect \a -> a {effectCardId = mCardId})
 
 createOnFailedByEffect
-  :: (MonadRandom m, HasGame m, Tracing m)
+  :: (MonadRandom m, HasGame m)
   => SkillTestId
   -> ValueMatcher
   -> Source
@@ -286,7 +335,7 @@ createOnFailedByEffect sid matchr source target messages = do
   pure (eid, updateAttrs effect \a -> a {effectCardId = mCardId})
 
 createOnNextTurnEffect
-  :: (MonadRandom m, HasGame m, Tracing m)
+  :: (MonadRandom m, HasGame m)
   => Source
   -> InvestigatorId
   -> [Message]
@@ -298,7 +347,7 @@ createOnNextTurnEffect source iid messages = do
   pure (eid, updateAttrs effect \a -> a {effectCardId = mCardId})
 
 createOnRevealChaosTokenEffect
-  :: (MonadRandom m, HasGame m, Tracing m)
+  :: (MonadRandom m, HasGame m)
   => SkillTestId
   -> ChaosTokenMatcher
   -> Source
@@ -331,7 +380,7 @@ createEndOfTurnEffect source iid messages = do
   pure (eid, buildEndOfTurnEffect eid source iid messages)
 
 createSurgeEffect
-  :: (MonadRandom m, Sourceable source, Targetable target, HasGame m, Tracing m)
+  :: (MonadRandom m, Sourceable source, Targetable target, HasGame m)
   => source
   -> target
   -> m (EffectId, Effect)
@@ -346,6 +395,10 @@ createSurgeEffect (toSource -> source) (toTarget -> target) = do
 instance RunMessage Effect where
   runMessage msg (Effect a) = case msg of
     UseThisAbility {} -> Effect <$> runMessage msg a
+    -- 'finishedEffect' is a spent once-per-attempt latch, not a dead effect, so
+    -- RepeatSkillTest has to get through for 'unfinishedEffect' to re-arm it.
+    -- Every user of that pattern was unreachable until this case existed.
+    RepeatSkillTest {} -> Effect <$> runMessage msg a
     _ -> do
       if effectFinished (toAttrs a)
         then pure $ Effect a
@@ -358,7 +411,7 @@ lookupEffect eid builder =
     Just (SomeEffect f) -> Effect $ f (eid, builder)
 
 buildChaosTokenValueEffect
-  :: (HasGame m, Tracing m) => SkillTestId -> EffectId -> Int -> Source -> Target -> m Effect
+  :: HasGame m => SkillTestId -> EffectId -> Int -> Source -> Target -> m Effect
 buildChaosTokenValueEffect sid eid n source target = do
   ems <- effectModifiers source [ChaosTokenValueModifier n]
   pure $ buildWindowModifierEffect eid ems (EffectSkillTestWindow sid) source target

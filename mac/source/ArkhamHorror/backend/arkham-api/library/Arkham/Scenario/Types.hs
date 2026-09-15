@@ -32,6 +32,7 @@ import Arkham.Source
 import Arkham.Target
 import Arkham.Tarot
 import Arkham.Token
+import Arkham.TokenBag (CustomChaosBag)
 import Arkham.Xp
 import Arkham.Zone
 import Control.Lens (_Just)
@@ -57,11 +58,25 @@ class
   ) =>
   IsScenario a
 
+{- | A scenario builder with its concrete type hidden.  Lives here rather than
+in "Arkham.Scenario" so the generated registry can name it without importing
+the module that consumes the registry.
+-}
+data SomeScenario = forall a. IsScenario a => SomeScenario (Difficulty -> a)
+
+{- | Scenarios carry their card code in their attrs, so the registry key is
+recoverable from the builder itself.
+-}
+someScenarioCardCode :: SomeScenario -> CardCode
+someScenarioCardCode (SomeScenario s) = unScenarioId $ scenarioId $ toAttrs $ Scenario (s Easy)
+
 data instance Field Scenario :: Type -> Type where
   ScenarioCardsUnderActDeck :: Field Scenario [Card]
   ScenarioCardsNextToActDeck :: Field Scenario [Card]
   ScenarioCardsUnderAgendaDeck :: Field Scenario [Card]
   ScenarioCardsUnderScenarioReference :: Field Scenario [Card]
+  ScenarioActStack :: Field Scenario (IntMap [Card])
+  ScenarioAgendaStack :: Field Scenario (IntMap [Card])
   ScenarioDiscard :: Field Scenario [EncounterCard]
   ScenarioEncounterDeck :: Field Scenario (Deck EncounterCard)
   ScenarioHasEncounterDeck :: Field Scenario Bool
@@ -77,7 +92,9 @@ data instance Field Scenario :: Type -> Type where
   ScenarioResignedCardCodes :: Field Scenario [CardCode]
   ScenarioResolvedStories :: Field Scenario [StoryId]
   ScenarioChaosBag :: Field Scenario ChaosBag
+  ScenarioCustomChaosBags :: Field Scenario (Map Text CustomChaosBag)
   ScenarioInResolution :: Field Scenario Bool
+  ScenarioIsPrelude :: Field Scenario Bool
   ScenarioSetAsideCards :: Field Scenario [Card]
   ScenarioSetAsideKeys :: Field Scenario (Set ArkhamKey)
   ScenarioKeys :: Field Scenario (Set ArkhamKey)
@@ -119,11 +136,13 @@ data ScenarioAttrs = ScenarioAttrs
   , scenarioSetAsideCards :: [Card]
   , scenarioInResolution :: Bool
   , scenarioUseHardExpertReference :: Bool
-  -- ^ Ultimatum of Malevolence: use the Hard/Expert reference side while
-  -- nominally playing Easy/Standard (isEasyStandard/isHardExpert honor this)
+  {- ^ Ultimatum of Malevolence: use the Hard/Expert reference side while
+  nominally playing Easy/Standard (isEasyStandard/isHardExpert honor this)
+  -}
   , scenarioNoRemainingInvestigatorsHandler :: Target
   , scenarioVictoryDisplay :: [Card]
   , scenarioChaosBag :: ChaosBag
+  , scenarioCustomChaosBags :: Map Text CustomChaosBag
   , scenarioEncounterDeck :: Deck EncounterCard
   , scenarioHasEncounterDeck :: Bool
   , scenarioDiscard :: [EncounterCard]
@@ -143,6 +162,7 @@ data ScenarioAttrs = ScenarioAttrs
   , scenarioTimesPlayed :: Int
   , scenarioDefeatedEnemies :: Map EnemyId DefeatedEnemyAttrs
   , scenarioIsSideStory :: Bool
+  , scenarioIsPrelude :: Bool
   , scenarioInShuffle :: Bool
   , scenarioSearch :: Maybe Search
   , scenarioStarted :: Bool
@@ -285,6 +305,9 @@ sideStory f cardCode name difficulty layout =
  where
   setSideStory attrs = attrs {scenarioIsSideStory = True}
 
+sideStory_ :: (ScenarioAttrs -> a) -> CardCode -> Name -> Difficulty -> a
+sideStory_ f cardCode name difficulty = sideStory f cardCode name difficulty []
+
 scenario
   :: (ScenarioAttrs -> a)
   -> CardCode
@@ -322,6 +345,7 @@ scenario f cardCode name difficulty layout =
       , scenarioNoRemainingInvestigatorsHandler = ScenarioTarget
       , scenarioVictoryDisplay = mempty
       , scenarioChaosBag = emptyChaosBag
+      , scenarioCustomChaosBags = mempty
       , scenarioEncounterDeck = mempty
       , scenarioEncounterDecks = mempty
       , scenarioHasEncounterDeck = True
@@ -343,6 +367,7 @@ scenario f cardCode name difficulty layout =
       , scenarioTimesPlayed = 0
       , scenarioDefeatedEnemies = mempty
       , scenarioIsSideStory = False
+      , scenarioIsPrelude = False
       , scenarioInShuffle = False
       , scenarioXpBreakdown = Nothing
       , scenarioCampaignStep = Nothing
@@ -447,6 +472,7 @@ instance FromJSON ScenarioAttrs where
     scenarioNoRemainingInvestigatorsHandler <- o .: "noRemainingInvestigatorsHandler"
     scenarioVictoryDisplay <- o .: "victoryDisplay"
     scenarioChaosBag <- o .: "chaosBag"
+    scenarioCustomChaosBags <- o .:? "customChaosBags" .!= mempty
     scenarioEncounterDeck <- o .: "encounterDeck"
     scenarioHasEncounterDeck <- o .: "hasEncounterDeck"
     scenarioDiscard <- o .: "discard"
@@ -466,6 +492,7 @@ instance FromJSON ScenarioAttrs where
     scenarioTimesPlayed <- o .: "timesPlayed"
     scenarioDefeatedEnemies <- o .: "defeatedEnemies"
     scenarioIsSideStory <- o .:? "isSideStory" .!= False
+    scenarioIsPrelude <- o .:? "isPrelude" .!= False
     scenarioInShuffle <- o .:? "inShuffle" .!= False
     scenarioStoryCards :: Map InvestigatorId [Card] <-
       (o .: "storyCards") <|> (map (toCard @PlayerCard) <$$> (o .: "storyCards"))

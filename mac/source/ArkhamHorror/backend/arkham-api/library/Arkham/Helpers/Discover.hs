@@ -28,23 +28,23 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Window qualified as Window
 import Data.Map.Strict qualified as Map
 
-getDiscoverLocation :: (HasGame m, Tracing m) => InvestigatorId -> Discover -> m (Maybe LocationId)
+getDiscoverLocation :: HasGame m => InvestigatorId -> Discover -> m (Maybe LocationId)
 getDiscoverLocation iid d = case d.location of
   DiscoverAtLocation lid' -> pure (Just lid')
   DiscoverYourLocation -> field InvestigatorLocation iid
 
-getDiscoveredTotal :: (HasGame m, Tracing m) => InvestigatorId -> Discover -> m Int
-getDiscoveredTotal iid d = getDiscoverLocation iid d >>= \case
-  Nothing -> pure 0
-  Just lid -> do
-    mods <- getModifiers iid
-    let additionalDiscovered = getSum $ fold [Sum x | d.isInvestigate == IsInvestigate, DiscoveredClues x <- mods]
-    base <- total lid (d.count + additionalDiscovered)
-    min base <$> field LocationClues lid
+getDiscoveredTotal :: HasGame m => InvestigatorId -> Discover -> m Int
+getDiscoveredTotal iid d =
+  getDiscoverLocation iid d >>= \case
+    Nothing -> pure 0
+    Just lid -> do
+      mods <- getModifiers iid
+      let additionalDiscovered = getSum $ fold [Sum x | d.isInvestigate == IsInvestigate, DiscoveredClues x <- mods]
+      base <- total lid (d.count + additionalDiscovered)
+      min base <$> field LocationClues lid
  where
   total lid' n = do
     let
@@ -55,26 +55,22 @@ getDiscoveredTotal iid d = getDiscoverLocation iid d >>= \case
     mMax :: Maybe Int <- foldr getMaybeMax Nothing <$> getModifiers lid'
     pure $ maybe n (min n) mMax
 
-{- | Wrap the consequence of a successful investigation so the investigator may expose a concealed
-mini-card at the investigated location instead.
-
-Exposing replaces the standard effects of the action or ability that exposed it, so the choice has
-to be offered before those effects resolve. @Do (DiscoverClues …)@ keeps its own prompt for the
-other trigger --- /automatically/ discovering a clue --- but an investigation that discovers
-nothing never reaches it: an empty Divination, Burglary (2), Unearth the Ancients, or a treachery
-whose investigate ability just discards it. (#5387)
--}
 withExposeInsteadOfInvestigating
-  :: ReverseQueue m => InvestigatorId -> LocationId -> [Message] -> m [Message]
-withExposeInsteadOfInvestigating iid lid msgs = do
-  concealed <-
-    getCanExposeAt iid lid >>= \case
+  :: (ReverseQueue m, Sourceable source)
+  => InvestigatorId -> source -> LocationId -> [Message] -> m [Message]
+withExposeInsteadOfInvestigating iid (toSource -> source) lid msgs = do
+  mods <- getModifiers iid
+  -- riders are locations where we can discover additional clues, since the replacement
+  -- effect should cover the entire effect we can only expose one card
+  let riders = nub [olid | DiscoveredCluesAt olid _ <- mods, olid /= lid]
+  concealed <- concatForM (lid : riders) \lid' ->
+    getCanExposeAt iid source lid' >>= \case
       False -> pure []
-      True -> getConcealedAt (ForExpose $ toSource iid) lid
+      True -> getConcealedAt (ForExpose source) lid'
   if null concealed
     then pure msgs
     else evalQueueT $ chooseOneM iid do
-      labeledI "exposeConcealedCard" $ chooseTargetM iid concealed (exposeConcealed iid iid . (.id))
+      labeledI "exposeConcealedCard" $ chooseTargetM iid concealed (exposeConcealed iid source . (.id))
       labeledI "doNotExposeConcealed" $ pushAll msgs
 
 {- | Resolve a successful @Investigate@ at a location (regular or enemy-location).

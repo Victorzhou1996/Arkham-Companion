@@ -4,7 +4,7 @@ import Arkham.I18n
 import Arkham.Investigator.Projection ()
 import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
-import Arkham.Treachery.Cards qualified as Cards
+import Arkham.Treachery.CardDefs.Standalone qualified as Cards
 import Arkham.Treachery.Import.Lifted
 
 newtype LooseCannon = LooseCannon TreacheryAttrs
@@ -24,6 +24,6 @@ instance RunMessage LooseCannon where
           labeledI "discardEachFirearmAsset" do
             chooseOneAtATimeM iid $ targets firearms $ toDiscardBy iid attrs
         when (resources >= 1) do
-          withI18n $ countVar 5 $ labeled' "loseResources" $ loseResources iid attrs 5
+          withI18n $ countVar 5 $ labeled "loseResources" $ loseResources iid attrs 5
       pure t
     _ -> LooseCannon <$> liftRunMessage msg attrs

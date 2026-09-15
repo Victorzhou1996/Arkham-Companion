@@ -24,24 +24,21 @@ instance HasModifiersFor LolaHayesParallel where
   getModifiersFor (LolaHayesParallel attrs) = do
     mLeadingLady <- getMeta attrs "leadingLady"
     let role = toResultDefault Neutral attrs.meta
+    -- Weaknesses do not interact with the class system (FAQ 1.35), so they are
+    -- always exempt from Lola's role restriction (e.g. Samuel Blake).
     modifySelf attrs $ case mLeadingLady of
       Nothing ->
-        [ CannotPlay $ not_ $ mapOneOf CardWithClass $ nub [Neutral, role]
-        , CannotCommitCards $ not_ $ mapOneOf CardWithClass $ nub [Neutral, role]
+        [ CannotPlay $ not_ $ oneOf $ WeaknessCard : map CardWithClass (nub [Neutral, role])
+        , CannotCommitCards $ not_ $ oneOf $ WeaknessCard : map CardWithClass (nub [Neutral, role])
         ]
       Just cid ->
-        [ CannotPlay $ not_ $ oneOf $ CardWithId cid
+        [ CannotPlay $ not_ $ oneOf $ WeaknessCard
+            : CardWithId cid
             : map CardWithClass (nub [Neutral, role])
-        , CannotCommitCards $ not_ $ oneOf $ CardWithId cid
+        , CannotCommitCards $ not_ $ oneOf $ WeaknessCard
+            : CardWithId cid
             : map CardWithClass (nub [Neutral, role])
         ]
-    msamuel <-
-      selectOne $ inHandOf NotForPlay attrs.id <> basic (cardIs Assets.samuelBlakeObsessiveProducer)
-    for_ msamuel \samuel ->
-      modified_
-        samuel.id
-        attrs
-        [CannotPlay $ not_ $ mapOneOf CardWithClass $ nub [Neutral, role]]
 
 instance HasAbilities LolaHayesParallel where
   getAbilities (LolaHayesParallel a) =
@@ -64,7 +61,7 @@ switchRole attrs = do
   let roles = filter (`notElem` [Mythos, currentRole]) [minBound .. maxBound]
   msamuel <- select $ assetIs Assets.samuelBlakeObsessiveProducer
   chooseOneM attrs.id $ for_ roles \role ->
-    labeled (tshow role) do
+    (withI18n $ keyVar "name" (tshow role) $ labeled "name") do
       investigatorSpecific attrs.id "setRole" role
       for_ msamuel \samuel ->
         when (role /= currentRole) $ assignHorror attrs.id samuel 1

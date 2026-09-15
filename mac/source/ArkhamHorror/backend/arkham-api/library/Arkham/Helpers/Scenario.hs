@@ -28,9 +28,7 @@ import Arkham.Projection
 import Arkham.Scenario.Types
 import Arkham.Target
 import Arkham.Token (Token, countTokens)
-import Arkham.Tracing
 import Control.Lens (non, _1, _2)
-import Control.Monad.Writer
 import Data.Aeson.KeyMap qualified as KeyMap
 import Data.Aeson.Types
 import Data.Map.Strict qualified as Map
@@ -39,57 +37,64 @@ import Data.Text qualified as T
 standaloneI18n :: Scope -> (HasI18n => a) -> a
 standaloneI18n s a = withI18n $ scope "standalone" $ scope s a
 
-getIsReturnTo :: (HasGame m, Tracing m) => m Bool
+getIsReturnTo :: HasGame m => m Bool
 getIsReturnTo = selectJust TheScenario <&> \(ScenarioId c) -> T.take 1 (unCardCode c) == "5"
 
-scenarioField :: (HasCallStack, HasGame m, Tracing m) => Field Scenario a -> m a
+{- | True when the active scenario is a prelude (e.g. Feast of Hemlock Vale's
+day preludes). Used to skip per-scenario effects that would otherwise
+double-count across a prelude and the scenario it leads into.
+-}
+getIsPrelude :: HasGame m => m Bool
+getIsPrelude = fromMaybe False <$> scenarioFieldMaybe ScenarioIsPrelude
+
+scenarioField :: (HasCallStack, HasGame m) => Field Scenario a -> m a
 scenarioField fld = scenarioFieldMap fld id
 
 scenarioFieldMap
-  :: (HasCallStack, HasGame m, Tracing m) => Field Scenario a -> (a -> b) -> m b
+  :: (HasCallStack, HasGame m) => Field Scenario a -> (a -> b) -> m b
 scenarioFieldMap fld f = scenarioFieldMapM fld (pure . f)
 
 scenarioFieldMapM
-  :: (HasCallStack, HasGame m, Tracing m) => Field Scenario a -> (a -> m b) -> m b
+  :: (HasCallStack, HasGame m) => Field Scenario a -> (a -> m b) -> m b
 scenarioFieldMapM fld f = selectJust TheScenario >>= fieldMapM fld f
 
-scenarioFieldMaybe :: (HasCallStack, HasGame m, Tracing m) => Field Scenario a -> m (Maybe a)
+scenarioFieldMaybe :: (HasCallStack, HasGame m) => Field Scenario a -> m (Maybe a)
 scenarioFieldMaybe fld = selectOne TheScenario >>= traverse (field fld)
 
-getInResolution :: (HasGame m, Tracing m) => m Bool
+getInResolution :: HasGame m => m Bool
 getInResolution = fromMaybe False <$> scenarioFieldMaybe ScenarioInResolution
 
-getIsStandalone :: (HasGame m, Tracing m) => m Bool
+getIsStandalone :: HasGame m => m Bool
 getIsStandalone = isNothing <$> selectOne TheCampaign
 
-getEncounterDeck :: (HasGame m, Tracing m) => m (Deck EncounterCard)
+getEncounterDeck :: HasGame m => m (Deck EncounterCard)
 getEncounterDeck = scenarioField ScenarioEncounterDeck
 
-getVictoryDisplay :: (HasGame m, Tracing m) => m [Card]
+getVictoryDisplay :: HasGame m => m [Card]
 getVictoryDisplay = scenarioField ScenarioVictoryDisplay
 
-inVictoryDisplay :: (HasGame m, Tracing m) => CardMatcher -> m Bool
+inVictoryDisplay :: HasGame m => CardMatcher -> m Bool
 inVictoryDisplay matcher = any (`cardMatch` matcher) <$> getVictoryDisplay
-unlessStandalone :: (HasGame m, Tracing m) => m () -> m ()
+unlessStandalone :: HasGame m => m () -> m ()
 unlessStandalone = unlessM getIsStandalone
 
+{- | Standalone counterpart to 'Arkham.Campaign.Types.addRandomBasicWeaknessIfNeeded'. As
+there, each draw excludes the earlier draws and the deck's existing basic weaknesses,
+since only one physical copy of each exists (#5424).
+-}
 addRandomBasicWeaknessIfNeeded
-  :: MonadRandom m => ClassSymbol -> Int -> Maybe ArkhamDBDecklist -> Deck PlayerCard -> m (Deck PlayerCard, [CardDef])
+  :: MonadRandom m
+  => ClassSymbol -> Int -> Maybe ArkhamDBDecklist -> Deck PlayerCard -> m (Deck PlayerCard, [CardDef])
 addRandomBasicWeaknessIfNeeded investigatorClass playerCount mDecklist deck = do
-  runWriterT do
-    Deck <$> flip filterM (unDeck deck) \card -> do
-      when
-        (toCardDef card == randomWeakness)
-        (sampleRandomBasicWeakness context >>= tell . pure)
-      pure $ toCardDef card /= randomWeakness
+  let (placeholders, rest) = partition ((== randomWeakness) . toCardDef) (unDeck deck)
+  weaknesses <- foldM drawWeakness [] placeholders
+  pure (Deck rest, weaknesses)
  where
-  context =
-    RandomBasicWeaknessContext
-      { rbwInvestigatorClass = investigatorClass
-      , rbwPlayerCount = playerCount
-      , rbwDecklist = mDecklist
-      , rbwStandalone = True
-      }
+  inDeck = basicWeaknessCodes $ unDeck deck
+  drawWeakness acc _ = do
+    cardDef <- sampleRandomBasicWeaknessExcluding (inDeck <> basicWeaknessCodes acc) context
+    pure $ acc <> [cardDef]
+  context = decklistWeaknessContext investigatorClass playerCount True mDecklist
 
 toChaosTokenValue :: ScenarioAttrs -> ChaosTokenFace -> Int -> Int -> ChaosTokenValue
 toChaosTokenValue attrs t esVal heVal =
@@ -110,14 +115,26 @@ isHardExpert :: ScenarioAttrs -> Bool
 isHardExpert ScenarioAttrs {scenarioDifficulty, scenarioUseHardExpertReference} =
   scenarioUseHardExpertReference || scenarioDifficulty `elem` [Hard, Expert]
 
-getScenarioDeck :: (HasGame m, Tracing m) => ScenarioDeckKey -> m [Card]
+getScenarioDeck :: HasGame m => ScenarioDeckKey -> m [Card]
 getScenarioDeck k = scenarioFieldMap ScenarioDecks (Map.findWithDefault [] k)
 
-getScenarioMeta :: forall a m. (HasCallStack, HasGame m, Tracing m, FromJSON a) => m a
+{- | The cards making up act deck @n@, top first. The act currently in play is
+the head of the list, so anything after it is still below it in the deck.
+-}
+getActDeckCards :: HasGame m => Int -> m [Card]
+getActDeckCards n = scenarioFieldMap ScenarioActStack (findWithDefault [] n)
+
+{- | The cards making up agenda deck @n@, top first. As with 'getActDeckCards',
+the agenda in play is the head of the list.
+-}
+getAgendaDeckCards :: HasGame m => Int -> m [Card]
+getAgendaDeckCards n = scenarioFieldMap ScenarioAgendaStack (findWithDefault [] n)
+
+getScenarioMeta :: forall a m. (HasCallStack, HasGame m, FromJSON a) => m a
 getScenarioMeta = scenarioFieldMap ScenarioMeta toResult
 
 getScenarioMetaKeyDefault
-  :: forall a m. (HasCallStack, HasGame m, Tracing m, FromJSON a) => Key -> a -> m a
+  :: forall a m. (HasCallStack, HasGame m, FromJSON a) => Key -> a -> m a
 getScenarioMetaKeyDefault k def = do
   scenarioField ScenarioMeta <&> \case
     Object o -> case KeyMap.lookup k o of
@@ -127,38 +144,38 @@ getScenarioMetaKeyDefault k def = do
         Success v' -> v'
     _ -> def
 
-getEncounterDiscard :: (HasGame m, Tracing m) => ScenarioEncounterDeckKey -> m [EncounterCard]
+getEncounterDiscard :: HasGame m => ScenarioEncounterDeckKey -> m [EncounterCard]
 getEncounterDiscard RegularEncounterDeck = scenarioField ScenarioDiscard
 getEncounterDiscard k =
   scenarioFieldMap ScenarioEncounterDecks (view (at k . non (Deck [], []) . _2))
 
-getDifficulty :: (HasGame m, Tracing m) => m Difficulty
+getDifficulty :: HasGame m => m Difficulty
 getDifficulty = scenarioField ScenarioDifficulty
 
-countScenarioTokens :: (HasGame m, Tracing m) => Token -> m Int
+countScenarioTokens :: HasGame m => Token -> m Int
 countScenarioTokens token = scenarioFieldMap ScenarioTokens (countTokens token)
 
 withStandalone
-  :: (HasGame m, Tracing m) => (CampaignId -> m a) -> (ScenarioId -> m a) -> m a
+  :: HasGame m => (CampaignId -> m a) -> (ScenarioId -> m a) -> m a
 withStandalone cf sf =
   maybe (sf =<< selectJust TheScenario) cf =<< selectOne TheCampaign
 
-resignedWith :: (HasGame m, Tracing m) => CardDef -> m Bool
+resignedWith :: HasGame m => CardDef -> m Bool
 resignedWith cDef =
   scenarioFieldMap ScenarioResignedCardCodes (elem (toCardCode cDef))
 
-findTopOfDiscard :: (HasGame m, Tracing m) => CardMatcher -> m (Maybe EncounterCard)
+findTopOfDiscard :: HasGame m => CardMatcher -> m (Maybe EncounterCard)
 findTopOfDiscard = fmap listToMaybe . findInDiscard
 
-findInDiscard :: (HasGame m, Tracing m) => CardMatcher -> m [EncounterCard]
+findInDiscard :: HasGame m => CardMatcher -> m [EncounterCard]
 findInDiscard matcher =
   scenarioFieldMap ScenarioDiscard (filter (`cardMatch` matcher))
 
-getOriginalDeck :: (HasGame m, Tracing m) => InvestigatorId -> m (Deck PlayerCard)
+getOriginalDeck :: HasGame m => InvestigatorId -> m (Deck PlayerCard)
 getOriginalDeck iid = findWithDefault mempty iid <$> withStandalone (field CampaignDecks) (field ScenarioPlayerDecks)
 
 getKnownRemainingOriginalDeckCards
-  :: (HasGame m, Tracing m) => InvestigatorId -> m [PlayerCard]
+  :: HasGame m => InvestigatorId -> m [PlayerCard]
 getKnownRemainingOriginalDeckCards iid = do
   cards <- unDeck <$> getOriginalDeck iid
   inDiscard <- field InvestigatorDiscard iid
@@ -167,7 +184,7 @@ getKnownRemainingOriginalDeckCards iid = do
   let knownNotInDeck = inDiscard <> inHand <> inVictory
   pure $ filter (`notElem` knownNotInDeck) cards
 
-isInVictoryDisplay :: (HasGame m, Tracing m) => CardDef -> m Bool
+isInVictoryDisplay :: HasGame m => CardDef -> m Bool
 isInVictoryDisplay def = scenarioFieldMap ScenarioVictoryDisplay (elem def . map toCardDef)
 
 data EncounterDeckHandler = EncounterDeckHandler
@@ -204,16 +221,16 @@ encounterDeckLensFromKey :: ScenarioEncounterDeckKey -> Lens' ScenarioAttrs (Dec
 encounterDeckLensFromKey RegularEncounterDeck = encounterDeckL
 encounterDeckLensFromKey k = encounterDecksL . at k . non (Deck [], []) . _1
 
-getGrid :: (HasGame m, Tracing m) => m Grid
+getGrid :: HasGame m => m Grid
 getGrid = scenarioField ScenarioGrid
 
-getLayout :: (HasGame m, Tracing m) => m [GridTemplateRow]
+getLayout :: HasGame m => m [GridTemplateRow]
 getLayout = scenarioField ScenarioLocationLayout
 
-guardInScenario :: (HasGame m, Tracing m) => MaybeT m ()
+guardInScenario :: HasGame m => MaybeT m ()
 guardInScenario = liftGuardM inScenario
 
-inScenario :: (HasGame m, Tracing m) => m Bool
+inScenario :: HasGame m => m Bool
 inScenario = selectAny TheScenario
 
 setScenarioMeta :: (ReverseQueue m, ToJSON a) => a -> m ()

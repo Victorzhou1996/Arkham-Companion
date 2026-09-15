@@ -7,7 +7,7 @@ import Arkham.Asset.Uses
 import Arkham.Campaigns.TheScarletKeys.Helpers
 import Arkham.Campaigns.TheScarletKeys.Key.Cards as Keys
 import Arkham.Campaigns.TheScarletKeys.Key.Matcher
-import Arkham.Helpers.Modifiers (ModifierType (..), modifySelf, modifySelect)
+import Arkham.Helpers.Modifiers (ModifierType (..), modifySelect, modifySelf)
 import Arkham.Helpers.Query (getInvestigators)
 import Arkham.I18n
 import Arkham.Investigator.Types (Field (..))
@@ -15,7 +15,7 @@ import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Placement
 import Arkham.Projection
-import Arkham.Scenarios.DogsOfWar.Helpers
+import Arkham.Scenarios.TheScarletKeys.DogsOfWar.Helpers
 
 newtype TheClaretKnightHerSwornChampion = TheClaretKnightHerSwornChampion AssetAttrs
   deriving anyclass IsAsset
@@ -49,7 +49,7 @@ instance RunMessage TheClaretKnightHerSwornChampion where
     UseThisAbility iid (isSource attrs -> True) 1 -> do
       resources <- field InvestigatorResources iid
       scenarioI18n
-        $ chooseAmount'
+        $ chooseAmount
           iid
           "theClaretKnight.resources"
           "$resources"
@@ -62,7 +62,7 @@ instance RunMessage TheClaretKnightHerSwornChampion where
       pure a
     UseThisAbility iid (isSource attrs -> True) 2 -> do
       scenarioI18n
-        $ chooseAmount'
+        $ chooseAmount
           iid
           "theClaretKnight.resources"
           "$resources"
@@ -88,9 +88,9 @@ instance RunMessage TheClaretKnightHerSwornChampion where
     HandleTargetChoice iid (isSource attrs -> True) (AssetTarget aid) -> do
       let whenCanHoldToken tkn = whenM (matches aid (AssetCanHaveUses tkn))
       chooseOrRunOneM iid $ withI18n do
-        whenCanHoldToken Charge $ labeled' "charge" $ addUses attrs aid Charge 1
-        whenCanHoldToken Ammo $ labeled' "ammo" $ addUses attrs aid Ammo 1
-        whenCanHoldToken Supply $ labeled' "supply" $ addUses attrs aid Supply 1
-        whenCanHoldToken Secret $ labeled' "secret" $ addUses attrs aid Secret 1
+        whenCanHoldToken Charge $ labeled "charge" $ addUses attrs aid Charge 1
+        whenCanHoldToken Ammo $ labeled "ammo" $ addUses attrs aid Ammo 1
+        whenCanHoldToken Supply $ labeled "supply" $ addUses attrs aid Supply 1
+        whenCanHoldToken Secret $ labeled "secret" $ addUses attrs aid Secret 1
       pure a
     _ -> TheClaretKnightHerSwornChampion <$> liftRunMessage msg attrs

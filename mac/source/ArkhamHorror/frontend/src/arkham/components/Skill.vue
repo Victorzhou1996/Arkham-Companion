@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
+import MissingCardBadge from '@/arkham/components/MissingCardBadge.vue';
 import { Game } from '@/arkham/types/Game';
 import Token from '@/arkham/components/Token.vue';
 import * as ArkhamGame from '@/arkham/types/Game';
 import { AbilityLabel, AbilityMessage, Message, MessageType } from '@/arkham/types/Message';
-import { imgsrc } from '@/arkham/helpers';
+import { cardImg } from '@/arkham/helpers';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
@@ -31,7 +32,7 @@ const ownedByCurrentPlayer = computed(() =>
 const cardCode = computed(() => props.skill.cardCode)
 const image = computed(() => {
   const mutated = props.skill.mutated ? `_${props.skill.mutated}` : ''
-  return imgsrc(`cards/${cardCode.value.replace('c', '')}${mutated}.avif`)
+  return cardImg(`${cardCode.value.replace(/^c/, '')}${mutated}`)
 })
 const choices = computed(() => ArkhamGame.choices(props.game, props.playerId))
 
@@ -88,6 +89,7 @@ const choose = (index: number) => emits('choose', index)
 
 <template>
   <div class="skill" :class="{ attached }">
+    <MissingCardBadge :card-code="cardCode" />
     <img
       :src="image"
       :class="{ 'skill--can-interact': cardAction !== -1 }"

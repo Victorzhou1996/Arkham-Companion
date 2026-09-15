@@ -20,7 +20,6 @@ import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Source
 import Arkham.Target
-import Arkham.Tracing
 import Arkham.Trait
 import Data.Aeson.TH
 import Data.Data
@@ -99,13 +98,50 @@ data EffectAttrs = EffectAttrs
   }
   deriving stock (Show, Ord, Eq, Data)
 
-replaceNextSkillTest :: SkillTestId -> InvestigatorId -> EffectAttrs -> EffectAttrs
-replaceNextSkillTest sid iid e = e {effectWindow = go <$> e.window}
+{- | Rewrite the window that actually governs this effect's disable check.
+
+'isEndOfWindow' resolves against @effectDisableWindow <|> effectWindow@, so a staged
+window (\"until the end of the /next/ mythos phase\" -> \"until the end of /this/ mythos
+phase\") must be advanced in whichever field supplied it. Effects built with
+"Arkham.Effect.Builder" set only 'effectDisableWindow' (via @removeOn@); writing the
+advanced window into 'effectWindow' leaves the disable check reading the un-advanced
+window forever and the effect never expires.
+-}
+mapEffectWindow :: (EffectWindow -> EffectWindow) -> EffectAttrs -> EffectAttrs
+mapEffectWindow f e = case effectDisableWindow e of
+  Just w -> e {effectDisableWindow = Just (go w)}
+  Nothing -> e {effectWindow = go <$> effectWindow e}
  where
-  go = \case
-    EffectNextSkillTestWindow iid' | iid == iid' -> EffectSkillTestWindow sid
-    FirstEffectWindow ws -> FirstEffectWindow (map go ws)
-    a -> a
+  go (FirstEffectWindow ws) = FirstEffectWindow (map go ws)
+  go w = f w
+
+{- | Rewrite the window in /both/ the enable ('effectWindow') and disable
+('effectDisableWindow') fields.
+
+Use this when the rewrite changes whether the effect emits modifiers at all, not just when it
+expires. Emission is gated on 'effectWindow' alone (see 'Arkham.Effect.Effects.GenericEffect'
+and 'Arkham.Effect.Effects.WindowModifierEffect'), so rewriting only the disable window — which
+is what 'mapEffectWindow' does whenever "Arkham.Effect.Builder"'s @during@\/@removeOn@ populated
+one — leaves the effect permanently suppressed.
+-}
+mapEffectWindows :: (EffectWindow -> EffectWindow) -> EffectAttrs -> EffectAttrs
+mapEffectWindows f e =
+  e
+    { effectWindow = go <$> effectWindow e
+    , effectDisableWindow = go <$> effectDisableWindow e
+    }
+ where
+  go (FirstEffectWindow ws) = FirstEffectWindow (map go ws)
+  go w = f w
+
+-- | Advance a staged effect window to the next stage of its lifetime.
+advanceEffectWindow :: EffectWindow -> EffectWindow -> EffectAttrs -> EffectAttrs
+advanceEffectWindow old new = mapEffectWindow \w -> if w == old then new else w
+
+replaceNextSkillTest :: SkillTestId -> InvestigatorId -> EffectAttrs -> EffectAttrs
+replaceNextSkillTest sid iid = mapEffectWindows \case
+  EffectNextSkillTestWindow iid' | iid == iid' -> EffectSkillTestWindow sid
+  a -> a
 
 instance HasCardCode EffectAttrs where
   toCardCode = effectCardCode
@@ -294,7 +330,7 @@ setEffectMeta :: ToJSON a => a -> EffectAttrs -> EffectAttrs
 setEffectMeta a = extraL .~ toJSON a
 
 makeEffectBuilder
-  :: (Sourceable source, Targetable target, HasGame m, Tracing m)
+  :: (Sourceable source, Targetable target, HasGame m)
   => CardCode
   -> Maybe (EffectMetadata Message)
   -> source

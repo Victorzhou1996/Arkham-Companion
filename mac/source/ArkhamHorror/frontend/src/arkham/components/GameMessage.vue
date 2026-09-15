@@ -1,6 +1,6 @@
 <script lang="ts">
 import { defineComponent, h } from 'vue'
-import { imgsrc } from '@/arkham/helpers'
+import { chaosTokenImage } from '@/arkham/types/ChaosToken'
 import { cardArt } from '@/arkham/cardImages'
 import { Game } from '@/arkham/types/Game'
 import { handleEmbeddedI18n } from '@/arkham/i18n'
@@ -13,50 +13,6 @@ const knownTranslationCache = new Map<
   { source: object; target: object; translations: Map<string, string> }
 >()
 
-function imageFor(tokenFace: string) {
-  switch (tokenFace) {
-    case 'PlusOne':
-      return imgsrc('ct_plus1.png')
-    case 'Zero':
-      return imgsrc('ct_0.png')
-    case 'MinusOne':
-      return imgsrc('ct_minus1.png')
-    case 'MinusTwo':
-      return imgsrc('ct_minus2.png')
-    case 'MinusThree':
-      return imgsrc('ct_minus3.png')
-    case 'MinusFour':
-      return imgsrc('ct_minus4.png')
-    case 'MinusFive':
-      return imgsrc('ct_minus5.png')
-    case 'MinusSix':
-      return imgsrc('ct_minus6.png')
-    case 'MinusSeven':
-      return imgsrc('ct_minus7.png')
-    case 'MinusEight':
-      return imgsrc('ct_minus8.png')
-    case 'AutoFail':
-      return imgsrc('ct_autofail.png')
-    case 'ElderSign':
-      return imgsrc('ct_eldersign.png')
-    case 'Skull':
-      return imgsrc('ct_skull.png')
-    case 'Cultist':
-      return imgsrc('ct_cultist.png')
-    case 'Tablet':
-      return imgsrc('ct_tablet.png')
-    case 'ElderThing':
-      return imgsrc('ct_elderthing.png')
-    case 'BlessToken':
-      return imgsrc('ct_bless.png')
-    case 'CurseToken':
-      return imgsrc('ct_curse.png')
-    case 'FrostToken':
-      return imgsrc('ct_frost.png')
-    default:
-      return imgsrc('ct_blank.png')
-  }
-}
 
 export default defineComponent({
   props: {
@@ -88,6 +44,10 @@ export default defineComponent({
     }
 
     const msg = handleEmbeddedI18n(this.msg, this.t)
+      // Logs written before custom token formatting was fixed contain the
+      // Haskell constructor and an extra pair of quotes. Keep saved logs
+      // renderable while new entries use the canonical homebrew slug.
+      .replace(/\{token:"CustomToken "([^"]+)""\}/g, '{token:"$1"}')
     const splits = msg.split(/({[^}]+})/)
     const els = splits.map((split) => {
       if (/{card:"((?:[^"]|\\.)+)":"([^"]+)":"([^"]+)"}/.test(split)) {
@@ -166,7 +126,7 @@ export default defineComponent({
         if (found) {
           const [, token] = found
           if (token) {
-            return h('img', { src: imageFor(token), width: '23', class: 'chaos-token' })
+            return h('img', { 'src': chaosTokenImage(token), 'width': '23', 'class': 'chaos-token' })
           }
         }
       }

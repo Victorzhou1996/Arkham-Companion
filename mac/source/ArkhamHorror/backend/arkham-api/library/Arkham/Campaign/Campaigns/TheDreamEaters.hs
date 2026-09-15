@@ -16,6 +16,7 @@ import Arkham.Classes.HasGame
 import Arkham.Difficulty
 import {-# SOURCE #-} Arkham.GameEnv
 import Arkham.Helpers.Campaign hiding (addCampaignCardToDeckChoice)
+import Arkham.Helpers.FlavorText (buildFlavor, compose, flavor, h3, p, setTitle)
 import Arkham.Helpers.Log hiding (getHasRecord, whenHasRecord)
 import Arkham.Helpers.Log qualified as Lift
 import Arkham.Helpers.Query
@@ -28,7 +29,6 @@ import Arkham.Message.Lifted hiding (continue)
 import Arkham.Prelude
 import Arkham.Projection
 import Arkham.Queue
-import Arkham.Tracing
 import Data.Aeson (Result (..))
 
 newtype TheDreamEaters = TheDreamEaters CampaignAttrs
@@ -104,7 +104,7 @@ setCampaignPart part c@(TheDreamEaters attrs) msg = do
             )
 
 getHasRecord
-  :: (IsCampaignLogKey k, HasGame m, Tracing m, HasCallStack) => CampaignPart -> k -> m Bool
+  :: (IsCampaignLogKey k, HasGame m, HasCallStack) => CampaignPart -> k -> m Bool
 getHasRecord part key = do
   isCurrent <- getIsPartialCampaign part
   if isCurrent
@@ -118,7 +118,7 @@ getHasRecord part key = do
           Nothing -> False
 
 whenHasRecord
-  :: (IsCampaignLogKey k, HasGame m, Tracing m, HasCallStack) => CampaignPart -> k -> m () -> m ()
+  :: (IsCampaignLogKey k, HasGame m, HasCallStack) => CampaignPart -> k -> m () -> m ()
 whenHasRecord part key action = whenM (getHasRecord part key) action
 
 instance IsCampaign TheDreamEaters where
@@ -222,7 +222,14 @@ instance RunMessage TheDreamEaters where
           <> [CampaignStep $ campaignStep attrs]
         pure c
       CampaignStep PrologueStep -> do
-        story prologue
+        flavor $ campaignTitledFlavorText "prologueOpening"
+        flavor $ campaignTitledFlavorText "prologue"
+        flavor $ campaignTitledFlavorText "campaignStructure"
+        campaignI18n $ scope "additionalRulesAndClarifications" do
+          flavor $ setTitle "title" >> compose (scope "alert" $ h3 "title" >> p "body")
+          flavor $ setTitle "title" >> compose (scope "storyCards" $ h3 "title" >> p "body")
+          flavor $ setTitle "title" >> compose (scope "swarming" $ h3 "title" >> p "body")
+          flavor $ setTitle "title" >> compose (scope "hidden" $ h3 "title" >> p "body")
         theDreamQuest <- hasCampaignOption (CampaignVariant "theDreamQuest")
         theWebOfDreams <- hasCampaignOption (CampaignVariant "theWebOfDreams")
 
@@ -241,8 +248,14 @@ instance RunMessage TheDreamEaters where
         push
           $ Msg.questionLabel (ikey' "theDreamEaters.question.whichScenarioToStart") lead
           $ ChooseOne
-            [ Label "$theDreamEaters.label.beyondTheGatesOfSleep" [CampaignStep (PrologueStepPart 11)]
-            , Label "$theDreamEaters.label.wakingNightmare" [CampaignStep (PrologueStepPart 12)]
+            [ ScenarioLabel
+                "$theDreamEaters.label.theDreamQuest"
+                "06039"
+                [CampaignStep (PrologueStepPart 11)]
+            , ScenarioLabel
+                "$theDreamEaters.label.theWebOfDreams"
+                "06063"
+                [CampaignStep (PrologueStepPart 12)]
             ]
         pure c
       CampaignStep (PrologueStepPart 2) -> do
@@ -389,19 +402,20 @@ instance RunMessage TheDreamEaters where
               <> [DoneChoosingDecks]
         lift $ defaultCampaignRunner msg c
       CampaignStep (InterludeStep 1 _) -> do
+        flavor $ campaignTitledFlavorText "theBlackCat"
         case campaignMode meta of
           PartialMode TheWebOfDreams -> push $ CampaignStep (InterludeStepPart 1 Nothing 3)
           _ -> push $ CampaignStep (InterludeStepPart 1 Nothing 1)
         pure c
       CampaignStep (InterludeStepPart 1 _ 1) -> do
-        story theBlackCat1
+        flavor $ campaignTitledFlavorText "theBlackCat1"
         push $ case campaignMode meta of
           FullMode -> CampaignStep (InterludeStepPart 1 Nothing 2)
           _ -> NextCampaignStep (continue TheSearchForKadath)
         pure c
       CampaignStep (InterludeStepPart 1 _ 2) -> do
         storyWithChooseOne
-          theBlackCat2
+          (buildFlavor $ campaignTitledFlavorText "theBlackCat2")
           [ Label
               "$theDreamEaters.label.theBlackCat2NewsOfYourPlight"
               [InTheDreamQuest (Record $ toCampaignLogKey TheBlackCatDeliveredNewsOfYourPlight)]
@@ -425,25 +439,29 @@ instance RunMessage TheDreamEaters where
               FullMode ->
                 Msg.questionLabel (ikey' "theDreamEaters.question.proceedToWhichScenario") lead
                   $ ChooseOne
-                    [ Label "$theDreamEaters.label.theSearchForKadath" [NextCampaignStep (continue TheSearchForKadath)]
-                    , Label
-                        "$theDreamEaters.label.aThousandShapesOfHorror"
+                    [ ScenarioLabel
+                        "$theDreamEaters.label.theDreamQuest"
+                        "06119"
+                        [NextCampaignStep (continue TheSearchForKadath)]
+                    , ScenarioLabel
+                        "$theDreamEaters.label.theWebOfDreams"
+                        "06168"
                         [NextCampaignStep (continue AThousandShapesOfHorror)]
                     ]
               _ -> NextCampaignStep (continue AThousandShapesOfHorror)
 
-        story theBlackCat3
+        flavor $ campaignTitledFlavorText "theBlackCat3"
 
         whenM getIsTheWebOfDreams do
-          story youAreOnYourOwn
+          flavor $ campaignTitledGreenFlavorText "youAreOnYourOwn"
           record TheWebOfDreams YouAreOnYourOwn
 
         whenHasRecord TheDreamQuest TheBlackCatSharedKnowledgeOfTheDreamlands do
-          story theBlackCatSharedKnowledgeOfTheDreamlands
+          flavor $ campaignTitledGreenFlavorText "theBlackCatSharedKnowledgeOfTheDreamlands"
           recordInBoth TheBlackCatHasAHunch
 
         whenHasRecord TheDreamQuest TheBlackCatDeliveredNewsOfYourPlight do
-          story theBlackCatDeliveredNewsOfYourPlight
+          flavor $ campaignTitledGreenFlavorText "theBlackCatDeliveredNewsOfYourPlight"
           pushAll
             [ InTheDreamQuest (Record $ toCampaignLogKey TheBlackCatIsAtYourSide)
             , InTheDreamQuest (AddChaosToken ElderThing)
@@ -451,7 +469,7 @@ instance RunMessage TheDreamEaters where
             ]
 
         whenHasRecord TheDreamQuest TheBlackCatWarnedTheOthers do
-          story theBlackCatWarnedTheOthers
+          flavor $ campaignTitledGreenFlavorText "theBlackCatWarnedTheOthers"
           pushAll
             [ InTheWebOfDreams (Record $ toCampaignLogKey TheBlackCatIsAtYourSide)
             , InTheWebOfDreams (AddChaosToken Tablet)
@@ -459,7 +477,7 @@ instance RunMessage TheDreamEaters where
             ]
 
         whenHasRecord TheDreamQuest OkayFineHaveItYourWayThen do
-          story okayFineHaveItYourWayThen
+          flavor $ campaignTitledGreenFlavorText "okayFineHaveItYourWayThen"
           recordInBoth YouAskedForIt
         push next
         pure c
@@ -468,13 +486,13 @@ instance RunMessage TheDreamEaters where
         pure c
       CampaignStep (InterludeStepPart 2 _ 1) -> do
         -- Start TheWebOfDreams
-        story theOneironauts1
+        flavor $ campaignTitledFlavorText "theOneironauts1"
 
         hasAHunch <- getHasRecord TheWebOfDreams TheBlackCatHasAHunch
         randolphDidNotSurvive <- getHasRecord TheWebOfDreams RandolphDidNotSurviveTheDescent
 
         when (hasAHunch && randolphDidNotSurvive) do
-          story where'sBlondie
+          flavor $ campaignTitledGreenFlavorText "wheresBlondie"
           pushAll
             [ InTheDreamQuest (CrossOutRecord $ toCampaignLogKey TheBlackCatHasAHunch)
             , InTheWebOfDreams (CrossOutRecord $ toCampaignLogKey TheBlackCatHasAHunch)
@@ -483,11 +501,11 @@ instance RunMessage TheDreamEaters where
         didYouAskForIt <- getHasRecord TheWebOfDreams YouAskedForIt
         if didYouAskForIt
           then do
-            story youAskedForIt
+            flavor $ campaignTitledGreenFlavorText "youAskedForIt"
             push $ CampaignStep (InterludeStepPart 2 Nothing 4)
             pure c
           else do
-            storyWithChooseOne youDidNotAskForIt
+            storyWithChooseOne (buildFlavor $ campaignTitledFlavorText "youDidNotAskForIt")
               $ if hasAHunch
                 then
                   [ Label
@@ -510,26 +528,27 @@ instance RunMessage TheDreamEaters where
             pure c
       CampaignStep (InterludeStepPart 2 _ 2) -> do
         -- TheDreamQuest
-        story theOneironauts2
+        flavor $ campaignTitledFlavorText "theOneironauts2"
         notCaptured <- selectAny $ not_ (investigatorWithRecord WasCaptured)
         randolphEludedCapture <- getHasRecord TheDreamQuest RandolphEludedCapture
 
-        story
+        flavor
+          $ campaignTitledGreenFlavorText
           $ if notCaptured
-            then atLeastOneNotCaptured
-            else allCaptured
+            then "atLeastOneNotCaptured"
+            else "allCaptured"
 
         hasAHunch <- getHasRecord TheDreamQuest TheBlackCatHasAHunch
         if hasAHunch && randolphEludedCapture
           then do
-            story searchingForTheTruth
+            flavor $ campaignTitledGreenFlavorText "searchingForTheTruth"
             recordInBoth TheBlackCatIsSearchingForTheTruth
             push $ CampaignStep (InterludeStepPart 2 Nothing 4)
           else do
             inTheWebOfDreams $ push $ CampaignStep $ InterludeStepPart 2 Nothing 3
         pure c
       CampaignStep (InterludeStepPart 2 _ 3) -> do
-        story nowWhereWasI
+        flavor $ campaignTitledFlavorText "nowWhereWasI"
 
         requestedAid <- getHasRecord TheWebOfDreams TheBlackCatRequestedAidFromTheOthers
         warnedTheOthers <- getHasRecord TheWebOfDreams TheBlackCatWarnedTheOthers
@@ -538,11 +557,11 @@ instance RunMessage TheDreamEaters where
         theBlackCatIsAtYourSideDreamQuest <- getHasRecord TheDreamQuest TheBlackCatIsAtYourSide
 
         when requestedAid do
-          story theBlackCatRequestedAidFromTheOthers
+          flavor $ campaignTitledGreenFlavorText "theBlackCatRequestedAidFromTheOthers"
 
           unless (theBlackCatIsAtYourSideWebOfDreams || theBlackCatIsAtYourSideDreamQuest) do
             record TheWebOfDreams TheBlackCatIsAtYourSide
-            pushBoth $ AddChaosToken ElderThing
+            pushBoth $ AddChaosToken Tablet
 
           when theBlackCatIsAtYourSideDreamQuest do
             push $ InTheDreamQuest (CrossOutRecord $ toCampaignLogKey TheBlackCatIsAtYourSide)
@@ -550,7 +569,7 @@ instance RunMessage TheDreamEaters where
             pushBoth $ SwapChaosToken ElderThing Tablet
 
         when warnedTheOthers do
-          story warnedTheOthersStory
+          flavor $ campaignTitledGreenFlavorText "warnedTheOthersStory"
           unless (theBlackCatIsAtYourSideWebOfDreams || theBlackCatIsAtYourSideDreamQuest) do
             record TheDreamQuest TheBlackCatIsAtYourSide
             pushBoth $ AddChaosToken ElderThing
@@ -561,7 +580,7 @@ instance RunMessage TheDreamEaters where
             pushBoth $ SwapChaosToken Tablet ElderThing
 
         when sharedTheKnowledge do
-          story sharedTheKnowledgeStory
+          flavor $ campaignTitledGreenFlavorText "sharedTheKnowledgeStory"
           record TheDreamQuest TheDreamersKnowOfAnotherPath
 
           when theBlackCatIsAtYourSideDreamQuest do
@@ -579,17 +598,23 @@ instance RunMessage TheDreamEaters where
         push
           $ Msg.questionLabel (ikey' "theDreamEaters.question.proceedToWhichScenario") lead
           $ ChooseOne
-            [ Label "$theDreamEaters.label.darkSideOfTheMoon" [NextCampaignStep (continue DarkSideOfTheMoon)]
-            , Label "$theDreamEaters.label.pointOfNoReturn" [NextCampaignStep (continue PointOfNoReturn)]
+            [ ScenarioLabel
+                "$theDreamEaters.label.theDreamQuest"
+                "06206"
+                [NextCampaignStep (continue DarkSideOfTheMoon)]
+            , ScenarioLabel
+                "$theDreamEaters.label.theWebOfDreams"
+                "06247"
+                [NextCampaignStep (continue PointOfNoReturn)]
             ]
         pure c
       CampaignStep (InterludeStep 3 _) -> do
         inTheDreamQuest $ push $ CampaignStep $ InterludeStepPart 3 Nothing 1
         pure c
       CampaignStep (InterludeStepPart 3 _ 1) -> do
-        story theGreatOnes1
+        flavor $ campaignTitledFlavorText "theGreatOnes1"
         whenM (getHasRecord TheDreamQuest TheDreamersGrowWeaker) do
-          story theGreatOnes1GrowWeaker
+          flavor $ campaignTitledGreenFlavorText "theGreatOnes1GrowWeaker"
           addChaosToken $ case attrs.difficulty of
             Easy -> MinusThree
             Standard -> MinusFour
@@ -600,7 +625,7 @@ instance RunMessage TheDreamEaters where
         isSearchingForTheTruth <- getHasRecord TheDreamQuest TheBlackCatIsSearchingForTheTruth
 
         when (randolphDidNotSurvive && isSearchingForTheTruth) do
-          story theGreatOnes1Searching
+          flavor $ campaignTitledGreenFlavorText "theGreatOnes1Searching"
           pushAll
             [ InTheDreamQuest (CrossOutRecord $ toCampaignLogKey TheBlackCatIsSearchingForTheTruth)
             , InTheWebOfDreams (CrossOutRecord $ toCampaignLogKey TheBlackCatIsSearchingForTheTruth)
@@ -609,12 +634,12 @@ instance RunMessage TheDreamEaters where
         didYouAskForIt <- getHasRecord TheDreamQuest YouAskedForIt
         if didYouAskForIt
           then do
-            story theGreatOnes1YouAskedForIt
+            flavor $ campaignTitledGreenFlavorText "theGreatOnes1YouAskedForIt"
             push $ CampaignStep (InterludeStepPart 3 Nothing 3)
             pure c
           else do
             hasAHunch <- getHasRecord TheDreamQuest TheBlackCatHasAHunch
-            storyWithChooseOne theGreatOnes1Part2
+            storyWithChooseOne (buildFlavor $ campaignTitledFlavorText "theGreatOnes1Part2")
               $ if hasAHunch
                 then
                   [ Label
@@ -632,12 +657,12 @@ instance RunMessage TheDreamEaters where
             inTheWebOfDreams $ push $ CampaignStep $ InterludeStepPart 3 Nothing 2
             pure c
       CampaignStep (InterludeStepPart 3 _ 2) -> do
-        story theGreatOnes2
+        flavor $ campaignTitledFlavorText "theGreatOnes2"
         possessTheSilverKey <- getHasRecord TheWebOfDreams TheInvestigatorsPossessTheSilverKey
 
         if possessTheSilverKey
           then do
-            story theGreatOnes2TheSilverKey
+            flavor $ campaignTitledGreenFlavorText "theGreatOnes2TheSilverKey"
             inTheWebOfDreams do
               push $ CrossOutRecord $ toCampaignLogKey TheInvestigatorsPossessTheSilverKey
               removeCampaignCard Assets.theSilverKey
@@ -656,17 +681,17 @@ instance RunMessage TheDreamEaters where
         isSearching <- getHasRecord TheDreamQuest TheBlackCatIsSearchingForTheTruth
         if isSearching
           then do
-            story theGreatOnes2Searching
+            flavor $ campaignTitledGreenFlavorText "theGreatOnes2Searching"
             recordInBoth TheBlackCatKnowsTheTruth
           else do
-            story theGreatOnes2Part2
+            flavor $ campaignTitledFlavorText "theGreatOnes2Part2"
             spokeOfNyarlathotep <- getHasRecord TheDreamQuest TheBlackCatSpokeOfNyarlathotep
             atYourSideTheWebOfDreams <- getHasRecord TheWebOfDreams TheBlackCatIsAtYourSide
             atYourSideTheDreamQuest <- getHasRecord TheDreamQuest TheBlackCatIsAtYourSide
             let neitherCampaignHasBlackCatAtYourSide = not atYourSideTheWebOfDreams && not atYourSideTheDreamQuest
 
             when spokeOfNyarlathotep do
-              story theGreatOnes2Nyarlathotep
+              flavor $ campaignTitledGreenFlavorText "theGreatOnes2Nyarlathotep"
 
               if
                 | neitherCampaignHasBlackCatAtYourSide -> do
@@ -680,7 +705,7 @@ instance RunMessage TheDreamEaters where
 
             spokeOfAtlachNacha <- getHasRecord TheDreamQuest TheBlackCatSpokeOfAtlachNacha
             when spokeOfAtlachNacha do
-              story theGreatOnes2AtlachNacha
+              flavor $ campaignTitledGreenFlavorText "theGreatOnes2AtlachNacha"
               if
                 | neitherCampaignHasBlackCatAtYourSide -> do
                     record TheWebOfDreams TheBlackCatIsAtYourSide
@@ -698,8 +723,14 @@ instance RunMessage TheDreamEaters where
         push
           $ Msg.questionLabel (ikey' "theDreamEaters.question.proceedToWhichScenario") lead
           $ ChooseOne
-            [ Label "$theDreamEaters.label.whereTheGodsDwell" [NextCampaignStep (continue WhereTheGodsDwell)]
-            , Label "$theDreamEaters.label.weaverOfTheCosmos" [NextCampaignStep (continue WeaverOfTheCosmos)]
+            [ ScenarioLabel
+                "$theDreamEaters.label.theDreamQuest"
+                "06286"
+                [NextCampaignStep (continue WhereTheGodsDwell)]
+            , ScenarioLabel
+                "$theDreamEaters.label.theWebOfDreams"
+                "06333"
+                [NextCampaignStep (continue WeaverOfTheCosmos)]
             ]
         pure c
       CampaignStep EpilogueStep -> do
@@ -714,65 +745,68 @@ instance RunMessage TheDreamEaters where
             returned <- getHasRecord TheWebOfDreams TheInvestigatorsReturnedToReality
             neverEscaped <- getHasRecord TheWebOfDreams TheInvestigatorsNeverEscaped
             stillInDreamlands <- getHasRecord TheWebOfDreams TheInvestigatorsAreStillInTheDreamlands
+            let showEpilogue n = do
+                  withI18n $ countVar n $ flavor $ campaignTitledFlavorText "epilogueMatrix"
+                  flavor $ campaignTitledFlavorText $ "epilogue" <> tshow n
             if
               | invasionHasBegun ->
                   if
                     | bridgeCompleted -> do
-                        story $ i18n "theDreamEaters.epilogue1"
+                        showEpilogue 1
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | returned -> do
-                        story $ i18n "theDreamEaters.epilogue2"
+                        showEpilogue 2
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | neverEscaped -> do
-                        story $ i18n "theDreamEaters.epilogue3"
+                        showEpilogue 3
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | stillInDreamlands -> do
-                        story $ i18n "theDreamEaters.epilogue4"
+                        showEpilogue 4
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | otherwise -> error "invalid"
               | awoke ->
                   if
                     | bridgeCompleted -> do
-                        story $ i18n "theDreamEaters.epilogue5"
+                        showEpilogue 5
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 5
                     | returned -> do
-                        story $ i18n "theDreamEaters.epilogue6"
+                        showEpilogue 6
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | neverEscaped -> do
-                        story $ i18n "theDreamEaters.epilogue7"
+                        showEpilogue 7
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | stillInDreamlands -> do
-                        story $ i18n "theDreamEaters.epilogue8"
+                        showEpilogue 8
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | otherwise -> error "invalid"
               | stayed ->
                   if
                     | bridgeCompleted -> do
-                        story $ i18n "theDreamEaters.epilogue9"
+                        showEpilogue 9
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | returned -> do
-                        story $ i18n "theDreamEaters.epilogue10"
+                        showEpilogue 10
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | neverEscaped -> do
-                        story $ i18n "theDreamEaters.epilogue11"
+                        showEpilogue 11
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | stillInDreamlands -> do
-                        story $ i18n "theDreamEaters.epilogue12"
+                        showEpilogue 12
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | otherwise -> error "invalid"
               | traveled ->
                   if
                     | bridgeCompleted -> do
-                        story $ i18n "theDreamEaters.epilogue13"
+                        showEpilogue 13
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 13
                     | returned -> do
-                        story $ i18n "theDreamEaters.epilogue14"
+                        showEpilogue 14
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | neverEscaped -> do
-                        story $ i18n "theDreamEaters.epilogue15"
+                        showEpilogue 15
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | stillInDreamlands -> do
-                        story $ i18n "theDreamEaters.epilogue16"
+                        showEpilogue 16
                         inTheDreamQuest $ push $ CampaignStep $ EpilogueStepPart 17
                     | otherwise -> error "invalid"
               | otherwise -> error "invalid"
@@ -789,7 +823,10 @@ instance RunMessage TheDreamEaters where
         iids <- select $ investigatorWithRecord WasCaptured <> not_ DefeatedInvestigator
         when (notNull iids) do
           players <- traverse getPlayer iids
-          push $ Msg.story players $ i18n "theDreamEaters.brokeThFromeLawOfUlthar"
+          push
+            $ Msg.story players
+            $ buildFlavor
+            $ campaignTitledGreenFlavorText "brokeTheLawOfUlthar"
           for_ iids $ push . InvestigatorKilled (toSource attrs)
         push GameOver
         pure c

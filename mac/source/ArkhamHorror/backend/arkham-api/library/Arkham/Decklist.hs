@@ -3,9 +3,10 @@ module Arkham.Decklist (module Arkham.Decklist, module Arkham.Decklist.Type) whe
 import Arkham.Card hiding (setTaboo)
 import Arkham.Card.PlayerCard
 import Arkham.Customization
+import Arkham.Decklist.RandomBasicWeakness (ArkhamBuildCardPool, parseArkhamBuildCardPool)
 import Arkham.Decklist.Type
 import Arkham.Id
-import Arkham.Investigator
+import Arkham.Investigator.Cards (allInvestigatorCards)
 import Arkham.Name
 import Arkham.PlayerCard
 import Arkham.Prelude hiding (optional, try, (<|>))
@@ -28,6 +29,7 @@ data Decklist = Decklist
   , decklistCards :: [PlayerCard]
   , decklistExtraDeck :: [PlayerCard]
   , decklistTaboo :: Maybe TabooList
+  , decklistCardPool :: Maybe ArkhamBuildCardPool
   , decklistUrl :: Maybe Text
   , decklistCardAttachments :: Map CardCode [CardCode]
   }
@@ -45,6 +47,9 @@ instance HasField "extra" Decklist [PlayerCard] where
 instance HasField "taboo" Decklist (Maybe TabooList) where
   getField = decklistTaboo
 
+instance HasField "cardPool" Decklist (Maybe ArkhamBuildCardPool) where
+  getField = decklistCardPool
+
 instance HasField "url" Decklist (Maybe Text) where
   getField = decklistUrl
 
@@ -59,6 +64,7 @@ loadDecklist decklist =
     <$> loadDecklistCards slots decklist
     <*> loadExtraDeck decklist
     <*> pure (fromTabooId $ taboo_id decklist)
+    <*> pure (parseArkhamBuildCardPool decklist)
     <*> pure (url decklist)
     <*> pure (decklistAttachments decklist)
 
@@ -101,7 +107,7 @@ loadDecklistCards f decklist =
       genPlayerCardWith (lookupPlayerCardDef cardCode)
         $ applyDecklistCardMeta decklist
         . applyCustomizations decklist
-        . setPlayerCardOwner (normalizeInvestigatorId $ decklistInvestigatorId decklist)
+        . setPlayerCardOwner (decklistInvestigatorId decklist)
         . setTaboo (fromTabooId $ taboo_id decklist)
 
 loadExtraDeck :: CardGen m => ArkhamDBDecklist -> m [PlayerCard]
@@ -114,14 +120,22 @@ loadExtraDeck decklist = do
       pure $ T.splitOn "," s
 
   case mResult of
-    Nothing -> loadDecklistCards sideSlots decklist
+    Nothing -> loadDecklistCards (withoutInvestigatorCards . sideSlotsWithoutAttachments) decklist
     Just codes -> do
       let convert =
             applyDecklistCardMeta decklist
               . applyCustomizations decklist
-              . setPlayerCardOwner (normalizeInvestigatorId $ decklistInvestigatorId decklist)
+              . setPlayerCardOwner (decklistInvestigatorId decklist)
               . setTaboo (fromTabooId $ taboo_id decklist)
-      traverse ((`genPlayerCardWith` convert) . lookupPlayerCardDef . CardCode) codes
+      for (filter (not . isInvestigatorCardCode) $ map CardCode codes) \cardCode ->
+        genPlayerCardWith (lookupPlayerCardDef cardCode) convert
+
+-- side decks may include the investigator's own card, which is not a player card
+isInvestigatorCardCode :: CardCode -> Bool
+isInvestigatorCardCode = (`Map.member` allInvestigatorCards)
+
+withoutInvestigatorCards :: Map CardCode Int -> Map CardCode Int
+withoutInvestigatorCards = Map.filterWithKey \cardCode _ -> not (isInvestigatorCardCode cardCode)
 
 applyDecklistCardMeta :: ArkhamDBDecklist -> PlayerCard -> PlayerCard
 applyDecklistCardMeta decklist pCard = case Map.lookup pCard.cardCode (decklistAttachments decklist) of
@@ -162,7 +176,7 @@ parseCustomizations = IntMap.fromList <$> sepBy parseEntry (char ',')
     choices <-
       optionMaybe
         $ char '|'
-        *> (try parseSkillTypes <|> try parseTraits <|> try parseIndex <|> try parseCardCodes <|> pure [])
+        *> (try parseSkillTypes <|> try parseIndex <|> try parseCardCodes <|> try parseTraits <|> pure [])
     pure (n, fromMaybe [] choices)
   parseIndex = do
     n <- parseInt
@@ -184,8 +198,19 @@ parseCustomizations = IntMap.fromList <$> sepBy parseEntry (char ',')
       Success x -> pure $ ChosenTrait x
       _ -> unexpected ("invalid trait: " ++ t)
 
-decklistAttachments :: ArkhamDBDecklist -> Map CardCode [CardCode]
-decklistAttachments decklist = fromMaybe mempty do
+attachmentLimit :: CardCode -> Int
+attachmentLimit "03264" = 3 -- Stick to the Plan
+attachmentLimit "07303" = 5 -- Ancestral Knowledge
+attachmentLimit "10079" = 3 -- Bewitching
+attachmentLimit _ = maxBound
+
+sideSlotsWithoutAttachments :: ArkhamDBDecklist -> Map CardCode Int
+sideSlotsWithoutAttachments decklist = foldr doRemoveCard (sideSlots decklist) (concat $ Map.elems $ decklistAttachments decklist)
+ where
+  doRemoveCard cardCode = Map.update (\n -> guard (n > 1) $> n - 1) cardCode
+
+metaDecklistAttachments :: ArkhamDBDecklist -> Map CardCode [CardCode]
+metaDecklistAttachments decklist = fromMaybe mempty do
   meta' <- meta decklist
   Object o <- decode (encodeUtf8 $ fromStrict meta')
   pure $ Map.fromList $ mapMaybe parseAttachments $ KeyMap.toList o
@@ -196,3 +221,6 @@ decklistAttachments decklist = fromMaybe mempty do
     guard $ notNull attachments
     pure (CardCode cardCode, attachments)
   parseAttachments _ = Nothing
+
+decklistAttachments :: ArkhamDBDecklist -> Map CardCode [CardCode]
+decklistAttachments = Map.mapWithKey (take . attachmentLimit) . metaDecklistAttachments

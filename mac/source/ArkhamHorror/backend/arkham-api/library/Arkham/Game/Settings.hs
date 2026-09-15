@@ -1,9 +1,6 @@
 module Arkham.Game.Settings where
 
-import Arkham.Ai.Orphans ()
-import Arkham.Ai.State (AiPlayerState)
 import Arkham.Card.CardCode (CardCode)
-import Arkham.Id (PlayerId)
 import Arkham.Prelude
 import Arkham.UltimatumsAndBoons.Types
 import Control.Monad.Fail
@@ -54,10 +51,6 @@ instance FromJSON UndoMode where
 data Settings = Settings
   { settingsAbilitiesCannotReactToThemselves :: Bool -- Grotesque Statue FAQ (September 2023)
   , settingsAsIfRuling :: AsIfRuling
-  , settingsAiPlayers :: Map PlayerId AiPlayerState
-  -- ^ Per-seat AI configuration. Empty for ordinary human-only games; absent
-  -- from older saves (defaults to 'mempty' on load).
-  , settingsAchievementsEnabled :: Bool
   , settingsUltimatumsAndBoons :: Set UltimatumOrBoon
   -- ^ Variant rules selected at game creation; permanent for the campaign or
   -- standalone scenario per the FAQ, so nothing mutates this after creation.
@@ -73,6 +66,9 @@ data Settings = Settings
   -- ^ Ultimatum of The Scream: allies removed from the game for the rest of
   -- the campaign.
   , settingsUndoMode :: UndoMode
+  , settingsAchievementsEnabled :: Bool
+  -- ^ Above-the-table achievement tracking for this game. Defaults on;
+  -- only shown at creation for campaigns with an achievement list.
   }
   deriving stock (Eq, Show, Generic, Data)
 
@@ -92,9 +88,14 @@ asIfRulingFromStrictAsIfAt = \case
   False -> Chapter1AsIfRuling
   True -> Chapter2AsIfRuling
 
+{- | Fallback when the client doesn't send an explicit ruling. Official
+campaigns from @11@ on are Chapter 2. Homebrew campaigns (@:@-prefixed ids,
+which don't order against official ones) declare their chapter in their
+@campaign.json@ and the client sends it; without one they are Chapter 1.
+-}
 defaultAsIfRulingForCampaign :: Maybe Text -> AsIfRuling
 defaultAsIfRulingForCampaign = \case
-  Just cid | cid >= "11" -> Chapter2AsIfRuling
+  Just cid | not (":" `isPrefixOf` cid), cid >= "11" -> Chapter2AsIfRuling
   _ -> Chapter1AsIfRuling
 
 defaultSettings :: Settings
@@ -102,13 +103,12 @@ defaultSettings =
   Settings
     { settingsAbilitiesCannotReactToThemselves = True
     , settingsAsIfRuling = Chapter1AsIfRuling
-    , settingsAiPlayers = mempty
-    , settingsAchievementsEnabled = True
     , settingsUltimatumsAndBoons = mempty
     , settingsUltimatumsAndBoonsEnabled = True
     , settingsRolledUltimatumOrBoon = Nothing
     , settingsScreamedAllies = mempty
     , settingsUndoMode = FullUndo
+    , settingsAchievementsEnabled = True
     }
 
 instance ToJSON Settings where
@@ -116,13 +116,12 @@ instance ToJSON Settings where
     [ "settingsAbilitiesCannotReactToThemselves" .= settingsAbilitiesCannotReactToThemselves settings
     , "settingsAsIfRuling" .= settingsAsIfRuling settings
     , "settingsStrictAsIfAt" .= settingsStrictAsIfAt settings -- legacy/client compatibility
-    , "aiPlayers" .= settingsAiPlayers settings
-    , "settingsAchievementsEnabled" .= settingsAchievementsEnabled settings
     , "settingsUltimatumsAndBoons" .= settingsUltimatumsAndBoons settings
     , "settingsUltimatumsAndBoonsEnabled" .= settingsUltimatumsAndBoonsEnabled settings
     , "settingsRolledUltimatumOrBoon" .= settingsRolledUltimatumOrBoon settings
     , "settingsScreamedAllies" .= settingsScreamedAllies settings
     , "settingsUndoMode" .= settingsUndoMode settings
+    , "settingsAchievementsEnabled" .= settingsAchievementsEnabled settings
     ]
 
 instance FromJSON Settings where
@@ -132,22 +131,20 @@ instance FromJSON Settings where
     legacyStrictAsIfAt <- o .:? "settingsStrictAsIfAt"
     asIfRuling <-
       o .:? "settingsAsIfRuling" .!= maybe defaultSettings.settingsAsIfRuling asIfRulingFromStrictAsIfAt legacyStrictAsIfAt
-    aiPlayers <- o .:? "aiPlayers" .!= mempty
-    achievementsEnabled <- o .:? "settingsAchievementsEnabled" .!= True
     ultimatumsAndBoons <- o .:? "settingsUltimatumsAndBoons" .!= mempty
     ultimatumsAndBoonsEnabled <- o .:? "settingsUltimatumsAndBoonsEnabled" .!= True
     rolledUltimatumOrBoon <- o .:? "settingsRolledUltimatumOrBoon" .!= Nothing
     screamedAllies <- o .:? "settingsScreamedAllies" .!= mempty
     undoMode <- o .:? "settingsUndoMode" .!= FullUndo
+    achievementsEnabled <- o .:? "settingsAchievementsEnabled" .!= True
     pure
       Settings
         { settingsAbilitiesCannotReactToThemselves = abilitiesCannotReactToThemselves
         , settingsAsIfRuling = asIfRuling
-        , settingsAiPlayers = aiPlayers
-        , settingsAchievementsEnabled = achievementsEnabled
         , settingsUltimatumsAndBoons = ultimatumsAndBoons
         , settingsUltimatumsAndBoonsEnabled = ultimatumsAndBoonsEnabled
         , settingsRolledUltimatumOrBoon = rolledUltimatumOrBoon
         , settingsScreamedAllies = screamedAllies
         , settingsUndoMode = undoMode
+        , settingsAchievementsEnabled = achievementsEnabled
         }

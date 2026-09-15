@@ -10,7 +10,8 @@ rather than on resolutions.
 -}
 module Arkham.Achievements.EdgeOfTheEarthSpec (spec) where
 
-import Arkham.Act.Cards qualified as Acts
+import Arkham.Act.CardDefs.EdgeOfTheEarth.FatalMirage qualified as Acts
+import Arkham.Act.CardDefs.EdgeOfTheEarth.TheHeartOfMadness qualified as Acts
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Asset.Types qualified as Asset
 import Arkham.Campaign.Types qualified as Campaign
@@ -25,19 +26,22 @@ import Arkham.Campaigns.EdgeOfTheEarth.Key
 import Arkham.Campaigns.EdgeOfTheEarth.Partner (expeditionTeam)
 import Arkham.Campaigns.EdgeOfTheEarth.Seal (Seal (..), SealKind (..))
 import Arkham.Difficulty
-import Arkham.Enemy.Cards qualified as Enemies
+import Arkham.Enemy.CardDefs.EdgeOfTheEarth.Penguins qualified as Enemies
+import Arkham.Enemy.CardDefs.EdgeOfTheEarth.TheHeartOfMadness qualified as Enemies
 import Arkham.Exhaust (mkExhaustion)
 import Arkham.Game.Settings (settingsAchievementsEnabled)
 import Arkham.Key
-import Arkham.Location.Cards qualified as Locations
+import Arkham.Location.CardDefs.EdgeOfTheEarth.TheHeartOfMadness qualified as Locations
+import Arkham.Location.CardDefs.EdgeOfTheEarth.ToTheForbiddenPeaks qualified as Locations
 import Arkham.Location.Types (revealedL)
 import Arkham.Movement (move)
 import Arkham.Placement
 import Arkham.Scenario.Types qualified as Scenario
 import Arkham.Source
-import Arkham.Story.Cards qualified as Stories
+import Arkham.Story.CardDefs.EdgeOfTheEarth.FatalMirage qualified as Stories
 import Arkham.Token qualified as Token
-import Arkham.Treachery.Cards qualified as Treacheries
+import Arkham.Treachery.CardDefs.EdgeOfTheEarth.Tekelili qualified as Treacheries
+import Arkham.Treachery.CardDefs.NightOfTheZealot.TheMidnightMasks qualified as Treacheries
 import Helpers.Achievements
 import Helpers.UltimatumsAndBoons (Ultimatum (..), withUltimatums)
 import TestImport.New
@@ -261,6 +265,13 @@ spec = describe "Edge of the Earth achievements" $ do
       asEdgeOfTheEarth
       survive [Assets.drAmyKenslerProfessorOfBiology, Assets.danforthBrilliantStudent]
       progressed <- didProgressEdgeOfTheEarth ThereAndBackAgain ["DrAmyKensler", "Danforth"]
+      finishTheCampaign
+      progressed `refShouldBe` True
+
+    it "counts a Resolute partner, recorded under their Resolute printing" . gameTest $ \_ -> do
+      asEdgeOfTheEarth
+      survive [Assets.eliyahAshevakDogHandlerResolute]
+      progressed <- didProgressEdgeOfTheEarth ThereAndBackAgain ["EliyahAshevak"]
       finishTheCampaign
       progressed `refShouldBe` True
 

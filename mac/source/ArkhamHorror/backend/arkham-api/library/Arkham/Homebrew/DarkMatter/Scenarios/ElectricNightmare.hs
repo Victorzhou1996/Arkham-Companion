@@ -1,0 +1,207 @@
+module Arkham.Homebrew.DarkMatter.Scenarios.ElectricNightmare (electricNightmare) where
+
+import Arkham.Card
+import Arkham.Helpers.FlavorText
+import Arkham.Helpers.Query (allInvestigators)
+import Arkham.Homebrew.DarkMatter.CardDefs.Acts qualified as Acts
+import Arkham.Homebrew.DarkMatter.CardDefs.Agendas qualified as Agendas
+import Arkham.Homebrew.DarkMatter.CardDefs.Assets qualified as Assets
+import Arkham.Homebrew.DarkMatter.CardDefs.Enemies qualified as Enemies
+import Arkham.Homebrew.DarkMatter.CardDefs.Locations qualified as Locations
+import Arkham.Homebrew.DarkMatter.CardDefs.Treacheries qualified as Treacheries
+import Arkham.Homebrew.DarkMatter.Helpers
+import Arkham.Homebrew.DarkMatter.Key
+import Arkham.Homebrew.DarkMatter.Sets qualified as Set
+import Arkham.Id
+import Arkham.Location.Grid
+import Arkham.Matcher
+import Arkham.Message.Lifted.Log
+import Arkham.Placement
+import Arkham.Resolution
+import Arkham.Scenario.Import.Lifted
+
+newtype ElectricNightmare = ElectricNightmare ScenarioAttrs
+  deriving anyclass (IsScenario, HasModifiersFor)
+  deriving newtype (Show, Eq, ToJSON, FromJSON, Entity)
+
+electricNightmare :: Difficulty -> ElectricNightmare
+electricNightmare difficulty =
+  scenario ElectricNightmare ":dark-matter:054" "Electric Nightmare" difficulty []
+
+instance HasChaosTokenValue ElectricNightmare where
+  getChaosTokenValue iid tokenFace (ElectricNightmare attrs) = case tokenFace of
+    Skull -> do
+      -- Easy/Standard: -X where X is half of your Memories (rounded down).
+      -- Hard/Expert: -X where X is your Memories.
+      memories <- getMemories iid
+      pure $ toChaosTokenValue attrs Skull (memories `div` 2) memories
+    Cultist -> pure $ toChaosTokenValue attrs Cultist 2 3
+    otherFace -> getChaosTokenValue iid otherFace attrs
+
+instance RunMessage ElectricNightmare where
+  runMessage msg s@(ElectricNightmare attrs) = runQueueT $ scenarioI18n "electricNightmare" $ case msg of
+    PreScenarioSetup -> do
+      flavor $ scope "intro" $ h "title" >> p "body"
+      -- guide p6: each investigator with 3 or fewer Memories reads
+      -- Desynchronization and adds the Desync weakness to their deck.
+
+      iids <- filterM (fmap (<= 3) . getMemories) =<< allInvestigators
+      unless (null iids) do
+        scope "desynchronization" $ flavor $ compose.green $ h.noUnderline.center "title" >> p "body"
+        for_ iids \iid -> addCampaignCardToDeck iid ShuffleIn Treacheries.desync
+      pure s
+    Setup -> runScenarioSetup ElectricNightmare attrs do
+      setup $ ul do
+        li "gatherSets"
+        li "setAsideBoogeyman"
+        li "randomizeAct"
+        li "setAsideLocations"
+        li.nested "placeSchoolGrounds" do
+          li "startAt"
+        li "attachMaja"
+        li "setAsideStoryAssets"
+        li "checkCampaignLog"
+        unscoped $ li "shuffleRemainder"
+        unscoped $ li "readyToBegin"
+
+      setUsesGrid
+
+      gather Set.ElectricNightmare
+      gather Set.Endtimes
+      gather Set.DarkPast
+      gatherAndSetAside Set.TheBoogeyman
+
+      -- Randomly select one version of act 1 (the other two are removed from
+      -- the game, i.e. never added to the act deck).
+      version <-
+        sample
+          $ Acts.publicSchool187V10
+          :| [Acts.publicSchool187V20, Acts.publicSchool187V30]
+      setActDeck [version, Acts.psychoanalysis, Acts.facingYourFears]
+      setAgendaDeck [Agendas.figmentOfYourImagination, Agendas.it]
+
+      -- Undefined Room locations + Entrance Hall (A Shimmer in the Wall) are set
+      -- aside; they enter play via the act / School Grounds later.
+      setAside
+        [ Locations.cafeteria
+        , Locations.classroomK2
+        , Locations.gymnasium
+        , Locations.biologyLab
+        , Locations.library
+        , Locations.entranceHall
+        ]
+
+      schoolGrounds <- placeInGrid (Pos 0 0) Locations.schoolGrounds
+      startAt schoolGrounds
+      placeAsset_ Assets.maja (AttachedToLocation schoolGrounds)
+
+      -- The four children and the K2-PS187 functionality assets set aside. The
+      -- children are set aside Avatar-side up (their backs are the Reintegrated
+      -- stories) because act 2 deals them out as "set aside Avatar story
+      -- assets"; the story side is fetched on flip.
+      setAside
+        [ Assets.alma
+        , Assets.david
+        , Assets.tilde
+        , Assets.william
+        , Assets.k2PS18725Functionality
+        , Assets.k2PS18750Functionality
+        , Assets.k2PS18775Functionality
+        , Assets.k2PS187100Functionality
+        ]
+
+      -- If an investigator has been infected by the cybervirus, they begin the
+      -- scenario with Cybervirus in their hand.
+      infected <- getRecordSet HasBeenInfectedByTheCybervirus
+      iids <- allInvestigators
+      for_ iids \iid ->
+        when (recorded (unInvestigatorId iid) `elem` infected) do
+          card <- genCard Enemies.cybervirus
+          addToHand iid (only card)
+    -- [tablet]: "Reveal another token. Double that token's modifier."
+    ResolveChaosToken _ Tablet iid -> do
+      revealAnotherChaosTokenAndDouble iid
+      pure s
+    ScenarioSpecific ((== doubleRevealedTokenKey) -> True) v -> do
+      doubleRevealedToken v
+      pure s
+    FailedSkillTest iid _ _ (ChaosTokenTarget token) _ _ -> do
+      case token.face of
+        Cultist -> do
+          -- If you fail and you have a hidden card in your hand, take 1 horror.
+          hasHidden <- selectAny (InvestigatorWithId iid <> InvestigatorWithHiddenCard)
+          when hasHidden $ assignHorror iid attrs 1
+        _ -> pure ()
+      pure s
+    ScenarioSpecific "switchLocations" v -> do
+      -- Central switch handler (guide p7 "Switching Locations"). Two locations
+      -- trade grid positions; all contents remain on the same location. During
+      -- act 1 (Public School 187), "Locations cannot be switched with each
+      -- other," so we suppress the switch entirely.
+      let (a, b) = toResult v :: (LocationId, LocationId)
+      inAct1 <- selectAny (ActWithStep 1)
+      unless inAct1 do
+        grid <- getGrid
+        case (findInGrid a grid, findInGrid b grid) of
+          (Just posA, Just posB) | posA /= posB -> do
+            pushAll [PlaceGrid (GridLocation posB a), PlaceGrid (GridLocation posA b)]
+            checkSwitchedWindows a b
+          _ -> pure ()
+      pure s
+    ScenarioResolution res -> scope "resolutions" do
+      reintegratedCount <-
+        selectCount $ VictoryDisplayCardMatch $ basic $ CardWithTitle "Reintegrated"
+      -- NoResolution routes to the loss (R1) with no Reintegrated cards, or the
+      -- partial ending (R2) if at least one child was reintegrated.
+      let resolved = case res of
+            NoResolution -> if reintegratedCount >= 1 then 2 else 1
+            Resolution n -> n
+
+      when (res == NoResolution) do
+        resolutionFlavor do
+          setTitle "noResolution.title"
+          p "noResolution.body"
+          ul do
+            li.validate (reintegratedCount == 0) "noResolution.proceedToResolution1"
+            li.validate (reintegratedCount >= 1) "noResolution.proceedToResolution2"
+        push $ ScenarioResolution $ Resolution resolved
+
+      case res of
+        NoResolution -> pure ()
+        Resolution 1 -> do
+          record YouAreTrappedInAVirtualNightmare
+          eachInvestigator drivenInsane
+          resolution "resolution1"
+          gameOver
+        Resolution 2 -> do
+          record YouPartiallyRestoredTheSanityOfK2PS187
+          addReminiscenceToken
+          earnXp attrs "resolution2"
+          -- Which K2-PS187 asset is offered depends on how many children were
+          -- reintegrated (1 -> 25%, 2 -> 50%, 3 -> 75%).
+          offerK2Reward $ case reintegratedCount of
+            1 -> Just Assets.k2PS18725Functionality
+            2 -> Just Assets.k2PS18750Functionality
+            3 -> Just Assets.k2PS18775Functionality
+            _ -> Nothing
+          endOfScenario
+        Resolution 3 -> do
+          record YouFullyRestoredTheSanityOfK2PS187
+          addReminiscenceToken
+          earnXp attrs "resolution3"
+          offerK2Reward $ Just Assets.k2PS187100Functionality
+          endOfScenario
+        _ -> error "Invalid resolution"
+      pure s
+    _ -> ElectricNightmare <$> liftRunMessage msg attrs
+
+{- | "An investigator may choose to add the K2-PS187 (X%) permanent story asset
+to their deck." Optional; a single investigator may take it. Uses the shared
+campaign-card choice so the card itself is shown alongside the portraits and the
+decline option reads the same as every other scenario reward.
+-}
+offerK2Reward :: ReverseQueue m => Maybe CardDef -> m ()
+offerK2Reward Nothing = pure ()
+offerK2Reward (Just def) = do
+  investigators <- allInvestigators
+  addCampaignCardToDeckChoice investigators DoNotShuffleIn def

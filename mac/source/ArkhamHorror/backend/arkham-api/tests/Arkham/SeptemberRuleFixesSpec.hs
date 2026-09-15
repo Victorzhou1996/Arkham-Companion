@@ -1,7 +1,9 @@
 module Arkham.SeptemberRuleFixesSpec (spec) where
 
 import Arkham.Card.CardDef
-import Arkham.Story.Cards qualified as Stories
+import Arkham.Story.CardDefs.TheDrownedCity.TheWesternWall qualified as Stories
+import Arkham.Story.CardDefs.TheDrownedCity.ObsidianCanyons qualified as Stories
+import Arkham.Story.CardDefs.TheScarletKeys.ShadesOfSuffering qualified as Stories
 import Test.Hspec
 import Prelude
 

@@ -1,10 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Arkham.EncounterSet where
 
 import Arkham.Prelude
 
-import Data.Aeson.TH
+import Data.Data (dataTypeConstrs, dataTypeOf, fromConstr, showConstr)
 
 data EncounterSet
   = TheGathering
@@ -305,6 +303,7 @@ data EncounterSet
   | TheBlobThatAteEverythingELSE
   | TheBlobThatAteEverything
   | MiGoIncursion
+  | MiGoIncursionII
   | BlobEpicMultiplayer
   | BlobSingleGroup
   | FortuneAndFolly
@@ -376,7 +375,45 @@ data EncounterSet
   | TheInescapable
   | Dreams
   | AlienMachinery
+  | RiverOfBlood
+  | NewHorizons
+  | BloodMoney
+  | Afflicted
+  | AgentsOfZburamoarte
+  | BloodBlight
+  | BloodMoon
+  | Bloodthirst
+  | ChildrenOfBlood
+  | FriendsInLowPlaces
+  | Hunted
+  | Infected
+  | Misinformation
+  | Mongrels
+  | PreyedUpon
+  | SanguineSecrets
+  | Stalked
+  | Vermin
+  | Homebrew Text
   | Test
-  deriving stock (Show, Eq, Ord, Bounded, Enum, Data)
+  deriving stock (Show, Eq, Ord, Data)
 
-$(deriveJSON defaultOptions ''EncounterSet)
+{- | Official sets encode as their constructor name, homebrew sets as their slug
+(e.g. @":dark-matter:anachronism"@). Parsing falls back to 'Homebrew' for any
+unrecognized string.
+-}
+instance ToJSON EncounterSet where
+  toJSON (Homebrew t) = String t
+  toJSON s = String (tshow s)
+
+officialEncounterSets :: Map Text EncounterSet
+officialEncounterSets =
+  mapFromList
+    [ (pack name, fromConstr c)
+    | c <- dataTypeConstrs (dataTypeOf (Test :: EncounterSet))
+    , let name = showConstr c
+    , name /= "Homebrew"
+    ]
+
+instance FromJSON EncounterSet where
+  parseJSON = withText "EncounterSet" \t ->
+    pure $ fromMaybe (Homebrew t) (lookup t officialEncounterSets)
