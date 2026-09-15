@@ -18,6 +18,9 @@ import Asset from '@/arkham/components/Asset.vue';
 import EventView from '@/arkham/components/Event.vue';
 import Skill from '@/arkham/components/Skill.vue';
 import HandCard from '@/arkham/components/HandCard.vue';
+import AdaptiveHand from '@/arkham/components/AdaptiveHand.vue';
+import EquipmentRowFit from '@/arkham/components/EquipmentRowFit.vue';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
 import CardRow from '@/arkham/components/CardRow.vue';
 import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 import CustomCardPicker from '@/arkham/components/debug/CustomCardPicker.vue';
@@ -32,15 +35,24 @@ import { Modifier } from '@/arkham/types/Modifier';
 import { Enemy } from '@/arkham/types/Enemy';
 import type { Source } from '@/arkham/types/Source';
 import { XMarkIcon, EyeSlashIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/vue/20/solid';
+import { HandRaisedIcon, Square3Stack3DIcon } from '@heroicons/vue/24/outline';
 import * as Api from '@/arkham/api';
 import type { CardDef } from '@/arkham/types/CardDef';
 import { fullName } from '@/arkham/types/Name';
 import { isCthulhuBoardEnemy } from '@/arkham/components/TheDrownedCity/cthulhuBoard'
 import { storeToRefs } from 'pinia';
 import { useSettings } from '@/stores/settings';
+import { useMobileBoard } from '@/arkham/mobile/context';
+import MobilePlayerNav from '@/arkham/mobile/MobilePlayerNav.vue';
+import MobileCard from '@/arkham/mobile/MobileCard.vue';
+import MobilePlayerStatus from '@/arkham/mobile/MobilePlayerStatus.vue';
 import { useCardStore } from '@/stores/cards';
 import { getGameLocalStorageItem, setGameLocalStorageItem } from '@/arkham/localStorage';
 const { t } = useI18n();
+const tabletop = useTabletopLabels();
+const mobileBoard = useMobileBoard();
+const mobileEnabled = computed(() => mobileBoard?.enabled.value ?? false);
+const mobileHunchSlot = ref<HTMLElement | null>(null);
 
 interface RefWrapper<T> {
   ref: ComputedRef<T>
@@ -107,13 +119,13 @@ const hideWhenUsedCardCodes = computed(() =>
 
 const spentCardCodes = computed(() => new Set(props.investigator.usedAbilityCardCodes))
 
-const tuckInertCards = computed(() => settings.hideInertCards && !props.game.inSetup)
+const tuckInertCards = computed(() => !mobileEnabled.value && settings.hideInertCards && !props.game.inSetup)
 
 // Per-player overrides on top of the tags, dragged in and out of the stack and
 // remembered for this game only. `shown` exists so a tagged card can be dragged
 // back out and stay out.
-const hiddenKey = computed(() => `hiddenCards:${investigatorId.value}`)
-const shownKey = computed(() => `shownCards:${investigatorId.value}`)
+const hiddenKey = computed(() => `${mobileEnabled.value ? 'mobile:' : ''}hiddenCards:${investigatorId.value}`)
+const shownKey = computed(() => `${mobileEnabled.value ? 'mobile:' : ''}shownCards:${investigatorId.value}`)
 
 function loadIds(key: string): string[] {
   try {
@@ -330,9 +342,11 @@ const facedownThreatCardImage = (cardId: string) => {
   return card ? imgsrc(CardT.cardImage({ ...toCardContents(card), facedown: false })) : ENCOUNTER_BACK
 }
 
-const hasThreatArea = computed(() =>
-  stories.value.length > 0 || engagedEnemies.value.length > 0 || props.investigator.treacheries.length > 0
-    || facedownThreatCards.value.length > 0
+// Count what this column actually renders, including an enemy still spawning.
+// Hidden permanent weaknesses remain available in the original tucked stack.
+const threatCount = computed(() =>
+  spawningEnemies.value.length + stories.value.length + engagedEnemies.value.length
+    + visibleTreacheries.value.length + facedownThreatCards.value.length
 )
 
 const inHandEnemies = computed(() =>
@@ -905,14 +919,13 @@ function debugAddSlot(slotType: DebugSlotType) {
 
 const playAreaCollapsed = ref(false)
 
-const handCardHeight = Math.min(7 * window.innerWidth / 50 + 114, 340);
-const handCardExposedHeight_MIN = `${-(handCardHeight - 50)}`;
+const handCardExposedHeight_MIN = 'calc(50px - var(--card-height) * 4 - 32px)';
 const handCardExposedHeight_MAX = `0`;
 const handAreaMarginBottom = ref(handCardExposedHeight_MIN);
 const handAreaPointerEvents = ref('none');
 
 onMounted(() => {
-  if (isMobile) {
+  if (isMobile.value && !mobileEnabled.value) {
     document.addEventListener('click',toggleHandAreaMarginBottom)
     const isMinimized_SkillTest = inject('isMinimized_SkillTest', ref(false))
     watch([() => props.game.skillTest, isMinimized_SkillTest], ([newSkillTest,isMinimized]) => {
@@ -931,7 +944,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  if (isMobile) {
+  if (isMobile.value && !mobileEnabled.value) {
     document.removeEventListener('click', toggleHandAreaMarginBottom)
   }
 });
@@ -942,7 +955,7 @@ function toggleHandAreaMarginBottom(event: Event) {
     handAreaMarginBottom.value = handCardExposedHeight_MAX;
     handAreaPointerEvents.value = 'auto'
   }
-  else if (target.closest('.in-hand, .abilities')) {
+  else if (target.closest('.in-hand, .abilities, .adaptive-hand')) {
     return
   } else {
     handAreaMarginBottom.value = handCardExposedHeight_MIN;
@@ -959,6 +972,8 @@ function closeHand() {
 
 <template>
   <div class="player-cards">
+    <MobilePlayerStatus v-if="mobileEnabled" :investigator="investigator" :choices="choices" :player-id="playerId" @choose="$emit('choose', $event)" />
+    <MobilePlayerNav v-if="mobileEnabled" :hand="totalHandSize" :threats="threatCount" :owner="investigator.playerId" />
     <button class="in-play-toggle" @click="playAreaCollapsed = !playAreaCollapsed"></button>
     <div class="in-play-row">
       <transition name="grow">
@@ -969,7 +984,11 @@ function closeHand() {
           @dragover.prevent="dragover($event)"
           @dragenter.prevent
         >
-          <transition-group @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter">
+          <div class="tabletop-threats">
+          <h3 class="tabletop-zone-title"><i class="skull-icon" aria-hidden="true"></i>{{ tabletop.threat }} <span>{{ threatCount }}</span></h3>
+          <div v-if="threatCount === 0" class="tabletop-empty-threat" aria-hidden="true"><span><i class="skull-icon"></i></span><span><i class="skull-icon"></i></span></div>
+          <AdaptiveHand v-if="threatCount > 0" desktop-only>
+          <transition-group tag="div" class="adaptive-hand-row tabletop-threat-row" @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter">
             <EnemyView
               v-for="enemy in spawningEnemies"
               :key="enemy.id"
@@ -1023,11 +1042,19 @@ function closeHand() {
               <img class="card" :src="facedownThreatCardImage(facedown.cardId)" />
             </div>
 
-            <div v-if="hasThreatArea" :key="'threat-divider'" class="threat-divider" />
+          </transition-group>
+          </AdaptiveHand>
+          </div>
+          <div class="tabletop-equipment">
+          <h3 class="tabletop-zone-title"><Square3Stack3DIcon aria-hidden="true" />{{ tabletop.equipment }}</h3>
+          <EquipmentRowFit class="tabletop-equipment-cards">
+          <transition-group @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter">
 
             <template v-if="tarotCards.length > 0">
               <div v-for="tarotCard in tarotCards" :key="tarotCard.arcana" :data-index="tarotCard.arcana">
+                <MobileCard>
                 <img :src="imgsrc(`tarot/${tarotCardImage(tarotCard)}`)" class="card tarot-card" :class="{ [tarotCard.facing]: true, 'can-interact': tarotCardAbility(tarotCard) !== -1 }" @click="$emit('choose', tarotCardAbility(tarotCard))"/>
+                </MobileCard>
               </div>
             </template>
 
@@ -1133,6 +1160,8 @@ function closeHand() {
             </div>
 
           </transition-group>
+          </EquipmentRowFit>
+          </div>
         </section>
       </transition>
       <CardsUnderIndicator
@@ -1219,6 +1248,7 @@ function closeHand() {
     />
 
     <div class="player">
+      <Teleport :to="mobileHunchSlot || 'body'" :disabled="!mobileEnabled || !mobileHunchSlot">
       <div v-if="hunchDeck" class="hunch-deck">
         <div class="top-of-deck">
           <HandCard
@@ -1239,6 +1269,7 @@ function closeHand() {
         </div>
         <button v-if="debug.active" @click="showHunchDeck">{{ $t('player.viewDeck') }}</button>
       </div>
+      </Teleport>
 
       <div class="investigator-and-deck">
         <Investigator
@@ -1257,9 +1288,12 @@ function closeHand() {
           :investigator="investigator"
           @choose="$emit('choose', $event)"
         />
+        <div v-if="mobileEnabled" ref="mobileHunchSlot" class="mobile-hunch-slot" />
       </div>
       <div v-if="!isMobile" class="hand hand-area">
-        <transition-group tag="section" class="hand" @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter"
+        <h3 class="tabletop-zone-title"><HandRaisedIcon aria-hidden="true" />{{ tabletop.hand }} <span>{{totalHandSize}}/{{investigator.handSize}}</span></h3>
+        <AdaptiveHand>
+        <transition-group tag="section" class="hand adaptive-hand-row" @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter"
           @drop="onDropHand($event)"
           @dragover.prevent="dragover($event)"
           @dragenter.prevent
@@ -1329,6 +1363,7 @@ function closeHand() {
           </template>
 
         </transition-group>
+        </AdaptiveHand>
         <div class="hand-debug-actions" v-if="debug.active">
           <button type="button" @click="openDebugAddCard">+ Card to hand</button>
           <button v-if="customCardsEnabled" type="button" @click="showCustomCardPicker = true">+ Custom card</button>
@@ -1336,7 +1371,7 @@ function closeHand() {
         <div v-if="investigator.handSize" class="hand-size" :class="handSizeClasses" :current-length="totalHandSize">{{ t('handSize') }}: {{totalHandSize}}/{{investigator.handSize}}</div>
       </div>
     </div>
-    <div v-if="isMobile" class="hand hand-area-IsMobile" :style="{ bottom: `${handAreaMarginBottom}px` }" @click="toggleHandAreaMarginBottom">
+    <div v-if="isMobile" class="hand hand-area-IsMobile" :style="{ bottom: handAreaMarginBottom }" @click="toggleHandAreaMarginBottom">
       <button
         v-if="debug.active"
         v-show="handAreaPointerEvents === 'auto'"
@@ -1355,7 +1390,8 @@ function closeHand() {
       >
         <XMarkIcon aria-hidden="true" />
       </button>
-      <transition-group tag="section" class="hand" @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter"
+      <AdaptiveHand preview-on-tap :style="{ pointerEvents: handAreaPointerEvents, flex: 1 }">
+      <transition-group tag="section" class="hand adaptive-hand-row" @enter="onEnter" @leave="onLeave" @before-enter="onBeforeEnter"
         @drop="onDropHand($event)"
         @dragover.prevent="dragover($event)"
         @dragenter.prevent
@@ -1425,6 +1461,7 @@ function closeHand() {
           </div>
         </template>
       </transition-group>
+      </AdaptiveHand>
     </div>
     <CardRow
       v-if="showCards.ref.length > 0"
@@ -1485,7 +1522,7 @@ function closeHand() {
   height: 12px;
   align-items: center;
   justify-content: center;
-  background: #1e2235;
+  background: var(--box-background);
   border: none;
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.4);
   cursor: pointer;
@@ -1932,7 +1969,7 @@ function closeHand() {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  height: calc(var(--card-height) * 4);
+  height: calc(var(--card-height) * 4 + 32px);
   background: var(--background-dark);
   transition: bottom 0.3s ease;
   overflow: hidden;
@@ -1989,7 +2026,7 @@ function closeHand() {
 }
 
 .debug-add-card-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   color: #eee;
@@ -2012,7 +2049,7 @@ function closeHand() {
   }
 
   input {
-    background: #111827;
+    background: var(--surface-input);
     border: 1px solid #4b5563;
     border-radius: 4px;
     color: #eee;

@@ -189,7 +189,7 @@ onUnmounted(() => clearInterval(interval.value))
   max-width: 500px;
   display: flex;
   flex-direction: column;
-  background: #d0d9dc;
+  background: var(--box-background);
 }
 
 .processing {

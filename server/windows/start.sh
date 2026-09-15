@@ -172,6 +172,7 @@ case "$(uname -s)" in
     Linux)  PGDATA_OS="$HOME/.local/share/ArkhamHorrorLocal/pgdata" ;;
 esac
 PGDATA_OS_PARENT="$(dirname "$PGDATA_OS")"
+export ARKHAM_CUSTOM_CARD_ART_DIR="${ARKHAM_CUSTOM_CARD_ART_DIR:-$PGDATA_OS_PARENT/custom-card-art}"
 PGDATA_LOCAL="$DATA_DIR/pgdata"        # Legacy physical backup location from older builds
 BACKUP_DIR="$SCRIPT_DIR/../backup"
 PG_DUMP_FILE="$BACKUP_DIR/latest.dump"
@@ -185,6 +186,47 @@ PG_DATA="$PGDATA_OS"                    # Actual pgdata path used at runtime
 START_LOCK_DIR="$PGDATA_OS_PARENT/start.lock"
 START_LOCK_PID="$START_LOCK_DIR/pid"
 START_LOCK_TS="$START_LOCK_DIR/timestamp"
+
+# Optional local account UI preferences. No network bind and no package data.
+LAYOUT_SOCKET="$PGDATA_OS_PARENT/layout.sock"
+LAYOUT_PID="$DATA_DIR/layout.pid"
+LAYOUT_SCRIPT="$SCRIPT_DIR/tools/local_layout_service.py"
+local_layout_owned() {
+    local pid
+    pid="$(cat "$LAYOUT_PID" 2>/dev/null || true)"
+    [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+    [ -r "/proc/$pid/cmdline" ] || return 1
+    tr '\0' '\n' < "/proc/$pid/cmdline" | grep -Fxq -- "$LAYOUT_SCRIPT"
+}
+stop_local_layout() {
+    if local_layout_owned; then
+        kill "$(cat "$LAYOUT_PID")" 2>/dev/null || true
+        local attempt
+        for attempt in $(seq 1 20); do
+            local_layout_owned || break
+            sleep 0.1
+        done
+    fi
+    rm -f "$LAYOUT_PID"
+}
+start_local_layout() {
+    if local_layout_owned && [ -S "$LAYOUT_SOCKET" ]; then return 0; fi
+    command -v python3 >/dev/null 2>&1 || return 1
+    [ -f "$LAYOUT_SCRIPT" ] || return 1
+    mkdir -p "$PGDATA_OS_PARENT" "$DATA_DIR"
+    # The main launch lock guarantees exclusive ownership of this user's DB.
+    if [ -S "$LAYOUT_SOCKET" ]; then rm -f "$LAYOUT_SOCKET"; fi
+    ( nohup python3 -B "$LAYOUT_SCRIPT" --socket "$LAYOUT_SOCKET" \
+        --database "$PGDATA_OS_PARENT/tabletop-layout.sqlite3" --api-port "$API_PORT" \
+        >> "$DATA_DIR/layout.log" 2>&1 & echo $! > "$LAYOUT_PID" )
+    local attempt
+    for attempt in $(seq 1 30); do
+        if local_layout_owned && [ -S "$LAYOUT_SOCKET" ]; then return 0; fi
+        sleep 0.1
+    done
+    return 1
+}
+
 
 # Unix domain socket directory:
 # - macOS: distribution paths can be long; a Unix socket path longer than 103 bytes can make PostgreSQL fail to start
@@ -229,6 +271,7 @@ die() {
 
 # Open a URL in the default browser (cross-platform, silently ignore failures)
 open_browser() {
+    [ "${ARKHAM_NO_BROWSER:-0}" = "1" ] && return 0
     local url="$1"
     if grep -qi microsoft /proc/version 2>/dev/null; then
         # WSL: use /init to invoke cmd.exe. This bypasses binfmt_misc interop
@@ -304,6 +347,7 @@ get_windows_lan_ipv4() {
 }
 
 configure_windows_lan_access() {
+    [ "${ARKHAM_SKIP_LAN:-0}" = "1" ] && return 0
     is_wsl || return 0
 
     local helper="$SCRIPT_DIR/../Configure-ArkhamHorror-LAN.ps1"
@@ -730,8 +774,39 @@ database_exists() {
     psql_cmd -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$PG_DB'" 2>/dev/null | grep -q 1
 }
 
-ensure_epic_schema() {
-    psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 >> "$DATA_DIR/psql.log" 2>&1 <<'SQL'
+ensure_local_schema() {
+    psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 >> "$DATA_DIR/psql.log" 2>&1 <<'SQL' || return 1
+-- Compatibility migrations for databases retained by older local packages.
+-- WSL stores PGDATA under the user's Linux home, so extracting a new package
+-- intentionally keeps accounts and saves. The current backend expects these
+-- columns even when the database was first created by a July 2026 build.
+ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS beta boolean DEFAULT false;
+ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS dev boolean DEFAULT false;
+ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS admin boolean DEFAULT false;
+UPDATE public.users SET beta = false WHERE beta IS NULL;
+UPDATE public.users SET dev = false WHERE dev IS NULL;
+UPDATE public.users SET admin = false WHERE admin IS NULL;
+ALTER TABLE IF EXISTS public.users ALTER COLUMN beta SET DEFAULT false;
+ALTER TABLE IF EXISTS public.users ALTER COLUMN beta SET NOT NULL;
+ALTER TABLE IF EXISTS public.users ALTER COLUMN dev SET DEFAULT false;
+ALTER TABLE IF EXISTS public.users ALTER COLUMN dev SET NOT NULL;
+ALTER TABLE IF EXISTS public.users ALTER COLUMN admin SET DEFAULT false;
+ALTER TABLE IF EXISTS public.users ALTER COLUMN admin SET NOT NULL;
+ALTER TABLE IF EXISTS public.arkham_decks ADD COLUMN IF NOT EXISTS url text;
+
+-- Some older Windows schema dumps left search_path empty before these tables
+-- were appended. Repair the missing achievement table without touching rows.
+CREATE TABLE IF NOT EXISTS public.arkham_achievements (
+    id uuid PRIMARY KEY DEFAULT public.uuid_generate_v4(),
+    user_id bigint REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    achievement varchar NOT NULL,
+    earned_at timestamptz,
+    arkham_game_id uuid REFERENCES public.arkham_games(id) ON DELETE SET NULL,
+    progress jsonb NOT NULL,
+    CONSTRAINT unique_user_achievement UNIQUE (user_id, achievement)
+);
+CREATE INDEX IF NOT EXISTS idx_arkham_achievements_game ON public.arkham_achievements (arkham_game_id);
+
 CREATE TABLE IF NOT EXISTS public.arkham_epic_events (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     name text NOT NULL,
@@ -819,6 +894,22 @@ CREATE INDEX IF NOT EXISTS arkham_epic_groups_game_idx ON public.arkham_epic_gro
 CREATE INDEX IF NOT EXISTS arkham_epic_members_event_idx ON public.arkham_epic_members USING btree (arkham_epic_event_id);
 CREATE UNIQUE INDEX IF NOT EXISTS arkham_epic_steps_event_step_idx ON public.arkham_epic_steps USING btree (arkham_epic_event_id, step);
 SQL
+    # Release upgrades are guarded by per-migration receipts. Back up before
+    # running them; never feed the full fresh-database dump into an old save.
+    if [ -f "$SCRIPT_DIR/config/upstream-migrations.sql" ]; then
+        local receipt_table receipt_count=0 migration_backup
+        receipt_table="$(psql_cmd -d "$PG_DB" -tAc "SELECT to_regclass('public.arkham_schema_migrations')" 2>> "$DATA_DIR/psql.log")" || return 1
+        if [ -n "$receipt_table" ]; then
+            receipt_count="$(psql_cmd -d "$PG_DB" -tAc "SELECT count(*) FROM public.arkham_schema_migrations WHERE name IN ('arkham_game_undo_floors','arkham_custom_cards','arkham_deck_overlay','arkham_custom_card_sets','arkham_published_card_sets','arkham_published_card_set_likes','add_last_used_at_to_decks')" 2>> "$DATA_DIR/psql.log")" || return 1
+        fi
+        [ "$receipt_count" = "7" ] && return 0
+        ensure_dir "$BACKUP_DIR"
+        migration_backup="$(mktemp "$BACKUP_DIR/before-pr9-migration.XXXXXX.dump")" || return 1
+        pg_dump_cmd -d "$PG_DB" -Fc -f "$migration_backup" >> "$DATA_DIR/psql.log" 2>&1 || return 1
+        dump_file_is_valid "$migration_backup" || return 1
+        psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 \
+            -f "$SCRIPT_DIR/config/upstream-migrations.sql" >> "$DATA_DIR/psql.log" 2>&1 || return 1
+    fi
 }
 
 cleanup_invalid_cluster() {
@@ -994,7 +1085,7 @@ start_postgres_for_admin() {
         psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 -f "$DATA_DIR/setup.sql" >> "$DATA_DIR/psql.log" 2>&1 \
             || die 4104 "Could not initialize the local database" "$DATA_DIR/psql.log"
     fi
-    ensure_epic_schema || die 4105 "Could not apply the local database schema" "$DATA_DIR/psql.log"
+    ensure_local_schema || die 4105 "Could not apply the local database schema" "$DATA_DIR/psql.log"
 }
 
 stop_postgres_after_admin() {
@@ -1042,6 +1133,13 @@ do_backup_save() {
     temp_dir="$(mktemp -d)"
     mkdir -p "$temp_dir/arkham-save"
     cp "$PG_DUMP_FILE" "$temp_dir/arkham-save/save.dump"
+    if [ -d "$ARKHAM_CUSTOM_CARD_ART_DIR" ]; then
+        if [ -n "$(find "$ARKHAM_CUSTOM_CARD_ART_DIR" -type l -print -quit)" ]; then
+            die 4115 "Custom card art contains a symbolic link; backup stopped"
+        fi
+        cp -R "$ARKHAM_CUSTOM_CARD_ART_DIR" "$temp_dir/arkham-save/custom-card-art" \
+            || die 4115 "Could not include custom card art in the backup"
+    fi
     {
         printf 'format=arkham-local-save-v2\n'
         printf 'created_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -1059,12 +1157,25 @@ do_restore_save() {
     local archive_path="$1"
     [ -f "$archive_path" ] || die 4120 "Backup file not found: $archive_path"
 
+    # Reject links, special files and traversal before extracting an archive.
+    python3 - "$archive_path" <<'PY' || die 4122 "Backup contains an unsafe member"
+import sys, tarfile
+from pathlib import PurePosixPath
+with tarfile.open(sys.argv[1], 'r:gz') as archive:
+    for member in archive.getmembers():
+        path = PurePosixPath(member.name)
+        if path.is_absolute() or '..' in path.parts or not (member.isdir() or member.isfile()):
+            raise ValueError('Unsafe backup member')
+        name = str(path)
+        if name not in ('arkham-save', 'arkham-save/save.dump', 'arkham-save/manifest.txt', 'arkham-save/custom-card-art') and not name.startswith('arkham-save/custom-card-art/'):
+            raise ValueError('Unexpected backup member')
+PY
     local entries temp_dir restore_dump
     entries="$(tar -tzf "$archive_path")" || die 4121 "Could not read the tar.gz backup"
     while IFS= read -r entry; do
         [ -z "$entry" ] && continue
         case "$entry" in
-            arkham-save|arkham-save/|arkham-save/save.dump|arkham-save/manifest.txt) ;;
+            arkham-save|arkham-save/|arkham-save/save.dump|arkham-save/manifest.txt|arkham-save/custom-card-art|arkham-save/custom-card-art/*) ;;
             *) die 4122 "Backup contains an unexpected path: $entry" ;;
         esac
     done <<EOF
@@ -1083,7 +1194,7 @@ EOF
     fi
 
     start_postgres_for_admin
-    backup_database_dump || true
+    backup_database_dump || die 4125 "Could not back up the current save before restore"
     stop_postgres_after_admin
     cleanup_invalid_cluster "$PG_DATA"
 
@@ -1092,11 +1203,19 @@ EOF
         recover_pre_operation_backup || true
         die 4125 "Save restore failed; the previous automatic backup was retained" "$PG_RESTORE_LOG"
     fi
-    rm -rf "$temp_dir"
-    ensure_epic_schema || {
+    ensure_local_schema || {
         recover_pre_operation_backup || true
         die 4126 "Save restored but local schema migration failed" "$DATA_DIR/psql.log"
     }
+    # Merge content-addressed art only after the database restore succeeds.
+    if [ -d "$temp_dir/arkham-save/custom-card-art" ]; then
+        ensure_dir "$ARKHAM_CUSTOM_CARD_ART_DIR"
+        [ -z "$(find "$ARKHAM_CUSTOM_CARD_ART_DIR" -type l -print -quit)" ] \
+            || die 4125 "Custom art destination contains a symbolic link"
+        cp -R "$temp_dir/arkham-save/custom-card-art/." "$ARKHAM_CUSTOM_CARD_ART_DIR/" \
+            || die 4125 "Could not restore custom card art"
+    fi
+    rm -rf "$temp_dir"
     backup_database_dump || true
     stop_postgres_after_admin
     info "Local save restore complete."
@@ -1128,7 +1247,7 @@ do_import_sql() {
         recover_pre_operation_backup || true
         die 4134 "SQL save import failed; the previous automatic backup was restored" "$import_log"
     fi
-    ensure_epic_schema || {
+    ensure_local_schema || {
         recover_pre_operation_backup || true
         die 4135 "SQL imported but local schema migration failed" "$DATA_DIR/psql.log"
     }
@@ -1150,7 +1269,7 @@ do_reset_db() {
             recover_pre_operation_backup || true
             die 4143 "Could not rebuild the initial database; the previous backup was restored" "$DATA_DIR/psql.log"
         }
-    ensure_epic_schema || die 4144 "Could not apply the local database schema" "$DATA_DIR/psql.log"
+    ensure_local_schema || die 4144 "Could not apply the local database schema" "$DATA_DIR/psql.log"
     backup_database_dump || true
     stop_postgres_after_admin
     info "Current SQL save was cleared and rebuilt."
@@ -1412,6 +1531,16 @@ is_nginx_running() {
 
 # Check whether all three services are healthy
 is_all_services_running() { is_pg_running && is_api_running && is_nginx_running; }
+
+# Same aggregate counters as Server's sidecar; keep this local package free of
+# a separate Python/mail service. Publish atomically and refresh once an hour.
+refresh_public_stats() {
+    local stats
+    stats="$(psql_cmd -d "$PG_DB" -tAc "SELECT json_build_object('players', (SELECT count(*) FROM users), 'games', (SELECT count(*) FROM arkham_games), 'saveSteps', (SELECT count(*) FROM arkham_steps));" 2>/dev/null)" || return 1
+    [ -n "$stats" ] || return 1
+    printf '%s\n' "$stats" > "$DATA_DIR/public-stats.json.tmp"
+    mv -f "$DATA_DIR/public-stats.json.tmp" "$DATA_DIR/public-stats.json"
+}
 
 # Get the PID for each running service (used for status output)
 get_pg_pid() {
@@ -1867,6 +1996,11 @@ http {
                 @img_cdn;
     }
     # Non-arkham images (e.g. /img/icons/favicon.ico)
+    location ^~ /img/custom/ {
+      alias "$ARKHAM_CUSTOM_CARD_ART_DIR/";
+      add_header X-Content-Type-Options nosniff always;
+      expires 1d;
+    }
     location /img/ {
       root "$frontend_root";
       try_files \$uri @img_cdn;
@@ -1881,6 +2015,17 @@ http {
       add_header Server-Timing "cdn" always;
       proxy_pass \$cdn_upstream\$request_uri;
       proxy_set_header Host assets.arkhamhorror.app;
+    }
+    location = /api/v1/arkham/public-stats {
+      alias "$DATA_DIR/public-stats.json";
+      default_type application/json;
+      add_header Cache-Control "public, max-age=3600";
+    }
+    location = /api/v1/account/tabletop-layout {
+      client_max_body_size 8k;
+      proxy_set_header Authorization \$http_authorization;
+      proxy_pass "http://unix:$LAYOUT_SOCKET:";
+      proxy_read_timeout 10s;
     }
     location /api {
       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -1942,6 +2087,7 @@ repair_running_frontend_assets() {
 # 鈹€鈹€ Stop 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 do_stop() {
     info "Stopping services ..."
+    stop_local_layout
 
     # --- nginx ---
     if is_nginx_running; then
@@ -2250,7 +2396,7 @@ do_start() {
         psql_cmd -d postgres -c "CREATE DATABASE \"$PG_DB\";" \
             > "$DATA_DIR/psql.log" 2>&1 \
             || die 2006 "Failed to create database" "$DATA_DIR/psql.log"
-        psql_cmd -d "$PG_DB" -f "$DATA_DIR/setup.sql" \
+        psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 -f "$DATA_DIR/setup.sql" \
             >> "$DATA_DIR/psql.log" 2>&1 \
             || die 2007 "Schema import failed" "$DATA_DIR/psql.log"
         info "Database initialization complete."
@@ -2262,16 +2408,17 @@ do_start() {
         psql_cmd -d postgres -c "CREATE DATABASE \"$PG_DB\";" \
             >> "$DATA_DIR/psql.log" 2>&1 \
             || die 2006 "Failed to create database" "$DATA_DIR/psql.log"
-        psql_cmd -d "$PG_DB" -f "$DATA_DIR/setup.sql" \
+        psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 -f "$DATA_DIR/setup.sql" \
             >> "$DATA_DIR/psql.log" 2>&1 \
             || die 2007 "Schema import failed" "$DATA_DIR/psql.log"
         info "Database recreation complete."
     fi
 
-    ensure_epic_schema || die 2007 "Epic multiplayer schema migration failed" "$DATA_DIR/psql.log"
+    ensure_local_schema || die 2007 "Local compatibility schema migration failed" "$DATA_DIR/psql.log"
 
     # 2. arkham-api
     info "Starting backend API ..."
+    ensure_dir "$ARKHAM_CUSTOM_CARD_ART_DIR"
     export DATABASE_URL="postgres://${PG_USER}@127.0.0.1:${PG_PORT}/${PG_DB}"
     export PORT="$API_PORT"
     export PGHOST="127.0.0.1" PGPORT="$PG_PORT" PGSSLMODE="disable"
@@ -2292,7 +2439,10 @@ do_start() {
     done
     info "Backend API started (port $API_PORT, PID $(get_api_pid))"
 
+    start_local_layout || warn "Local layout sync unavailable; browser preferences still work."
+
     # 3. nginx
+    refresh_public_stats || warn "Homepage statistics are temporarily unavailable."
     info "Configuring and starting nginx ..."
 
     # Ensure user-facing card image directories exist (at pkg root, one level above game/)
@@ -2395,8 +2545,13 @@ run_foreground() {
     # handler and kill the script (exit 142), breaking Start-ArkhamHorror.bat's retry logic.
     #
     # Cost: one fork(sleep) every 5s 鈥?negligible next to PG + API + nginx.
+    local stats_refreshed_at
+    stats_refreshed_at="$(date +%s)"
     while true; do
         sleep 5 || true
+        if [ $(( $(date +%s) - stats_refreshed_at )) -ge 3600 ]; then
+            if refresh_public_stats; then stats_refreshed_at="$(date +%s)"; fi
+        fi
         if ! : < /dev/tty 2>/dev/null; then
             exec >/dev/null 2>&1
             info "Terminal disconnected (window closed), stopping all services ..."
@@ -2462,6 +2617,7 @@ case "$ACTION" in
                 run_foreground
                 exit $?
             fi
+            start_local_layout || true
             info "All services are already running."
             configure_windows_lan_access || true
             write_runtime_info || true

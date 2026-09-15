@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { TokenType } from '@/arkham/types/Token';
 import { ComputedRef, computed, ref, watch } from 'vue';
 import { useCardStore } from '@/stores/cards';
@@ -20,6 +21,9 @@ import Story from '@/arkham/components/Story.vue';
 import StackIndicator from '@/arkham/components/StackIndicator.vue';
 import * as Arkham from '@/arkham/types/Agenda';
 import { useCardFlip } from '@/arkham/composables/useCardFlip';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
+import { EyeIcon } from '@heroicons/vue/24/outline';
+const tabletop = useTabletopLabels();
 
 const props = defineProps<{
   agenda: Arkham.Agenda
@@ -280,7 +284,9 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
 </script>
 
 <template>
-  <div class="agenda-container">
+  <div class="agenda-container" :data-tabletop-label="tabletop.agenda">
+      <MobileCard>
+    <h3 class="tabletop-card-heading"><EyeIcon aria-hidden="true" />{{ tabletop.agenda }}</h3>
     <StackIndicator
       label="Agenda"
       :current="currentAgendaPosition"
@@ -389,6 +395,7 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
       <button v-if="cardsUnder.length > 0 && canViewUnder" class="view-cards-under-button" @click="showCardsUnderAgenda">{{viewUnderLabel}}</button>
       <button v-else-if="cardsUnder.length > 0" class="view-cards-under-button" disabled>{{viewUnderLabel}}</button>
     </div>
+      </MobileCard>
   </div>
 </template>
 

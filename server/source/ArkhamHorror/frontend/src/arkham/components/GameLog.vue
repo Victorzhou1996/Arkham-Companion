@@ -2,6 +2,8 @@
 import { watch, ref, computed, nextTick, onMounted } from 'vue';
 import { Game } from '@/arkham/types/Game';
 import GameMessage from '@/arkham/components/GameMessage.vue';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
+const tabletop = useTabletopLabels();
 
 const props = defineProps<{
   game: Game
@@ -21,8 +23,7 @@ onMounted(async () => {
     const child = el.lastElementChild
     if (child) {
       await nextTick()
-      child.scrollIntoView(false);
-      el.scrollTop = el.scrollTop + 100;
+      el.scrollTop = el.scrollHeight;
     }
   }
 })
@@ -33,8 +34,7 @@ watch(truncatedGameLog, async () => {
     const child = el.lastElementChild
     if (child) {
       await nextTick()
-      child.scrollIntoView(false);
-      el.scrollTop = el.scrollTop + 100;
+      el.scrollTop = el.scrollHeight;
     }
   }
 }, { deep: true })
@@ -43,6 +43,7 @@ watch(truncatedGameLog, async () => {
 
 <template>
   <div class="game-log">
+    <h2 class="tabletop-log-heading">{{tabletop.log}}</h2>
     <ul ref="messages">
       <li class="log-entry" v-for="(msg, i) in truncatedGameLog" :key="i"><GameMessage :game="game" :msg="msg" /></li>
     </ul>
@@ -50,6 +51,7 @@ watch(truncatedGameLog, async () => {
 </template>
 
 <style scoped>
+.tabletop-log-heading { display: none; }
 .game-log {
   background: var(--neutral-dark);
   width: calc(100% - 20px);

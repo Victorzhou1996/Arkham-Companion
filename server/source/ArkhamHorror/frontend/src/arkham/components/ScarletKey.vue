@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed } from 'vue'
 import { Game } from '@/arkham/types/Game'
 import * as ArkhamGame from '@/arkham/types/Game'
@@ -82,6 +83,7 @@ const abilities = computed(() => {
 
 <template>
   <div class="scarletKey" :class="{attached}">
+    <MobileCard>
     <div class="scarletKey-card">
       <div class="image-container">
         <img :src="image"
@@ -111,6 +113,7 @@ const abilities = computed(() => {
         @click="$emit('choose', ability.index)"
         />
     </div>
+    </MobileCard>
   </div>
 </template>
 

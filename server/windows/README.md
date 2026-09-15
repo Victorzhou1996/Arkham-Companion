@@ -4,10 +4,20 @@ These files are the Windows/WSL package-specific layer used by the portable loca
 
 - `start.sh` runs the bundled PostgreSQL, API, and nginx processes; repairs MIME/static-resource routing; maintains Windows-to-WSL LAN forwarding metadata; and exposes maintenance commands used by the manager.
 - `arkham-manager.ps1` is the external system administrator UI. It owns service control, whole-database backup/restore, account administration, frontend repair, diagnostics, port configuration, and LAN repair.
-- `管理工具.bat` launches the manager.
+- `Windows用户双击我.bat` is the sole root launcher for the manager. `support/Start-ArkhamHorror.bat` is its helper, not an additional user entry.
 - `Configure-ArkhamHorror-LAN.ps1` maintains the Windows firewall/port-proxy or mirrored-network rule so other devices use the Windows `192.168.x.x` address instead of the private WSL `172.x.x.x` address.
 
 The authenticated in-browser `/local-management` page deliberately exposes only current-user operations and read-only status. It must not call these system-level maintenance commands.
+
+## Current portable layer: 2026-09-15 / Windows v20260915.5
+
+This folder now matches the verified clean Windows release's scripts, including all 44 manager functions and the NUL/ANSI error-message repair. The historical notes below are not instructions to re-add already implemented functions.
+
+Assembly mapping: put `arkham-manager.ps1`, `Configure-ArkhamHorror-LAN.ps1`, and `Windows用户双击我.bat` at the package root; retain `support/` beside them; copy `start.sh` to `game/start.sh` and `tools/*` to `game/tools/`. Compile `../source/ArkhamHorror/frontend` in `VITE_ONLINE_MODE=false` with same-origin API/assets and place its output in `game/frontend/dist`. Use the matching platform runtime; source in this folder is not a standalone game distribution.
+
+`tools/local_layout_service.py` authenticates against the running local API and stores per-account panel sizes separately from game saves. Its `layout_preferences.py` companion uses only the Python standard library; do not substitute the aiohttp-specific online sidecar copy. The launcher owns this private Unix-socket helper's lifecycle. Existing WSL saves and the old backup format remain intact. New clean packages contain only setup.sql in game/data, not databases, logs, keys or generated configuration. SelfTest must run on an assembled copy, not this source-only folder.
+
+See [the current handoff](../../docs/release-source-20260915/README.md) for release hashes, verification limits and Mac migration.
 
 ## 2026-08-25 source snapshot
 

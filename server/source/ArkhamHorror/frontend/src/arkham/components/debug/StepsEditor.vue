@@ -1479,7 +1479,7 @@ const removeOption = (step: any, index: number, at: number) =>
 
 .step-foot {
   align-items: center;
-  background: #131a27;
+  background: var(--box-background);
   border-radius: 0 0 4px 4px;
   border-top: 1px solid #374151;
   display: flex;
@@ -1541,7 +1541,7 @@ const removeOption = (step: any, index: number, at: number) =>
 }
 
 .scope-chip {
-  background: #1f2937;
+  background: var(--surface-raised);
   border: 1px solid #374151;
   border-radius: 999px;
   color: #5eead4;
@@ -1576,7 +1576,7 @@ const removeOption = (step: any, index: number, at: number) =>
 
 .step-head {
   align-items: center;
-  background: #1b2436;
+  background: var(--surface-raised);
   border-bottom: 1px solid #374151;
   border-radius: 4px 4px 0 0;
   display: flex;
@@ -1677,7 +1677,7 @@ label {
 
 input,
 select {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -1691,7 +1691,7 @@ select {
 select {
   -webkit-appearance: none;
   appearance: none;
-  background: #111827 var(--select-caret) no-repeat right 0.6rem center;
+  background: var(--surface-input) var(--select-caret) no-repeat right 0.6rem center;
   background-size: var(--select-caret-size);
   padding: 0.3rem 1.6rem 0.3rem 0.4rem;
 }
@@ -1707,7 +1707,7 @@ select {
 /* The same menu the binding and property fields open: a name, and beside it the
  * one line that says what picking it would do. */
 .kind-menu {
-  background: #0b1220;
+  background: var(--surface-input);
   border: 1px solid #374151;
   border-radius: 5px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
@@ -1749,7 +1749,7 @@ select {
 }
 
 .kind-search {
-  background: #0b1220;
+  background: var(--surface-input);
   border: 1px solid #14b8a6;
   border-radius: 4px;
   color: #eee;

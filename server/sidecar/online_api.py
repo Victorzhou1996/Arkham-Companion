@@ -24,6 +24,7 @@ from typing import Any
 import bcrypt
 import psycopg
 from aiohttp import ClientSession, ClientTimeout, web
+from layout_preferences import install_layout_routes
 from psycopg.rows import dict_row
 
 
@@ -1299,6 +1300,7 @@ def create_app() -> web.Application:
     app = web.Application(client_max_size=1024 * 1024 * 1024)
     app.on_startup.append(online.start)
     app.on_cleanup.append(online.stop)
+    install_layout_routes(app, online, os.getenv("ARKHAM_LAYOUT_DB", "/var/lib/arkham-horror-public-v2/preferences/tabletop.sqlite3"))
     app.router.add_post(f"{API_PREFIX}/register", online.register)
     app.router.add_post(f"{API_PREFIX}/register/verify", online.verify)
     app.router.add_post(f"{API_PREFIX}/password-reset", online.request_password_reset)

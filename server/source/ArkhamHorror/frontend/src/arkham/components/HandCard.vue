@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { computed, inject, onMounted, Ref, ref, watch } from 'vue'
 import { CardContents, type Card } from '@/arkham/types/Card'
 import type { Game } from '@/arkham/types/Game'
@@ -14,6 +15,7 @@ import {
 } from '@/arkham/abilityTriggerModeEligibility'
 import * as ArkhamGame from '@/arkham/types/Game'
 import { IsMobile } from '@/arkham/isMobile'
+import { useMobileBoard } from '@/arkham/mobile/context'
 import { useDbCardStore } from '@/stores/dbCards'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
 import { useDebug } from '@/arkham/debug'
@@ -36,6 +38,8 @@ onMounted(() => {
 })
 
 const { isMobile } = IsMobile()
+const mobileBoard = useMobileBoard()
+const touchAbilities = computed(() => isMobile.value || !!mobileBoard?.touchEnabled.value)
 const cardFrame = ref<HTMLElement | null>(null)
 const showAbilities = ref(false)
 
@@ -305,6 +309,7 @@ function oilPaintEffect(canvas, radius, intensity) {
     :data-index="id"
     v-if="solo || showOtherPlayersHands || investigatorId == ownerId || revealed"
   >
+    <MobileCard>
     <img
       ref="cardFrame"
       :class="classObject"
@@ -330,7 +335,7 @@ function oilPaintEffect(canvas, radius, intensity) {
     </button>
 
     <AbilityButton
-      v-if="!isMobile"
+      v-if="!touchAbilities"
       v-for="ability in abilities"
       :key="ability.index"
       :ability="ability.contents"
@@ -350,7 +355,7 @@ function oilPaintEffect(canvas, radius, intensity) {
     />
 
     <AbilitiesMenu
-      v-if="isMobile && abilities.length > 0"
+      v-if="touchAbilities && abilities.length > 0"
       v-model="showAbilities"
       :game="game"
       :abilities="abilities"
@@ -359,6 +364,7 @@ function oilPaintEffect(canvas, radius, intensity) {
       position="top"
       @choose="$emit('choose', $event)"
     />
+      </MobileCard>
   </div>
   <div class="card-container" v-else>
     <img class="card in-hand" :src="cardBack" />

@@ -1,6 +1,8 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { useMobileBoard } from '@/arkham/mobile/context';
 
 export function IsMobile() {
+  const board = useMobileBoard();
   const isMobile = ref(false);
 
   function updateIsMobile() {
@@ -16,5 +18,7 @@ export function IsMobile() {
     window.removeEventListener('resize', updateIsMobile);
   });
 
-  return { isMobile };
+  // New board owns gestures/layout. Keep the shared entities' ordinary action
+  // buttons and hand; legacy mobile menus implemented a conflicting two-tap flow.
+  return { isMobile: computed(() => board?.touchEnabled.value ? false : isMobile.value) };
 }

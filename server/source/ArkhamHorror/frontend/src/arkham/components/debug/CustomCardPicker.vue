@@ -164,7 +164,7 @@ async function add(placement: Placement) {
 }
 
 .picker-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   color: #eee;
@@ -213,7 +213,7 @@ async function add(placement: Placement) {
 
   img {
     border-radius: 6px;
-    background: #111827;
+    background: var(--surface-input);
     width: 100%;
   }
 

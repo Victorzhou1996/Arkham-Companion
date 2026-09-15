@@ -40,7 +40,7 @@ function imageLoaded(event: Event) {
 </script>
 
 <template>
-  <div class="poolItem" :class="`poolItem-${type}`" @click="emit('choose')" v-tooltip="tooltip">
+  <div class="poolItem" :class="[`poolItem-${type}`, { 'poolItem--large': String(amount ?? '').length > 3 }]" :title="amount == null ? tooltip : `${tooltip || type}: ${amount}`" @click="emit('choose')" v-tooltip="tooltip">
     <img :src="image" @load="imageLoaded" @error="retryImage" />
     <span v-if="amount !== null && amount !== undefined">{{amount}}</span>
   </div>
@@ -100,6 +100,17 @@ function imageLoaded(event: Event) {
     width: 1.2em;
     height: auto;
   }
+}
+
+.poolItem.poolItem--large {
+  display: inline-flex;
+  gap: 2px;
+  width: max-content;
+  min-width: var(--width);
+  clip-path: none;
+  flex-shrink: 0;
+  img { width: var(--width); }
+  span { width: auto; min-width: 3ch; aspect-ratio: auto; border-radius: 4px; padding: 2px 4px; font: 700 .65em/1.3 system-ui, sans-serif; background: #0a211ce8; white-space: nowrap; font-variant-numeric: tabular-nums; }
 }
 
 .clue--can-take, .clue--can-spend {
