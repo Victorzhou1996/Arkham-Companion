@@ -3,6 +3,7 @@ import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { TokenType } from '@/arkham/types/Token';
 import { ComputedRef, computed, ref, watch } from 'vue';
 import { useCardStore } from '@/stores/cards';
+import { useDbCardStore } from '@/stores/dbCards';
 import { useDebug } from '@/arkham/debug';
 import { useI18n } from 'vue-i18n';
 import { cardImg, imgsrc, groupBy } from '@/arkham/helpers';
@@ -142,6 +143,8 @@ const cardStage = (code: string): number | null => cardDefFor(code)?.stage ?? nu
 // versions of agenda 1 into its deck and plays each in turn — so those get a
 // pip each.
 const cardTitle = (code: string): string => cardDefFor(code)?.name.title ?? code
+const sceneNames = useDbCardStore()
+const sceneTitle = computed(() => sceneNames.getCardName(cardTitle(props.agenda.id), 'agenda'))
 
 // The face a completed act/agenda was resolved on, so the popover can offer the
 // side that only ever flashed past on advance.
@@ -286,6 +289,7 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
 <template>
   <div class="agenda-container" :data-tabletop-label="tabletop.agenda">
       <MobileCard>
+    <button type="button" data-mobile-direct class="edge-scene-name" :aria-label="`${tabletop.agenda}：${sceneTitle}`">{{ tabletop.agenda }} · {{ sceneTitle }}</button>
     <h3 class="tabletop-card-heading"><EyeIcon aria-hidden="true" />{{ tabletop.agenda }}</h3>
     <StackIndicator
       label="Agenda"
@@ -400,6 +404,7 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
 </template>
 
 <style scoped>
+.edge-scene-name { display: none; }
 .card {
   width: var(--card-width);
   box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.45);

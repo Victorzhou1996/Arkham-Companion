@@ -75,6 +75,8 @@ body:has(#game.tabletop-game) { --tabletop-action: #ff784f; }
 }
 
 #game.tabletop-game .location-cards-container { --hidden-location-action-glow: #ff784f; --hidden-location-action-soft: #ff784f40; }
+/* Investigator miniatures stay circular in both idle and actionable states. */
+body:has(#game.tabletop-game) #game.tabletop-game .location-investigator-column .portrait { border-radius: 50% !important; }
 #game.tabletop-game .objective-ring::before, #game.tabletop-game .objective-ring::after { animation: none; }
 #game.tabletop-game .objective-ring::after { filter: none; opacity: .4; }
 #game.tabletop-game.mobile-page-hidden *, #game.tabletop-game.mobile-page-hidden *::before, #game.tabletop-game.mobile-page-hidden *::after { animation-play-state: paused !important; }

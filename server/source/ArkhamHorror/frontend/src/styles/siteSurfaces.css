@@ -1,0 +1,78 @@
+/* Page-only surfaces: never select the board, card art, or layout controls. */
+#app .site-workspace { --site-line: #7f805c; --site-muted: #bfccbb; color: var(--text); }
+#app .site-workspace :is(h1, h2, h3, .card-title, .page-title) { color: #e6dab4; }
+#app .site-workspace :is(.box, .new-deck-panel, .deck-main, .card:not(img):not(.no-overlay), .campaign-section, .bug-card, .admin-panel) { border-color: #8d805866; border-radius: 8px; }
+#app .site-workspace :is(input:not([type=checkbox]):not([type=radio]):not([type=image]):not([type=range]), select, textarea) { background-color: #091e17; color: #e3e9dc; border-color: #738366; border-radius: 5px; }
+#app .site-workspace :is(input, textarea)::placeholder { color: #a9b9a3; opacity: 1; }
+#app .site-workspace :is(button, a, input, select, textarea, summary, [tabindex="0"]):focus-visible { outline: 2px solid #f1cf7e; outline-offset: 3px; }
+#app .site-workspace :is(.status-message, .notice, .creation-error, .error) { padding: 10px 14px; border: 1px solid currentColor; border-radius: 5px; line-height: 1.6; }
+#app .site-workspace :is(.error, .creation-error, .status-error) { color: #ffb5a3; }
+#app .site-workspace :is(.notice, .status-message, .status-ok) { color: #d9e7c8; }
+.site-notice { padding: 12px 16px; background: #153126; color: #e2e7d6; border: 1px solid #8b805a; border-radius: 6px; margin-bottom: 12px; }
+
+/* Lobby: the current game is the primary destination. Support stays available
+   below the game list, rather than displacing it with a full-height QR column. */
+#app .tabletop-lobby .home-layout { grid-template-columns: minmax(0, 1fr); width: min(1200px, 100%); margin: 0 auto; }
+#app .tabletop-lobby .home-layout::after { display: none; }
+#app .tabletop-lobby .home-layout > .container { grid-row: 1; }
+#app .tabletop-lobby .home .support-card { grid-row: 2; position: static; width: 100%; box-sizing: border-box; box-shadow: none; border-width: 1px; }
+#app .tabletop-lobby .support-card summary { cursor: pointer; color: #d5c899; font-weight: 600; padding: 4px; }
+#app .tabletop-lobby .support-card[open] summary { margin-bottom: 16px; }
+#app .tabletop-lobby .support-card img { width: 150px; }
+.continue-game { display: flex; gap: 20px; justify-content: space-between; align-items: center; padding: 20px; margin-bottom: 24px; background: #173d2d; border: 1px solid #958458; border-radius: 8px; }
+.continue-game small { color: #c7d1bb; }
+#app .tabletop-lobby .continue-game h2 { margin-top: 6px; overflow-wrap: anywhere; }
+.continue-game a { flex-shrink: 0; padding: 12px 18px; background: #35674d; border: 1px solid #b3a16b; border-radius: 6px; color: #fff1ca; text-decoration: none; }
+.finished-games { border-top: 1px solid #857c5055; margin-top: 20px; }
+.finished-games summary { padding: 16px 0; color: #d9cfac; cursor: pointer; font-size: 1.1em; }
+.finished-games summary span { margin-left: 10px; font-variant-numeric: tabular-nums; }
+
+/* Wizard retains its existing state and two steps. */
+.wizard-progress { display: flex; align-items: stretch; gap: 8px; padding: 6px 0 12px; }
+#app #new-campaign .wizard-progress > * { flex: 1; width: auto; padding: 12px; border: 1px solid #66775b; border-radius: 5px; background: #10291f; color: #c5d2bd; text-align: center; font: inherit; }
+#app #new-campaign .wizard-progress [aria-current="step"] { border-color: #d2bc80; color: #f6e6b8; text-decoration: underline; text-underline-offset: 5px; }
+.configuration-summary { display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; padding: 14px 16px; background: #183b2c; border-left: 3px solid #bca26c; border-radius: 5px; color: #e4e6d5; }
+
+/* Deck management and deck selection share row dimensions and information
+   weights, without sharing their different selection/game-submit actions. */
+#app .site-decks .deck-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+#app :is(.site-decks .decklist, .site-deck-picker .deck-item) { min-height: 76px; padding: 10px 12px; gap: 12px; background: #153126; border-top: 1px solid #7f805c66; border-right: 1px solid #7f805c66; border-bottom: 1px solid #7f805c66; border-radius: 6px; box-shadow: none; }
+#app :is(.site-decks .portrait--decklist, .site-deck-picker .deck-item-portrait) { width: 44px; height: 62px; object-fit: cover; flex-shrink: 0; border-radius: 4px; }
+#app :is(.site-decks .deck-name, .site-deck-picker .deck-item-name) { color: #edf0de; font-size: 1rem; line-height: 1.4; }
+#app :is(.site-decks .last-played, .site-deck-picker .deck-item-taboo) { color: #c6cda9; font-size: .8rem; }
+#app :is(.site-decks .action-btn, .site-deck-picker .deck-item-use, .site-deck-picker .deck-item-overlay, .site-deck-picker .deck-item-weakness-button) { min-width: 36px; min-height: 36px; border: 1px solid #7f805c; border-radius: 5px; }
+#app .site-deck-picker .deck-main { background: #102b21; }
+
+#app .site-cards .sidebar { background: #102b21; border-color: #8b805966; }
+#app .site-cards .results > header { background: #153126; border-bottom: 1px solid #8b805966; padding: 12px; gap: 10px; }
+#app .site-cards .nav-row.active { background: #294d37; color: #f5e5b3; }
+#app .site-cards .count { color: #c4ceba; }
+.card-details-surface { background: #112d22; color: #dde5d5; border: 1px solid #93855d; }
+.card-details-surface h2 { color: #e6dab4; }
+.card-details-surface .info { line-height: 1.65; }
+
+#app .site-achievements .campaign-section { background: #102b21; border: 1px solid #85795388; margin-bottom: 12px; }
+#app .site-achievements .campaign-header { padding: 14px; }
+#app .site-achievements :is(.part-count, .progress-count, .entry-text, .checklist-item) { color: #c9d4c5; }
+#app .site-achievements .entry-list { padding: 0 12px 12px; }
+#app .site-achievements .entry:not(.earned) { border-left-color: #72846b; background: #173126; }
+#app .site-settings .page-content { max-width: 1000px; margin: 0 auto; }
+#app .site-settings .box { background: #142f26; border: 1px solid #81765488; padding: 20px; gap: 12px; }
+#app .site-bugs :is(.admin-panel, .bug-card) { background: #142f26; border: 1px solid #81765488; }
+#app .site-bugs :is(.muted, .bug-meta) { color: #c1ccba; }
+
+/* Printed narrative stays readable; controls stay on a distinct green surface.
+   Do not blanket recolor themed scenario passages or Arkham icon fonts. */
+#app .pick-supplies-contents { background: #e4ddc9; color: #253027; box-shadow: none; border: 1px solid #9f946e; line-height: 1.75; }
+#app .pick-supplies-contents :is(p, li, strong, em) { color: inherit; }
+#app .pick-supplies-top :is(li::marker, ul li::marker) { color: #52623d; }
+#app .pick-supplies { background: #133025; color: #e4e9d9; border: 1px solid #887d5488; box-shadow: none; }
+#app .pick-supplies button { background: #35674d; color: #fff2cf; border: 1px solid #b1a170; border-radius: 6px; }
+#app .intro-text .task-selection { background: #102b21; border: 1px solid #857953; border-radius: 7px; padding: 12px; }
+#app .intro-text .task-selection button { color: #f1e6c6; }
+@media (max-width: 650px) {
+  .continue-game { flex-direction: column; align-items: stretch; padding: 16px; }
+  .continue-game a { text-align: center; }
+  .configuration-summary { flex-direction: column; }
+}
+.site-cards .card-results-count { margin: 0; padding: 8px 16px; color: #cbd5c5; background: #10271f; font-size: .85rem; }

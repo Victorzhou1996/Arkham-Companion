@@ -58,7 +58,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 <template>
   <Teleport to="body">
     <div class="backdrop" @click.self="emit('close')">
-      <div class="details" role="dialog" aria-modal="true" :aria-label="title">
+      <div class="details card-details-surface" role="dialog" aria-modal="true" :aria-label="title">
         <div class="controls">
           <button
             class="step"

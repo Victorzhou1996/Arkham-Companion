@@ -28,6 +28,8 @@ import {
 } from '@/arkham/narration'
 import { cardNarrationFromCsv } from '@/arkham/narrationCsv'
 import { cardNarrationCategory } from '@/arkham/narrationCategory'
+import { isScenePreviewSource } from '@/arkham/sceneDrawer'
+import { containsPoint } from '@/arkham/previewPolicy'
 
 /* =============================================================================
  * Constants, basic helpers, and caches
@@ -199,6 +201,8 @@ onUnmounted(() => mq.removeEventListener?.('change', updateIsMobile))
 const CARD_SELECTOR = '.card,[data-image-id],[data-target],[data-image]'
 const OVERLAY_BLOCKER_SELECTOR = '.draggable,.intro-text,.choice-modal-wrapper,.no-card-overlay'
 let hoverTimer: number | null = null
+let leaveTimer: number | null = null
+const explicitlyOpened = ref(false)
 let pressTimer: number | null = null
 let canDisablePress = false
 let currentPointerType = 'mouse'
@@ -245,21 +249,37 @@ const targetFromEvent = (e: Event): HTMLElement | null => {
 
 const queueHover = (el: HTMLElement) => {
   if (el.closest('#game.touch-game, .mobile-card-preview')) return
+  leaveTimer = clearTimer(leaveTimer)
+  if (hoveredElement.value === el) return
   hoverTimer = clearTimer(hoverTimer)
-  const delay = el.dataset.delay ? parseInt(el.dataset.delay, 10) : 0
-  hoverTimer = window.setTimeout(() => {
-    hoveredElement.value = el
-    canDisablePress = true
-  }, delay)
+  hoveredElement.value = el
+  canDisablePress = true
+}
+
+const scheduleLeave = () => {
+  hoverTimer = clearTimer(hoverTimer)
+  if (explicitlyOpened.value || leaveTimer !== null || !hoveredElement.value) return
+  clearOverlay()
+}
+const onPreviewKey = (e: KeyboardEvent) => { if (e.key === 'Escape') clearOverlay() }
+const onExplicitPreview = (e: Event) => {
+  const element = (e as CustomEvent<HTMLElement>).detail
+  if (!(element instanceof HTMLElement) || !element.isConnected || !element.dataset.imageId) return
+  clearOverlay()
+  hoveredElement.value = element
+  explicitlyOpened.value = true
 }
 
 const onMouseOver = (e: MouseEvent) => {
-  if (currentPointerType === 'touch' || dragActive) return
+  if (currentPointerType === 'touch' || dragActive || explicitlyOpened.value) return
+  // Only real overlay controls retain the preview, not its transparent image
+  // rectangle covering another card beneath the pointer.
+  if ((e.target as Element | null)?.closest('.card-overlay')) return
   lastPointer.value = { clientX: e.clientX, clientY: e.clientY }
   const el = targetFromEvent(e)
   hoverTimer = clearTimer(hoverTimer)
   if (!el || el.classList.contains('dragging') || el.classList.contains('no-overlay')) {
-    hoveredElement.value = null
+    scheduleLeave()
     return
   }
   queueHover(el)
@@ -267,12 +287,13 @@ const onMouseOver = (e: MouseEvent) => {
 
 const onMouseLeave = () => {
   if (currentPointerType === 'touch') return
-  hoverTimer = clearTimer(hoverTimer)
-  hoveredElement.value = null
+  scheduleLeave()
 }
 
 const onPointerDown = (e: PointerEvent) => {
   currentPointerType = e.pointerType
+  const target = e.target as HTMLElement | null
+  if (hoveredElement.value && !target?.closest('[data-keep-card-overlay], .card-overlay') && !hoveredElement.value.contains(target)) clearOverlay()
   if (e.pointerType === 'touch') {
     const el = targetFromEvent(e)
     if (!el) return
@@ -284,6 +305,10 @@ const onPointerDown = (e: PointerEvent) => {
 const onPointerMove = (e: PointerEvent) => {
   currentPointerType = e.pointerType
   lastPointer.value = { clientX: e.clientX, clientY: e.clientY }
+  if (e.pointerType === 'mouse' && hoveredElement.value && !explicitlyOpened.value) {
+    if (containsPoint(hoveredElement.value, e) || (e.target as Element | null)?.closest('.card-overlay')) leaveTimer = clearTimer(leaveTimer)
+    else scheduleLeave()
+  }
   if (e.pointerType === 'touch') {
     if (hoveredElement.value?.classList.contains('card--locations')) {
       hoveredElement.value = null
@@ -293,6 +318,7 @@ const onPointerMove = (e: PointerEvent) => {
 }
 
 const onPointerUp = (e: PointerEvent) => {
+  if (e.pointerType === 'mouse' || explicitlyOpened.value) return
   // A control layered on top of a card can change which face that card shows (the
   // act/agenda stack popover's flip button). Clicking it must leave the overlay up,
   // otherwise every click after the first dismisses it.
@@ -306,6 +332,8 @@ const onPointerUp = (e: PointerEvent) => {
 }
 
 const clearOverlay = () => {
+  leaveTimer = clearTimer(leaveTimer)
+  explicitlyOpened.value = false
   hoverTimer = clearTimer(hoverTimer)
   pressTimer = clearTimer(pressTimer)
   playabilityTimer = clearTimer(playabilityTimer)
@@ -340,6 +368,8 @@ onMounted(() => {
   document.addEventListener('dragend', onDragEnd)
   document.addEventListener('drop', onDragEnd)
   document.addEventListener('arkham:clear-card-overlay', clearOverlay)
+  document.addEventListener('arkham:preview-card', onExplicitPreview)
+  document.addEventListener('keydown', onPreviewKey)
   // only block context menu inside the overlay, not globally
   cardOverlay.value?.addEventListener('contextmenu', onOverlayContextMenu)
 })
@@ -353,6 +383,8 @@ onUnmounted(() => {
   document.removeEventListener('dragend', onDragEnd)
   document.removeEventListener('drop', onDragEnd)
   document.removeEventListener('arkham:clear-card-overlay', clearOverlay)
+  document.removeEventListener('arkham:preview-card', onExplicitPreview)
+  document.removeEventListener('keydown', onPreviewKey)
   cardOverlay.value?.removeEventListener('contextmenu', onOverlayContextMenu)
   clearOverlay()
 })
@@ -411,6 +443,12 @@ const card = computed<string | null>(() => {
   void hoveredVersion.value
   return hoveredElement.value ? getImage(hoveredElement.value) : null
 })
+let hadScenePreview = false
+watch([card, hoveredElement], () => {
+  const scenePreview = !!card.value && isScenePreviewSource(hoveredElement.value)
+  if (scenePreview || hadScenePreview) document.dispatchEvent(new Event('arkham:scene-preview-change'))
+  hadScenePreview = scenePreview
+}, { flush: 'post' })
 const overlayCardCode = computed<string | null>(() => {
   void hoveredVersion.value
   const el = hoveredElement.value
@@ -1292,10 +1330,12 @@ watchEffect(() => {
   <Teleport to="body">
     <div
       class="card-overlay"
+      :data-edge-scene-preview="card && isScenePreviewSource(hoveredElement) || undefined"
       ref="cardOverlay"
       :style="{ top: overlayPosition.top + 'px', left: overlayPosition.left + 'px'}"
-      :class="{ sideways, tarot, isMobile, overPopover }"
+      :class="{ sideways, tarot, isMobile, overPopover, 'card-overlay--explicit': explicitlyOpened }"
     >
+    <button v-if="explicitlyOpened" type="button" class="card-overlay-close" aria-label="Close preview / 关闭预览" @click="clearOverlay">✕</button>
     <div class="card-image">
       <svg
         v-if="card"
@@ -1780,6 +1820,9 @@ watchEffect(() => {
 .card-overlay.overPopover {
   z-index: var(--z-card-hover-overlay-over-popover);
 }
+.card-overlay--explicit { pointer-events: auto; }
+.card-overlay-close { position: absolute; right: 0; top: 0; z-index: 2; min-width: 36px; min-height: 36px; border: 1px solid #d2c28b; border-radius: 5px; background: #0c241b; color: #f6eccf; cursor: pointer; }
+@media (max-width: 800px) { .card-overlay.card-overlay--explicit { position: fixed; inset: auto !important; top: 50% !important; left: 50% !important; margin: 0; transform: translate(-50%, -50%) scale(.85); transform-origin: center; max-height: 90dvh; max-width: 96vw; overflow: auto; } }
 
 .card-overlay.sideways {
   /* on narrow portrait screens, allow horizontal scroll if both SVGs visible */

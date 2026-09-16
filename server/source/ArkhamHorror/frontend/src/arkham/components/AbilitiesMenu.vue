@@ -10,6 +10,7 @@ const props = withDefaults(defineProps<{
   game: Game;
   abilities: AbilityMessage[];
   frame: HTMLElement | null;
+  ignore?: HTMLElement[];
   position?: 'top' | 'bottom' | 'left' | 'right';
   showMove?: boolean
   hostHasSwarm?: boolean
@@ -186,7 +187,7 @@ onUnmounted(() => {
     </div>
   </div>
   <Teleport v-else-if="!mobileEnabled" to="body">
-    <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame] }">
+    <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame, ...(ignore || [])] }">
       <div class="abilities" :class="[positionClass, { anchored: useAnchor }]" :style="anchorStyle" ref="abilitiesRef" >
         <button
           v-if="playAction !== undefined"

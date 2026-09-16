@@ -178,7 +178,8 @@ onUnmounted(() => clearInterval(interval.value))
 
   p {
     padding: 10px;
-    background: #FFF;
+    background: var(--surface-panel);
+    color: #e5e7d3;
     border-radius: 4px;
   }
 }

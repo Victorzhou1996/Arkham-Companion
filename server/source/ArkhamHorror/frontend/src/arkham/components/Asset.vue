@@ -1,8 +1,7 @@
 <script lang="ts" setup>
 import MobileCard from '@/arkham/mobile/MobileCard.vue'
-import { computed, watch, ref } from 'vue';
+import { computed, watch, ref, onMounted, onBeforeUnmount } from 'vue';
 import { Dropdown } from 'floating-vue';
-import useHighlighter from '@/composable/useHighlighter';
 import { useDebug } from '@/arkham/debug';
 import { TokenType } from '@/arkham/types/Token';
 import { imgsrc } from '@/arkham/helpers';
@@ -66,8 +65,6 @@ const emits = defineEmits<{
 const id = computed(() => props.asset.id)
 const exhausted = computed(() => props.asset.exhausted)
 const jammed = computed(() => props.asset.rifleStatus === 'Jammed')
-const highlighter = useHighlighter()
-const isHighlighted = computed(() => highlighter.highlighted.value === props.asset.id)
 const isAttackTarget = computed(() => props.game.enemyAttackTargets.some((e) => e.target.contents === props.asset.id))
 
 const uiRotation = computed<number>(() => {
@@ -99,6 +96,9 @@ const investigators = computed(() => Object.values(props.game.investigators).fil
   return false
 }))
 const marketPopoverShown = ref(false)
+const closeMarketPreview = (event: KeyboardEvent) => { if (event.key === 'Escape') marketPopoverShown.value = false }
+onMounted(() => document.addEventListener('keydown', closeMarketPreview))
+onBeforeUnmount(() => document.removeEventListener('keydown', closeMarketPreview))
 const knownMarketDeck = computed(() => props.asset.knownMarketDeck ?? [])
 const marketDeckCardImage = (card: ArkhamCard) => imgsrc(cardToImage(card))
 
@@ -467,7 +467,7 @@ function startDrag(event: DragEvent) {
             :data-is-spirit="isSpirit || undefined"
             :src="displayedImage"
             class="card"
-            :class="{ exhausted, 'ability-target': isHighlighted || isAttackTarget, 'card--flipping': flipping }"
+            :class="{ exhausted, 'card--flipping': flipping }"
             :style="{ '--ui-rotation': `${uiRotation}deg` }"
             :data-rotation="uiRotation || undefined"
             :draggable="debug.active || canTuck"

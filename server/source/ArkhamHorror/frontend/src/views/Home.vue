@@ -22,6 +22,9 @@ import ImportGame from '@/arkham/components/ImportGame.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import { storeToRefs } from 'pinia'
 import { APP_VERSION } from '@/version'
+import { useI18n } from 'vue-i18n'
+const { locale } = useI18n()
+const zh = computed(() => locale.value.toLowerCase().startsWith('zh'))
 
 const route = useRoute()
 const router = useRouter()
@@ -75,6 +78,11 @@ const dismissedNotifications = JSON.parse(localStorage.getItem('dismissedNotific
 
 const activeGames = computed(() => games.value.filter((g) => g.gameState.tag !== 'IsOver'))
 const finishedGames = computed(() => games.value.filter((g) => g.gameState.tag === 'IsOver'))
+const gamesLoading = ref(true)
+const gamesLoadError = ref(false)
+let lastOpenedGame = ''
+try { lastOpenedGame = localStorage.getItem('arkham-last-opened-game') ?? '' } catch { /* preferences are optional */ }
+const continueGame = computed(() => activeGames.value.find(g => g.id === lastOpenedGame) ?? activeGames.value[0])
 
 function writeHomeCache() {
   try {
@@ -100,8 +108,10 @@ fetchGames()
     writeHomeCache()
   })
   .catch((error) => {
+    gamesLoadError.value = true
     console.warn('Could not refresh saved games', error)
   })
+  .finally(() => { gamesLoading.value = false })
 
 // Epic Multiplayer events surface as a single entry each, inline with regular
 // games (group games are hidden from fetchGames by the backend). A user who is
@@ -212,7 +222,7 @@ const isSupportNotification = (notification: AppNotification) => {
 </script>
 
 <template>
-  <div class="page-container tabletop-lobby">
+  <div class="page-container tabletop-lobby site-workspace">
     <NewGame v-if="currentUser && newGame" @close="toggleNewGame">
       <template #cancel>
         <button @click="toggleNewGame" class="cancel-new-game-button">
@@ -228,8 +238,8 @@ const isSupportNotification = (notification: AppNotification) => {
       </div>
 
       <div class="home-layout">
-        <aside class="support-card" aria-labelledby="support-title">
-          <h3 id="support-title">{{ $t('home.supportTitle') }}</h3>
+        <details class="support-card" aria-labelledby="support-title">
+          <summary id="support-title">{{ $t('home.supportTitle') }}</summary>
           <img :src="supportQrSrc" :alt="$t('home.supportAlt')" />
           <dl v-if="publicStats" class="server-stats" :aria-label="$t('home.serverStats')">
             <div>
@@ -246,9 +256,15 @@ const isSupportNotification = (notification: AppNotification) => {
             </div>
           </dl>
           <p>{{ $t('home.supportBody') }}</p>
-        </aside>
+        </details>
 
         <div class="container">
+          <div v-if="currentUser && gamesLoadError" class="site-notice" role="status">{{ zh ? '暂时无法刷新游戏列表，现有缓存仍可查看。请稍后刷新重试。' : 'Could not refresh games. Cached entries are still available; please retry shortly.' }}</div>
+          <div v-if="gamesLoading && !games.length" class="site-notice" role="status">{{ zh ? '正在读取游戏列表…' : 'Loading games…' }}</div>
+          <section v-if="currentUser && continueGame" class="continue-game">
+            <div><small>{{ zh ? '回到桌面' : 'Back to the table' }}</small><h2>{{ continueGame.name }}</h2></div>
+            <RouterLink :to="`/games/${continueGame.id}`">{{ zh ? '继续游戏 →' : 'Continue game →' }}</RouterLink>
+          </section>
           <section>
             <header class="main-header">
               <h2>{{ $t('activeGames') }}</h2>
@@ -298,17 +314,15 @@ const isSupportNotification = (notification: AppNotification) => {
             />
           </section>
 
-          <section>
-            <header>
-              <h2 v-if="finishedGames.length > 0">{{ $t('finishedGames') }}</h2>
-            </header>
+          <details v-if="finishedGames.length" class="finished-games">
+            <summary>{{ $t('finishedGames') }} <span>{{ finishedGames.length }}</span></summary>
             <GameRow
               v-for="game in finishedGames"
               :key="game.id"
               :game="game"
               :deleteGame="() => deleteGameEvent(game)"
             />
-          </section>
+          </details>
         </div>
       </div>
     </div>

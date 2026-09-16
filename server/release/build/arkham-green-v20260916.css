@@ -1,0 +1,39 @@
+/* Frontend-only theme overlay. No artwork, typography, layout or behavior changes.
+   Both existing light/dark preferences remain usable. No texture or animation. */
+html[data-theme="dark"] {
+  --palette-0: #0c211a;
+  --palette-point-five: #102b22;
+  --palette-1: #17362a;
+  --palette-2: #294b3d;
+  --palette-3: #58745f;
+  --palette-three-point-five: #94aa8f;
+  --palette-4: #d7dfce;
+  --palette-5: #e6dab4;
+  --palette-6: #f4ecd7;
+  --text: #d7dfce;
+  --color-focus: #efd397;
+  --color-link: #dfc88d;
+  --color-inverted: #f4ecd7;
+  --color-scrollbar-thumb: #789374;
+  --color-success: #b1d396;
+  --error: #f2a69a;
+}
+html[data-theme="light"] {
+  --palette-0: #edf2e7;
+  --palette-point-five: #e3ebdb;
+  --palette-1: #d6e2cb;
+  --palette-2: #c3d2b6;
+  --palette-3: #99b18b;
+  --palette-three-point-five: #5b7856;
+  --palette-4: #314d37;
+  --palette-5: #243c2b;
+  --palette-6: #152c1f;
+  --text: #243c2b;
+  --color-focus: #315d3d;
+  --color-link: #466326;
+  --color-inverted: #f4f5e8;
+  --color-scrollbar-thumb: #6d8966;
+  --color-success: #316530;
+  --error: #a02f27;
+}
+html, body, #root { background-color: var(--palette-0); background-image: none; color: var(--text); }

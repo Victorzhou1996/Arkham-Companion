@@ -85,6 +85,6 @@ test('homepage shares game-app surfaces while keeping its own decoration',()=>{
   assert.match(css,/background: var\(--app-background\)/)
   assert.match(read('styles/tokens.css'),/tabletop-felt-20260914-v2.png/)
   assert.doesNotMatch(css,/--guardian:|--survivor:|--select:/)
-  assert.match(read('views/Home.vue'),/class="page-container tabletop-lobby"/)
+  assert.match(read('views/Home.vue'),/class="page-container tabletop-lobby site-workspace"/)
   assert.match(read('views/SignIn.vue'),/class="tabletop-login" @submit.prevent="authenticate"/)
 })

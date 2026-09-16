@@ -245,7 +245,7 @@ onMounted(refreshRuntimeInfo)
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container site-workspace site-settings">
     <div class="page-content column">
       <h2 class="title">{{ $t('settings') }}</h2>
 
@@ -329,7 +329,7 @@ onMounted(refreshRuntimeInfo)
             {{ passwordBusy ? $t('settingsForm.processing') : $t('settingsForm.changePassword') }}
           </button>
         </div>
-        <p v-if="passwordMessage" class="status-message">{{ passwordMessage }}</p>
+        <p v-if="passwordMessage" class="status-message" role="status">{{ passwordMessage }}</p>
       </section>
 
       <section class="box column">
@@ -350,7 +350,7 @@ onMounted(refreshRuntimeInfo)
             />
           </label>
         </div>
-        <p v-if="saveMessage" class="status-message">{{ saveMessage }}</p>
+        <p v-if="saveMessage" class="status-message" role="status">{{ saveMessage }}</p>
       </section>
 
       <section class="box column">

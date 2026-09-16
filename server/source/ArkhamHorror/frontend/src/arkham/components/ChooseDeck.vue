@@ -462,7 +462,7 @@ const needsReply = computed(() => {
 </script>
 
 <template>
-  <div class="container scroll-container">
+  <div class="container scroll-container site-workspace site-deck-picker">
     <div class="investigators">
       <h2 class="page-title">{{$t('create.chooseYourDeck', players.length)}}</h2>
       <div class="portraits">

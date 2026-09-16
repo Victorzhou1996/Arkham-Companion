@@ -2,7 +2,8 @@
 import type { CardContents } from '@/arkham/types/Card';
 import * as CardT from '@/arkham/types/Card';
 import gsap from 'gsap';
-import { computed, inject, Ref, ref, ComputedRef, reactive, watch, onMounted, onBeforeUnmount } from 'vue';
+import { computed, inject, Ref, ref, ComputedRef, reactive, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { createDrawTracker, type DrawSnapshot, type DrawOrigin } from '@/arkham/drawTransition';
 import { useDebug } from '@/arkham/debug'
 import * as DebugMove from '@/arkham/debugCardMove';
 import { Game } from '@/arkham/types/Game';
@@ -66,6 +67,39 @@ export interface Props {
 }
 
 const props = defineProps<Props>()
+const playerCardsRoot = ref<HTMLElement | null>(null)
+const drawOrigins = reactive(new Map<string, DrawOrigin>())
+const drawTracker = createDrawTracker()
+let previousDrawSnapshot: DrawSnapshot | undefined
+let lastDeckRect: DOMRect | undefined
+const drawSnapshot = computed<DrawSnapshot>(() => ({
+  gameId: props.game.id, investigatorId: props.investigator.id,
+  step: props.game.scenarioSteps, inSetup: props.game.inSetup,
+  deck: props.investigator.deck.map(card => card.id),
+  hand: props.investigator.hand.map(card => toCardContents(card).id),
+  discard: props.investigator.discard.map(card => card.id),
+}))
+watch([drawSnapshot, mobileEnabled], ([after]) => {
+  const root = playerCardsRoot.value
+  const before = previousDrawSnapshot
+  previousDrawSnapshot = after
+  if (before && (after.gameId !== before.gameId || after.investigatorId !== before.investigatorId || after.step < before.step || after.inSetup)) {
+    drawOrigins.clear(); lastDeckRect = undefined
+  }
+  // Phone retains its old UI/animations. Only the visible PC/tablet board opts in.
+  if (mobileEnabled.value || !root?.closest('#game.edge-tabletop') || !root.getBoundingClientRect().width) {
+    drawTracker.reset(); drawTracker.update(after); drawOrigins.clear(); lastDeckRect = undefined; return
+  }
+  const rect = root.querySelector<HTMLElement>('.deck-container .top-of-deck')?.getBoundingClientRect()
+  if (rect?.width && rect.height) lastDeckRect = rect
+  const drawn = drawTracker.update(after)
+  for (const id of drawOrigins.keys()) if (!after.hand.includes(id)) drawOrigins.delete(id)
+  if (!lastDeckRect || document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  drawn.forEach((id, index) => {
+    const { left, top, width, height } = lastDeckRect!
+    drawOrigins.set(id, { left, top, width, height, delay: Math.min(index, 7) * 70 })
+  })
+}, { immediate: true, flush: 'pre' })
 const solo = inject<Ref<boolean>>('solo')
 const showOtherPlayersHands = inject<Ref<boolean>>('showOtherPlayersHands')
 
@@ -799,6 +833,7 @@ function isHtmlElement(el: Element): el is HTMLElement { return el instanceof HT
 
 function onBeforeEnter(el: Element) {
   if (!isHtmlElement(el)) return
+  if (el.hasAttribute('data-draw-arrival')) return
   if (el.hasAttribute('data-card-movement')) return
   if (el.classList.contains('committed-skills')) return
   const idx = el.dataset.index
@@ -809,6 +844,7 @@ function onBeforeEnter(el: Element) {
 
 function onEnter(el: Element, done: () => void) {
   if (!isHtmlElement(el)) return
+  if (el.hasAttribute('data-draw-arrival')) { done(); return }
   if (el.hasAttribute('data-card-movement')) { done(); return }
   if (el.classList.contains('committed-skills')) { el.removeAttribute('style'); done(); return }
 
@@ -971,7 +1007,7 @@ function closeHand() {
 </script>
 
 <template>
-  <div class="player-cards">
+  <div ref="playerCardsRoot" class="player-cards">
     <MobilePlayerStatus v-if="mobileEnabled" :investigator="investigator" :choices="choices" :player-id="playerId" @choose="$emit('choose', $event)" />
     <MobilePlayerNav v-if="mobileEnabled" :hand="totalHandSize" :threats="threatCount" :owner="investigator.playerId" />
     <button class="in-play-toggle" @click="playAreaCollapsed = !playAreaCollapsed"></button>
@@ -1250,6 +1286,7 @@ function closeHand() {
     <div class="player">
       <Teleport :to="mobileHunchSlot || 'body'" :disabled="!mobileEnabled || !mobileHunchSlot">
       <div v-if="hunchDeck" class="hunch-deck">
+        <h3 class="tabletop-pile-heading"><span class="tabletop-pile-heading__text">{{ t('investigators.joeDiamond.hunchDeck') }} {{ hunchDeck.length }}</span></h3>
         <div class="top-of-deck">
           <HandCard
             v-if="topOfHunchDeck && topOfHunchDeckRevealed"
@@ -1328,6 +1365,8 @@ function closeHand() {
             :playerId="playerId"
             :ownerId="investigator.id"
             :mobileHandOpen="handAreaPointerEvents === 'auto'"
+            :draw-origin="mobileEnabled ? undefined : drawOrigins.get(toCardContents(card).id)"
+            @draw-arrived="drawOrigins.delete(toCardContents(card).id)"
             :key="toCardContents(card).id"
             @choose="$emit('choose', $event)"
             :draggable="debug.active"

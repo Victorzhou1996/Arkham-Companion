@@ -1,8 +1,8 @@
 # Arkham Companion Server：AI 部署指南
 
-## 当前版本优先说明 · 2026-09-15
+## 当前版本优先说明 · 2026-09-16
 
-当前默认产物为 `2026.09.15-online-undo`，前端 `VITE_ONLINE_MODE=true`，与 online 的最新修复版逐文件校验；不再是下文旧发布说明中的9月9日快照。先阅读 [RELEASE-20260915.md](RELEASE-20260915.md)，执行 `git lfs pull` 和 `python3 server/packaging/verify-server-release.py`，通过后才允许打包/部署。该验证器不改数据库或配置。
+当前默认产物为 `2026.09.16-edge-fixes`，前端 `VITE_ONLINE_MODE=true`，与 online 的最新修复版逐文件校验；不再是下文旧发布说明中的9月9日快照。先阅读 [RELEASE-20260916.md](RELEASE-20260916.md)，执行 `git lfs pull` 和 `python3 server/packaging/verify-server-release.py`，通过后才允许打包/部署。该验证器不改数据库或配置。本次只发布 Linux 服务器材料，Windows、Mac 保持原样。
 
 普通独立服务器请用 `server/linux/self-hosted/` 的说明并以 false-mode 构建；不能把 online 预编译前端放进没有运营Sidecar的自托管包。按账号布局接口须保留自己的 `ARKHAM_LAYOUT_DB` 及精确代理路由。线上配置只在实例上保存，仓库参考模板不等于当前实例配置。
 

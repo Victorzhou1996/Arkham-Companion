@@ -63,7 +63,6 @@ function tabClass(investigator: Investigator) {
       'tab--lead-player': investigator.id === props.game.leadInvestigatorId,
       'tab--has-actions': pid !== selectedTab.value && hasChoices(pid),
       'mobile-zone-action': !!mobileBoard?.enabled.value && pid !== selectedTab.value && (hasChoices(pid) || Object.values(mobileBoard.actions.value.players[pid] ?? {}).some(Boolean)),
-      'glow-effect': investigator.id === 'c89001',
     },
     `tab--${investigatorClass}`,
   ]
@@ -447,6 +446,16 @@ function inspectActions() {
   if (automaticSwitchStackEnabled) unwindSwitchStack(tabs)
 }
 
+function locatePlayer(event: Event) {
+  const detail = (event as CustomEvent<{ gameId: string; playerId: string }>).detail
+  if (!detail || detail.gameId !== props.game.id || mobileBoard?.enabled.value) return
+  if (!investigators.value.some(i => i?.playerId === detail.playerId)) return
+  if (processing.value || uiLock.value) return
+  // Follow the same user-initiated path as a tab/perspective click; no game action.
+  if (solo?.value && !spectate.value) selectTabExtended(detail.playerId)
+  else selectTab(detail.playerId)
+}
+
 onMounted(() => {
   const scope = playerInfo.value?.closest<HTMLElement>('#scenario') ?? playerInfo.value
   if (scope) {
@@ -460,10 +469,12 @@ onMounted(() => {
   }
   scheduleActionInspection()
   document.addEventListener('keydown', handleSeatShortcut)
+  document.addEventListener('arkham:locate-player', locatePlayer)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleSeatShortcut)
+  document.removeEventListener('arkham:locate-player', locatePlayer)
   actionObserver?.disconnect()
   if (inspectionFrame !== null) cancelAnimationFrame(inspectionFrame)
 })
@@ -484,8 +495,8 @@ watch(
         @click='selectTab(investigator.playerId)'
         :class='tabClass(investigator)'
       >
-        <span v-if="isMobile">{{ getInvestigatorName(investigator.name.title).split(' ')[0] }}</span>
-        <span v-else>{{ getInvestigatorName(investigator.name.title) }}</span>
+        <span class="investigator-full-name" :title="getInvestigatorName(investigator.name.title)">{{ isMobile ? getInvestigatorName(investigator.name.title).split(' ')[0] : getInvestigatorName(investigator.name.title) }}</span>
+        <span class="investigator-short-name" :title="getInvestigatorName(investigator.name.title)">{{ getInvestigatorName(investigator.name.title).split(/[·‧・\s]/)[0] }}</span>
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
@@ -508,7 +519,8 @@ watch(
         class="inactive"
         :class='tabClass(investigator)'
       >
-        <span>{{ investigator.name.title }}</span>
+        <span class="investigator-full-name">{{ investigator.name.title }}</span>
+        <span class="investigator-short-name" :title="getInvestigatorName(investigator.name.title)">{{ getInvestigatorName(investigator.name.title).split(/[·‧・\s]/)[0] }}</span>
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
@@ -570,6 +582,7 @@ watch(
 </template>
 
 <style scoped>
+.investigator-short-name { display: none; }
 .tabs-row {
   display: flex;
   align-items: flex-end;

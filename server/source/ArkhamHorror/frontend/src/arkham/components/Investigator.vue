@@ -24,8 +24,8 @@ import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibil
 import { useMenu } from '@/composable/menu';
 import { useI18n } from 'vue-i18n';
 import useEmitter from '@/composable/useEmitter';
-import useHighlighter from '@/composable/useHighlighter';
 import Resources from '@/arkham/components/Resources.vue';
+import PoolItem from '@/arkham/components/PoolItem.vue';
 import ActionCount from '@/arkham/components/ActionCount.vue';
 import ActionExtras from '@/arkham/components/ActionExtras.vue';
 import { tabletopUndoKey } from '@/arkham/tabletopControls';
@@ -46,8 +46,6 @@ const tabletopUndo = inject(tabletopUndoKey)
 const emit = defineEmits(['showCards', 'hideCards', 'choose'])
 
 const id = computed(() => props.investigator.id)
-const highlighter = useHighlighter()
-const isHighlighted = computed(() => highlighter.highlighted.value === props.investigator.id)
 const isAttackTarget = computed(() => props.game.enemyAttackTargets.some((e) => e.target.contents === props.investigator.id))
 const debug = useDebug()
 const choose = (idx: number) => emit('choose', idx)
@@ -245,6 +243,11 @@ const emitter = useEmitter()
 const cardsUnderneath = computed(() => props.investigator.cardsUnderneath)
 const cardsUnderneathLabel = computed(() => t('investigator.underneathCards', {count: cardsUnderneath.value.length}))
 const devoured = computed(() => props.investigator.devoured)
+const controlColumns = computed(() => Math.max(1, Math.ceil((
+  2 + abilities.value.length + Number(Boolean(tabletopUndo?.enabled.value))
+  + Number(Boolean(devoured.value?.length)) + Number(cardsUnderneath.value.length > 0)
+  + Number(debug.active) + Number(debug.active && (props.investigator.modifiers ?? []).length > 0)
+) / 3)))
 
 onMounted(() => {
   emitter.on('showUnder', (id: string) => {
@@ -499,6 +502,10 @@ const spadeInjury = computed(() => {
     />
   </div>
   <div v-else class="player-container">
+    <div v-if="!isMobile" class="edge-personal-totals" aria-label="全局标记">
+      <PoolItem type="doom" :amount="game.totalDoom" tooltip="Total Doom / 总毁灭" />
+      <PoolItem type="clue" :amount="game.totalClues" tooltip="Total Spendable Clues / 总可花费线索" />
+    </div>
       <MobileCard>
     <div class="player-area">
       <div class="player-card">
@@ -536,7 +543,7 @@ const spadeInjury = computed(() => {
               </span>
             </span>
           <img
-            :class="{ 'investigator--can-interact': investigatorAction !== -1, 'ability-target': isHighlighted || isAttackTarget }"
+            :class="{ 'investigator--can-interact': investigatorAction !== -1 }"
             class="card card--sideways"
             :src="image"
             @click="clicked"
@@ -570,7 +577,7 @@ const spadeInjury = computed(() => {
         </div>
       </div>
       <div>
-        <div class="player-buttons">
+        <div class="player-buttons" :style="{'--control-columns': controlColumns}" :class="{'player-buttons--multi': controlColumns > 1}">
           <div class="button-group" :class="{ 'button-group--skip-all-pending': isCurrentPlayersInvestigator && skipAllInProgress }">
             <button v-if="!isMobile && tabletopUndo?.enabled.value" class="tabletop-undo" :disabled="tabletopUndo.locked.value" @click="tabletopUndo.run()">↶ {{ $t('gameBar.undo') }}</button>
             <template v-if="debug.active">
@@ -666,6 +673,7 @@ const spadeInjury = computed(() => {
 </template>
 
 <style scoped>
+.edge-personal-totals { display: none; }
 i.action {
   font-family: 'Arkham';
   font-style: normal;

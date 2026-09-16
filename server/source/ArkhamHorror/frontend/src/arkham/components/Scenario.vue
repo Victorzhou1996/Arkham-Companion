@@ -75,7 +75,8 @@ import Asset from '@/arkham/components/Asset.vue';
 import Location from '@/arkham/components/Location.vue';
 import TreacheryView from '@/arkham/components/Treachery.vue';
 import { useGameChoices } from '@/arkham/composables/useGameChoices';
-import { setLocationOffset, resetLocationOffsets, updateGameRaw } from '@/arkham/api';
+import { updateGameRaw } from '@/arkham/api';
+import { parseLocationOffsets, type LocationOffsets } from '@/arkham/locationLayout';
 import { useDebug, scenarioHasDebugOptions } from '@/arkham/debug'
 import * as DebugMove from '@/arkham/debugCardMove'
 import { useCardStore } from '@/stores/cards'
@@ -85,6 +86,8 @@ import { IsMobile } from '@/arkham/isMobile';
 import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
 import { useMobileBoard } from '@/arkham/mobile/context';
 import { useMapViewport } from '@/arkham/composables/useMapViewport';
+import { useMapCardGroups } from '@/arkham/composables/useMapCardGroups';
+import { compactPhaseLabel } from '@/arkham/mapCardGroups';
 import { useMobileMapMemory } from '@/arkham/mobile/useMobileMapMemory';
 import { mobileMapMemoryKey } from '@/arkham/mobile/mapCameraMemory';
 import MobileCard from '@/arkham/mobile/MobileCard.vue';
@@ -100,6 +103,12 @@ const gameLocalStorageKey = (id: string, key: string) => rawStorageKey(id, stora
 const getGameLocalStorageItem = (id: string, key: string) => readStorage(id, storageSetting(key));
 const setGameLocalStorageItem = (id: string, key: string, value: string) => writeStorage(id, storageSetting(key), value);
 const scenarioReferenceSlot = ref<HTMLElement | null>(null);
+const edgeSceneSlot = ref<HTMLElement | null>(null);
+const edgeAuxSlot = ref<HTMLElement | null>(null);
+const edgeSceneStyles = computed(() => {
+  const count = Math.max(1, Object.keys(props.game.agendas).length + Object.keys(props.game.acts).length)
+  return { '--scene-columns': Math.min(3, count), '--scene-rows': Math.ceil(count / 3) }
+});
 const mobileEncounterSlot = ref<HTMLElement | null>(null);
 const tabletopDesktopQuery = window.matchMedia(TABLETOP_MEDIA_QUERY);
 const tabletopWidth = ref(tabletopDesktopQuery.matches);
@@ -107,7 +116,7 @@ const tabletopDesktop = computed(() => (tabletopWidth.value || !!mobileBoard?.ta
 const updateTabletopDesktop = (event: MediaQueryListEvent) => { tabletopWidth.value = event.matches };
 onMounted(() => tabletopDesktopQuery.addEventListener('change', updateTabletopDesktop));
 onBeforeUnmount(() => tabletopDesktopQuery.removeEventListener('change', updateTabletopDesktop));
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 // types
 interface RefWrapper<T> {
@@ -331,6 +340,9 @@ function decreaseZoom() {
 }
 
 const locationsUnlocked = ref(false)
+const mapCardGroups = useMapCardGroups(() => props.game.id, tabletopDesktop, locationsUnlocked)
+const { auxiliary: auxiliaryGroup, encounter: encounterGroup, editable: groupsEditable, dragging: draggingGroup } = mapCardGroups
+const phaseLabel = (key: string) => tabletopDesktop.value ? compactPhaseLabel(t(key)) : t(key)
 const locationsFullscreen = ref(false)
 function onFullscreenKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && locationsFullscreen.value) {
@@ -341,6 +353,17 @@ const draggingLocationId = ref<string | null>(null)
 // Optimistic offsets after a drop, kept until the server echoes them back.
 // Stored in canonical (rotationSteps=0) coordinates, same as the backend.
 const pendingOffsets = ref<Record<string, { x: number, y: number }>>({})
+const visualLocationOffsets = ref<LocationOffsets>({})
+watch(() => [props.game.id, mobileEnabled.value], () => {
+  try { visualLocationOffsets.value = parseLocationOffsets(getGameLocalStorageItem(props.game.id, 'visual-location-offsets')) }
+  catch { visualLocationOffsets.value = {} }
+  pendingOffsets.value = {}
+}, { immediate: true })
+function saveVisualLocations(offsets: LocationOffsets) {
+  visualLocationOffsets.value = offsets
+  try { setGameLocalStorageItem(props.game.id, 'visual-location-offsets', JSON.stringify(offsets)) }
+  catch { /* Restricted storage still permits session-only visual positioning. */ }
+}
 
 // Plain (non-reactive) drag state. Mutated on every pointermove without
 // triggering Vue re-renders; the live drag visual is applied via direct DOM.
@@ -420,7 +443,7 @@ const locationOffsets = computed<Record<string, { x: number, y: number }>>(() =>
       }
     }
   }
-  return offsets
+  return { ...offsets, ...visualLocationOffsets.value }
 })
 
 const locationGridOffsets = computed<Record<string, { column: number, row: number }>>(() => {
@@ -440,6 +463,7 @@ const locationGridOffsets = computed<Record<string, { column: number, row: numbe
 const hasAnyOffset = computed(() =>
   Object.keys(locationOffsets.value).length > 0
     || Object.keys(pendingOffsets.value).length > 0
+    || mapCardGroups.moved.value
 )
 
 // Padding to extend the scroll area so dragged locations near the edges
@@ -603,8 +627,7 @@ function onWindowPointerUp(event: PointerEvent) {
     [drag.locationId]: { x: drag.canonicalFinalX, y: drag.canonicalFinalY },
   }
   nextTick(() => window.dispatchEvent(new Event('arkham-location-layout-change')))
-  void setLocationOffset(props.game.id, drag.locationId, drag.canonicalFinalX, drag.canonicalFinalY)
-    .finally(() => nextTick(() => window.dispatchEvent(new Event('arkham-location-layout-change'))))
+  saveVisualLocations({ ...visualLocationOffsets.value, [drag.locationId]: { x: drag.canonicalFinalX, y: drag.canonicalFinalY } })
 }
 
 // Drop a pending entry once the server's modifier confirms it.
@@ -657,8 +680,10 @@ function clearCosmicEmissaryCompactStyles() {
 }
 
 async function resetLocationsLayout() {
+  cancelActiveDrag()
+  mapCardGroups.reset()
   if (!hasAnyOffset.value) return
-  await resetLocationOffsets(props.game.id)
+  saveVisualLocations(Object.fromEntries(Object.keys(props.game.locations).map(id => [id, { x: 0, y: 0 }])))
   pendingOffsets.value = {}
   if (props.scenario.id === 'c10651') {
     clearCosmicEmissaryCompactStyles()
@@ -2357,10 +2382,18 @@ async function addChaosToken(face: any){
         @choose="choose"
         @close="hideCards"
       />
-      <div class="scenario-cards" :class="{ 'scenario-cards--has-badges': showScenarioNotifierBar }" :data-mobile-scenario-zone="mobileBoard?.scenarioZone.value">
+      <div v-if="tabletopDesktop" class="edge-scene-shelf" :style="edgeSceneStyles" aria-label="场景与密谋">
+        <div class="edge-scene-group">
+          <div ref="edgeSceneSlot" />
+        </div>
+      </div>
+      <div ref="auxiliaryGroup" class="scenario-cards" :class="{ 'scenario-cards--has-badges': showScenarioNotifierBar, 'map-card-group--unlocked': groupsEditable, 'map-card-group--dragging': draggingGroup === 'auxiliary' }" :data-mobile-scenario-zone="mobileBoard?.scenarioZone.value"
+        :style="mapCardGroups.style('auxiliary')" @pointerdown.capture="mapCardGroups.start($event, 'auxiliary')"
+        @click.capture="mapCardGroups.suppress" @dblclick.capture="mapCardGroups.suppress" @contextmenu.capture="mapCardGroups.suppress" @dragstart.capture="mapCardGroups.suppress">
         <MobileScenarioNav v-if="mobileEnabled" />
         <div v-if="mobileEnabled" ref="mobileEncounterSlot" class="mobile-encounter-slot" data-mobile-scenario-group="encounter" />
         <ScenarioCardFit :enabled="tabletopDesktop">
+        <div ref="edgeAuxSlot" class="edge-scene-aux" />
         <div v-if="anyInTheShadowLocations || inTheShadows.length > 0 || inTheShadowsInvestigators.length > 0" class="in-the-shadows" data-mobile-scenario-group="other">
           <template v-if="anyInTheShadowLocations">
             <Location
@@ -2436,7 +2469,6 @@ async function addChaosToken(face: any){
           >
             <img
               class="card"
-              :class="{ 'source-highlight': scenario.meta?.activeCthulhuFacet }"
               :src="resolvingCthulhuDeckStoryImage"
               alt=""
             />
@@ -2463,6 +2495,7 @@ async function addChaosToken(face: any){
         <div ref="scenarioReferenceSlot" class="scenario-reference-slot" />
         </ScenarioPileRow>
 
+        <Teleport :to="edgeSceneSlot || 'body'" :disabled="!tabletopDesktop || !edgeSceneSlot">
         <div class="scenario-decks" :style="scenarioDeckStyles" data-mobile-scenario-group="scene">
           <TransitionGroup
             v-if="Object.values(game.agendas).length > 0"
@@ -2484,7 +2517,8 @@ async function addChaosToken(face: any){
               @show="doShowCards"
             />
           </TransitionGroup>
-          <div v-else-if="agendaGroupedTreacheries.length > 0" class="treacheries">
+          <Teleport v-else-if="agendaGroupedTreacheries.length > 0" :to="edgeAuxSlot || 'body'" :disabled="!tabletopDesktop || !edgeAuxSlot">
+          <div class="treacheries">
             <div v-for="([cCode, treacheries], idx) in agendaGroupedTreacheries" :key="cCode" class="treachery-group" :style="{ zIndex: `calc(var(--z-index-10) * ${agendaGroupedTreacheries.length - idx})` }">
               <div v-for="treacheryId in treacheries" class="treachery-card" :key="treacheryId" >
                 <TreacheryView
@@ -2497,6 +2531,8 @@ async function addChaosToken(face: any){
               </div>
             </div>
           </div>
+
+          </Teleport>
 
           <TransitionGroup name="deck-advance" :duration="{ enter: 0, leave: 420 }">
             <Act
@@ -2515,6 +2551,8 @@ async function addChaosToken(face: any){
             />
           </TransitionGroup>
         </div>
+
+        </Teleport>
 
         <EnemyView
           v-for="enemy in pursuit"
@@ -2970,7 +3008,9 @@ async function addChaosToken(face: any){
       </div>
       </RainOverlay>
         <Teleport :to="mobileEncounterSlot || 'body'" :disabled="!mobileEnabled || !mobileEncounterSlot">
-        <div class="scenario-encounter-decks" :class="{ 'scenario-encounter-decks--spectral': spectralEncounterDeck }">
+        <div ref="encounterGroup" class="scenario-encounter-decks" :class="{ 'scenario-encounter-decks--spectral': spectralEncounterDeck, 'map-card-group--unlocked': groupsEditable, 'map-card-group--dragging': draggingGroup === 'encounter' }"
+          :style="mapCardGroups.style('encounter')" @pointerdown.capture="mapCardGroups.start($event, 'encounter')"
+          @click.capture="mapCardGroups.suppress" @dblclick.capture="mapCardGroups.suppress" @contextmenu.capture="mapCardGroups.suppress" @dragstart.capture="mapCardGroups.suppress">
           <div
             v-if="topOfEncounterDiscard"
             class="discard"
@@ -3135,7 +3175,7 @@ async function addChaosToken(face: any){
           <div v-tooltip.left="$t('phase.playerWindow')" :class="{'current': phaseStep?.contents === 'MythosPhaseWindow'}"><i class="fast-icon" /></div>
           <div v-tooltip.left="$t('phase.mythosPhaseEndsStep')" :class="{'current': phaseStep?.contents === 'MythosPhaseEndsStep'}">1.5</div>
         </div>
-        <div>{{$t('phase.mythosPhase')}}</div>
+        <div>{{phaseLabel('phase.mythosPhase')}}</div>
       </div>
       <div class="phase" :class="{ 'active-phase': phase == 'InvestigationPhase' }">
         <div class="subphases">
@@ -3147,7 +3187,7 @@ async function addChaosToken(face: any){
           <div v-tooltip.left="$t('phase.investigatorsTurnEndsStep')" :class="{'current': phaseStep?.contents === 'InvestigatorsTurnEndsStep'}">2.2.2</div>
           <div v-tooltip.left="$t('phase.investigationPhaseEndsStep')" :class="{'current': phaseStep?.contents === 'InvestigationPhaseEndsStep'}">2.3</div>
         </div>
-        <div>{{$t('phase.investigationPhase')}}</div>
+        <div>{{phaseLabel('phase.investigationPhase')}}</div>
       </div>
       <div class="phase" :class="{ 'active-phase': phase == 'EnemyPhase' }">
         <div class="subphases">
@@ -3158,7 +3198,7 @@ async function addChaosToken(face: any){
           <div v-tooltip.left="$t('phase.playerWindow')" :class="{'current': phaseStep?.contents === 'AfterResolveAttacksWindow'}"><i class="fast-icon" /></div>
           <div v-tooltip.left="$t('phase.enemyPhaseEndsStep')" :class="{'current': phaseStep?.contents === 'EnemyPhaseEndsStep'}">3.4</div>
         </div>  
-        <div>{{$t('phase.enemyPhase')}}</div>
+        <div>{{phaseLabel('phase.enemyPhase')}}</div>
       </div>
       <div class="phase" :class="{ 'active-phase': phase == 'UpkeepPhase' }">
         <div class="subphases">
@@ -3170,7 +3210,7 @@ async function addChaosToken(face: any){
           <div v-tooltip.left="$t('phase.checkHandSizeStep')" :class="{'current': phaseStep?.contents === 'CheckHandSizeStep'}">4.5</div>
           <div v-tooltip.left="$t('phase.upkeepPhaseEndsStep')" :class="{'current': phaseStep?.contents === 'UpkeepPhaseEndsStep'}">4.6</div>
         </div>
-        <div>{{$t('phase.upkeepPhase')}}</div>
+        <div>{{phaseLabel('phase.upkeepPhase')}}</div>
       </div>
     </div>
   </div>

@@ -83,7 +83,8 @@ watch(drawings, () => {
   gap: 10px;
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
-  background: #DCD6D0;
+  background: var(--surface-panel);
+  color: var(--text);
   padding: 20px;
   box-sizing: border-box;
 }

@@ -1,12 +1,12 @@
 {
-  "version": "2026.09.15-online-undo",
+  "version": "2026.09.16-edge-fixes",
   "profile": "online",
-  "sourceCommit": "89bf036f2e228049bc4bbbefafdcdcab42a270cc",
+  "sourceCommit": null,
+  "sourceNote": "Frontend source is included in the same release commit; source hashes are pinned in SOURCE-MANIFEST.json.",
   "reference": "http://124.221.195.194/",
   "onlineMode": true,
-  "entrySha256": "c8c9157f233891772d82a656ac2a39d674e69979eb8cc569ec6fb0574f8ce93e",
-  "entry": "assets/index-Df-fZPWK.js",
-  "game": "assets/Game-CBeFfMjQ.js",
+  "entrySha256": "36c341531853a6d6ad332aa273758c478d2d24110159a8e014bb7f858e63ce29",
+  "entry": "assets/index-D1jj-pYB.js",
   "files": [
     {
       "path": "server/release/bin/arkham-api",
@@ -37,6 +37,21 @@
       "path": "server/release/build/apple-touch-icon.png",
       "sha256": "b85309cfc9c1d6dcdfed674336ee294bdf7d542cb0df29202c99230bc5299542",
       "size": 11651
+    },
+    {
+      "path": "server/release/build/arkham-green-v20260916.css",
+      "sha256": "e9c7b2ca54faf3e2163c82ddb2d9b22654033d6b178be3d1b5f43c48ce343b0a",
+      "size": 1172
+    },
+    {
+      "path": "server/release/build/arkham-green-v20260916.css.br",
+      "sha256": "02b12f3c513f67ffd80ab3d9d7cac68c374b63b8fef7cda572350bc6b9a2bfbf",
+      "size": 442
+    },
+    {
+      "path": "server/release/build/arkham-green-v20260916.css.gz",
+      "sha256": "752c991442be06c5ba5ca3a68c6d852a9e35ad2873a3bd70429bc558552db12f",
+      "size": 514
     },
     {
       "path": "server/release/build/assets/404.html",
@@ -1690,8 +1705,18 @@
     },
     {
       "path": "server/release/build/index.html",
-      "sha256": "56bcce69efbe0946ea1d25fdba15393d8dfd2e92513fb8bc2d5a435934e2655e",
-      "size": 2804
+      "sha256": "431ecbf9cf80e2548043eec77ad168a05d03ca731cf6c88ed0c8fc5bb3b19a6e",
+      "size": 2871
+    },
+    {
+      "path": "server/release/build/index.html.br",
+      "sha256": "7420dddc41fda2406001af1c169de46053a0b961b3ae95c5373ab83a25b93af2",
+      "size": 793
+    },
+    {
+      "path": "server/release/build/index.html.gz",
+      "sha256": "9a59292679a05785a084c5e3236e7dc11d7128568e81a4db8a33341dbd70e1ac",
+      "size": 927
     },
     {
       "path": "server/release/build/lucide/404.html",
@@ -9714,19 +9739,19 @@
       "size": 987
     },
     {
-      "path": "server/release/frontend-dist/assets/About-Ci8Rg9Ks.js",
-      "sha256": "65d13a24f0c7ac005ea79bdddcb4d893960f01ca82fb8987668ce7ab9df5f080",
+      "path": "server/release/frontend-dist/assets/About-CKl8W_5w.js",
+      "sha256": "4164245f15c8450157c0499a147b05e6081c4098820aa62bf0f779513d02540a",
       "size": 1227
     },
     {
-      "path": "server/release/frontend-dist/assets/About-Ci8Rg9Ks.js.br",
-      "sha256": "4068bd81687ace632bd12ee53929f92248e6c1fe147ed206dcf2bbec806f4c34",
+      "path": "server/release/frontend-dist/assets/About-CKl8W_5w.js.br",
+      "sha256": "eb1d11d86fc9566cc0a1ca73dea0b540dd7764da9c7cbc597d791250ce6ae948",
       "size": 534
     },
     {
-      "path": "server/release/frontend-dist/assets/About-Ci8Rg9Ks.js.gz",
-      "sha256": "622a33b73c6dd1da00aa3793d01d60d0898b217cb1aa2a0861268fe197e08d40",
-      "size": 604
+      "path": "server/release/frontend-dist/assets/About-CKl8W_5w.js.gz",
+      "sha256": "191903e40344b495b3c8fde7215b788ea91675d9b2f3f4059d1a9129523f4285",
+      "size": 601
     },
     {
       "path": "server/release/frontend-dist/assets/About-Rk0T2QgL.css",
@@ -9744,36 +9769,6 @@
       "size": 172
     },
     {
-      "path": "server/release/frontend-dist/assets/Achievements-BvxXdmeF.js",
-      "sha256": "3727838135cb79b37c1175e0c7d9bc547dadb0217ba6caee01f8de8e2a8d4522",
-      "size": 4716
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Achievements-BvxXdmeF.js.br",
-      "sha256": "d31d7c18cecaac4f7b96695e01f6e2509754785e9e7b6e7a2dda450654a21bd4",
-      "size": 1836
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Achievements-BvxXdmeF.js.gz",
-      "sha256": "d3d21c86b7427c7c61629a736b360cd439973fb05a83cd7118f3dd4c9b3fd0dc",
-      "size": 1944
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Achievements-BYieiNzH.css",
-      "sha256": "70d271b68d3b50bbd5e8d03d763406868c97b471d5022b5bd43324f18d92ab32",
-      "size": 4298
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Achievements-BYieiNzH.css.br",
-      "sha256": "b99c0607143d876c786d977f3fbfc5e757cd76e1a7dad792c9d3c64bf2b6b0a0",
-      "size": 1136
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Achievements-BYieiNzH.css.gz",
-      "sha256": "d0a00df8d103484b1eac1db45cccc1a592928333549fb6c8fa63f4202a92f97a",
-      "size": 1272
-    },
-    {
       "path": "server/release/frontend-dist/assets/achievements-CfKg96En.js",
       "sha256": "09a9c0fe97f5582c7a64e972269d6fabecbff34e6854edd451cf1e6316e88c41",
       "size": 12275
@@ -9787,6 +9782,51 @@
       "path": "server/release/frontend-dist/assets/achievements-CfKg96En.js.gz",
       "sha256": "c750024b07b691a35b756b9513572a8178712e64892935a9cc3b06e5ce747329",
       "size": 4019
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Achievements-EBUnftJg.js",
+      "sha256": "fbb658c5a809ad6c6068302a07f98e30cda602c943106c3a07319e600b5dd7df",
+      "size": 4749
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Achievements-EBUnftJg.js.br",
+      "sha256": "9ab47f0b7b8e766a9327d35765b15e2dc88017fc4abf13a39c33ccf434fbf0b6",
+      "size": 1850
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Achievements-EBUnftJg.js.gz",
+      "sha256": "65a1af5bbc482c6b1d27c7bd9d1daee1db70c7a1422f66ee67c4927850520e30",
+      "size": 1958
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Achievements-QhYo6Qmk.css",
+      "sha256": "d6483d0547082ed9142c0ca43f3b6bd8b1695b26ac12b247575ead0f164e3ceb",
+      "size": 4276
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Achievements-QhYo6Qmk.css.br",
+      "sha256": "8a1ce94e040eee12eac4eb746fc2e55b241cda7bb8dcd976b159ea64ed1b00fd",
+      "size": 1123
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Achievements-QhYo6Qmk.css.gz",
+      "sha256": "96fb49bbe10334e19dd2f19354b96368d0825b42a7fb17870987738fcb2f94b0",
+      "size": 1258
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Admin-aJIRtwtG.js",
+      "sha256": "93abbeef502534f4cfd7a0ffed78c6b5bafff7700f83923464b7d4edc04002b8",
+      "size": 5926
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Admin-aJIRtwtG.js.br",
+      "sha256": "15c0f0541af43f7ec439ba65acaeea5883dd01063b259e3055039a107755dda0",
+      "size": 1873
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Admin-aJIRtwtG.js.gz",
+      "sha256": "48e75a0afb13f8b1dfcdf3a6544e71869cfe6efeb97f7b67e918628f55f380c1",
+      "size": 2070
     },
     {
       "path": "server/release/frontend-dist/assets/Admin-BXBQeNlG.css",
@@ -9804,94 +9844,79 @@
       "size": 899
     },
     {
-      "path": "server/release/frontend-dist/assets/Admin-NSicH1ow.js",
-      "sha256": "a7f8c8215eb05d8b63be946eff3d4616341a9d6d913e83a65bc5f25edaacf8b1",
-      "size": 5926
+      "path": "server/release/frontend-dist/assets/api-D_JMw3qJ.js",
+      "sha256": "f4240746b845a09bd7306bfaa3d5f42851931dfea475c99f86b805c08d48a326",
+      "size": 134994
     },
     {
-      "path": "server/release/frontend-dist/assets/Admin-NSicH1ow.js.br",
-      "sha256": "2bc8c6ab26e0d24c9435c546606c11e0c626e0d5438cd02f1ca742f6f4503f8f",
-      "size": 1873
+      "path": "server/release/frontend-dist/assets/api-D_JMw3qJ.js.br",
+      "sha256": "5bef0d69c880aa13434b5b79739ff540c89b2a8be23fcb72550341e598a97b5a",
+      "size": 28930
     },
     {
-      "path": "server/release/frontend-dist/assets/Admin-NSicH1ow.js.gz",
-      "sha256": "4d86036ea7d0129169b59f8c813683b7152e60d536b06ea1f1d20057bf1703e3",
-      "size": 2069
+      "path": "server/release/frontend-dist/assets/api-D_JMw3qJ.js.gz",
+      "sha256": "066e3f295ea2e43bcd10257d08b502e537ac21afd73486b32ea7571bcd4f4629",
+      "size": 31318
     },
     {
-      "path": "server/release/frontend-dist/assets/api-TvJe8t2a.js",
-      "sha256": "351e8c6de2b8168b54ad11ca97b73e7ed2412a99c8d465459227f37a10faa19b",
-      "size": 134048
-    },
-    {
-      "path": "server/release/frontend-dist/assets/api-TvJe8t2a.js.br",
-      "sha256": "87c0c9a4b39f6699edbb36f4efbcfab78655273eb442a5316e0ef8e7113e68dd",
-      "size": 28570
-    },
-    {
-      "path": "server/release/frontend-dist/assets/api-TvJe8t2a.js.gz",
-      "sha256": "7fcb013ed910b81ff94b7ef067807ca2dcf36ce3f0810afb3795b283ec7d7f97",
-      "size": 30901
-    },
-    {
-      "path": "server/release/frontend-dist/assets/BugAntIcon-C8-NsIpO.js",
-      "sha256": "0aa1810c7aed66b7292ea681f950eaffa158bad578927550b2bfb0420802132c",
+      "path": "server/release/frontend-dist/assets/BugAntIcon-DDi0Rbze.js",
+      "sha256": "55be0609275b9d9ce667a87d2d11314196e73706ae7dc8434e1e9846d8cf56af",
       "size": 1733
     },
     {
-      "path": "server/release/frontend-dist/assets/BugAntIcon-C8-NsIpO.js.br",
-      "sha256": "d265dde802a222ea024dc02d75ccf16e3902ea346b9fd558f8a0d02dbc849b28",
-      "size": 801
+      "path": "server/release/frontend-dist/assets/BugAntIcon-DDi0Rbze.js.br",
+      "sha256": "d76b518d8b3fa70e0cfbb7c5ab4c79d2836bc98c0bea2fee231eebc68af496c0",
+      "size": 798
     },
     {
-      "path": "server/release/frontend-dist/assets/BugAntIcon-C8-NsIpO.js.gz",
-      "sha256": "f64c2c6bc64ad5def041e599a964b2db558adcb44e6df11c74c75ca2743dccbe",
-      "size": 860
+      "path": "server/release/frontend-dist/assets/BugAntIcon-DDi0Rbze.js.gz",
+      "sha256": "2a0fe800396bfb7ccc96f8abfd5dd2c83a9094118152623c4fb9f15e82a6748e",
+      "size": 855
     },
     {
-      "path": "server/release/frontend-dist/assets/Bugs-B0tZHecL.js",
-      "sha256": "43ea90fd176c4c8ded9f4439b4d0631abf3c8b88632e14365aa3443e8f4db1c3",
-      "size": 5653
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Bugs-B0tZHecL.js.br",
-      "sha256": "f93295a724cb0297dab1e5c97e563bdc6807dc2a3c06a08cd5bda12e4b396bfb",
-      "size": 2259
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Bugs-B0tZHecL.js.gz",
-      "sha256": "29778f216f56e113d5f9a18de88c84ba646847f3ecfcac8e123c3631d2e7746b",
-      "size": 2644
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Bugs-B4pZ1KqA.css",
-      "sha256": "e1bcbc70b09b185f954051af8eda6b119921067f47aa37775524813f26d75b55",
+      "path": "server/release/frontend-dist/assets/Bugs-CHKjsXev.css",
+      "sha256": "3b720b656d4d34cb459ec4bf9ae86774a2d78ce24deb972b102e90a3acc808f2",
       "size": 2724
     },
     {
-      "path": "server/release/frontend-dist/assets/Bugs-B4pZ1KqA.css.br",
-      "sha256": "e07d80b6556bf497e01a76f6d4568440fa00366400f4ae37b96d1ab6aae64a7e",
-      "size": 800
+      "path": "server/release/frontend-dist/assets/Bugs-CHKjsXev.css.br",
+      "sha256": "34e57d302b2f4da101d69048a14763fd8be58416692766f8a4b3c84baabb5585",
+      "size": 801
     },
     {
-      "path": "server/release/frontend-dist/assets/Bugs-B4pZ1KqA.css.gz",
-      "sha256": "6689f21006671ce17e2c41e1b242d80508f0fd1eac7ad7ca8a7e5e2a3ab00dab",
-      "size": 890
+      "path": "server/release/frontend-dist/assets/Bugs-CHKjsXev.css.gz",
+      "sha256": "5890fda42f60574bb0e259f1b5345078c1126f3dd7433e81ae386964d20b11a0",
+      "size": 891
     },
     {
-      "path": "server/release/frontend-dist/assets/CampaignLog-BauhLgWT.js",
-      "sha256": "4695ad2a9f202a8f9a5ccf098766303eee00b86111938720c98a4b211f5748b1",
+      "path": "server/release/frontend-dist/assets/Bugs-DryxL5hd.js",
+      "sha256": "65557c8303aa6a5248f5ecbf4722b538b5fda5998f3f853c2e8b2eb6184aefb4",
+      "size": 5719
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Bugs-DryxL5hd.js.br",
+      "sha256": "4df5994310a41c8d114e28daf1daf4637197954fe30ac363552fe9267f79b6cc",
+      "size": 2289
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Bugs-DryxL5hd.js.gz",
+      "sha256": "03db4bb2156df92ccb7d81c334f25c632aeec1848a1bfaa5665f09e3453b182a",
+      "size": 2676
+    },
+    {
+      "path": "server/release/frontend-dist/assets/CampaignLog-B3_HhA3D.js",
+      "sha256": "80b5cce332f5520c05809b25741ad2cedbbbbabd4821b30113c0e9c336dfdccd",
       "size": 53534
     },
     {
-      "path": "server/release/frontend-dist/assets/CampaignLog-BauhLgWT.js.br",
-      "sha256": "6fe1e0584d6a2a1ea6a90a35dea644046d9a528faf3849dbf3add8cbc12f6894",
-      "size": 15655
+      "path": "server/release/frontend-dist/assets/CampaignLog-B3_HhA3D.js.br",
+      "sha256": "676e83c494a7c0c14edd9046e1cb0899d26176d12f580ff2c692e3673a6a2dcf",
+      "size": 15662
     },
     {
-      "path": "server/release/frontend-dist/assets/CampaignLog-BauhLgWT.js.gz",
-      "sha256": "9338f65a2f4bc32edefe3a22768b660fd0acc34d35976f256304b21c7af5ba4e",
-      "size": 16619
+      "path": "server/release/frontend-dist/assets/CampaignLog-B3_HhA3D.js.gz",
+      "sha256": "8e46700134853fb7b0f89963ec7aa0805cb502755d5330724111ae16760ce944",
+      "size": 16622
     },
     {
       "path": "server/release/frontend-dist/assets/CampaignLog-D485HKOL.css",
@@ -9909,19 +9934,19 @@
       "size": 350
     },
     {
-      "path": "server/release/frontend-dist/assets/CampaignLog-DfyF3Mi9.js",
-      "sha256": "7f9085049bedc16e9a8078e2147e7ffc3487d9f999ba092bbf25d46fa4ab59e7",
+      "path": "server/release/frontend-dist/assets/CampaignLog-DiQ7AxYh.js",
+      "sha256": "16a850a62e14c5a3c6ea599b2f1471ea995343803aad49cad93fa49e5a07a02b",
       "size": 1463
     },
     {
-      "path": "server/release/frontend-dist/assets/CampaignLog-DfyF3Mi9.js.br",
-      "sha256": "b2dc44612255ffdbef1e2847593bcbc243500594f967a28d68805c89ca04f384",
+      "path": "server/release/frontend-dist/assets/CampaignLog-DiQ7AxYh.js.br",
+      "sha256": "b60a8663be1e8f12fdd1ff02ba65b08586002d5f30c8f8a80a5b313b029d6bca",
       "size": 767
     },
     {
-      "path": "server/release/frontend-dist/assets/CampaignLog-DfyF3Mi9.js.gz",
-      "sha256": "356dba17a85d4981621afa92f5887113f81c908bee77a96825c6d1cea7d93875",
-      "size": 829
+      "path": "server/release/frontend-dist/assets/CampaignLog-DiQ7AxYh.js.gz",
+      "sha256": "7089f8c9dbdf0bc3fda74a835f35a302d22f4243b20b9bcea72d3a531d37a3b2",
+      "size": 831
     },
     {
       "path": "server/release/frontend-dist/assets/CampaignLog-DTh78zCN.css",
@@ -9954,19 +9979,19 @@
       "size": 4031
     },
     {
-      "path": "server/release/frontend-dist/assets/CardBuilder-Cd1SgCE_.js",
-      "sha256": "217d757ea65d912ae3e0656e9b6ace4b7f97e5838d36da98a450edab238577e2",
+      "path": "server/release/frontend-dist/assets/CardBuilder-bxr1BbNz.js",
+      "sha256": "03cf153ae5e3188630e9701158e51a349523ad340a42e6014e45ae09c15b0530",
       "size": 161493
     },
     {
-      "path": "server/release/frontend-dist/assets/CardBuilder-Cd1SgCE_.js.br",
-      "sha256": "eaafd3fb4fe57ecf17e835d388554663541a2ef241629270353a27f067c46a82",
-      "size": 41322
+      "path": "server/release/frontend-dist/assets/CardBuilder-bxr1BbNz.js.br",
+      "sha256": "343f6aa503d0a68c0f6efb5ff9c0ec9348fc70f92036aac4251d735496464b43",
+      "size": 41327
     },
     {
-      "path": "server/release/frontend-dist/assets/CardBuilder-Cd1SgCE_.js.gz",
-      "sha256": "85597ab41cbac56ed506284024513bce5fed9b78129261e26f84ffd6e32769f8",
-      "size": 44493
+      "path": "server/release/frontend-dist/assets/CardBuilder-bxr1BbNz.js.gz",
+      "sha256": "703d4b2502f0a745e0355724518e505f6ac90b050aeb41ab2b46940fa3262a7a",
+      "size": 44495
     },
     {
       "path": "server/release/frontend-dist/assets/CardBuilder-DCJDPMKc.css",
@@ -9999,49 +10024,49 @@
       "size": 465
     },
     {
-      "path": "server/release/frontend-dist/assets/CardImage-Jyv9sEvB.js",
-      "sha256": "226b2a31ea34da1641a4f2e034afc633cfa79ae253d5d70e98aac9def24b2656",
+      "path": "server/release/frontend-dist/assets/CardImage-BVbFJKN-.js",
+      "sha256": "216905fabd7cbfac9e799878a3882fa1fdab386f6a42f2f709111a2c29c4a431",
       "size": 13304
     },
     {
-      "path": "server/release/frontend-dist/assets/CardImage-Jyv9sEvB.js.br",
-      "sha256": "7e738156f1f1b66e58194351236361f2944e97c88611b188c487ddff80bf498e",
-      "size": 4014
+      "path": "server/release/frontend-dist/assets/CardImage-BVbFJKN-.js.br",
+      "sha256": "6b4a9e2db45d54c09faaecf675c90f27bd20826a1f07282253c8bb41a6eee97f",
+      "size": 4015
     },
     {
-      "path": "server/release/frontend-dist/assets/CardImage-Jyv9sEvB.js.gz",
-      "sha256": "0fc986acd743d4e7484417ca6c990d25e84536a55fa2256c2e84068dd1e0eae4",
+      "path": "server/release/frontend-dist/assets/CardImage-BVbFJKN-.js.gz",
+      "sha256": "ff4322f95a178a4cd8f9f4f2646f25421c5f32d7cbbecc0dfccd9aac0ca2a51c",
       "size": 4211
     },
     {
-      "path": "server/release/frontend-dist/assets/cardImages-CbdaDh3O.js",
-      "sha256": "88c1067af7cad9f55ca7f3321e8050ac5adad6ed10c02237ec3a21564d2959eb",
+      "path": "server/release/frontend-dist/assets/cardImages-Dr4fnE_l.js",
+      "sha256": "127e9b9cd06ece4f46e11241b1b3f1c0d1460de45b70f5c12d671b2d484e4860",
       "size": 1822
     },
     {
-      "path": "server/release/frontend-dist/assets/cardImages-CbdaDh3O.js.br",
-      "sha256": "f49260e34eb15cb6ae012d311a15f765891d3b9ba4da39b584fa05b922560fdd",
-      "size": 682
+      "path": "server/release/frontend-dist/assets/cardImages-Dr4fnE_l.js.br",
+      "sha256": "ee8dc2830dfec2139fd8d6a9872d13f0de2dcb34ec8158def22add113f0762c8",
+      "size": 683
     },
     {
-      "path": "server/release/frontend-dist/assets/cardImages-CbdaDh3O.js.gz",
-      "sha256": "615df5c6b23d0f757f63fc578092425d635069cf430cebe5c59c4ea4517a1779",
+      "path": "server/release/frontend-dist/assets/cardImages-Dr4fnE_l.js.gz",
+      "sha256": "d8e89dc54d2baeb845a813b492174dd81deb8f600b45eacb555219681d71ad9f",
       "size": 719
     },
     {
-      "path": "server/release/frontend-dist/assets/CardImageView-CTtxIBqh.js",
-      "sha256": "eb9b5005adc9eae883defafd0f009c749a004591de762e4c9bcf82660d0f73d8",
+      "path": "server/release/frontend-dist/assets/CardImageView-CXGopUUw.js",
+      "sha256": "c78c76969edc9676a8b745c6baf779a49f84597ac81f89311d1fed121dfc1e01",
       "size": 11884
     },
     {
-      "path": "server/release/frontend-dist/assets/CardImageView-CTtxIBqh.js.br",
-      "sha256": "b7f057d445fd7bac36ae9facda1bd91f4042d0b53f3045cb365226f38c144e07",
+      "path": "server/release/frontend-dist/assets/CardImageView-CXGopUUw.js.br",
+      "sha256": "1398bff7f49cb898bd8b3f640edeb6c7011e5b37d1cf50945130061600a64275",
       "size": 3253
     },
     {
-      "path": "server/release/frontend-dist/assets/CardImageView-CTtxIBqh.js.gz",
-      "sha256": "8db8ac136e47f15f209cced5e19fad64fa8b6c595b2e88558264fe16d379ac30",
-      "size": 3637
+      "path": "server/release/frontend-dist/assets/CardImageView-CXGopUUw.js.gz",
+      "sha256": "2f8d2d3ccb78472d4cbf9023c03d4e6beb70d4557e7a8a277620873604447104",
+      "size": 3638
     },
     {
       "path": "server/release/frontend-dist/assets/CardImageView-DctFD1wB.css",
@@ -10074,94 +10099,94 @@
       "size": 1249
     },
     {
-      "path": "server/release/frontend-dist/assets/CardMarketplace-BWqyfHvx.js",
-      "sha256": "09fa4cb9e736f8e87c5fdfc7432066be45f081081229b5da781a30b1cebd0d01",
-      "size": 6515
+      "path": "server/release/frontend-dist/assets/CardMarketplace-CX52KiIg.js",
+      "sha256": "229a4af04a8d1a94f6b08e3747ff73a508194859883457ed1dc7dbbe68eb3e2b",
+      "size": 6520
     },
     {
-      "path": "server/release/frontend-dist/assets/CardMarketplace-BWqyfHvx.js.br",
-      "sha256": "e0c6ba94c6d6f626401346621831d257f65b843c19e823a374634ef4aea2627e",
+      "path": "server/release/frontend-dist/assets/CardMarketplace-CX52KiIg.js.br",
+      "sha256": "31ef53b054a271341252706a51f01497ce2d53b681fe1e5f24507b40a775164c",
       "size": 2389
     },
     {
-      "path": "server/release/frontend-dist/assets/CardMarketplace-BWqyfHvx.js.gz",
-      "sha256": "aa803a6fbb52c7a6490a4e1751c485584db86f662834b98b066f8f74c3159470",
-      "size": 2547
+      "path": "server/release/frontend-dist/assets/CardMarketplace-CX52KiIg.js.gz",
+      "sha256": "3a4c2e502d574db188f24d6a90c68ea00c53aaf44651bb14875bc5ad49de6716",
+      "size": 2552
     },
     {
-      "path": "server/release/frontend-dist/assets/CardOverlay-C9AJhHb0.css",
-      "sha256": "056da809b5247ce6c0f7fd506ad23ba3828f7eb00f38462312f5138c992b56c5",
-      "size": 7675
+      "path": "server/release/frontend-dist/assets/CardOverlay-DRoQwHsX.css",
+      "sha256": "968421f1b14aa4b3d58d43cc2676b11176deccca616146e97893c11def256205",
+      "size": 8188
     },
     {
-      "path": "server/release/frontend-dist/assets/CardOverlay-C9AJhHb0.css.br",
-      "sha256": "a87dbc42289ee635cd18d8e0dac6ebb326d0e5bccabcc5f15f509f6412f8a5e1",
-      "size": 2169
+      "path": "server/release/frontend-dist/assets/CardOverlay-DRoQwHsX.css.br",
+      "sha256": "7e9c688d5e02b5697cd54fe02a4266ab028ff17bcbfe779f7ae01f78816404b9",
+      "size": 2284
     },
     {
-      "path": "server/release/frontend-dist/assets/CardOverlay-C9AJhHb0.css.gz",
-      "sha256": "28c1da8019f402968d502de1e02d69ccfe485dd24e967a553dd00cad00139e55",
-      "size": 2356
+      "path": "server/release/frontend-dist/assets/CardOverlay-DRoQwHsX.css.gz",
+      "sha256": "9b04e539b2947cab7bbdafa6b047f05bbd72032c4e096c59b678fe3824fa43be",
+      "size": 2476
     },
     {
-      "path": "server/release/frontend-dist/assets/CardOverlay-CrE9P4i1.js",
-      "sha256": "8e6ed5074d065c24fa901279f91636c161530b77a07b2024117ef06c5fd540ac",
-      "size": 29001
+      "path": "server/release/frontend-dist/assets/CardOverlay-F-XsEsek.js",
+      "sha256": "44ad3d1f8a26dbaea7cafea56e786fee95f200e84865bc53043f7dbe1964975f",
+      "size": 32085
     },
     {
-      "path": "server/release/frontend-dist/assets/CardOverlay-CrE9P4i1.js.br",
-      "sha256": "bf4424e4ffe9d1a5bab7cb92fc2e06d3da48f97a8835ee53ffdabe00deaa5faa",
-      "size": 9512
+      "path": "server/release/frontend-dist/assets/CardOverlay-F-XsEsek.js.br",
+      "sha256": "889ae7c3dfa83410ad9de0bdbe6f8c5571304969cde650a707c49ce356fdcd8d",
+      "size": 10617
     },
     {
-      "path": "server/release/frontend-dist/assets/CardOverlay-CrE9P4i1.js.gz",
-      "sha256": "05a3746e8ddfea99e965aea9448b317ae2ec44489050bac993929f7f08fc2931",
-      "size": 9970
+      "path": "server/release/frontend-dist/assets/CardOverlay-F-XsEsek.js.gz",
+      "sha256": "c158c9eb2ca721a75a5bf872dea56bc304d53cf261cee4bae124dbbbe5b0fa4b",
+      "size": 11092
     },
     {
-      "path": "server/release/frontend-dist/assets/Cards-BMv-hIEH.js",
-      "sha256": "7b78f98b5e5473bf5bcf4ea83f4d7a34fa7201417cfdde278ffb1c8d167c2c48",
-      "size": 20926
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Cards-BMv-hIEH.js.br",
-      "sha256": "29db3484aab66cd84c9e40d4529fdffe7b68180190f0328facc110808736dd0d",
-      "size": 7505
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Cards-BMv-hIEH.js.gz",
-      "sha256": "71015aa3b3faaf464425ca5389c80e6ff03c83b64a3936903a5f51036264944c",
-      "size": 7896
-    },
-    {
-      "path": "server/release/frontend-dist/assets/cards-BV2gGEIq.js",
-      "sha256": "15cc7cef23cac34c482d1f80daf004321b301c40833ce6b1fd03d9064e18f672",
-      "size": 612
-    },
-    {
-      "path": "server/release/frontend-dist/assets/cards-BV2gGEIq.js.br",
-      "sha256": "fc4d1b131d2da783f53d6afdd8685fec674d36a6f8c79e781f66fcdfdf4a5123",
-      "size": 342
-    },
-    {
-      "path": "server/release/frontend-dist/assets/cards-BV2gGEIq.js.gz",
-      "sha256": "ec68cde52d2e936121d751cc8e65f555df482f2d991e64b4ebdeecafdd60c441",
-      "size": 368
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Cards-D--Fz7LV.css",
-      "sha256": "b43ac1a03d7270ab72094fbe87c4aea63db07720abf5d20c756f21520c47fd6e",
+      "path": "server/release/frontend-dist/assets/Cards-CacV3NP7.css",
+      "sha256": "ff7c09e08bcde3a80da609f55d4a796b764927381973141a9a38c8e65333ae12",
       "size": 13782
     },
     {
-      "path": "server/release/frontend-dist/assets/Cards-D--Fz7LV.css.br",
-      "sha256": "aab104da21280e3e7d38fef9067d918ceb4a1c87269caef805d3d7432cc8ad06",
+      "path": "server/release/frontend-dist/assets/Cards-CacV3NP7.css.br",
+      "sha256": "b54ddf01573e05329e6d73cce7b2527c638ffb02cc044608e903936b6cbc950a",
       "size": 2951
     },
     {
-      "path": "server/release/frontend-dist/assets/Cards-D--Fz7LV.css.gz",
-      "sha256": "050b3750dd9eface76844660884414c562222a5c77d8ea5c5f843bc225c6a660",
+      "path": "server/release/frontend-dist/assets/Cards-CacV3NP7.css.gz",
+      "sha256": "1333a3f1a08f9137eb2c4ffe45c494fc65117a36d10afe8d4a28c2a289a95baa",
       "size": 3167
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Cards-D8oM9Jgw.js",
+      "sha256": "2ef127971e3ed504364d6c9df75e0e30bb8052d341a96d09ac89de6f79a35d94",
+      "size": 21272
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Cards-D8oM9Jgw.js.br",
+      "sha256": "20e880785a55aebd81764e5d2d7239300d34592cb4ad5e253db84d6ba2a97b1f",
+      "size": 7635
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Cards-D8oM9Jgw.js.gz",
+      "sha256": "9ad6c66e133158e9ad443358c93eb935444024e170a95652393d7c8996e03356",
+      "size": 8052
+    },
+    {
+      "path": "server/release/frontend-dist/assets/cards-DVbQlBuS.js",
+      "sha256": "aa099b72cab2447ec25bb7b63c673c5d514e37dcd5c4cd3d7be3453f5f521977",
+      "size": 612
+    },
+    {
+      "path": "server/release/frontend-dist/assets/cards-DVbQlBuS.js.br",
+      "sha256": "1a15579a047888764aae52b834cad2a3e49a8fefe1636d8ce14e4c172daa009f",
+      "size": 343
+    },
+    {
+      "path": "server/release/frontend-dist/assets/cards-DVbQlBuS.js.gz",
+      "sha256": "d65020535be5803460b2241e6e6753a18a6fa7f773bfc8e5617d738976c09dd3",
+      "size": 367
     },
     {
       "path": "server/release/frontend-dist/assets/CardSetStrip-BsK2LRJS.css",
@@ -10179,33 +10204,33 @@
       "size": 466
     },
     {
-      "path": "server/release/frontend-dist/assets/CardSetStrip-EuZoou3m.js",
-      "sha256": "a3d0a44cbd015a0367bb02485e909866376c67919598d9a0e289a9fabed1d2b5",
+      "path": "server/release/frontend-dist/assets/CardSetStrip-otUkAm12.js",
+      "sha256": "1f332597129d1ef6cb75deb318cac5e0a90fe3d3c03ade6ec01a0d4b4ce2903e",
       "size": 896
     },
     {
-      "path": "server/release/frontend-dist/assets/CardSetStrip-EuZoou3m.js.br",
-      "sha256": "6a5e83fd9175498312f008d0d8eafa5d1e240dcdb02bfaf56b2dde3476f985f0",
-      "size": 525
+      "path": "server/release/frontend-dist/assets/CardSetStrip-otUkAm12.js.br",
+      "sha256": "eb26660c8011ec62262aed4a473296169060a27501c216109ac45e076d2c6680",
+      "size": 524
     },
     {
-      "path": "server/release/frontend-dist/assets/CardSetStrip-EuZoou3m.js.gz",
-      "sha256": "1aa3d598b64a95d04c04cb5a162f585b0eb4f72fa4071a5d5a69c4dca1fcb9be",
-      "size": 550
+      "path": "server/release/frontend-dist/assets/CardSetStrip-otUkAm12.js.gz",
+      "sha256": "93214b2e7b28db1b29091e645de07be0996d875755e2162e4748341b082e847a",
+      "size": 547
     },
     {
-      "path": "server/release/frontend-dist/assets/ClaimSeat-Bxx6Mzlq.js",
-      "sha256": "461a1999b3fd99825a2970dabd3774f6265d3f988be6ffc99cb1eb2455fb8799",
+      "path": "server/release/frontend-dist/assets/ClaimSeat-BPVEmTBq.js",
+      "sha256": "d2902e810e9666e342f8c7c7e8a09e5cf4b44845fd606d725bb750c9d658731c",
       "size": 1218
     },
     {
-      "path": "server/release/frontend-dist/assets/ClaimSeat-Bxx6Mzlq.js.br",
-      "sha256": "e06b33113223e457157df1a2e4686c8d68bec1807d66cd744f6148ead9b92680",
-      "size": 645
+      "path": "server/release/frontend-dist/assets/ClaimSeat-BPVEmTBq.js.br",
+      "sha256": "536265e45f42bfea4b8d90fbebbd821998b14a3a670d7ab207255e45f260d90a",
+      "size": 646
     },
     {
-      "path": "server/release/frontend-dist/assets/ClaimSeat-Bxx6Mzlq.js.gz",
-      "sha256": "bd644c88484c20347f694714a2d89f6b0a48486f586f122654dd07e53b8220ae",
+      "path": "server/release/frontend-dist/assets/ClaimSeat-BPVEmTBq.js.gz",
+      "sha256": "da104559b81619167be1528477d9d5e588a4e1dd75e0713466546e4ca534960c",
       "size": 693
     },
     {
@@ -10239,34 +10264,34 @@
       "size": 6963
     },
     {
-      "path": "server/release/frontend-dist/assets/customCardLibrary-1OCL1ujz.js",
-      "sha256": "a0448c5ad6244605a357f2ba4aa8979c0cafcca291f5e0d1811fcc4594cbdd52",
+      "path": "server/release/frontend-dist/assets/customCardLibrary-D0RzlGmX.js",
+      "sha256": "46ab11b4b67353275ea3b63db758670cfc6e568d891a570317ce02633623d063",
       "size": 4500
     },
     {
-      "path": "server/release/frontend-dist/assets/customCardLibrary-1OCL1ujz.js.br",
-      "sha256": "fcfca0b1da6276e10cd3aa03292ea8364418ecb4b03a4f1d9a91360ab4bda4d3",
-      "size": 1788
+      "path": "server/release/frontend-dist/assets/customCardLibrary-D0RzlGmX.js.br",
+      "sha256": "68d3a4036d6c941e5988c14919fc8c87ce71d00b4a6dfd9d05485342a653b296",
+      "size": 1790
     },
     {
-      "path": "server/release/frontend-dist/assets/customCardLibrary-1OCL1ujz.js.gz",
-      "sha256": "b04f272520f05c8aad59d1d4ca4536ef19ef83b3cb337677d13863aea996308a",
-      "size": 1890
+      "path": "server/release/frontend-dist/assets/customCardLibrary-D0RzlGmX.js.gz",
+      "sha256": "b866a0c98314e2b3872dde591b1a36fb9bca0cdbe1dcc80bc5118ad1647f3332",
+      "size": 1891
     },
     {
-      "path": "server/release/frontend-dist/assets/dbCards-dp268vOk.js",
-      "sha256": "f22d24987a4e3de553d916b6a0171d52d028012299b111473d16ff46d0d453ee",
+      "path": "server/release/frontend-dist/assets/dbCards-CgiZ8tNC.js",
+      "sha256": "0d734f8db3db87d1317ba59baf556d6e6fa20bb722a8be05969312a5e865d590",
       "size": 1611
     },
     {
-      "path": "server/release/frontend-dist/assets/dbCards-dp268vOk.js.br",
-      "sha256": "575a527f2d43b18b82e152e1516db081128c09f763bfec895100bc37bbfa91d8",
-      "size": 690
+      "path": "server/release/frontend-dist/assets/dbCards-CgiZ8tNC.js.br",
+      "sha256": "f8ccd0662ce9810e9278929997a0c77a3da46836a93c49af56a7f8cb6902d65f",
+      "size": 691
     },
     {
-      "path": "server/release/frontend-dist/assets/dbCards-dp268vOk.js.gz",
-      "sha256": "76f4390db7e74cfd654ab39dca09692e88e7f3d1f6451c2ca9bac05a12d886bb",
-      "size": 746
+      "path": "server/release/frontend-dist/assets/dbCards-CgiZ8tNC.js.gz",
+      "sha256": "fb773c52810afd9a323b8c284fd4bb842868cc9cdd92fdb950bbc88f233dc2a0",
+      "size": 745
     },
     {
       "path": "server/release/frontend-dist/assets/de-d3S5LIXZ.js",
@@ -10284,6 +10309,21 @@
       "size": 3934
     },
     {
+      "path": "server/release/frontend-dist/assets/debug-C5qt0NLS.js",
+      "sha256": "67d96a44d4a0d253c3e4521e5b75060722eea4e9c55c1c1507adf122cb963139",
+      "size": 8197
+    },
+    {
+      "path": "server/release/frontend-dist/assets/debug-C5qt0NLS.js.br",
+      "sha256": "f81088a4f206d92b2015319f4f71cf49ef0a4ae04f44104d07d104f25ecefcd0",
+      "size": 3940
+    },
+    {
+      "path": "server/release/frontend-dist/assets/debug-C5qt0NLS.js.gz",
+      "sha256": "780d0a0763407f03ed2db71130b974932da905a10dcd12d558e226eb43bb9b93",
+      "size": 4142
+    },
+    {
       "path": "server/release/frontend-dist/assets/debug-Cc254X_e.css",
       "sha256": "32cca8d7e0de0a68147ddd8b329cd8b6f07ee881db0046021ff9b31f16064c2a",
       "size": 3144
@@ -10297,21 +10337,6 @@
       "path": "server/release/frontend-dist/assets/debug-Cc254X_e.css.gz",
       "sha256": "dc11acb4c28df23033dad0dffcd8e339608fb460cdc9f8e90eb43768ba1d330f",
       "size": 919
-    },
-    {
-      "path": "server/release/frontend-dist/assets/debug-gFsMpSl2.js",
-      "sha256": "63f3398d8517ae49c0bc0b92e76e6ba27a8f6372da660a0e0c9d3ef7858d164e",
-      "size": 8197
-    },
-    {
-      "path": "server/release/frontend-dist/assets/debug-gFsMpSl2.js.br",
-      "sha256": "6ba4fd17ada5383561cc8b48fc59a7fd5b5a8732bef1c58555485de456134c8c",
-      "size": 3939
-    },
-    {
-      "path": "server/release/frontend-dist/assets/debug-gFsMpSl2.js.gz",
-      "sha256": "fa128c64eaf7c6737100c684165bfaa95276dc632b388dc7adc72546ee9c795a",
-      "size": 4141
     },
     {
       "path": "server/release/frontend-dist/assets/Deck-BHnnuIqn.css",
@@ -10329,49 +10354,49 @@
       "size": 1593
     },
     {
-      "path": "server/release/frontend-dist/assets/Deck-CMZ91Mct.js",
-      "sha256": "c05547ae8907bb28e381a389db56e8c872d5f00f3d124e35f03ed3e3670fa76a",
+      "path": "server/release/frontend-dist/assets/Deck-DZqFIO-g.js",
+      "sha256": "c32567936cbb35a60498570f37648e87bb38799b52f0f5e0cb5fafa23e67331c",
       "size": 11527
     },
     {
-      "path": "server/release/frontend-dist/assets/Deck-CMZ91Mct.js.br",
-      "sha256": "aff21dac92bf164c8e9e825c0d9809ec7927b18cb8a163bf40a43a02af80c76f",
+      "path": "server/release/frontend-dist/assets/Deck-DZqFIO-g.js.br",
+      "sha256": "82d5f1130a9bd7942d691a0778b685f7350ecfb76cf7f90751dadc42a5b0bfc9",
       "size": 4208
     },
     {
-      "path": "server/release/frontend-dist/assets/Deck-CMZ91Mct.js.gz",
-      "sha256": "cd9be536133a64bc53b855011e401cfad34f138a7839d9605559e8d19ae3a1f9",
-      "size": 4362
+      "path": "server/release/frontend-dist/assets/Deck-DZqFIO-g.js.gz",
+      "sha256": "9303f6417e972877b157291257ad7760c8f732fbd508ae5c477caa7026c2e9ae",
+      "size": 4365
     },
     {
-      "path": "server/release/frontend-dist/assets/Decks-BKPPmzvq.js",
-      "sha256": "1b00efc35a62de190afe0ac270c2a115483c3adc3e784b393ee677030910f770",
-      "size": 5494
+      "path": "server/release/frontend-dist/assets/Decks-aFAkcBK3.js",
+      "sha256": "12b10b19c6bf2517d24b3d3824f19c2787952cbc4bce740e046b2fca62e0f6db",
+      "size": 5650
     },
     {
-      "path": "server/release/frontend-dist/assets/Decks-BKPPmzvq.js.br",
-      "sha256": "f04591416634181f3efd263fba9c667c9877ab86d0c15b4d83028f242a770a68",
-      "size": 2362
+      "path": "server/release/frontend-dist/assets/Decks-aFAkcBK3.js.br",
+      "sha256": "453d87b6e4a0fd75268b7aa13c96b2c8eeeb9e06dccde8fcf4f4e2961d08255f",
+      "size": 2427
     },
     {
-      "path": "server/release/frontend-dist/assets/Decks-BKPPmzvq.js.gz",
-      "sha256": "8a8d40c9495c236f219d4a1c2a65a2993554106fb3d9271dc96edc79ab033cea",
-      "size": 2513
+      "path": "server/release/frontend-dist/assets/Decks-aFAkcBK3.js.gz",
+      "sha256": "9a96d2e6ce84bd784334bf84ab002ac6ce5f1fe923831b4ecf12341e5201d4bd",
+      "size": 2584
     },
     {
-      "path": "server/release/frontend-dist/assets/Decks-Duh7MEen.css",
-      "sha256": "ef8b37c947a5194f7695c5e458a4955b195a9445310d3f07c468478070ef16dc",
+      "path": "server/release/frontend-dist/assets/Decks-DvpeB5o6.css",
+      "sha256": "22c521933ea952f436f11238c6330672f4a1dd77038e4f5c3f2820edeb476c6a",
       "size": 4791
     },
     {
-      "path": "server/release/frontend-dist/assets/Decks-Duh7MEen.css.br",
-      "sha256": "1f70509cf4f86fadeea3b2943dd4a422a60bedfd3d115fc4dc5e4172b4f8d2f9",
-      "size": 1143
+      "path": "server/release/frontend-dist/assets/Decks-DvpeB5o6.css.br",
+      "sha256": "f80a9133a098dcdfd07662235c68d97aba9283ff0c044c7d5c860d36d313c475",
+      "size": 1144
     },
     {
-      "path": "server/release/frontend-dist/assets/Decks-Duh7MEen.css.gz",
-      "sha256": "c262391cd901f47364afca9357425d97ba2d44ef9b3038ec8e6db0a605a3813c",
-      "size": 1281
+      "path": "server/release/frontend-dist/assets/Decks-DvpeB5o6.css.gz",
+      "sha256": "1c4551832786df072215f68566758a107ec4e53734ecd0dd53bf51dab48aa722",
+      "size": 1280
     },
     {
       "path": "server/release/frontend-dist/assets/DeckToolbar-B97qrvJt.css",
@@ -10389,19 +10414,19 @@
       "size": 1880
     },
     {
-      "path": "server/release/frontend-dist/assets/DeckToolbar-ilZ3Qaf5.js",
-      "sha256": "ce0c6a42ac615ebf98800ea6f84811906062f073e203ac0703f321a3abd945f6",
+      "path": "server/release/frontend-dist/assets/DeckToolbar-Dkm5P9-j.js",
+      "sha256": "7e664afa3f4525e73d2364320bb786d714de346039b82b390e19e908c1061531",
       "size": 8736
     },
     {
-      "path": "server/release/frontend-dist/assets/DeckToolbar-ilZ3Qaf5.js.br",
-      "sha256": "df18d08bd3fe8c42ca24361d28604d794935a7a16cb316cbecdf701a95057843",
-      "size": 3300
+      "path": "server/release/frontend-dist/assets/DeckToolbar-Dkm5P9-j.js.br",
+      "sha256": "cc2dccd8180966985b4615b5893c634351438bbe7bcce272da7ba46bdbbe7c77",
+      "size": 3302
     },
     {
-      "path": "server/release/frontend-dist/assets/DeckToolbar-ilZ3Qaf5.js.gz",
-      "sha256": "64da9d50163ac6d712e5ca782ff52baf93870140ee70d7e98d8a3735369f8097",
-      "size": 3482
+      "path": "server/release/frontend-dist/assets/DeckToolbar-Dkm5P9-j.js.gz",
+      "sha256": "43279397cf18f258ebc7d7fab85058c7f7d402655a31dde9aaa62792bf729b84",
+      "size": 3483
     },
     {
       "path": "server/release/frontend-dist/assets/en-B8z4eKbN.js",
@@ -10449,19 +10474,19 @@
       "size": 8758
     },
     {
-      "path": "server/release/frontend-dist/assets/event-CY8rIhx6.js",
-      "sha256": "09c76d6e499c69346a99cfd6246a5ad0346968c49adb3944ba8ceab2f8948434",
+      "path": "server/release/frontend-dist/assets/event-CzDBtQOC.js",
+      "sha256": "6fad64f1847cba6bcb64c6811b09f0b363811d18780dc67fd09edc625d837886",
       "size": 1204
     },
     {
-      "path": "server/release/frontend-dist/assets/event-CY8rIhx6.js.br",
-      "sha256": "44d4b6ee45487144d6ceb3245c731ab0317fac5eb1adea047a996737183f9b01",
-      "size": 606
+      "path": "server/release/frontend-dist/assets/event-CzDBtQOC.js.br",
+      "sha256": "1f5b8a0c0b4aefb493655f1a2b840db6bb7ae63013b1c60d1abb25785346f93d",
+      "size": 605
     },
     {
-      "path": "server/release/frontend-dist/assets/event-CY8rIhx6.js.gz",
-      "sha256": "b752ad8c53bb2782d3296901ce0803b63e742606dc71ef4a54afa11bcd81613c",
-      "size": 656
+      "path": "server/release/frontend-dist/assets/event-CzDBtQOC.js.gz",
+      "sha256": "5dac4677676a87e16e147c6733259d7adf8616c35c2545dbab0a2ae36b1c7096",
+      "size": 658
     },
     {
       "path": "server/release/frontend-dist/assets/EventCountdown-CJHiwgcq.css",
@@ -10479,18 +10504,18 @@
       "size": 272
     },
     {
-      "path": "server/release/frontend-dist/assets/EventCountdown-CmjXlllg.js",
-      "sha256": "0a645c67b2ec5e5141cdb25407eb97a6f212a94707defd92d0628b9335c6f7a4",
-      "size": 1332
+      "path": "server/release/frontend-dist/assets/EventCountdown-DH0oype9.js",
+      "sha256": "a7df3179c0b756ba5ff8549e6a867f0c42e59eb7809561c28b0b3fdeac37350c",
+      "size": 1327
     },
     {
-      "path": "server/release/frontend-dist/assets/EventCountdown-CmjXlllg.js.br",
-      "sha256": "13e9c50216b138def91025e54f47cfee64259342f95f1ae299c5590a6263f27d",
-      "size": 708
+      "path": "server/release/frontend-dist/assets/EventCountdown-DH0oype9.js.br",
+      "sha256": "548323d53e68df0e2ea656f048a9a5e9e7d235e6f2e0fcc322475f2640c26b74",
+      "size": 710
     },
     {
-      "path": "server/release/frontend-dist/assets/EventCountdown-CmjXlllg.js.gz",
-      "sha256": "fcd3e6b0e3d7ffb1cc5e9bacd0285fe623f71c4410e2ec51bd225f0f38de43e1",
+      "path": "server/release/frontend-dist/assets/EventCountdown-DH0oype9.js.gz",
+      "sha256": "2833fb47a58238d5d03899d4faab69b839cb7ae423227cdbafec4e6f8c3c9f93",
       "size": 759
     },
     {
@@ -10524,78 +10549,78 @@
       "size": 18751
     },
     {
-      "path": "server/release/frontend-dist/assets/Game-CBeFfMjQ.js",
-      "sha256": "10094141a30434922e268411c7c5057e8094b8e2f9aa3d645989cf5beb0619bf",
-      "size": 165901
+      "path": "server/release/frontend-dist/assets/Game-BTFy2Rxl.js",
+      "sha256": "fffd8e3d2debff9d7fe7118714f0184968692f802f0f6ddf77fce74311d9fed7",
+      "size": 175495
     },
     {
-      "path": "server/release/frontend-dist/assets/Game-CBeFfMjQ.js.br",
-      "sha256": "bab7aa3011f1f8469e63a579fadd5c5684e716845ef7423f496bf9e33aa62e22",
-      "size": 47061
+      "path": "server/release/frontend-dist/assets/Game-BTFy2Rxl.js.br",
+      "sha256": "4418cada52eb584cbdd4729ebf87ed2e58f19ab13f1a18bbb49a544fa972473f",
+      "size": 50024
     },
     {
-      "path": "server/release/frontend-dist/assets/Game-CBeFfMjQ.js.gz",
-      "sha256": "113e8f61c86948a9188e7eacb6e3a06ff8ba5af0f655a2ebe8cd025fd5636bde",
-      "size": 50225
+      "path": "server/release/frontend-dist/assets/Game-BTFy2Rxl.js.gz",
+      "sha256": "f4fd5b589d0a89b874fc70e8db22b9af17b3d665a582dcdd9680c7dca01a653c",
+      "size": 53502
     },
     {
-      "path": "server/release/frontend-dist/assets/Game-DAIIS_FO.css",
-      "sha256": "2c1a49962fe8301ed6414d2001c6d870b60fe4e1d9ded1630fff32c475e387f4",
-      "size": 96287
+      "path": "server/release/frontend-dist/assets/Game-CTY_T2N4.css",
+      "sha256": "c941782e96e4ae8f1e8603c74f6bff6ec2ed384751d56546fee9d0a93af07e88",
+      "size": 117689
     },
     {
-      "path": "server/release/frontend-dist/assets/Game-DAIIS_FO.css.br",
-      "sha256": "802c8b4d58dd600d2822d77dc2e84c884148266358041369792aa7380ae66d16",
-      "size": 16170
+      "path": "server/release/frontend-dist/assets/Game-CTY_T2N4.css.br",
+      "sha256": "eaa2a24b0fe8fd1ff41fbabac6b9bb02f53056b5cef8102c2fa7e566a3f512e7",
+      "size": 19645
     },
     {
-      "path": "server/release/frontend-dist/assets/Game-DAIIS_FO.css.gz",
-      "sha256": "10f64b23551df1baa36a88a345e57f12f9e68cf70ff4934e8c307df408d49e7e",
-      "size": 17485
+      "path": "server/release/frontend-dist/assets/Game-CTY_T2N4.css.gz",
+      "sha256": "33806351dac220ea160cc280d195d2b0e4a32d9c6407955de15816f06dd2a8e3",
+      "size": 21156
     },
     {
-      "path": "server/release/frontend-dist/assets/GameLog-C4bGN9lb.js",
-      "sha256": "b8d498736a32423075d1595552dcfb02d5318b9456ec9bd6cf428f193f657540",
-      "size": 1285130
+      "path": "server/release/frontend-dist/assets/GameLog-BzuBV4QZ.js",
+      "sha256": "2ce7f642d14ca6a8ff66d3102000d5fba54ce895c182adbfb629d3b5c834183f",
+      "size": 1301173
     },
     {
-      "path": "server/release/frontend-dist/assets/GameLog-C4bGN9lb.js.br",
-      "sha256": "f4a38c241f193e716ac289d6eac5e84245e09bb6d45d88f98f4d1a5b4d6b87a0",
-      "size": 294283
+      "path": "server/release/frontend-dist/assets/GameLog-BzuBV4QZ.js.br",
+      "sha256": "5e41a4f5401046447a5003b92b37431bd22ea244c1843649280451fb5ef621c3",
+      "size": 298463
     },
     {
-      "path": "server/release/frontend-dist/assets/GameLog-C4bGN9lb.js.gz",
-      "sha256": "164ff455518eb64a1635f28e0fb537d9acd553fb6878c691783e98dbc361fac2",
-      "size": 336113
+      "path": "server/release/frontend-dist/assets/GameLog-BzuBV4QZ.js.gz",
+      "sha256": "d145e68fd79382cbf6f395922f625d99a56492b2af10ff0d13a4bfc1954dcd28",
+      "size": 341101
     },
     {
-      "path": "server/release/frontend-dist/assets/GameLog-wZTB8Xfp.css",
-      "sha256": "a7b26d4af650b17dbf1f550514a0f524e7af9b3acc0e7a672f074a27d76349c8",
-      "size": 275644
+      "path": "server/release/frontend-dist/assets/GameLog-tOdi4kPx.css",
+      "sha256": "c862c7ddf8270beb9a5fc3312629bb6923f6c3e3c93654ad82b69cd737db87bb",
+      "size": 276727
     },
     {
-      "path": "server/release/frontend-dist/assets/GameLog-wZTB8Xfp.css.br",
-      "sha256": "543c20d044c7e18e91c190d56808060e171550c41188ddcf6b08242e2a181ff0",
-      "size": 42541
+      "path": "server/release/frontend-dist/assets/GameLog-tOdi4kPx.css.br",
+      "sha256": "3e6f625567dac2b0c0cfd9563ee11480b6c9bfea922dd1768c06ce23f9d29fdf",
+      "size": 42795
     },
     {
-      "path": "server/release/frontend-dist/assets/GameLog-wZTB8Xfp.css.gz",
-      "sha256": "3d161962618ed88df7d14a906ce7567c8d7730e7094cac47d52c236b82a6c0f6",
-      "size": 48571
+      "path": "server/release/frontend-dist/assets/GameLog-tOdi4kPx.css.gz",
+      "sha256": "b646c8940eed3b17f38243f81a50ff577697f1f97c1c07b855dca23eb39007e3",
+      "size": 48818
     },
     {
-      "path": "server/release/frontend-dist/assets/GameRow-CPZ_maq8.js",
-      "sha256": "1b624a5d1afe3f779568aebe5836e27ea4d88b10dc4b987ef967ff254e76cb96",
+      "path": "server/release/frontend-dist/assets/GameRow-CfmpjyXD.js",
+      "sha256": "58433c80362f1bb60bc998def0f770577a6874b082d6b7442d6e02a38a2ba390",
       "size": 3861
     },
     {
-      "path": "server/release/frontend-dist/assets/GameRow-CPZ_maq8.js.br",
-      "sha256": "b3f3390c53bf0d32c370a31c7654d00bcd797d6188325bf6ec64b5c3d01a1c5b",
+      "path": "server/release/frontend-dist/assets/GameRow-CfmpjyXD.js.br",
+      "sha256": "ae05cf4f78841e1c0ff31c740cc372e6f34d312dad46c4a68799a16947476a85",
       "size": 1411
     },
     {
-      "path": "server/release/frontend-dist/assets/GameRow-CPZ_maq8.js.gz",
-      "sha256": "08cc6713089543851b327a02118484eab24cb7321df1d077ef757d965272a30d",
+      "path": "server/release/frontend-dist/assets/GameRow-CfmpjyXD.js.gz",
+      "sha256": "30093b789983b3c42c65dd4b3b76e0762da9d97b0bf9c2dbfb9c4cead3f50a32",
       "size": 1519
     },
     {
@@ -10614,79 +10639,79 @@
       "size": 1262
     },
     {
-      "path": "server/release/frontend-dist/assets/Home-Dxoh7Kng.css",
-      "sha256": "799e738b0743fa8304e7dc43c951c59d78cc1dabb2ddbd14f48b4ef4850aaa05",
+      "path": "server/release/frontend-dist/assets/Home-aNw2h_Ql.js",
+      "sha256": "5d7345d7f3c5aa91dbf818f5ce3212cc949fa46e563fa20cba5e00bf14a9b1ca",
+      "size": 14351
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Home-aNw2h_Ql.js.br",
+      "sha256": "91ef713592cbb8b847da97e1f52cc2ea1595579d8605105dfe93c1b736c53de6",
+      "size": 5343
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Home-aNw2h_Ql.js.gz",
+      "sha256": "966aa1b9ca9c7d45f155d4764d821a72bf0c0bf2e7593f354a173d7f18daa0c6",
+      "size": 5712
+    },
+    {
+      "path": "server/release/frontend-dist/assets/Home-BEVl9ZF7.css",
+      "sha256": "c64d691c3c9fc36169a058ead2cdebf58d62c79149ebc7c165e2a67963ae95e8",
       "size": 13145
     },
     {
-      "path": "server/release/frontend-dist/assets/Home-Dxoh7Kng.css.br",
-      "sha256": "87f90aa4998a779c3f95f64f839981e1881300a1a34da7faccfb60035e192213",
-      "size": 2735
+      "path": "server/release/frontend-dist/assets/Home-BEVl9ZF7.css.br",
+      "sha256": "a179926f613fa11d07b5547d18ba96b94bf0858c56f36748d07308fffe66d2aa",
+      "size": 2736
     },
     {
-      "path": "server/release/frontend-dist/assets/Home-Dxoh7Kng.css.gz",
-      "sha256": "e1821335bff1fe3bfea0d34297077c445b78231f38ef3a904d1036c21c1511e4",
-      "size": 2922
+      "path": "server/release/frontend-dist/assets/Home-BEVl9ZF7.css.gz",
+      "sha256": "99cb3c1cb2b42ccff57aac75413ec00773586e71cd7c9306cdc39ac57fdc046a",
+      "size": 2923
     },
     {
-      "path": "server/release/frontend-dist/assets/Home-ofPi2vLR.js",
-      "sha256": "02136b341e43f8a1768a6c54f181e775242a29dede9f611b11443368b744065e",
-      "size": 13237
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Home-ofPi2vLR.js.br",
-      "sha256": "2dedcd12aa7c3a39c4d8365de45d6064ab80191ee5e362b20e9f396da00672c7",
-      "size": 4936
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Home-ofPi2vLR.js.gz",
-      "sha256": "040c99ad9d68606555186c78d75df136b6b83754c9ce958681fc10aebdb826dd",
-      "size": 5172
-    },
-    {
-      "path": "server/release/frontend-dist/assets/i18n-nE6VuJ_T.js",
-      "sha256": "4d8b02a492f94ba89ad1814a26605434a5f471578c3027170c58cacb5bbac8cf",
+      "path": "server/release/frontend-dist/assets/i18n-LKdVUyJo.js",
+      "sha256": "33c0eadeeb27dd41f00443350fd5ad8b4788a3580abe67e5a52d9687b20627c2",
       "size": 1736
     },
     {
-      "path": "server/release/frontend-dist/assets/i18n-nE6VuJ_T.js.br",
-      "sha256": "f4b877520d9af063a3ef03a3b37982fa59c737be17bbb4c7729590078cbb57c5",
-      "size": 844
+      "path": "server/release/frontend-dist/assets/i18n-LKdVUyJo.js.br",
+      "sha256": "6b108ee6159abf9d61a091733bd8c38c4a34d6b4c1fff3a7696bb12ceb321e1b",
+      "size": 843
     },
     {
-      "path": "server/release/frontend-dist/assets/i18n-nE6VuJ_T.js.gz",
-      "sha256": "54f4e5abfc63d5cac901284d65306e1ee0bf79f416e31e4e746ad646007aa468",
-      "size": 898
+      "path": "server/release/frontend-dist/assets/i18n-LKdVUyJo.js.gz",
+      "sha256": "72850bb350f59da165dea6743e98e68f926e06f04ebfdeb50a85095a5d926340",
+      "size": 897
     },
     {
-      "path": "server/release/frontend-dist/assets/index-CXfcdWwc.css",
-      "sha256": "0a9eddff483502f9a09806f1ae6ae112b6c7b03b408c3c1efd3bb95c72470ff7",
-      "size": 77645
+      "path": "server/release/frontend-dist/assets/index-CYgF5kaH.css",
+      "sha256": "5429765996d1feb6bfde80960cfd89220d92d5a556811ed3f10b4637e1323c7b",
+      "size": 84139
     },
     {
-      "path": "server/release/frontend-dist/assets/index-CXfcdWwc.css.br",
-      "sha256": "87dace0df9df5c776b4b01088e87d7bea5975520dcd85335cd40385bb86cc35a",
-      "size": 14711
+      "path": "server/release/frontend-dist/assets/index-CYgF5kaH.css.br",
+      "sha256": "e1bb1cec04135adc9aef73a47e5ce5c12ef460ef85c1519ac6db613583547305",
+      "size": 16266
     },
     {
-      "path": "server/release/frontend-dist/assets/index-CXfcdWwc.css.gz",
-      "sha256": "ccbd63f40f085047bb640c535c82ec2222920f650bb0ac9c776d991283209e2d",
-      "size": 15678
+      "path": "server/release/frontend-dist/assets/index-CYgF5kaH.css.gz",
+      "sha256": "097c4b4945c30208cda7ba15d0674467f1918329f73650b8266e1446fe1f67ae",
+      "size": 17331
     },
     {
-      "path": "server/release/frontend-dist/assets/index-Df-fZPWK.js",
-      "sha256": "4942d4a1e16f3668bbd3bb272555931daff1a14fddf2efdd19c0052c085bf8fa",
-      "size": 466467
+      "path": "server/release/frontend-dist/assets/index-D1jj-pYB.js",
+      "sha256": "debcec92b2344e2289c4052f5fa8035e9c52ab74d502bdb4bf90654ad7769791",
+      "size": 466953
     },
     {
-      "path": "server/release/frontend-dist/assets/index-Df-fZPWK.js.br",
-      "sha256": "a7c87131e5754a660c175cd8080b0171876feb2fe53959d99079576550aac47e",
-      "size": 150753
+      "path": "server/release/frontend-dist/assets/index-D1jj-pYB.js.br",
+      "sha256": "c342b66eea8ce9aaf4aeec021fef27e967a179420244d7f472117152b71141f0",
+      "size": 150894
     },
     {
-      "path": "server/release/frontend-dist/assets/index-Df-fZPWK.js.gz",
-      "sha256": "86b904ca22e7f2efbd0b5abb63573dd98b90c4eb34d05cded8b67d5164babacd",
-      "size": 162255
+      "path": "server/release/frontend-dist/assets/index-D1jj-pYB.js.gz",
+      "sha256": "85304ed733599c78ce211d0a56cdbf7e82361e5c7194fcdb3007b600134b9f9c",
+      "size": 162551
     },
     {
       "path": "server/release/frontend-dist/assets/it-BwtPf6Od.js",
@@ -10719,19 +10744,19 @@
       "size": 6173
     },
     {
-      "path": "server/release/frontend-dist/assets/JoinGame-C_u0O5t6.js",
-      "sha256": "9b12a13236af468bc424e12e4c462bc97eee2e8135198b264eaa455fbd55aeea",
+      "path": "server/release/frontend-dist/assets/JoinGame-C9NeUX0O.js",
+      "sha256": "ec84240585f72967875c52281147517235d0a3dba83a91bc4e3a6e2db24fa843",
       "size": 2283
     },
     {
-      "path": "server/release/frontend-dist/assets/JoinGame-C_u0O5t6.js.br",
-      "sha256": "fcbf36afdfa236d0382e0006f3c15d0c955e13b5265dfe1d4adb1dbbe49e3c92",
-      "size": 981
+      "path": "server/release/frontend-dist/assets/JoinGame-C9NeUX0O.js.br",
+      "sha256": "ba8e7557962c0be687805d053f5a812706fe938869770633204edf0fdd96d28b",
+      "size": 980
     },
     {
-      "path": "server/release/frontend-dist/assets/JoinGame-C_u0O5t6.js.gz",
-      "sha256": "c43f3626217e419c94b6513b8cc118b76a6604b54bd1b85fd6abe003d6524fb1",
-      "size": 1061
+      "path": "server/release/frontend-dist/assets/JoinGame-C9NeUX0O.js.gz",
+      "sha256": "b59e844731b0c669a45d052fb866d0471f78352da5c8a035b1df9d33bd395956",
+      "size": 1062
     },
     {
       "path": "server/release/frontend-dist/assets/JoinGame-CmaVJXQD.css",
@@ -10779,49 +10804,34 @@
       "size": 53
     },
     {
-      "path": "server/release/frontend-dist/assets/LogIcons-BbuGCXQp.css",
-      "sha256": "f56ab545a4cc2eba98d2d92e50afed0a2ee4e8debe9d9b454d1cf3bdbffa24ba",
-      "size": 20909
+      "path": "server/release/frontend-dist/assets/LogIcons-CvtdCnrB.css",
+      "sha256": "edfa9b32c32fe1fe94a48064b8099cbf08ccc8fed79a78db45fe6fd3982f0829",
+      "size": 21466
     },
     {
-      "path": "server/release/frontend-dist/assets/LogIcons-BbuGCXQp.css.br",
-      "sha256": "d5482d0f9de160add34673dd0af26be467ec249304ddc9a17db26b3873abb1a9",
-      "size": 4166
+      "path": "server/release/frontend-dist/assets/LogIcons-CvtdCnrB.css.br",
+      "sha256": "91cb6fb88d0ddc02d7e7a6a99540768f383b57215009853b7331ae41a6b6997c",
+      "size": 4288
     },
     {
-      "path": "server/release/frontend-dist/assets/LogIcons-BbuGCXQp.css.gz",
-      "sha256": "587b252c57678d072658355a2a1b58349b9ff52df6f5b24fb63f109eaffd8af9",
-      "size": 4441
+      "path": "server/release/frontend-dist/assets/LogIcons-CvtdCnrB.css.gz",
+      "sha256": "fe714829fde34d0ac15464b13e3538c234ff3bd69a04eac2fc27a67c0544b5a4",
+      "size": 4565
     },
     {
-      "path": "server/release/frontend-dist/assets/LogIcons-Dx90CeM1.js",
-      "sha256": "4c33d0f4a79ee837f1d2df37dcd0a005fe129e3d71ce69ded2d1ace0ecbdf399",
-      "size": 65111
+      "path": "server/release/frontend-dist/assets/LogIcons-Sq-ArPEq.js",
+      "sha256": "9b947dca36795fdd7c996cc55b418fe23e7a146c57d3919d7e68cdf15685a8ba",
+      "size": 66590
     },
     {
-      "path": "server/release/frontend-dist/assets/LogIcons-Dx90CeM1.js.br",
-      "sha256": "1698a96edb4146460457df710018e3c2f5ad389104ab7625fd9aa97a670a827c",
-      "size": 22332
+      "path": "server/release/frontend-dist/assets/LogIcons-Sq-ArPEq.js.br",
+      "sha256": "1d79f2e785543e82b5e44f08d7a0762a64f02a9617040f1ac23d9bbd8ec6d410",
+      "size": 22729
     },
     {
-      "path": "server/release/frontend-dist/assets/LogIcons-Dx90CeM1.js.gz",
-      "sha256": "3f56e038f6125303016af5b4548b2aff7591c0fb8ea14590f60b4abd3d24de90",
-      "size": 23585
-    },
-    {
-      "path": "server/release/frontend-dist/assets/MarketplaceSet-B38PmtWD.js",
-      "sha256": "591da9d40a8a89669e593db5019bf2ccd7dd47dabc2948d071ced74bce6805c0",
-      "size": 4753
-    },
-    {
-      "path": "server/release/frontend-dist/assets/MarketplaceSet-B38PmtWD.js.br",
-      "sha256": "71b8895d2728463b1b00d0d5bd85608d8da5edc948c241fb8e25a4fc0b4048fc",
-      "size": 1902
-    },
-    {
-      "path": "server/release/frontend-dist/assets/MarketplaceSet-B38PmtWD.js.gz",
-      "sha256": "3f12535492126636ae1aa6fd1b47d8237820ca0a4d445f5de4b22e72a97248ba",
-      "size": 2024
+      "path": "server/release/frontend-dist/assets/LogIcons-Sq-ArPEq.js.gz",
+      "sha256": "45513ff136d21177e2bf55ea850784ad3fcad59ecd9ce238e5b2dedbd1183a09",
+      "size": 23990
     },
     {
       "path": "server/release/frontend-dist/assets/MarketplaceSet-Dri1HCMK.css",
@@ -10839,6 +10849,21 @@
       "size": 1064
     },
     {
+      "path": "server/release/frontend-dist/assets/MarketplaceSet-oWG-_YZc.js",
+      "sha256": "4f1532248dbea3a15845e24d240290ca37d0a6900647a1dd919e1e6e2f02b632",
+      "size": 4753
+    },
+    {
+      "path": "server/release/frontend-dist/assets/MarketplaceSet-oWG-_YZc.js.br",
+      "sha256": "10cb61242b99c4667942bead58cf423bcbdf7d2287a87a0030b211ed10866248",
+      "size": 1902
+    },
+    {
+      "path": "server/release/frontend-dist/assets/MarketplaceSet-oWG-_YZc.js.gz",
+      "sha256": "8e444be1830083a9121a74b531cf10e5a8982b2e81d09d72c00fb1872f5a8efe",
+      "size": 2024
+    },
+    {
       "path": "server/release/frontend-dist/assets/MultiplayerLobby-B-12w1Xa.css",
       "sha256": "c46a2d504aa4fc7da8a0a9df1e60d608c2bbb3d55330fb0f59647bd246a71b20",
       "size": 3234
@@ -10854,49 +10879,49 @@
       "size": 962
     },
     {
-      "path": "server/release/frontend-dist/assets/MultiplayerLobby-CsyQA-Nz.js",
-      "sha256": "e8df9a64b59364c8d408810b08d354ebe14c52886ef301e42bece885bdd7f2a6",
+      "path": "server/release/frontend-dist/assets/MultiplayerLobby-BVdu_Msz.js",
+      "sha256": "1fa9b53d837cd48e7fb3964a562ddab714c77ce12c271aee71f31061d7d3aa94",
       "size": 4498
     },
     {
-      "path": "server/release/frontend-dist/assets/MultiplayerLobby-CsyQA-Nz.js.br",
-      "sha256": "39e6db22f40b4313529b7a3588b3a12ed680fabe99545086cae06311a82b63e8",
-      "size": 1725
+      "path": "server/release/frontend-dist/assets/MultiplayerLobby-BVdu_Msz.js.br",
+      "sha256": "467b84fe61a3be0d1c893595cda44270dd7f74986b1e10e7e0920524f30411b2",
+      "size": 1732
     },
     {
-      "path": "server/release/frontend-dist/assets/MultiplayerLobby-CsyQA-Nz.js.gz",
-      "sha256": "41d22890c9f6fe34d410fc4aeb0a6d4fcd03ba88cf5c7c6fc40c85781622114e",
-      "size": 1827
+      "path": "server/release/frontend-dist/assets/MultiplayerLobby-BVdu_Msz.js.gz",
+      "sha256": "8871552ed0224c85350d558c6f1775d87391c65dcdc4d31b563686cedf358775",
+      "size": 1828
     },
     {
-      "path": "server/release/frontend-dist/assets/NewCampaign-Blf2K5gM.js",
-      "sha256": "3a4aa8f32ddc052fc3101bc3237dec82e1fd76b64dc90109771619c251d597fb",
-      "size": 38554
-    },
-    {
-      "path": "server/release/frontend-dist/assets/NewCampaign-Blf2K5gM.js.br",
-      "sha256": "cbecbb562c7c6487cb23a7dee02f78eebe8b5f4324770f771e406440ff518b81",
-      "size": 10084
-    },
-    {
-      "path": "server/release/frontend-dist/assets/NewCampaign-Blf2K5gM.js.gz",
-      "sha256": "07ca867048918e3c693e5c81eff7d79f1591970623916dff633ecc05281df4d4",
-      "size": 10748
-    },
-    {
-      "path": "server/release/frontend-dist/assets/NewCampaign-DqS9hdoH.css",
-      "sha256": "ac2b5e3d93368f084f5a44db2a646b04d69fdf490a461aa10f03345df0b0a51f",
+      "path": "server/release/frontend-dist/assets/NewCampaign-qTvP8Q4P.css",
+      "sha256": "16dbc12752122bb7fa710e365826a69be680760266ba7ab4d12ebb08308b8bbd",
       "size": 24785
     },
     {
-      "path": "server/release/frontend-dist/assets/NewCampaign-DqS9hdoH.css.br",
-      "sha256": "87402ed8122162523ced7e3bcfab4c5625fa393802c58cefa5404ae659cceddb",
-      "size": 4651
+      "path": "server/release/frontend-dist/assets/NewCampaign-qTvP8Q4P.css.br",
+      "sha256": "4ac4db09d44a6668b51448ae262414e078d5fad752c7d798629919d16340fde4",
+      "size": 4650
     },
     {
-      "path": "server/release/frontend-dist/assets/NewCampaign-DqS9hdoH.css.gz",
-      "sha256": "1683931a90020d9e24d2d7c25996097688d40597d769186223cb8e595f987455",
+      "path": "server/release/frontend-dist/assets/NewCampaign-qTvP8Q4P.css.gz",
+      "sha256": "8f73a27240c8b2faeab4727de8354a65a1ff99a5b3336f007d0ae280b7499356",
       "size": 4940
+    },
+    {
+      "path": "server/release/frontend-dist/assets/NewCampaign-UbBKUMVK.js",
+      "sha256": "cb2e8ec50665c6b3b9c4f56a0240117a3376eb9327315fbce7c6aec6c7ea57f4",
+      "size": 39964
+    },
+    {
+      "path": "server/release/frontend-dist/assets/NewCampaign-UbBKUMVK.js.br",
+      "sha256": "df6fe615a3f951f48c2a3afd42aa2564df149f42b60882ae44f9827d88b5e38e",
+      "size": 10585
+    },
+    {
+      "path": "server/release/frontend-dist/assets/NewCampaign-UbBKUMVK.js.gz",
+      "sha256": "6a3ff8f9547b6b1dadfec20d4ef04d54b70f29e9f6d4e8648e58647db77e20a2",
+      "size": 11321
     },
     {
       "path": "server/release/frontend-dist/assets/OrganizerDashboard-BezAfDqC.css",
@@ -10914,34 +10939,19 @@
       "size": 1750
     },
     {
-      "path": "server/release/frontend-dist/assets/OrganizerDashboard-j_tHZMTD.js",
-      "sha256": "5161f25901cd10717d42a55de06bc3ea50724c3938e7b9659ed2fb906c1b4d6d",
+      "path": "server/release/frontend-dist/assets/OrganizerDashboard-Dht0WP18.js",
+      "sha256": "f86a6d0ae596980d4919e3d23c2ceed9da0b01b1f9716e91095ba6f811d96f4b",
       "size": 11019
     },
     {
-      "path": "server/release/frontend-dist/assets/OrganizerDashboard-j_tHZMTD.js.br",
-      "sha256": "a1c725e9c11bcf62829bf5b8460fa4e2c807ae97a5599a3c9474cf824ef42045",
-      "size": 3867
+      "path": "server/release/frontend-dist/assets/OrganizerDashboard-Dht0WP18.js.br",
+      "sha256": "fe6397a5db206cec96309af521a06276de20ffd6db554b9380382e5cc097dbd2",
+      "size": 3865
     },
     {
-      "path": "server/release/frontend-dist/assets/OrganizerDashboard-j_tHZMTD.js.gz",
-      "sha256": "369cb5c8749fd63eaaa29bad10547b45a8e684fb34327117bea21cb6b21c06f8",
-      "size": 4058
-    },
-    {
-      "path": "server/release/frontend-dist/assets/OverlayEditor-BKJBVrUW.js",
-      "sha256": "ee410a48f1e0c5f55231e9552d554937409c191da7e17627e89e0e17fc08b731",
-      "size": 6141
-    },
-    {
-      "path": "server/release/frontend-dist/assets/OverlayEditor-BKJBVrUW.js.br",
-      "sha256": "fc26e79e9c357b30f9b3a86bc1fe15564b0fa7cd42e6305035f1daadacd9f5b8",
-      "size": 2255
-    },
-    {
-      "path": "server/release/frontend-dist/assets/OverlayEditor-BKJBVrUW.js.gz",
-      "sha256": "9f43c3b46817c08d94d16d3c9cc44d3553229909e5b0e467ec93287fd74e8752",
-      "size": 2398
+      "path": "server/release/frontend-dist/assets/OrganizerDashboard-Dht0WP18.js.gz",
+      "sha256": "6c74bd832aa6ce6347d4d2bd6780137daa367b9c066e9b056932267d7330aa74",
+      "size": 4055
     },
     {
       "path": "server/release/frontend-dist/assets/OverlayEditor-Ck3Dumzw.css",
@@ -10959,6 +10969,21 @@
       "size": 850
     },
     {
+      "path": "server/release/frontend-dist/assets/OverlayEditor-CqEr_RH5.js",
+      "sha256": "5be8487fc8cc572df3cdc6ff79693e1a5c9e1fb5d5e40b9260dc5fa44fd9950d",
+      "size": 6141
+    },
+    {
+      "path": "server/release/frontend-dist/assets/OverlayEditor-CqEr_RH5.js.br",
+      "sha256": "272916ab2fd87f1fdf8a2381278838c29533b196355e259e27274759116d9b6a",
+      "size": 2254
+    },
+    {
+      "path": "server/release/frontend-dist/assets/OverlayEditor-CqEr_RH5.js.gz",
+      "sha256": "d519acf15a9d2e67bd2dfc8814f835c6aa3c342359a1d6a0dca800c71625cc4b",
+      "size": 2398
+    },
+    {
       "path": "server/release/frontend-dist/assets/PasswordReset-BhRzwKPT.css",
       "sha256": "8dd6784c892212d85077f706cde56dbe698e176b518ab48c6345ae90f48227e7",
       "size": 834
@@ -10974,34 +10999,19 @@
       "size": 412
     },
     {
-      "path": "server/release/frontend-dist/assets/PasswordReset-CS1Pa25X.js",
-      "sha256": "425cfece14687e915f734bdef03367360206ab51fd54a0f30c3fc3215015169d",
+      "path": "server/release/frontend-dist/assets/PasswordReset-KE3pqeeY.js",
+      "sha256": "0ef791e55f82474fe3f0ee8d960fbc6a065dc68ff89d5851be638c16029db14b",
       "size": 973
     },
     {
-      "path": "server/release/frontend-dist/assets/PasswordReset-CS1Pa25X.js.br",
-      "sha256": "82c37e62b061cec403ff94e00ca532dfae4b6629724b91ecf6917b1188f6f773",
-      "size": 554
+      "path": "server/release/frontend-dist/assets/PasswordReset-KE3pqeeY.js.br",
+      "sha256": "4e3438cddcff10989855a8e664a47690e247579c3c6d5022f024070d834c46d8",
+      "size": 555
     },
     {
-      "path": "server/release/frontend-dist/assets/PasswordReset-CS1Pa25X.js.gz",
-      "sha256": "8682862f0bc7f09eb07a0077a54c1afff5fe3aff059a06ac207b8937cc3654ea",
-      "size": 618
-    },
-    {
-      "path": "server/release/frontend-dist/assets/PrimaryButton-DOri8j7l.js",
-      "sha256": "cfcccdb0b94299608f43a8b5b6fb40119c921ac75736a5104c71a16988d0bf51",
-      "size": 374
-    },
-    {
-      "path": "server/release/frontend-dist/assets/PrimaryButton-DOri8j7l.js.br",
-      "sha256": "a97e141c6b962e81f4fc2f5d1356606b75fd3c6ee3aa08bedbf1a52b5ac82661",
-      "size": 260
-    },
-    {
-      "path": "server/release/frontend-dist/assets/PrimaryButton-DOri8j7l.js.gz",
-      "sha256": "882237eb7d654a9c384e8505d21690cc680da09eb1b24dca4c74f8b67ba37c5c",
-      "size": 292
+      "path": "server/release/frontend-dist/assets/PasswordReset-KE3pqeeY.js.gz",
+      "sha256": "eb739673465e8a620a8086acb3513b931d56601ff9bb3ce170452df7b9c7ec64",
+      "size": 617
     },
     {
       "path": "server/release/frontend-dist/assets/PrimaryButton-ho8CUvJD.css",
@@ -11019,19 +11029,19 @@
       "size": 306
     },
     {
-      "path": "server/release/frontend-dist/assets/Prompt-CNXgnzSw.js",
-      "sha256": "323dc90878c8791c9199d49bc5e36c0e92c194c7d16313886a618f1e92b5d825",
-      "size": 1128
+      "path": "server/release/frontend-dist/assets/PrimaryButton-sln58cND.js",
+      "sha256": "76809188957b68d84b11a4109bd18cdee8d076fdf1418878411e9a1f71d46adb",
+      "size": 374
     },
     {
-      "path": "server/release/frontend-dist/assets/Prompt-CNXgnzSw.js.br",
-      "sha256": "c8ad10f7557b5817df2a15ee80ca985d31fef952089e64c84ecb1c14de316bcf",
-      "size": 567
+      "path": "server/release/frontend-dist/assets/PrimaryButton-sln58cND.js.br",
+      "sha256": "1bce76106b10b427cc4ae96cb2e507f4737702f185914bbf7c2068484394c346",
+      "size": 259
     },
     {
-      "path": "server/release/frontend-dist/assets/Prompt-CNXgnzSw.js.gz",
-      "sha256": "bc4ca5a157349230a27e6490f330eab9483ff4157138ce723e7472c90f6de623",
-      "size": 612
+      "path": "server/release/frontend-dist/assets/PrimaryButton-sln58cND.js.gz",
+      "sha256": "5b39fb056e95bce3a9bedfe10f067c09fa498da5d16c3557de5f1377994d409b",
+      "size": 290
     },
     {
       "path": "server/release/frontend-dist/assets/Prompt-CVRtueKT.css",
@@ -11049,34 +11059,49 @@
       "size": 647
     },
     {
-      "path": "server/release/frontend-dist/assets/ReplayGame-B6hOxt4m.css",
-      "sha256": "6052bd35fe9e5f2590ed073f67573d41c3c2ec117bdc15008544a34c538a2a44",
-      "size": 1167
+      "path": "server/release/frontend-dist/assets/Prompt-umxmWy7j.js",
+      "sha256": "dc2ecb0494123ec91a7ad6a8097d6fd27afd30f554e9df5b9c54e8bb96d33649",
+      "size": 1128
     },
     {
-      "path": "server/release/frontend-dist/assets/ReplayGame-B6hOxt4m.css.br",
-      "sha256": "9eb2cdd3dc0ce82912ec9f36115bb9f4a30c014fd21ebec572d78aab7cee0c15",
-      "size": 449
+      "path": "server/release/frontend-dist/assets/Prompt-umxmWy7j.js.br",
+      "sha256": "62af793b3ed73c6ac18ee63bf6792c606b66f0d45d8735dc7c02fc673082254c",
+      "size": 566
     },
     {
-      "path": "server/release/frontend-dist/assets/ReplayGame-B6hOxt4m.css.gz",
-      "sha256": "2863fea01e13b45cb14b96bb211db7b60c6624ce2686216ca460f45467a3d456",
-      "size": 520
+      "path": "server/release/frontend-dist/assets/Prompt-umxmWy7j.js.gz",
+      "sha256": "78e6ddbc358b8a4b5e88442c7a91eb4317c50326ed9d0a7f2b2374f8c9288133",
+      "size": 611
     },
     {
-      "path": "server/release/frontend-dist/assets/ReplayGame-K59Bj8zy.js",
-      "sha256": "f174cdcc145c5828459ba638ce8a1b1a9c3581b68fa4d83ddc9b2d818e4e80f7",
+      "path": "server/release/frontend-dist/assets/ReplayGame-AEEkWZ-Q.js",
+      "sha256": "93eb13b4926c1da0f38c22e48914d09882f00967caa7988ebaf9dbf99a4480b8",
       "size": 4364
     },
     {
-      "path": "server/release/frontend-dist/assets/ReplayGame-K59Bj8zy.js.br",
-      "sha256": "18ceece3d0c687525840326d233f3b136f1a6f016992d7e8e9c560c80e2939e0",
-      "size": 1852
+      "path": "server/release/frontend-dist/assets/ReplayGame-AEEkWZ-Q.js.br",
+      "sha256": "bd91e635a07ae41e3340f69f3898d3b0f2d44f48e9981233ad9ddf77483300df",
+      "size": 1853
     },
     {
-      "path": "server/release/frontend-dist/assets/ReplayGame-K59Bj8zy.js.gz",
-      "sha256": "41b183b32e39fb1988a4d17b9f7105b92d5b9952ad349c49b96456d0c518940b",
-      "size": 1971
+      "path": "server/release/frontend-dist/assets/ReplayGame-AEEkWZ-Q.js.gz",
+      "sha256": "d932442441021c1f854c664785fef588e447ef3d7b3f7aff3670ef2b7d236e51",
+      "size": 1974
+    },
+    {
+      "path": "server/release/frontend-dist/assets/ReplayGame-CsWyUYS0.css",
+      "sha256": "85a53dbcbb5724d92d26ca1bf1ee51272a8e338d587b50891aee1b0a10c60e27",
+      "size": 1197
+    },
+    {
+      "path": "server/release/frontend-dist/assets/ReplayGame-CsWyUYS0.css.br",
+      "sha256": "c3b299add5b54ae95ac687f58b4c22b8a95d96a4d7743e9e27134bc1323092fe",
+      "size": 458
+    },
+    {
+      "path": "server/release/frontend-dist/assets/ReplayGame-CsWyUYS0.css.gz",
+      "sha256": "fd8d51ec7e6f20de5da44d06178d059f7e173bcfe1798d92ada6db64da5ec35a",
+      "size": 532
     },
     {
       "path": "server/release/frontend-dist/assets/Rooms-BHobnMkr.css",
@@ -11094,19 +11119,34 @@
       "size": 784
     },
     {
-      "path": "server/release/frontend-dist/assets/Rooms-Cq8_jAHR.js",
-      "sha256": "c403ce17fecd00cb750d79b34bb53f0afd23ec188881dccdb82c571509b21f1f",
+      "path": "server/release/frontend-dist/assets/Rooms-DR-h9VTZ.js",
+      "sha256": "fdc555bdd54a9ac635cd41e89b8ca00f8aadc8361d05827dff3a6861471e5e3a",
       "size": 1704
     },
     {
-      "path": "server/release/frontend-dist/assets/Rooms-Cq8_jAHR.js.br",
-      "sha256": "7835fd69ffbc5156504e5f8eb35b5038ce712150b3046cdb876eec4543f1571e",
-      "size": 820
+      "path": "server/release/frontend-dist/assets/Rooms-DR-h9VTZ.js.br",
+      "sha256": "6c798ec3b010c09df0f6b9733b2e3a804effb5853c413fdea10acc9a2cf31687",
+      "size": 819
     },
     {
-      "path": "server/release/frontend-dist/assets/Rooms-Cq8_jAHR.js.gz",
-      "sha256": "4ed539c9fb258fa7cf35d4385f945b0372a1e236e46df3e77392817f0984ec31",
-      "size": 892
+      "path": "server/release/frontend-dist/assets/Rooms-DR-h9VTZ.js.gz",
+      "sha256": "c26885635e8f6c8379c6467773b16651562336aa75744d5d820fae4e3b76c465",
+      "size": 890
+    },
+    {
+      "path": "server/release/frontend-dist/assets/SegmentedToggle-aTFze-E4.js",
+      "sha256": "afd469a6131deaa62a59ee08424086147a6fde12017997a6997cebc9f4abde3c",
+      "size": 1310
+    },
+    {
+      "path": "server/release/frontend-dist/assets/SegmentedToggle-aTFze-E4.js.br",
+      "sha256": "5f4c1ce9d29aabdd0cd62dacb39c415e2d87bbbaa14b8bb0351abf63959bb7ba",
+      "size": 721
+    },
+    {
+      "path": "server/release/frontend-dist/assets/SegmentedToggle-aTFze-E4.js.gz",
+      "sha256": "f3c1ae7c371af7e335138ff1c762ef28d2258403305419f3c5ab1ac46fdefd37",
+      "size": 781
     },
     {
       "path": "server/release/frontend-dist/assets/SegmentedToggle-D6_jvpUv.css",
@@ -11124,49 +11164,34 @@
       "size": 735
     },
     {
-      "path": "server/release/frontend-dist/assets/SegmentedToggle-DPaM4Tj1.js",
-      "sha256": "7186bcb373536f1355253cfa9efb1a04fba45428b5ff7e1b8a3a21eafb57c9f1",
-      "size": 1310
-    },
-    {
-      "path": "server/release/frontend-dist/assets/SegmentedToggle-DPaM4Tj1.js.br",
-      "sha256": "081a8d80dea618aa1a1a3363b3ce1c873c8274779237622826b9f44ed9d01aba",
-      "size": 721
-    },
-    {
-      "path": "server/release/frontend-dist/assets/SegmentedToggle-DPaM4Tj1.js.gz",
-      "sha256": "95c9094d06f6fcc77c65cc2e7f2b45d7a05911e5d4b32560089333041a32db8b",
-      "size": 783
-    },
-    {
-      "path": "server/release/frontend-dist/assets/Settings-RQm4pTOr.css",
-      "sha256": "f1d85b5b6d89ae21148d77fc8f55f478e6e5b07ab2fa1443b3b716069d219e6b",
+      "path": "server/release/frontend-dist/assets/Settings-Cc5OmqKo.css",
+      "sha256": "d87c1c5489bda38d44829a5bdf273e20c6864c3bb9b27363f1a796a834ad587f",
       "size": 2939
     },
     {
-      "path": "server/release/frontend-dist/assets/Settings-RQm4pTOr.css.br",
-      "sha256": "b8dca5deb806382d0e9e2598f937345d5618462a8b3b158e0d77b85c3b007745",
+      "path": "server/release/frontend-dist/assets/Settings-Cc5OmqKo.css.br",
+      "sha256": "3c23b05980f20ac7d7e1f45286999746509345e97f29c2ade453404d424c9f28",
       "size": 752
     },
     {
-      "path": "server/release/frontend-dist/assets/Settings-RQm4pTOr.css.gz",
-      "sha256": "387ca73f1add31231aff67baf6ba8bbc758be5db095840b576a448fe8f663ed4",
-      "size": 868
+      "path": "server/release/frontend-dist/assets/Settings-Cc5OmqKo.css.gz",
+      "sha256": "91e96e28b34d73417531927f2c7b71f405ff4f2a907ed60a604c194c105a9f1b",
+      "size": 870
     },
     {
-      "path": "server/release/frontend-dist/assets/Settings-UZyPh3YK.js",
-      "sha256": "3582a8bb33f50993eeb88502174dfe03f051f33fe4c2fe04c7f981a49efcc10f",
-      "size": 11858
+      "path": "server/release/frontend-dist/assets/Settings-MdYpWqQS.js",
+      "sha256": "62c752f05218cd69560bb0d3fecd3db0807d540a59daf085f78cae308fe058e0",
+      "size": 11915
     },
     {
-      "path": "server/release/frontend-dist/assets/Settings-UZyPh3YK.js.br",
-      "sha256": "e4bc50d7a8cbb1494e6f3b6399d43ec36a4bcefa099e77804d424ef8b7f4b921",
-      "size": 3539
+      "path": "server/release/frontend-dist/assets/Settings-MdYpWqQS.js.br",
+      "sha256": "84a4dadd02a3364cae6d6cefdab35ceef527e01aef792e21a541439e86c8d959",
+      "size": 3558
     },
     {
-      "path": "server/release/frontend-dist/assets/Settings-UZyPh3YK.js.gz",
-      "sha256": "922e165876b573b3eef85fadba70574f9bb5edea16ab928567d58d6b05724478",
-      "size": 3923
+      "path": "server/release/frontend-dist/assets/Settings-MdYpWqQS.js.gz",
+      "sha256": "936cf642dfa55e6b1ee4afd0d45f740baffa1130fd9384c3ac67fd645f7f022b",
+      "size": 3942
     },
     {
       "path": "server/release/frontend-dist/assets/SignIn-BCiOLlT_.css",
@@ -11184,34 +11209,19 @@
       "size": 596
     },
     {
-      "path": "server/release/frontend-dist/assets/SignIn-DE8QJB2d.js",
-      "sha256": "216286ca2560a356dc9794cb6f52e9a997a325fd8937579ab1cb50665944d52c",
+      "path": "server/release/frontend-dist/assets/SignIn-Dm1IgLTh.js",
+      "sha256": "d3d09a640402964fe7e91a8a2abe717ac41f8d3f1e5ecf4f9d637f205aa342fd",
       "size": 1726
     },
     {
-      "path": "server/release/frontend-dist/assets/SignIn-DE8QJB2d.js.br",
-      "sha256": "4fd971815370d3b6fde5b5c5edae766e228b3436814aa32f7a08ffc58d549755",
+      "path": "server/release/frontend-dist/assets/SignIn-Dm1IgLTh.js.br",
+      "sha256": "65c24a4fb395cd2a2a4f5b747d189568209d4ab245c044b526b8536658629f68",
       "size": 823
     },
     {
-      "path": "server/release/frontend-dist/assets/SignIn-DE8QJB2d.js.gz",
-      "sha256": "a93bf373571e8edd4e61994944137a062ec5c141cf0dd818ecab008133047e25",
+      "path": "server/release/frontend-dist/assets/SignIn-Dm1IgLTh.js.gz",
+      "sha256": "2d463c997fdf4e199b792ea6bfaeaf13a3f969ab54dffd64fb1206b5e4290c2e",
       "size": 919
-    },
-    {
-      "path": "server/release/frontend-dist/assets/SignUp-BCwymNXJ.js",
-      "sha256": "23a46b7e8816e935420b05b58e9f874d35328105e1e60a7a3768d43b17f959f8",
-      "size": 2138
-    },
-    {
-      "path": "server/release/frontend-dist/assets/SignUp-BCwymNXJ.js.br",
-      "sha256": "155531ace11773911926bf9db8367082a3c09c874713e3c3c4d7a919e949837f",
-      "size": 877
-    },
-    {
-      "path": "server/release/frontend-dist/assets/SignUp-BCwymNXJ.js.gz",
-      "sha256": "c638f90f687ad19b40c7fcb327ecdcddd858f2d5b95f2d53f17d8529069e3cf5",
-      "size": 987
     },
     {
       "path": "server/release/frontend-dist/assets/SignUp-D7TUbFIu.css",
@@ -11229,19 +11239,34 @@
       "size": 428
     },
     {
-      "path": "server/release/frontend-dist/assets/taboo-CjyvblAW.js",
-      "sha256": "fdcff7c4fc66bb45cdf4456d07abff1b80cadededbae466173eea4c9f6f0e155",
+      "path": "server/release/frontend-dist/assets/SignUp-DbR3NRh2.js",
+      "sha256": "de81e7ab6045c2a9a83b9e956737b50246b07564a59557c9351adc9a17b407b9",
+      "size": 2138
+    },
+    {
+      "path": "server/release/frontend-dist/assets/SignUp-DbR3NRh2.js.br",
+      "sha256": "e87cb0efad0d530871be631e779c95fbc5ea7fb2171bdcf12f7e6dea8c93b96e",
+      "size": 878
+    },
+    {
+      "path": "server/release/frontend-dist/assets/SignUp-DbR3NRh2.js.gz",
+      "sha256": "cc99553d0b05ce93fb8deaf4e4a8ada7b90677c72b15e309ccae936cb03c0207",
+      "size": 985
+    },
+    {
+      "path": "server/release/frontend-dist/assets/taboo-DHmXMZ7L.js",
+      "sha256": "a245f52194b8f00b11d7824b93b2eae0a7fb6f2d3061e9070a5baa80914a1bf8",
       "size": 1838
     },
     {
-      "path": "server/release/frontend-dist/assets/taboo-CjyvblAW.js.br",
-      "sha256": "dc72c7d10d6ed51e65f90bd46ac5f942defa9d9d49890dcc15a45ac78cb73a3a",
-      "size": 684
+      "path": "server/release/frontend-dist/assets/taboo-DHmXMZ7L.js.br",
+      "sha256": "48feb403db6669f61b60a66934148eb6e2d0465d7250d8b57688f7018e25cbdd",
+      "size": 685
     },
     {
-      "path": "server/release/frontend-dist/assets/taboo-CjyvblAW.js.gz",
-      "sha256": "1ebe66b2fc1455430b7c4b52c6dec48361da2f8de13803d36a43850cfc4d4784",
-      "size": 771
+      "path": "server/release/frontend-dist/assets/taboo-DHmXMZ7L.js.gz",
+      "sha256": "4bc63bedde7d962914e4c91e429619a75ee519b0a23d2f15f69f5ce38743d0e9",
+      "size": 772
     },
     {
       "path": "server/release/frontend-dist/assets/theFeastOfHemlockVale-DHYBs7BR.js",
@@ -11274,19 +11299,19 @@
       "size": 1364
     },
     {
-      "path": "server/release/frontend-dist/assets/UI-HHLlDK57.js",
-      "sha256": "e03bdaabb667be1a1c4230c2089f54d15e5b0a479540fc59abfe506b82ab4497",
+      "path": "server/release/frontend-dist/assets/UI-DM9DRiGf.js",
+      "sha256": "de5975e09ed5394e1a7b077675beebf55c832fc46f7c1a47012d4cf9151bdb48",
       "size": 2058
     },
     {
-      "path": "server/release/frontend-dist/assets/UI-HHLlDK57.js.br",
-      "sha256": "e6b950c54bba583f1eb2090c420f494a57ab6289ded4bac311e4a0213f8a5c81",
-      "size": 868
+      "path": "server/release/frontend-dist/assets/UI-DM9DRiGf.js.br",
+      "sha256": "f580d664e956502d1a8868c2cb5e5755befc5d383c807741e62d045530e571e0",
+      "size": 867
     },
     {
-      "path": "server/release/frontend-dist/assets/UI-HHLlDK57.js.gz",
-      "sha256": "23a4bbe8b220e5412b8d60d60201a1566f247326964772461978283aa489d662",
-      "size": 943
+      "path": "server/release/frontend-dist/assets/UI-DM9DRiGf.js.gz",
+      "sha256": "71b9fd2381acd1169ad01f53ba2135671044468e0ff2677c6b35948f393a4c37",
+      "size": 942
     },
     {
       "path": "server/release/frontend-dist/assets/UpdatePassword-Ch00lTTx.css",
@@ -11304,34 +11329,49 @@
       "size": 446
     },
     {
-      "path": "server/release/frontend-dist/assets/UpdatePassword-D5PXphT1.js",
-      "sha256": "51dcd12fc6983542f47fb959de4d1bcf734e3ba3e09a4811762386b2087b4340",
+      "path": "server/release/frontend-dist/assets/UpdatePassword-D9EtNzYH.js",
+      "sha256": "06983ef6473205667d554e2b9cc0a9f2cbed933f7bd6da28db79428e76176b57",
       "size": 824
     },
     {
-      "path": "server/release/frontend-dist/assets/UpdatePassword-D5PXphT1.js.br",
-      "sha256": "fbdc5ec8f7c3186615d2440fb91b5bee739390fecff0322507817e94666a7956",
-      "size": 479
+      "path": "server/release/frontend-dist/assets/UpdatePassword-D9EtNzYH.js.br",
+      "sha256": "d887af24cea40b6c7445b2bd205ce08fcdd545a729a2946a0bf01fc849748da8",
+      "size": 480
     },
     {
-      "path": "server/release/frontend-dist/assets/UpdatePassword-D5PXphT1.js.gz",
-      "sha256": "0bf0360e9a5c0cab7e22195a20e051d4c79b48b7978ada8cff4208ec9dc68a1f",
+      "path": "server/release/frontend-dist/assets/UpdatePassword-D9EtNzYH.js.gz",
+      "sha256": "2cbd6f10642efbdaacce29c81a8af9b5cc6cafd0c55298834e6f48aa78a31e56",
       "size": 524
     },
     {
-      "path": "server/release/frontend-dist/assets/useEpicHelpers-hOEuFw65.js",
-      "sha256": "053af0011ca653075eeb8ef3a560c1f075d76e8d087bf8a375efbda9b0346b6a",
+      "path": "server/release/frontend-dist/assets/useEpicHelpers-Dq5TsiRM.js",
+      "sha256": "c84827de571580d999e1c49a375e0a50068b1a1395dbc5c9ab995000966b69b0",
       "size": 382
     },
     {
-      "path": "server/release/frontend-dist/assets/useEpicHelpers-hOEuFw65.js.br",
-      "sha256": "db84bf3ebc209427e4dbe5ca48368ba7595e0dc69a9267f277279a40e7043537",
-      "size": 252
+      "path": "server/release/frontend-dist/assets/useEpicHelpers-Dq5TsiRM.js.br",
+      "sha256": "b645eb71d84c97669fa356c53279bbd2669a2d3cc7d14e10f22e86dfc70c90c5",
+      "size": 251
     },
     {
-      "path": "server/release/frontend-dist/assets/useEpicHelpers-hOEuFw65.js.gz",
-      "sha256": "58292bacc5fd55f795464745de94931a5575f70840ecc10acb945806aa1b3da3",
-      "size": 286
+      "path": "server/release/frontend-dist/assets/useEpicHelpers-Dq5TsiRM.js.gz",
+      "sha256": "efc884279845ff313c679a2e4b41ad6a37e53cfc9e5835a6b4cb17dd3a615169",
+      "size": 285
+    },
+    {
+      "path": "server/release/frontend-dist/assets/XpBreakdown-Br7iN4Hr.js",
+      "sha256": "649abe6247c933e52d28ae80d2e8efbf387ca31371b5c8edb66ed07377bda40b",
+      "size": 106690
+    },
+    {
+      "path": "server/release/frontend-dist/assets/XpBreakdown-Br7iN4Hr.js.br",
+      "sha256": "289ee7b08977f18c7d7d2035780a2f3632d8acd01ded909074c628e1d9432a9d",
+      "size": 38484
+    },
+    {
+      "path": "server/release/frontend-dist/assets/XpBreakdown-Br7iN4Hr.js.gz",
+      "sha256": "347a181beb76cb9a97077f9b57005249eb7d203f203aa8d57f2a6a9668e8f19b",
+      "size": 39548
     },
     {
       "path": "server/release/frontend-dist/assets/XpBreakdown-CeR5oXBl.css",
@@ -11349,19 +11389,19 @@
       "size": 7919
     },
     {
-      "path": "server/release/frontend-dist/assets/XpBreakdown-DwEd-UY0.js",
-      "sha256": "172c1b1f9cf7a5aeaf5de7de0f83e4cafaf48203db8c0d600ca3ad71683af546",
-      "size": 106690
+      "path": "server/release/frontend-dist/assets/zh-BOK0PoA-.js",
+      "sha256": "edf7bc43eba409d57170dd1a8b8c9fa1aec5caf87ab8a881e80c82b63eb1260d",
+      "size": 2437250
     },
     {
-      "path": "server/release/frontend-dist/assets/XpBreakdown-DwEd-UY0.js.br",
-      "sha256": "71949693341506a0faf3172c4344631ad9d73f8b97cefe918dbf85b3d4b95d4e",
-      "size": 38484
+      "path": "server/release/frontend-dist/assets/zh-BOK0PoA-.js.br",
+      "sha256": "765644c6ce3809d33a512d0e3fc1ee99e5143789c1c279e31c83eb3bf2acbd8b",
+      "size": 659576
     },
     {
-      "path": "server/release/frontend-dist/assets/XpBreakdown-DwEd-UY0.js.gz",
-      "sha256": "717281f70e9f62b5c2822a3e181e33eb1aace32c00fc1d09926aa82cf23dd0ac",
-      "size": 39549
+      "path": "server/release/frontend-dist/assets/zh-BOK0PoA-.js.gz",
+      "sha256": "9299b523a709c570c2b0bdeab8056e82d97f1d6cc892cde60e2e850a37194efa",
+      "size": 857468
     },
     {
       "path": "server/release/frontend-dist/assets/zh-BZKFUGUa.js",
@@ -11377,21 +11417,6 @@
       "path": "server/release/frontend-dist/assets/zh-BZKFUGUa.js.gz",
       "sha256": "a99ee774e97ac5eb33a7bf148c7e5d9f3aef5ec5ddb82b9c6b697fa7da69d18b",
       "size": 21208
-    },
-    {
-      "path": "server/release/frontend-dist/assets/zh-CpHdhbeg.js",
-      "sha256": "dbedaaa6658a5ad8b2634b49c7afdcfc67bb35fd2ae752f09d7bcd16c046de74",
-      "size": 2437206
-    },
-    {
-      "path": "server/release/frontend-dist/assets/zh-CpHdhbeg.js.br",
-      "sha256": "45ff6d731ff86040a3757b1e7c7e4773f2f5b06a643b230a2459bece5d8058c0",
-      "size": 659629
-    },
-    {
-      "path": "server/release/frontend-dist/assets/zh-CpHdhbeg.js.gz",
-      "sha256": "0c86ac12aacb84e26e80994db79505a28f25ad0fc7f22b9ff4dd4331ad870997",
-      "size": 857449
     },
     {
       "path": "server/release/frontend-dist/audio/GENERATED-AUDIO.txt",
@@ -20514,6 +20539,16 @@
       "size": 2796541
     },
     {
+      "path": "server/release/frontend-dist/img/arkham/tabletop-map-20260916-clear.png",
+      "sha256": "6cabae5dd8f64ef6acd467cd5ddb5f50783a392d01f38875c497e269a86fea20",
+      "size": 2983989
+    },
+    {
+      "path": "server/release/frontend-dist/img/arkham/tabletop-map-20260916-wide.png",
+      "sha256": "3498c9710d48fe922d05f1ae901c14bca7eddd45cc37ceb3ddaffbfbe4b67054",
+      "size": 2597554
+    },
+    {
       "path": "server/release/frontend-dist/img/arkham/tabletop-slot.svg",
       "sha256": "2ea61a13aad8f2d570b46c978be4eb847b06ade8fbc57651337c5fe516732b7e",
       "size": 324
@@ -21200,18 +21235,1428 @@
     },
     {
       "path": "server/release/frontend-dist/index.html",
-      "sha256": "c8c9157f233891772d82a656ac2a39d674e69979eb8cc569ec6fb0574f8ce93e",
-      "size": 799
+      "sha256": "36c341531853a6d6ad332aa273758c478d2d24110159a8e014bb7f858e63ce29",
+      "size": 851
     },
     {
       "path": "server/release/frontend-dist/index.html.br",
-      "sha256": "0471e4d0e5aeb982f03faf14288813afa8c3fd9c69f0162dc48a4c176dd233e3",
-      "size": 367
+      "sha256": "526ad90f4201aef41309f6865f5b9202a565e3ac717afc5d5514bfc36fbbbe0a",
+      "size": 379
     },
     {
       "path": "server/release/frontend-dist/index.html.gz",
-      "sha256": "6407dc056184615c9d64a331c1aad1532d3906bc4d63c197453851a155da7667",
-      "size": 461
+      "sha256": "63e67a034636ab58362c85976345c9e2532e0430877d9cbd5027fe7569499891",
+      "size": 483
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/About-DFYSRAOU.css",
+      "sha256": "06fc9310002a0170bc06cbbed28d7b9c34987da75993d434ec45c6c1944f92da",
+      "size": 219
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/About-DFYSRAOU.css.br",
+      "sha256": "4879809d71e199978d95f174ea308b02e6fee929bd815eec08221fd78d92baea",
+      "size": 127
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/About-DFYSRAOU.css.gz",
+      "sha256": "7633fcb970c24ae7aa0ca88b9ed2a4d4aa1bccc3cf5b1c2ed969275b326189a7",
+      "size": 169
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/About-Dixznc_F.js",
+      "sha256": "981d20b90dcfb641cbbda9baa5cf0de138c2ea89d20cab856c7ab5642408ee0a",
+      "size": 1228
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/About-Dixznc_F.js.br",
+      "sha256": "3165f38202b2dfc2e4730f22b933de529c3a9d936b785514cf73f9cf84c31af5",
+      "size": 536
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/About-Dixznc_F.js.gz",
+      "sha256": "8a26c6a8e13a5d7a4809750a375a980a63092409a1626aa608f096a1c88e9a13",
+      "size": 603
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Achievements-D79TG4Zw.css",
+      "sha256": "af37e9b97af4ee2735ac15c662e3252c8b82572a8d447f2bbceb09401288aa4b",
+      "size": 4066
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Achievements-D79TG4Zw.css.br",
+      "sha256": "1b1faa92e7252cabd62bd8e923bd482f297f004e06e04bfe603e65e701107d05",
+      "size": 1087
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Achievements-D79TG4Zw.css.gz",
+      "sha256": "f6e2297fe81aeeb70f06adae741acd4e8ac0e1892b567d0b56d67985305408cd",
+      "size": 1234
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/achievements-DJaAemtM.js",
+      "sha256": "5bc041d0397bdadd7ee0c3e0cc0ff38117082994e3f23742a814c7fe4ae7514b",
+      "size": 11399
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/achievements-DJaAemtM.js.br",
+      "sha256": "c3ac229979370978fae97956e750f61a1a849e9ced9baa9a9c0d72d6df6430a1",
+      "size": 3723
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/achievements-DJaAemtM.js.gz",
+      "sha256": "199203db348c3a32e772e424375a610618ae32401b65332b9b3dc12528ae8a73",
+      "size": 3741
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Achievements-DsMEYSvS.js",
+      "sha256": "ed35b771147bf883e9c051f2005c13af6c681e99e11bbbdd315af717d5aa54bf",
+      "size": 4717
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Achievements-DsMEYSvS.js.br",
+      "sha256": "b82adbbd509aaa0631c9bb2b193446049c8825f818c28867f08cc3af6204b1b5",
+      "size": 1838
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Achievements-DsMEYSvS.js.gz",
+      "sha256": "c9d711631b249289b7f65d700d7e0f47d2a37d78014bd838ae0e596426a3e99e",
+      "size": 1941
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Admin-BXBQeNlG.css",
+      "sha256": "ab124aa1f90fbfc143430b48255f7bcfbb637d55df79f0ef189eb435ad2766bd",
+      "size": 2928
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Admin-BXBQeNlG.css.br",
+      "sha256": "538bea6f8d2e9f01c6844c420e8113a84eb01fbafdca0e3337932cac26a906ff",
+      "size": 794
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Admin-BXBQeNlG.css.gz",
+      "sha256": "622a65d75ea1a6489778b48afdde8ea6859c81e5a62d613a25a7342724255efa",
+      "size": 902
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Admin-D5gj0Adb.js",
+      "sha256": "eff60dbbe9d0fef1aa4e28507613f2a253c562cab7a2255ffd2bdc0d2a91bef2",
+      "size": 5889
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Admin-D5gj0Adb.js.br",
+      "sha256": "c12bf3e0c508371d79512f1163991be8b629c5f223224a799ca4515b52a035a4",
+      "size": 1859
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Admin-D5gj0Adb.js.gz",
+      "sha256": "44df1129d36cfd2f5dd11cb46652e72a8e41bc0e9a6d32888e68a6e6ee988a95",
+      "size": 2052
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/api-BQ1BYW-_.js",
+      "sha256": "ec725189b237297051809b39a7613f292c92ffb827240c5b99d69b1cf8c0de03",
+      "size": 123858
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/api-BQ1BYW-_.js.br",
+      "sha256": "39b0abbc9847b0e3df5631f11cc79e5e46e878f580e9f76287fc2af273731c2e",
+      "size": 25902
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/api-BQ1BYW-_.js.gz",
+      "sha256": "efd37da1af7777866ddcf05f0d3f93fa302e7aa5429c096ccba130382e0d014b",
+      "size": 28011
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/BugAntIcon-D-uyQuv9.js",
+      "sha256": "94ed3ea4247c10f3359e53bf876aa1d6d180c824ec939d7e3535fe01c962918e",
+      "size": 1734
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/BugAntIcon-D-uyQuv9.js.br",
+      "sha256": "62082f233976dc3e2d85007ad77f32bdeb600a478bbe54f4ac8daa5da4bfc420",
+      "size": 802
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/BugAntIcon-D-uyQuv9.js.gz",
+      "sha256": "8b734f8a881f20889272a59f6dd7b0bd806b35e5728c0f0365a280b8452e8b18",
+      "size": 859
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Bugs-B4pZ1KqA.css",
+      "sha256": "12c6dbaadfa51def8ded94bc7dfb2bb1e0e80c75859e2c35db26d8ac376b4bcb",
+      "size": 2725
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Bugs-B4pZ1KqA.css.br",
+      "sha256": "baf757c9005739c915915cc7217db0124ac03600f5824185f070e39209836847",
+      "size": 802
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Bugs-B4pZ1KqA.css.gz",
+      "sha256": "ddc703681bc263d7080b1f505b3e884b45b50c5f01f03e45c1228d0ac4c288d8",
+      "size": 893
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Bugs-BuMItJNU.js",
+      "sha256": "4e8c1075432088315b06bbec6aeef18de8e1838381ee726f2f6eada26056ec87",
+      "size": 5649
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Bugs-BuMItJNU.js.br",
+      "sha256": "47190e9e120445be8590d73915b3c55d24420f8fe1b7c2edcc71bb9ccfc11d11",
+      "size": 2261
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Bugs-BuMItJNU.js.gz",
+      "sha256": "f59c0f9d8bf013634ef211eaa86cd311d899e9151b12e205a0806c935fbc7548",
+      "size": 2647
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-CMseA8fz.css",
+      "sha256": "e9f1843e73e874ea48c8508934df8ac11a6b022d8e75cb6b20542f31d9a63781",
+      "size": 29833
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-CMseA8fz.css.br",
+      "sha256": "02b20aa376616825229a8a852bae7ff7a0ca609f544a08f105f983b2b2885e62",
+      "size": 5272
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-CMseA8fz.css.gz",
+      "sha256": "0e5a703012c8f98e69963b90e718081bc23ad757fdd61cfca49978c05160f735",
+      "size": 5603
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-D485HKOL.css",
+      "sha256": "b3514a86ec38a15cf3e1f0ac30e5815d4baa22b8e34b6ef816a332bdccf57b30",
+      "size": 686
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-D485HKOL.css.br",
+      "sha256": "d2c479913c837825ba735dedd9ac415778a6f97bdd05ff46ce32e4c17664ad60",
+      "size": 285
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-D485HKOL.css.gz",
+      "sha256": "d5776fa0bbee9229bcb917b83023bfe6b9470c3c98bca9cedff43685a7283646",
+      "size": 352
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-D6ZDGPjb.js",
+      "sha256": "5c99c5c35dc16f91d284fbd597904ce031269fe9d070629ba6c2954afe3c6e35",
+      "size": 1402
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-D6ZDGPjb.js.br",
+      "sha256": "de96e89fd6df7cb88fdc730bdae0da1493bcdc269d9ed4b9177db47063f3e0f9",
+      "size": 738
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-D6ZDGPjb.js.gz",
+      "sha256": "5f65f9d71f5832a300c3ce58fc36c37b00fc3a77e1e6815bff2dadcf24d18bad",
+      "size": 806
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-DbVbJU5c.js",
+      "sha256": "282fc8476bf3b1cb8c1dd13eb81124ec23e9990ff310171b5f0cdbef2377cd75",
+      "size": 47867
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-DbVbJU5c.js.br",
+      "sha256": "f55fe6752488bd31260b04cfb634a487ba44b1282cf6e6b8c2b7df069e961a12",
+      "size": 14103
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CampaignLog-DbVbJU5c.js.gz",
+      "sha256": "8b81c467373750dc415ff641d197ffb5ab1bbd25ed18c992b04e06ed310dd7d3",
+      "size": 14933
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/campaigns-uKlnaEBi.js",
+      "sha256": "a2d484d647ad8a466836a11e3dc45e172a455f45943e9067cea422a7280c09f4",
+      "size": 33364
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/campaigns-uKlnaEBi.js.br",
+      "sha256": "2334947081dd2c25d249a3119882cf481a72e602f2ebdf467a69c322187a3d1a",
+      "size": 3871
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/campaigns-uKlnaEBi.js.gz",
+      "sha256": "63ac95aa8e53504b807a208d97469dfcc36df68cbfd07cb768ab0848a8c48ee8",
+      "size": 4006
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CardImage-BdqFipXe.css",
+      "sha256": "550eecd6b01c04a94ed226e795081412daa0fbcfd69a5095a14529ffc5213cff",
+      "size": 1323
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CardImage-BdqFipXe.css.br",
+      "sha256": "f7834bfd43fc2a65707a203217fe0151d8de11500f522160cc800868f8302c56",
+      "size": 399
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CardImage-BdqFipXe.css.gz",
+      "sha256": "b56b008e3bab6f347026b9469792997f5be78728aa727b3b1530e72d2361016b",
+      "size": 467
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CardImage-Y1BpCO6s.js",
+      "sha256": "b0628077243b1b51939a1c9a76f4d77c43182217147d558addd4b63a7ee9c580",
+      "size": 12773
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CardImage-Y1BpCO6s.js.br",
+      "sha256": "6bdfbede0b33bbbf3eed3290daee1053c335da02ba86f776dd914b0bcd31c5f3",
+      "size": 3691
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/CardImage-Y1BpCO6s.js.gz",
+      "sha256": "0ad64ccbad7e732d75e8e692ff094de45fa16c1f7a696bb1a84c347057cff1f9",
+      "size": 3882
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/cards-CChhgmQ0.js",
+      "sha256": "3a2380f2138c4f7edfde048f412ff672c5f85a1f9cc4ab75119706a4459f1eaa",
+      "size": 311
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/cards-CChhgmQ0.js.br",
+      "sha256": "dc29bb1c0142d9a9d9c9904f1b3d7e0a561811f8273fe29522b8fba8d0965f3a",
+      "size": 217
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/cards-CChhgmQ0.js.gz",
+      "sha256": "d06d9af36f15f7b74cfafb748b54a28441438251c2624c83f4c7703b8e96d022",
+      "size": 238
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ClaimSeat-Cw6pQ7UJ.js",
+      "sha256": "6dbf664a5078ed99b19ad8ef2af8511e18ad728d841dc0aad11c828013733b7b",
+      "size": 1088
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ClaimSeat-Cw6pQ7UJ.js.br",
+      "sha256": "68df517604d4328ace65a4a7db5f7afc79e2030ab9fc8cbf5297001ffa6682aa",
+      "size": 601
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ClaimSeat-Cw6pQ7UJ.js.gz",
+      "sha256": "fedfc8eeda04b9a18f997b1777b61c8f2b5c902907b4745f774023535642ef4a",
+      "size": 650
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ClaimSeat-DNuYPigB.css",
+      "sha256": "acef4226810b2c2d1014857b71366ad20cc59cdbe83a1af545831165a6545053",
+      "size": 176
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ClaimSeat-DNuYPigB.css.br",
+      "sha256": "5458c4074c34467643b21c26831744b881298917d7f9064029d9741cb935fddf",
+      "size": 90
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ClaimSeat-DNuYPigB.css.gz",
+      "sha256": "26fd6be1a721f41040ced63e8d811a472794d750ace81f3aa4a236c1efde1ff7",
+      "size": 134
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/create-Ch3ewwZl.js",
+      "sha256": "bfe3414765231c190f0c7eef5d259b8c259f521e6a650ba8caf49733fa8c265e",
+      "size": 15388
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/create-Ch3ewwZl.js.br",
+      "sha256": "3a56ab7086cd35c6679e92647da762caa012dd3acc3daf1ea1df8110e1639036",
+      "size": 6195
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/create-Ch3ewwZl.js.gz",
+      "sha256": "bf8f08da31f27ecd4f14d5ae8f8642fdb011c5166de1ff7f447a7fa4afb9c6c0",
+      "size": 6416
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/dbCards-BLc3HiQX.js",
+      "sha256": "a538eceb4c757a2941075991b687078848c9e3abbffb93f7091b9beb8a3b579f",
+      "size": 1298
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/dbCards-BLc3HiQX.js.br",
+      "sha256": "5498c84a98ea3d9a7efc4107ce690bf9e319549cf71fc299010ec7549b4be7ed",
+      "size": 545
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/dbCards-BLc3HiQX.js.gz",
+      "sha256": "ab96a668a92a56121c7fc38b2094b940937444bfb649d6aa3650385a2b18bf2e",
+      "size": 595
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Deck-B6uNKzrR.css",
+      "sha256": "9a6e42a7b3c8aff5eb50b0658265717b62bad388780a07cf8c91ffe4adcb34ab",
+      "size": 10616
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Deck-B6uNKzrR.css.br",
+      "sha256": "35089cb2887ecdcb7ce61a8f64fd7c318a2c4d7bfc925d6b877ec8475173551d",
+      "size": 2197
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Deck-B6uNKzrR.css.gz",
+      "sha256": "67d04a329a9fe36fe1c70c85f0158fd86eeae7cdbd86a256e5d213596c844450",
+      "size": 2394
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Deck-D0BRuFxA.js",
+      "sha256": "60edfb376a3283ce368f1e768f26f298458d1f705254079685303aa48413c775",
+      "size": 12729
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Deck-D0BRuFxA.js.br",
+      "sha256": "7e82aea2c1609b3fe39d06e4aa04777a49a7a72d9b867a83c7f4f020a583f1c0",
+      "size": 4378
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Deck-D0BRuFxA.js.gz",
+      "sha256": "daab103e39d075eaf31e47c42e1681bb6d37db50083a237c2ce26876965eb875",
+      "size": 4625
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Decks-BVdDG5w6.js",
+      "sha256": "751bcdf75d9a6ee87be3ec326cfd9112c1e1ef88a7830c1dcdae2ae6a1a7fb58",
+      "size": 5337
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Decks-BVdDG5w6.js.br",
+      "sha256": "3d761ecedcada57d28d4860db8e8fd5eb0e00317cd5cc430967512712363d679",
+      "size": 2316
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Decks-BVdDG5w6.js.gz",
+      "sha256": "a331f66c9091abb0397705402f4ff4c7d4bbf106633dcca89fb36810f00dd0d3",
+      "size": 2471
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Decks-C6gRxN6q.css",
+      "sha256": "021ff0646c2ed506585d35a88113dd170575bbdc7f18bfcb7b60b8e9eb5b2e60",
+      "size": 4100
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Decks-C6gRxN6q.css.br",
+      "sha256": "e1f1be94e78a8515bc14f1b96ed2d4f26520a2f170b864f3fb6336a4a7f88b74",
+      "size": 1002
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Decks-C6gRxN6q.css.gz",
+      "sha256": "a6330dd64f91d1a9ba19d3a2e5eefb4760c4d65634354cc63f1a7b158b8a2305",
+      "size": 1132
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/DeckToolbar-DpzbA97f.js",
+      "sha256": "34291c1532962dd515dbbd67525cfc43e41df0d71836939135ab65bb5f4d3278",
+      "size": 8271
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/DeckToolbar-DpzbA97f.js.br",
+      "sha256": "3dd307a5d0e527576abb4b3f9aabcbe466d7c1d736c337eb8cf5043c6e78b981",
+      "size": 3145
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/DeckToolbar-DpzbA97f.js.gz",
+      "sha256": "276bc38d29d00251789a20bf39f438523e2960b1e4e0d9ad686e97f5584fef64",
+      "size": 3322
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/DeckToolbar-DV4QGNTP.css",
+      "sha256": "c6255297b1f24dee5b44487738d23797c59b294d3b94a7ae665b3a6855606fc4",
+      "size": 8618
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/DeckToolbar-DV4QGNTP.css.br",
+      "sha256": "94a50f63c82c8f37d0fdbd65f7535ffc06c9d76fac8d557e05d03cf3be8be341",
+      "size": 1702
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/DeckToolbar-DV4QGNTP.css.gz",
+      "sha256": "de1615324f45f731675f73135db52198339e41afb595cdd221467b3399fc0933",
+      "size": 1862
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/en-Ci2ZxBe9.js",
+      "sha256": "9e216dde6e94bfe3dd0eb3704d2ff4fb9f3ba291cc803d6cb3c73ac7e604034a",
+      "size": 2314182
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/en-Ci2ZxBe9.js.br",
+      "sha256": "81c7cdac26a835e7919c9ea8a534f2b5e58e147deb48a45cd1834be7c1db02e6",
+      "size": 539973
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/en-Ci2ZxBe9.js.gz",
+      "sha256": "7c080e7959185b6c80b642ca9f1e301dd15ce11c1cdec378a7cfa8d09cb23897",
+      "size": 668559
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/es-4vMZmUxF.js",
+      "sha256": "a6e9b13a56cdfe87ab8b111eb87ebdcfe790f1eb2d142a18b84433ba59c8d508",
+      "size": 11649
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/es-4vMZmUxF.js.br",
+      "sha256": "0b2540985f304348fb08273a99c5893615b6e75ac81a4eb900d49e91e0c68a31",
+      "size": 4861
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/es-4vMZmUxF.js.gz",
+      "sha256": "ae606425691b9a5e0e1b20e116ac2cd8424fbfd2c0a6c125d42e682d1017b11f",
+      "size": 4957
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/es-hQflf9v4.js",
+      "sha256": "a5d051ef765223b69f33dddb4f495c02ad726f14e5c06086bf5adc4fb4627800",
+      "size": 64117
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/es-hQflf9v4.js.br",
+      "sha256": "3eaf8a98973f620f40f6fbcf5998dd63091b839a3b9c0faadc3dec194d3ab784",
+      "size": 3959
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/es-hQflf9v4.js.gz",
+      "sha256": "9cb391886909d3d2e0ab4cb63c4fed8771899b00c24dfd20aa4e27bc7016f943",
+      "size": 8310
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/event-DQvC98EN.js",
+      "sha256": "3b38b0d4f4e50f006af74510701416f9a7ec3800c79639cbfac695e02cf8fc51",
+      "size": 1120
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/event-DQvC98EN.js.br",
+      "sha256": "34011769a644229ecb8d5c26d5adeb812a37d608692962f648a771b355f267bb",
+      "size": 569
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/event-DQvC98EN.js.gz",
+      "sha256": "ae47826efe670eff7ab39fc4e9d868500e6dc24d7ac32f19089d191df7c59084",
+      "size": 618
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/EventCountdown-CdHATDw6.js",
+      "sha256": "26d81d75279c604ddc7a36b4753c15609d192a61bb6bb87d9fcd72989d07915d",
+      "size": 1332
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/EventCountdown-CdHATDw6.js.br",
+      "sha256": "edb103ec6008bbc5dc235768d82d67fe65644d7cab68682a68aef19c5661d193",
+      "size": 709
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/EventCountdown-CdHATDw6.js.gz",
+      "sha256": "76d9ab69c1e25fa98ef1c0c5a90fff4e3d65d156229be739b6e73782aa181735",
+      "size": 762
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/EventCountdown-CJHiwgcq.css",
+      "sha256": "6f3014f4992d2844afa59b555ecbf434f11080c219352a66414ea1d6d9994fa9",
+      "size": 491
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/EventCountdown-CJHiwgcq.css.br",
+      "sha256": "e596c184fab300622d0ae49273fae79c7af6be35d5114a60e2d2caf333f3e371",
+      "size": 222
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/EventCountdown-CJHiwgcq.css.gz",
+      "sha256": "edfd3b3c1a5775eb24b28b553c15a37d81f1bfd6011173a6a3ccad182359c482",
+      "size": 274
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/fr-Ca0EmoOs.js",
+      "sha256": "d8efe315fc36d2665fc8f8365f9f1b5c165e683cef16eb5adb6fe09c1d167291",
+      "size": 1341036
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/fr-Ca0EmoOs.js.br",
+      "sha256": "25ba1ce8d3cff3ea24b86e8aafc84ed10f44be4a68b6b9372faab7546782876f",
+      "size": 334646
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/fr-Ca0EmoOs.js.gz",
+      "sha256": "51079ee6f9fd554de2c995f854e19196b7a1abb45452f116f666b6695b2a9de0",
+      "size": 394099
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/fr-DsOAPvhE.js",
+      "sha256": "04c29ab39cb4b9046fed0082c86b8456d945705051306c489ad64bf5ba0e6fc5",
+      "size": 149414
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/fr-DsOAPvhE.js.br",
+      "sha256": "27654ef09fcad395be1424728e41e8d0540e438fe5d8454a52692c143783aefe",
+      "size": 9276
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/fr-DsOAPvhE.js.gz",
+      "sha256": "1df72fcb8103fa26705f30b233f5a1cc8be115c285b0c4bf55f1db8bf119076b",
+      "size": 18758
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Game-C7Yx_z7t.css",
+      "sha256": "482fef208e8940bdde04a481aefedf62d2daac0d6d7737982e829ef7d30b940c",
+      "size": 62590
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Game-C7Yx_z7t.css.br",
+      "sha256": "95fea856043c84e06a31e64b80bcb0e69a8ef4e962e17e22258958ddd895fb92",
+      "size": 10531
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Game-C7Yx_z7t.css.gz",
+      "sha256": "7eaa601a7c36b9031c554066374f69eaa238c5e1300ef2c669926288f5de8c9a",
+      "size": 11315
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Game-UD6Kvl9c.js",
+      "sha256": "cbe7e6c7d051f05b0d6cf55548c897fbf7791ba979eb692beba29a2da229c2d6",
+      "size": 151702
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Game-UD6Kvl9c.js.br",
+      "sha256": "e3aa5dbe5a1fd9b5495925793bb87ca46f7efccdb86c82f0b6903cbc8230cc8e",
+      "size": 41795
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Game-UD6Kvl9c.js.gz",
+      "sha256": "2f0b80d7df43fcf11f3bc8b68df8f8312a867a937a5165e47e119606f55c4967",
+      "size": 44249
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameLog-CaFgbZsU.css",
+      "sha256": "41e6eec06790b645dd6d484cc7664221cd6fd48d22ae92fd3a972ab47e15b112",
+      "size": 229805
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameLog-CaFgbZsU.css.br",
+      "sha256": "e682b027e90c72ffb934e9b44a6bb2b69a2238e7a976577c44aea0d00ea4fca0",
+      "size": 36126
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameLog-CaFgbZsU.css.gz",
+      "sha256": "f6581d5912c3a6ee8f40acefd6cbd24e8039478cb3059bba36dcce6ea53c7267",
+      "size": 40822
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameLog-Cf4LRTFm.js",
+      "sha256": "f27337ba0fb3ac1e0f74b50695b53c807abfe6f6977605086d5fe6418fba247a",
+      "size": 1089456
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameLog-Cf4LRTFm.js.br",
+      "sha256": "9cd2c97f38b6e1ba04caaf895ac52c0a1954722d963519d889f2f682310c74ab",
+      "size": 251975
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameLog-Cf4LRTFm.js.gz",
+      "sha256": "ed09460434e88ca677815629c441ad9f047e6a74f32eda61eb4c1951b3cd3253",
+      "size": 285016
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameRow-C7MWApJk.css",
+      "sha256": "a7c4565ad365812993861a6a9b447e2788d0a4efb3acff2f2f3975dffb3802a4",
+      "size": 4962
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameRow-C7MWApJk.css.br",
+      "sha256": "0b18e09b13694f2cf1ef3e8ae4ef34bcc716a8561a63dd364b5e9904ad82327a",
+      "size": 1127
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameRow-C7MWApJk.css.gz",
+      "sha256": "f6dacab413a4d64d2135995a84220685b62ed6fe941a3a029fce7898dd3da0b3",
+      "size": 1264
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameRow-Dirm2Sfr.js",
+      "sha256": "f4287b0c1ec56f75e1e4502f93f17bb85697fb406e544121a86eeee9f5557be5",
+      "size": 3821
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameRow-Dirm2Sfr.js.br",
+      "sha256": "e788f84d9963fd54f5c429c088af1ba2604cafcf06b78e055f86211536ccf09e",
+      "size": 1384
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/GameRow-Dirm2Sfr.js.gz",
+      "sha256": "82f263bbf06666cd391269696d5a712f72bf21169c2d7cd1cba00a20015fa6cb",
+      "size": 1480
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Home-CdlGhleg.js",
+      "sha256": "3cc63190117a32c479f61d883b4e369eb1e299f37794423aca554df8579cd853",
+      "size": 11461
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Home-CdlGhleg.js.br",
+      "sha256": "4f6d6250de7b6673502cd6bca15f4a11dad7c63753a6f3f7544959152cd8354e",
+      "size": 4344
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Home-CdlGhleg.js.gz",
+      "sha256": "213be6835e4249cbd3577c21882644a67124cc2678ca4c46e7174647f35f5af4",
+      "size": 4558
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Home-izWRFNZB.css",
+      "sha256": "fbbcf873bbfbd2372c6056f96fc06037699e9ff322fdc87cae0e30ca1c89283a",
+      "size": 12199
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Home-izWRFNZB.css.br",
+      "sha256": "446f2df052f723094128ba12cdc1e3c41f4d5912bdb3ab02ffde347adc0bb3c3",
+      "size": 2527
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Home-izWRFNZB.css.gz",
+      "sha256": "0e95cccae96a5735be680092b2cd072dcf9541b6ca9eb872f027d55bc34de86f",
+      "size": 2709
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/i18n-CYsallPH.js",
+      "sha256": "219da869b0fb022ac17728582cd803555a07a23086ba8debf0a2fca95952c435",
+      "size": 1733
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/i18n-CYsallPH.js.br",
+      "sha256": "ed3f86bd212daf819077920258eb8d4a8ffa3e50f85f1f5ed1ad4be94cc6bd74",
+      "size": 841
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/i18n-CYsallPH.js.gz",
+      "sha256": "73a75bea86438918de9d2c0aad4e20d5ea285c8270498f4627698fa46f443c9f",
+      "size": 902
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/index-BQrQvsth.js",
+      "sha256": "c3ed2b5d15b652b8884b9d3ce7345083b5fc9c51a540214e8e1c985fe6b7ee75",
+      "size": 436760
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/index-BQrQvsth.js.br",
+      "sha256": "13de86d316eaf79b5713ad6eff2a57491fe2b504c77ffe392a2dee0b63d575e0",
+      "size": 140476
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/index-BQrQvsth.js.gz",
+      "sha256": "4ddba0f7b288a11cbca4f2d8adaffe0ff2b3013dd1bf517198ae13bdbff8b699",
+      "size": 151100
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/index-QHQq6zrS.css",
+      "sha256": "920c3999a01135e3c7909cfe9b48e1864b965132302cb4d7e9f549fb70f483e4",
+      "size": 35062
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/index-QHQq6zrS.css.br",
+      "sha256": "47a7388f2b9633a7f102084b9bd5c9b61c616e284a2e9b0e4c9134c8b902c3b1",
+      "size": 6500
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/index-QHQq6zrS.css.gz",
+      "sha256": "11bc50b3aefc2b12b2be30c723ec9a6a3824f803e71279b2f74ae265f7aa4f0f",
+      "size": 6936
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/it-BuPRNYDF.js",
+      "sha256": "ba1a1863913291b733f002de48f148367ca7b5793a5f4a78170a826838149091",
+      "size": 191
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/it-BuPRNYDF.js.br",
+      "sha256": "667be84946b33ba3e3656dc4725da77ad0a76fb5a1da70c5da5e7d986b60d237",
+      "size": 143
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/it-BuPRNYDF.js.gz",
+      "sha256": "c2050e3e4117044a4df4bbc61481045a7518138e5c145716aed3caba36ce105e",
+      "size": 169
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ita--S96PIbn.js",
+      "sha256": "9a5b523558e9e47b0e0acc0d81d8e93da883042df62833cf31a09c2dfa63b96a",
+      "size": 48767
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ita--S96PIbn.js.br",
+      "sha256": "cb0c6023ba487aa59343a842dcb7ee8858fff2acebd40e72f0918fcee745f3b4",
+      "size": 3074
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ita--S96PIbn.js.gz",
+      "sha256": "56f5fdd1672ee8530d315c0082c185929365b2518d584bff790fa88c1e8d3922",
+      "size": 6175
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/JoinGame-B6rUNcO7.css",
+      "sha256": "ac89a57cb87f9bdd66a5e51cb3382afc29df57f2379b084bf1e6ec64ed5188e9",
+      "size": 4543
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/JoinGame-B6rUNcO7.css.br",
+      "sha256": "2302681e5c2f669e71975bd16a19f74b37c026aca17f9cce00c688168fd33dd8",
+      "size": 1111
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/JoinGame-B6rUNcO7.css.gz",
+      "sha256": "85d9b8f78a8a1cec599d129a70be2a4e44364f16e2f655fc9ac857d1e5850c07",
+      "size": 1245
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/JoinGame-CXEQB70B.js",
+      "sha256": "a948e6ff9e140d02dda877ba108c3f5035f2f7fd7139a827dd357dfe9e847917",
+      "size": 2284
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/JoinGame-CXEQB70B.js.br",
+      "sha256": "0cc3391ce87a92c92c99370f4149910de6885608f6a3f1f6a5b023b37be71e26",
+      "size": 980
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/JoinGame-CXEQB70B.js.gz",
+      "sha256": "a48c9751aed2cb426072341fadd159e3656052336f3ebe2924035363d0b1afb8",
+      "size": 1063
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ko-C3daKE3O.js",
+      "sha256": "23555980b4e7899984deb99939bd8e87faede64093e2e262afb3e3d9c999b7aa",
+      "size": 34
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ko-C3daKE3O.js.br",
+      "sha256": "eb1a1ebef04e89ad6344b51ecaa4aa937bba1bd55f43f3796339e86fd410d57f",
+      "size": 38
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ko-C3daKE3O.js.gz",
+      "sha256": "bec150b56d97a746a367d1faa9a7f5b77a6949cff3593abbb7bd9a5a299a8de0",
+      "size": 54
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ko-Dj0uAwER.js",
+      "sha256": "90d6ceef325b536f4d2c5658328700ae4317f0ac87c440ec997984f10ef3c70d",
+      "size": 980482
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ko-Dj0uAwER.js.br",
+      "sha256": "46a169c7d5ac7d4c2949a994e66b26cb86398aba5866652dafff34aeb6821704",
+      "size": 235429
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ko-Dj0uAwER.js.gz",
+      "sha256": "4a182acea9a9dd8316e6ef0d1a4b7820453da84e79581cc7bbefd5db037e26e9",
+      "size": 283216
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/localStorage-rETqQM3q.js",
+      "sha256": "93e5addd59061f4bb51a5c543681a494fee9d10cb0885666ea57b83196e1f99d",
+      "size": 1013
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/localStorage-rETqQM3q.js.br",
+      "sha256": "0bfe0e06e64f16c0babff84d71e25d69cfeb6dcfbee99b15dac982dde5504f9a",
+      "size": 432
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/localStorage-rETqQM3q.js.gz",
+      "sha256": "376a3e8a3785bcd040659c5613a2b00fb5da14e9023cee2b9d9b4bcce4cd3f98",
+      "size": 476
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/LogIcons-D_X_CtUD.js",
+      "sha256": "c54896aef5525216232cb362b9b59cd5607199e5d6ae5afdaa248b576e145fff",
+      "size": 47198
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/LogIcons-D_X_CtUD.js.br",
+      "sha256": "c1f8dd2b76a07502f6e0b6a09585c4f9279eeb478712d43668aa83aafa3e89ee",
+      "size": 16077
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/LogIcons-D_X_CtUD.js.gz",
+      "sha256": "b3047792ac89e70a1a658283bab2425712e9d78adbdb63118caa45799db6741d",
+      "size": 17116
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/LogIcons-ML2rWupL.css",
+      "sha256": "b39e5d231ac8ba8d46658006ed9f340c85ec9d51201a6af3741cd4737bc529d7",
+      "size": 18657
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/LogIcons-ML2rWupL.css.br",
+      "sha256": "612adb450d519dde9bdf3c02b96d8a2cfb590f01d8bc522f50e9517a427d0074",
+      "size": 3655
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/LogIcons-ML2rWupL.css.gz",
+      "sha256": "8d4fdf09f8c0c6bad583c1c54da0dc8ae86913f887f5bb431067d824ee6ca632",
+      "size": 3906
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/MultiplayerLobby-Ba0O6Duh.css",
+      "sha256": "fbe1543a47fb26ef62978eb8ec5395578983f114ce7e659ac15b6e102e9882df",
+      "size": 3235
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/MultiplayerLobby-Ba0O6Duh.css.br",
+      "sha256": "0284c0f326ccf58934264b2657f81ba717af145cc1f428b793eaa14f45132047",
+      "size": 867
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/MultiplayerLobby-Ba0O6Duh.css.gz",
+      "sha256": "61b13bc038b4c1038f34850989c4b28ba6a0d2b1c368d886c44a8deca2bbbe22",
+      "size": 965
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/MultiplayerLobby-Bx7ji2OI.js",
+      "sha256": "7101f0f188ddf82d1f59e666b641774188d9faba1813ad38862b90ceb1a2b1b4",
+      "size": 4547
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/MultiplayerLobby-Bx7ji2OI.js.br",
+      "sha256": "044cfddae0f6cfef12c5f36c1656f10ddc6500781751cc7371cd868e81ada3d1",
+      "size": 1732
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/MultiplayerLobby-Bx7ji2OI.js.gz",
+      "sha256": "f8c5f2645f8a1d4629f6853f3ac7d2a9877f89a3248a8a6a6b95be59d6a20dea",
+      "size": 1833
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewCampaign-CP-MK6Nh.js",
+      "sha256": "d8374fbb8c7afda45fb5bb4517b824afb5c27e5f96ba7277ac8208e8d3febef5",
+      "size": 38561
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewCampaign-CP-MK6Nh.js.br",
+      "sha256": "1c7c8b1f9fe706c56c099a2f64ead1c78529244c6a2b074019666696fed7af8c",
+      "size": 9777
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewCampaign-CP-MK6Nh.js.gz",
+      "sha256": "3e077c68ee1cf4da14bfd1c8d739344911a0d78030dff0ed43d73a5ceaf69119",
+      "size": 10451
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewCampaign-DrlCgSBf.css",
+      "sha256": "3e114ae7da7c4549cb3f44542438910ab20875cf560b1508eb9f3f1d59a28474",
+      "size": 21879
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewCampaign-DrlCgSBf.css.br",
+      "sha256": "6ea61fc4f236873d30984257846eedd893bcfbc27af7db47d8b72e5b34e215cc",
+      "size": 3980
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewCampaign-DrlCgSBf.css.gz",
+      "sha256": "cfb15bd01c2fde7cb63e587ada3197d6c0bebb0c9cdc7532db8b0b4d67d20e67",
+      "size": 4282
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewGame-Kv1DVrm_.js",
+      "sha256": "d252d24eb6237276488884ffcf3524a62419b896ce00ea63317040808e115625",
+      "size": 85
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewGame-Kv1DVrm_.js.br",
+      "sha256": "42aa4ec83e3e4dbe468ec2a029e1c10fd2b281c2fc2aa14bf18d613c3d2fb923",
+      "size": 82
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/NewGame-Kv1DVrm_.js.gz",
+      "sha256": "070863251ee14cfb37f3ea976d40cc40a44f8ecf23e6b2091040ad935fe30c74",
+      "size": 97
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/OrganizerDashboard-BJl9woQf.js",
+      "sha256": "a05f05db46b1a558333acad65414f886514bbcfd7fca53cb02c326b085da1643",
+      "size": 6985
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/OrganizerDashboard-BJl9woQf.js.br",
+      "sha256": "bfb763bde4c239c64086c57ddc2e45dbcf87c36f1cff5f99a60784a1ff222971",
+      "size": 2695
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/OrganizerDashboard-BJl9woQf.js.gz",
+      "sha256": "e576b0d19214932b8ff7a10c0028790d2dad1724c02b65450c11c70a8a7b6808",
+      "size": 2816
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/OrganizerDashboard-eppGs2eI.css",
+      "sha256": "57f7f8feb87edd2e939ac939f8c08d53a0222bbd2bd5153b3cb8613ded0d5a98",
+      "size": 6550
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/OrganizerDashboard-eppGs2eI.css.br",
+      "sha256": "f65ae21fd8d7be3bbe5caa9659ebb7bf0d00d5753f80e24774bb9683df4893e6",
+      "size": 1600
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/OrganizerDashboard-eppGs2eI.css.gz",
+      "sha256": "218451322e5760a40be567a5dbf407890e858ee0977fa2b8a7fd5b2a44e8dfcd",
+      "size": 1755
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PasswordReset-BhRzwKPT.css",
+      "sha256": "d528abd80fc391cc3f10e5834e04450a5a05e30e8ae080c53b08b4afb936144d",
+      "size": 835
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PasswordReset-BhRzwKPT.css.br",
+      "sha256": "142074acedd3de4cf7b3f4411046ace02b86e9bf63293ba4564b4e9900c56344",
+      "size": 345
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PasswordReset-BhRzwKPT.css.gz",
+      "sha256": "90a46a282c4cb1946095421f3d2a76dd2e9abe992320ee36e485ed8fecfe8be8",
+      "size": 415
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PasswordReset-CKyo6eeQ.js",
+      "sha256": "3dedf8ee83db770de6fdeab9a8951aaf037b7586afbf142dff01785edb6fc2f0",
+      "size": 968
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PasswordReset-CKyo6eeQ.js.br",
+      "sha256": "37eebe778e8765056db3ee5c0a2612a675254eebbf0411bc2c339416097f3d24",
+      "size": 553
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PasswordReset-CKyo6eeQ.js.gz",
+      "sha256": "e85ecf2abda3174d4b8b1e7e3cec9db7353c96ee22d6772b9b02671e91bf8751",
+      "size": 615
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PrimaryButton-ho8CUvJD.css",
+      "sha256": "3e2e5db11de1fbf0ceecb6ed1f0c982a4b4f616be600023defcc0f4fe7bcf45b",
+      "size": 555
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PrimaryButton-ho8CUvJD.css.br",
+      "sha256": "071781d1d8fbe9d86c47d406d49aa1bd620f9f6ce7b4b00a083e024e96b12d55",
+      "size": 245
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PrimaryButton-ho8CUvJD.css.gz",
+      "sha256": "26ac23b0c2184efe5f62a6a84ea95d74349ffc912d22509c850a1a3523f25c30",
+      "size": 308
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PrimaryButton-jBVc-NU3.js",
+      "sha256": "2c966c9a4dcf4d1314acde07e8416d6ad61992bdbb460b4ad11c3a5b71954b1c",
+      "size": 375
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PrimaryButton-jBVc-NU3.js.br",
+      "sha256": "629990835a591becd76d6b610b630b68d2e54630e84605bf90067b46ffb56d9e",
+      "size": 261
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/PrimaryButton-jBVc-NU3.js.gz",
+      "sha256": "154cfd7cf08a73a06a6609bbefdd94adf2603ba8f3f2f3a9ceae8dd1f9a86c22",
+      "size": 291
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Prompt-C_jp50Cw.css",
+      "sha256": "d09050831d1865257c633c6c751bd08ba789c5bb0a88f8956632a282d1a6b104",
+      "size": 1789
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Prompt-C_jp50Cw.css.br",
+      "sha256": "52327c5c2a0f6ca1c1c37e3610ddcc11a09c5eae448ed96622200cdee5e51512",
+      "size": 557
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Prompt-C_jp50Cw.css.gz",
+      "sha256": "bc60614d4be64f196e40588ca7a2a6138e0a5d6c731d3845d661ddef605d269e",
+      "size": 646
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Prompt-DgDb1acA.js",
+      "sha256": "932cd5cbfa707cd08b8bcff1d6777c930f4eb1730b56c0a03f4ccc210172f0e8",
+      "size": 1130
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Prompt-DgDb1acA.js.br",
+      "sha256": "bb86f51489707c008c4479f9a0d48d3b52077919dce7741406746c5eaa3efa83",
+      "size": 570
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Prompt-DgDb1acA.js.gz",
+      "sha256": "3132e1b70dea1089967e0c3d9dfb8f425a52fa1a646a1581e02074d8154499d0",
+      "size": 613
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ReplayGame-DaayaHvs.css",
+      "sha256": "969d453140ddc62d30dff64025cdbcea975bbe4d67ee471928f6ba51218c000c",
+      "size": 1154
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ReplayGame-DaayaHvs.css.br",
+      "sha256": "6cdbab035d7c723395aa52aa953106eaffc2cde89030aca862f631f781bab1f4",
+      "size": 448
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ReplayGame-DaayaHvs.css.gz",
+      "sha256": "bed92eba1570b7290d1e8b3c6e52da73fbaa57e13be6b2b838f287251dd00d36",
+      "size": 520
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ReplayGame-IGwWmpz8.js",
+      "sha256": "95e99bc3b86a9b2a535158dd6123fab016a9fae7201547c986d289a50a9004cf",
+      "size": 4167
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ReplayGame-IGwWmpz8.js.br",
+      "sha256": "0e4593d6225c8923cbf420c7b75ed920ea91ff8e2cba31555cb366b38613e26e",
+      "size": 1754
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/ReplayGame-IGwWmpz8.js.gz",
+      "sha256": "5fef38ea3a61d3d5d410b5be3fd625f99d1ef3146e7aa00897630723214a1272",
+      "size": 1879
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Rooms-BHobnMkr.css",
+      "sha256": "00f9aa6a258cfc06f21768f4c35faecacebb4f24615b3fe223adcd82cab61f92",
+      "size": 2215
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Rooms-BHobnMkr.css.br",
+      "sha256": "bcb165de629a4a7660287e8a11400bf7ea1dcbf7d1cabf8d48c4727ed04724c2",
+      "size": 682
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Rooms-BHobnMkr.css.gz",
+      "sha256": "4d5f9578f94f9c1dc400d8171a09ade25f088ebf4d5b0aa7a7e60bb8f00de71d",
+      "size": 786
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Rooms-Dms5Xatq.js",
+      "sha256": "c935f4ecbf76149b31ee85fa4028460d7306f83677b2e076e820e56703f5dde7",
+      "size": 1710
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Rooms-Dms5Xatq.js.br",
+      "sha256": "e91e36cea1cf01364e1d0ee2f4f5bf97c6958f0b64c44b36f91ffa1c58c5b407",
+      "size": 822
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Rooms-Dms5Xatq.js.gz",
+      "sha256": "35a20907f82e1f0d6f8c29faa4c53b7deee62457d2abbcad0a3ef32ee29284e7",
+      "size": 894
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/settings-C-p0xpSK.js",
+      "sha256": "df2b0a12fa328a4dba54608ac3271c73f7a132633626594d2a44c367bfdcfb92",
+      "size": 1095
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/settings-C-p0xpSK.js.br",
+      "sha256": "5e9127a7d6c320305a73be33475eed86a753e8f762b8b63be2b7593fd8c6f937",
+      "size": 484
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/settings-C-p0xpSK.js.gz",
+      "sha256": "b12ecab634ddd7f6bb372246a3c3d58b77f0c23ac761c38198ac03c6647538d9",
+      "size": 521
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Settings-CgeLv4OZ.js",
+      "sha256": "4118817bcccf20740fdb8896c8e3463c5a9fae84ef419ecf087c4bb099bd016e",
+      "size": 11106
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Settings-CgeLv4OZ.js.br",
+      "sha256": "9eb82d2bad18a7ea1a3a47a64edfcbc02d23d1cf327fecc2bcf74ece7c8bd6c1",
+      "size": 3256
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Settings-CgeLv4OZ.js.gz",
+      "sha256": "6c60add183bbdf8f59aaa4355a9a9cc5253b597bd94e16e20c68f6786108e732",
+      "size": 3640
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Settings-CWHSL3h1.css",
+      "sha256": "6705aa6f4e66abc2ccde059740503436e8747774394ddc398787c9fc9a255e82",
+      "size": 2009
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Settings-CWHSL3h1.css.br",
+      "sha256": "474f79bd548d649fe9ef08512a8e49cf15907ca737cef24defc29f0a675df98a",
+      "size": 554
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/Settings-CWHSL3h1.css.gz",
+      "sha256": "d025302fd38dbdbaa9eb7f6fff13e568e31c05a87727bfdc58eb513c759a6e28",
+      "size": 660
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignIn-e2JXxroM.js",
+      "sha256": "8642bc4102b55dce75457315b73b30cf092f06c3221d20c401a6338ccf736e1d",
+      "size": 1704
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignIn-e2JXxroM.js.br",
+      "sha256": "fb9d372dd2da70caa4cfc5f2dd180a9ed5dd75747ba6b075cafb1c115696aa5a",
+      "size": 816
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignIn-e2JXxroM.js.gz",
+      "sha256": "c501776620d1f7aa4519dd051dbc702df6919f509687cedc911b76e9d38995e6",
+      "size": 908
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignIn-JK0q-LgB.css",
+      "sha256": "15b7f8a09d539dc498208fb024597cb75e2123f9daa51bc283ba72d7ff3f3670",
+      "size": 1447
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignIn-JK0q-LgB.css.br",
+      "sha256": "7ce6f46353bef9171a9eebdf6bc423e4360049bcea73291ebc14e6fb486f13af",
+      "size": 511
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignIn-JK0q-LgB.css.gz",
+      "sha256": "54f0d198e667ffbbcc1eaf91634ee6fb2fbb5d26c54cb314247b9a020e04b07a",
+      "size": 598
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignUp-CfmE3eR_.js",
+      "sha256": "c330086f6cd0fed1899058f855c1def3e5fdb4063022d71bf13d61722f187148",
+      "size": 2117
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignUp-CfmE3eR_.js.br",
+      "sha256": "19e4f99d5831b8386ef55e55a9d884c233802f997b6737ee8b799f376cc76d26",
+      "size": 866
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignUp-CfmE3eR_.js.gz",
+      "sha256": "c8b9c2c3c328ec9d80126dcd27a777d7c4180786e2269145929106868391f771",
+      "size": 973
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignUp-D7TUbFIu.css",
+      "sha256": "757d63980bdf53369c51cd9b26e14055a092028e4f5f3702f265b889b7b07b19",
+      "size": 934
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignUp-D7TUbFIu.css.br",
+      "sha256": "c61ea4c02d5b6b55dc73fc0ce84f3cc7ac9bf7d7023490dfeb2df6a0e35bc63f",
+      "size": 346
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/SignUp-D7TUbFIu.css.gz",
+      "sha256": "044a26fda2acfda5986a2fc71559e99bd375806526994d4c5f4ba69c7725ad12",
+      "size": 431
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/taboo-B4t5Y6Ff.js",
+      "sha256": "39ab70c24f87c8ab14edd0b9e34fc9a5a5673609cd4e73c2a0ec8f4681957531",
+      "size": 907
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/taboo-B4t5Y6Ff.js.br",
+      "sha256": "3dc0f3291aae33a58c1ee0220f2d19766b05da7d5cdf963b9788ae0f0348971b",
+      "size": 273
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/taboo-B4t5Y6Ff.js.gz",
+      "sha256": "1991ada59126ff7a671e7174bb38e85486621c6d26a3e00a0465da87090c34d2",
+      "size": 325
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/theFeastOfHemlockVale-_Yt--kzo.js",
+      "sha256": "8c8154b041a65db6151470f5b8654099f8a18ef9b99b661a9c874bda1a3a9344",
+      "size": 378181
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/theFeastOfHemlockVale-_Yt--kzo.js.br",
+      "sha256": "71fda6ad365424f0725aaf54f3d53e1dda684bddd868e56fda7888b775226cb9",
+      "size": 93722
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/theFeastOfHemlockVale-_Yt--kzo.js.gz",
+      "sha256": "68b905cb469bebe678ead17bfe755dba1505d197d5f18437118c4e1c28f3ebaa",
+      "size": 107580
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UI-DqzfJiQb.css",
+      "sha256": "cb22ef70cb14720198f51ba5a8c62dc23fe6b9531b07f240819fa9519e0c642c",
+      "size": 4542
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UI-DqzfJiQb.css.br",
+      "sha256": "617dbfa62760277f6cec60761eb3a0de5484647ca0292fa291e6142f301c67d0",
+      "size": 1239
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UI-DqzfJiQb.css.gz",
+      "sha256": "ad4da74e7910d42bf8fffbb39af375e1cf20d77a8369f7785179ca933878453d",
+      "size": 1360
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UI-DYf75t_Z.js",
+      "sha256": "b0ba009125b832593f84811da81bc9c60c79ce2b6637b02d3603d67d97bdc1d6",
+      "size": 2059
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UI-DYf75t_Z.js.br",
+      "sha256": "c7576668c140e61cff60cf77d733424438f02d18094184e144b03f6c3b88d53e",
+      "size": 869
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UI-DYf75t_Z.js.gz",
+      "sha256": "0b4d9de918ac444de99650b1106961044ac63e66dd629864d3ec8a51a28c2e64",
+      "size": 944
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UpdatePassword-BpN9dGl7.css",
+      "sha256": "b0d3b4d7bcb3c5e5bd93d0fc04c45f67c8e04fed3d4a8a8c01305309f8898413",
+      "size": 886
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UpdatePassword-BpN9dGl7.css.br",
+      "sha256": "f5b35fcfd72fa5a353fc31ac4c8ad2e7cd92d117b93b686b2b657f6533774ebd",
+      "size": 343
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UpdatePassword-BpN9dGl7.css.gz",
+      "sha256": "dc7ac186b6664933a1e97d2f69b71965cc77e8d79eab4885a5d344f3c31f696e",
+      "size": 435
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UpdatePassword-Z5V6dp7d.js",
+      "sha256": "7e5d02b5148ed6f0b6192977602bac2e331e8db1775a0b923b91ba23234c0604",
+      "size": 819
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UpdatePassword-Z5V6dp7d.js.br",
+      "sha256": "ad220423b65ab93244f666fa8f3f7057ade42a067d87570dea9fc78d7fc57be1",
+      "size": 475
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/UpdatePassword-Z5V6dp7d.js.gz",
+      "sha256": "b3f2ebbd4c66ff767dc488c5a051c040527257fb093238b80b022838788c974b",
+      "size": 520
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/useEpicHelpers-BgHLrRxS.js",
+      "sha256": "c8a05c3a8e204cedd1fe8b0f47c5ff1eec394366cf3b297af0611893d0a6015a",
+      "size": 383
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/useEpicHelpers-BgHLrRxS.js.br",
+      "sha256": "3403d57bb92ee13cc76e7c17002553d1c459be38c6979761516847a1487f3a78",
+      "size": 251
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/useEpicHelpers-BgHLrRxS.js.gz",
+      "sha256": "2b9e4967db8042c7d7ee637269626d4e4c913f15b8326f8eec55d21b161339a8",
+      "size": 286
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/XpBreakdown-_9hRogLs.js",
+      "sha256": "43d495fa1696e40df527b357d782eaf9f4c40293c1f54eadb70d07c28df927bf",
+      "size": 109119
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/XpBreakdown-_9hRogLs.js.br",
+      "sha256": "515ef12b9b02b7c6baeaf527f003feca4b8836074e4940b0960b801a60963ad5",
+      "size": 39954
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/XpBreakdown-_9hRogLs.js.gz",
+      "sha256": "20ab49a234e4f0d925390dc3e0a54e2ed9e1953117cc8efc8fcb0fb92afb14d6",
+      "size": 41143
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/XpBreakdown-okREq0Ez.css",
+      "sha256": "ba71a71574983b4bfc134a90a80885bef0489693a3fa0b669f1004fd134491d1",
+      "size": 38352
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/XpBreakdown-okREq0Ez.css.br",
+      "sha256": "2b2dbedee6b3de70f42fcb330924de5dce937399c4f5cdff755a8f048d8de057",
+      "size": 7149
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/XpBreakdown-okREq0Ez.css.gz",
+      "sha256": "ef12d0718df9a3cb9f01818296e31a8dd8ec242a0435b8d1168d880601489ec2",
+      "size": 7491
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/zh-DAG2tbjn.js",
+      "sha256": "7d19d126bef11f424197621fbdd87b1a32bb3710430ae459bc540fb34ed5c0a0",
+      "size": 2435844
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/zh-DAG2tbjn.js.br",
+      "sha256": "9762242ce79604b0de22e88b852badeab3cd2b5ee7e40acdc2057c6c6bd679ef",
+      "size": 659069
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/zh-DAG2tbjn.js.gz",
+      "sha256": "e7eefa144e87ec88ed3d06b3bc67d3dcf6a2570c408118e99af49abfe9de0b05",
+      "size": 856670
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/zh-DxvknHJq.js",
+      "sha256": "d242d86a50cd2a9cc1c33d42f2ac5aae8a4a7424538eb97d6c9867235d208c46",
+      "size": 164640
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/zh-DxvknHJq.js.br",
+      "sha256": "7122f29186452e989d8c6e7cc7cbb4855472bab178f0d4cde3e1b3b9652e02ce",
+      "size": 11475
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/assets/zh-DxvknHJq.js.gz",
+      "sha256": "b24801c47ea5a94f0f331dda326b213ce23592aae2e294f6f23305706ad870af",
+      "size": 20832
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/basic-entry-zh-runtime.js",
+      "sha256": "ee47390b61eb0aa0c3cca4b9b982da11d9bcfb97602772b10972ae958b7c6792",
+      "size": 1272
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/basic-entry-zh-runtime.js.br",
+      "sha256": "533c952d876ae64dfaff313a911b8f4e4f248f2498d489fe0c9edfe251b677a8",
+      "size": 472
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/basic-entry-zh-runtime.js.gz",
+      "sha256": "ccbbf975b808b757327a428965b5ad470acd0e7806031db467e524298877f581",
+      "size": 547
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/index.html",
+      "sha256": "1aaed6586719447328707de8b3053033d8f3958f0f26b85a9121844951215f0f",
+      "size": 912
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/index.html.br",
+      "sha256": "d4944a5f3b51a0cf55c41e464dc0e4df6bb828a3f58118d2bfe6aa276bb64ab7",
+      "size": 400
+    },
+    {
+      "path": "server/release/frontend-dist/legacy-ui-20260826.3/index.html.gz",
+      "sha256": "68dcbd139e58583b814e249aa081d8e3a2c8e3d5f1725f086fe402ff504ecf34",
+      "size": 497
     },
     {
       "path": "server/release/frontend-dist/narration/zh-card-text.csv",
@@ -21287,6 +22732,21 @@
       "path": "server/release/frontend-dist/totals-mockups.html.gz",
       "sha256": "94f4f8a99e9210ece18f2c87aca02d567f2e0bdfdebcf88f45101c1dacf51741",
       "size": 4819
+    },
+    {
+      "path": "server/release/frontend-dist/ui-switch-v20260916.js",
+      "sha256": "8710237c59ec8eebd11c0dffa6734d83a41a3b4fac91c2004beef04def9dc5bb",
+      "size": 1876
+    },
+    {
+      "path": "server/release/frontend-dist/ui-switch-v20260916.js.br",
+      "sha256": "22ad82a2283bec2fc80a4df88f55ae0d01a14c45058e97384029b7f72f80bf2c",
+      "size": 812
+    },
+    {
+      "path": "server/release/frontend-dist/ui-switch-v20260916.js.gz",
+      "sha256": "f243cb2ebd6b725242978f7759bc02d3fd3d2645497e8c31cf83a2f0c2a66815",
+      "size": 986
     },
     {
       "path": "server/release/frontend-dist/wechat_qr.png",

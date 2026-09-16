@@ -17,7 +17,7 @@ import { homebrewCampaigns } from '@/arkham/homebrewData'
 import { imgsrc, isTypingTarget } from '@/arkham/helpers'
 import { cardGroupKey, groupCards } from '@/arkham/cardDetails'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 enum View {
   Image = "IMAGE",
@@ -798,7 +798,7 @@ const stepCard = (delta: number) => {
 </script>
 
 <template>
-  <div class="container">
+  <div class="container site-workspace site-cards">
     <div class="sidebar-overlay" :class="{ visible: showSidebar }" @click="showSidebar = false"></div>
     <div class="sidebar" :class="{ open: showSidebar, collapsed: sidebarCollapsed }">
       <button
@@ -890,8 +890,8 @@ const stepCard = (delta: number) => {
           <font-awesome-icon icon="book" />
         </button>
         <form @submit.prevent="setFilter">
-          <input v-model="query" :placeholder="$t('cardsView.searchCards')" />
-          <button type="submit"><font-awesome-icon icon="search" /></button>
+          <input v-model="query" name="card-search" :aria-label="$t('cardsView.searchCards')" :placeholder="$t('cardsView.searchCards')" />
+          <button type="submit" :aria-label="$t('cardsView.searchCards')"><font-awesome-icon icon="search" /></button>
         </form>
         <div class="view-controls">
           <button @click.prevent="view = View.List" :class="{ active: view == View.List }" :title="$t('cardsView.listView')"><font-awesome-icon icon="list" /></button>
@@ -899,6 +899,7 @@ const stepCard = (delta: number) => {
         </div>
         <SegmentedToggle class="desktop-card-pool card-pool-toggle" :model-value="cardPoolMode" :options="cardPoolOptions" :label="$t('cardsView.cardPool')" @update:model-value="setCardPoolMode" />
       </header>
+      <p class="card-results-count" role="status">{{ locale.startsWith('zh') ? `找到 ${cards.length} 张卡牌` : `${cards.length} cards found` }}</p>
       <CardImageView
         v-if="view == View.Image"
         :cards="imageViewCards"
