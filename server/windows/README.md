@@ -9,6 +9,14 @@ These files are the Windows/WSL package-specific layer used by the portable loca
 
 The authenticated in-browser `/local-management` page deliberately exposes only current-user operations and read-only status. It must not call these system-level maintenance commands.
 
+## Latest frontend source: 2026-09-17
+
+Use the [September 17 handoff](../../docs/release-source-20260917/README.md)
+for the card interaction fixes and bundled portraits. Rebuild the frontend in
+local mode; `server/release/frontend-dist` is an older online-mode snapshot,
+not this update. This increment changes no Haskell source or Windows launcher.
+The portable layer below remains the packaging baseline.
+
 ## Current portable layer: 2026-09-15 / Windows v20260915.5
 
 This folder now matches the verified clean Windows release's scripts, including all 44 manager functions and the NUL/ANSI error-message repair. The historical notes below are not instructions to re-add already implemented functions.

@@ -14,8 +14,13 @@ Arkham Companion is a Chinese-localized distribution of Arkham Horror: The Card 
 
 The default branch is `Companion`. The `Mac` and `Server` branches are complete snapshots for their respective environments.
 
-Current Server release: **2026.09.15-online-undo**. PR #9 and PR #10 are merged.
-The default prebuilt server frontend matches the currently verified online
+Latest frontend source: **2026.09.17-scene-actions**, including card interaction
+fixes and 214 bundled investigator portraits. See the
+[Windows packaging handoff](docs/release-source-20260917/README.md).
+This increment updates source, not the prebuilt release directory.
+
+Prebuilt Server snapshot: **2026.09.15-online-undo**. PR #9 and PR #10 are merged.
+The prebuilt server frontend is the earlier verified September 15 online
 release, including phone/tablet UI, game-entry recovery and undo fixes.
 The Linux backend remains the verified September 13 rules build.
 See [`server/RELEASE-20260915.md`](server/RELEASE-20260915.md) for exact hashes,
