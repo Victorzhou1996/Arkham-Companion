@@ -2,11 +2,11 @@
   "codex": {
     "drRosaMarquez": {
       "body": "<h3>@:theFeastOfHemlockVale.theLostSister.codex.drRosaMarquez.title </h3><p>马尔克斯博士蹲下身，检视长满黄色蕈类的甲壳生物残肢。“这很异常，不管造成这种突变的原因是什么，它都已经扩散并影响到当地的海洋生态。这些甲壳生物不只是外面长满了菌类，”她撬开外层甲壳，一阵黄色孢子飘出。“就像是自然法则在牠们身上完全不适用一样。”</p><p class='basic right'>查看岩洞牌库顶的一张卡牌，你可以将该地点放置入场，放到与最近的_洞穴_地点相邻的位置，或是将该地点放到岩洞牌库底。</p>",
-      "title": "{'{'}codex{'}'} Codex Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
+      "title": "{'{'}codex{'}'} 圣典 Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
     },
     "gideonMizrah": {
-      "body": "<h3>@:theFeastOfHemlockVale.theLostSister.codex.gideonMizrah.title </h3><p>吉迪恩倾身研究着黑色砂砾跟岩石。“这里不是一直都这么诡异的，近几年赫姆拉克岛的怪事越来越多。但不是我所想的那样，我想应该是……”老人突然沉默不语，陷入了思考之中。过了一阵子，他摇摇晃晃地站起身：“我好像遗失了某种传家宝之类的东西，好吧我没有遗失，我只是把它埋了之后又忘记了埋在哪里，如果你懂我的意思的话。”他又讲了其他三个没相关的故事后才绕回这个话题，“我没有笨到把它埋在沙子里，但那里有一块看起来像鲸鱼的黑色大石头。我就把它埋在那。如果你们能帮我找到，我会很感谢。”</p><p class='basic right'>请记住“吉迪恩在寻找传家宝。”*(提示：如果冒险结束时，调查员们控制至少2{'{'}perPlayer{'}'}个线索，你们可以帮助吉迪恩找到他的宝藏！)*</p>",
-      "title": "{'{'}codex{'}'} Codex 6: 吉迪恩．米兹拉"
+      "body": "<h3>@:theFeastOfHemlockVale.theLostSister.codex.gideonMizrah.title </h3><p>吉迪恩倾身研究着黑色砂砾跟岩石。“这里不是一直都这么诡异的，近几年赫姆拉克岛的怪事越来越多。但不是我所想的那样，我想应该是……”老人突然沉默不语，陷入了思考之中。过了一阵子，他摇摇晃晃地站起身：“我好像遗失了某种传家宝之类的东西，好吧我没有遗失，我只是把它埋了之后又忘记了埋在哪里，如果你懂我的意思的话。”他又讲了其他三个没相关的故事后才绕回这个话题，“我没有笨到把它埋在沙子里，但那里有一块看起来像鲸鱼的黑色大石头。我就把它埋在那。如果你们能帮我找到，我会很感谢。”</p><p class='basic right'>请记住“吉迪恩在寻找传家宝。”*(提示：如果冒险结束时，调查员们控制至少2个线索，你们可以帮助吉迪恩找到他的宝藏！)*</p>",
+      "title": "{'{'}codex{'}'} 圣典 6: 吉迪恩．米兹拉"
     },
     "label": {
       "bottom": "放置于洞窟牌库底部"
@@ -24,7 +24,7 @@
     },
     "williamHemlock": {
       "body": "<h3>@:theFeastOfHemlockVale.theLostSister.codex.williamHemlock.title </h3><p>威廉站在岩石嶙峻的海岸上，望向远方翻涌的潮水与缅因州的海岸线。“这个像中了毒一般的小岛就是赫姆拉克之名最后的记忆，家族的传承到我为止了。”他语带苦涩的说。海伦脸色铁青的大步走上前：“这座岛不属于任何人，你的传承早已死绝。你的家族在很久以前从大自然手中剥夺了这片荒野，现在荒野会将它讨回来。”</p><p>威廉看着天空，一道虹彩在空中流动，他双唇颤抖，虔诚地说：“所有美好的事物都应该狂野而自由，也许我是时候接受现实了。”</p><p class='basic right'>提升威廉．赫姆拉克的友好度。每位调查员取得1点奖励经验值。</p>",
-      "title": "{'{'}codex{'}'} Codex 4: 威廉．赫姆拉克"
+      "title": "{'{'}codex{'}'} 圣典 4: 威廉．赫姆拉克"
     },
     "xp": {
       "bonus": "奖励经验值"
@@ -44,18 +44,18 @@
     "day2": "如果目前是_第二日_：, 跳至 _引言3_.",
     "day3": "如果目前是_第三日_：, 跳至 _引言4_.",
     "intro1": "<p>_引言1_: 你们坐在彼得斯一家的小厨房中，这里是他们在艾湾镇的房子，就在赫姆拉克岛的北海岸线上，冰冷的大西洋海水拍打在架高的支柱上。海伦．彼得斯将她冒着烟的马克杯放在桌上，开口说：“北海岸的洞穴跟死亡陷阱没两样。”她用坚定的语气说到。“我不认为你们知道自己在干什么。”</p><p>你们告诉她你们很清楚潜在的危险性，根据当地人的说法，最近有许多人失踪，最近一个失踪的就是海伦的妹妹，所以你们才来到彼得斯家，表示帮忙的意愿。</p><p>海伦盯着你们，像是在打量你们的本事，最后终于点头：“好吧。你们要不是很勇敢；就是很愚蠢，也许两者皆是，就跟我的弟弟一样。”她挫折的揉着眼眶。“我最后一次看到丽莎，就是伊丽莎白，是她带着我们的狗，布鲁斯，去海边散步的时候。我警告她要离那些洞窟远点，但她从来不听。人们在里面很容易迷失方向，更别说还有那些会让你做恶梦的恐怖东西。”她拿出一个手电筒放到桌上。“但我们还是必须从那里开始。”</p>",
-    "intro2": "<p>_引言2_: 你们跟着海伦走过艾湾镇破裂的滨海木板道。艾湾镇座落在岛屿北边一个窄小、岩石嶙峻的海湾中，这里世代以来都是阿本拿基族跟前捕鲸人们的家。海水规律的涨退击打在岩岸上，为这里添增了令人毛骨悚然的氛围。海伦手中拿着从捕鲸人小屋借来的鱼叉，引领你们走向海滩。</p><p>一辆熟悉的卡车缓缓停靠在附近，西奥带着灿烂的笑容向你们挥手招呼：“我回来了！我刚才得回谷地一趟。”他一看见海伦，脸上的笑容瞬间消失。</p><p>“我很惊讶你会来。”海伦冷冷地说。</p><p>西奥垂头丧气地说：“我当然会来了，老姊，我怎么能不来？”</p><p>海伦一言不发的大步走过你们跟西奥的身边，朝昏暗的海岸线走去。一道浪尖打在步道上，短暂打破了僵硬的气氛。你问西奥为什么他的姊姊反应如此冷淡，他沉默地望向远方一会儿。</p><p>“你们懂的，有时候人们会渐行渐远，像是同一棵树木上的树枝，它们永远血脉相连，但朝向 — ”他的比喻被海伦打断，她在海边的洞窟口叫唤着你们。</p><p class='basic right'>进入 _Setup_.</p>",
-    "intro3": "<p>_引言3_: 就在你们和海伦准备离开时，雨滴落下的声音打破了寂静。西奥踏进门，将被打湿的发丝拨到一边。“所以她还是没回来。”他严肃地说，一边将滴水的雨衣放在饱经风霜的地板上。海伦怒视着他：“我很惊讶你来了，弟弟。也许迟到的确比不到好吧。去拿绳子。”说完海伦便揹上一支鱼叉，走进倾盆大雨之中。西奥拖着脚步去拿绳子跟第二支手电筒时，你们问他出了什么事。</p><p>“我们的妹妹失踪了，我跟海伦说她会自己回来的。但现在已经过了两天，呃，这就是问题所在。”</p><p class='basic right'>进入 _Setup_.</p>",
-    "intro4": "<p>_引言4_: 你们跟着海伦走过艾湾镇破裂的滨海木板道。艾湾镇座落在岛屿北边一个窄小、岩石嶙峻的海湾中，这里世代以来都是阿本拿基族跟前补鲸人们的家。海伦伤感的说：“赫姆拉克岛已经不再安全了，我曾以为这里会是我们的家，但现在看来，它只能是个中继站了。”这个村落已经完全荒废了，只剩下一个穿着海军蓝外套的水手，你们靠近的时候，他差点把手中的鱼竿弄掉。</p><p>“吉迪恩！又来钓鱼啊？”海伦苦笑着说。</p><p>老水手把他的竿子从水中拉出“哼，只是条丑鱼，从没看过这么丑的鳕鱼。”被鱼线串起的那条鱼有着许多不正常的鱼鳍跟尖刺，类似藤壶的东西长满全身。“嗯？是海伦吗？”吉迪恩问。</p><p>海伦告诉老水手她的妹妹失踪了。老人露出担忧的表情说：“小丽莎是个好孩子，我会帮忙，如果你们愿意带我去的话。”</p><p class='basic right'>进入 _Setup_.</p>",
-    "intro5": "<p>_引言5_: 你们跟着海伦走过艾湾镇破裂的滨海木板道。夜晚的天空灰蒙而沉重，但南方的地平线有微光闪烁，蓝绿色的光团在树顶远方缓慢移动，光线形成一些眼熟的图案：狮子的爪子、盛开的花朵、长船，最后组成一个模糊的人形轮廓。你们将视线拉回眼前，海伦的身影正走进洞口，消失在墨汁般漆黑的洞窟中。</p>",
-    "nightSkip": "如果目前是 _第一夜_ or _第二夜_, 跳至 _引言5_. 否则： </blockquote>",
-    "title": "Scenario: 迷途姊妹"
+    "intro2": "<p>_引言2_: 你们跟着海伦走过艾湾镇破裂的滨海木板道。艾湾镇座落在岛屿北边一个窄小、岩石嶙峻的海湾中，这里世代以来都是阿本拿基族跟前捕鲸人们的家。海水规律的涨退击打在岩岸上，为这里添增了令人毛骨悚然的氛围。海伦手中拿着从捕鲸人小屋借来的鱼叉，引领你们走向海滩。</p><p>一辆熟悉的卡车缓缓停靠在附近，西奥带着灿烂的笑容向你们挥手招呼：“我回来了！我刚才得回谷地一趟。”他一看见海伦，脸上的笑容瞬间消失。</p><p>“我很惊讶你会来。”海伦冷冷地说。</p><p>西奥垂头丧气地说：“我当然会来了，老姊，我怎么能不来？”</p><p>海伦一言不发的大步走过你们跟西奥的身边，朝昏暗的海岸线走去。一道浪尖打在步道上，短暂打破了僵硬的气氛。你问西奥为什么他的姊姊反应如此冷淡，他沉默地望向远方一会儿。</p><p>“你们懂的，有时候人们会渐行渐远，像是同一棵树木上的树枝，它们永远血脉相连，但朝向 — ”他的比喻被海伦打断，她在海边的洞窟口叫唤着你们。</p><p class=\"basic right\">进入 _冒险设置_.</p>",
+    "intro3": "<p>_引言3_: 就在你们和海伦准备离开时，雨滴落下的声音打破了寂静。西奥踏进门，将被打湿的发丝拨到一边。“所以她还是没回来。”他严肃地说，一边将滴水的雨衣放在饱经风霜的地板上。海伦怒视着他：“我很惊讶你来了，弟弟。也许迟到的确比不到好吧。去拿绳子。”说完海伦便揹上一支鱼叉，走进倾盆大雨之中。西奥拖着脚步去拿绳子跟第二支手电筒时，你们问他出了什么事。</p><p>“我们的妹妹失踪了，我跟海伦说她会自己回来的。但现在已经过了两天，呃，这就是问题所在。”</p><p class=\"basic right\">进入 _冒险设置_.</p>",
+    "intro4": "<p>_引言4_: 你们跟着海伦走过艾湾镇破裂的滨海木板道。艾湾镇座落在岛屿北边一个窄小、岩石嶙峻的海湾中，这里世代以来都是阿本拿基族跟前补鲸人们的家。海伦伤感的说：“赫姆拉克岛已经不再安全了，我曾以为这里会是我们的家，但现在看来，它只能是个中继站了。”这个村落已经完全荒废了，只剩下一个穿着海军蓝外套的水手，你们靠近的时候，他差点把手中的鱼竿弄掉。</p><p>“吉迪恩！又来钓鱼啊？”海伦苦笑着说。</p><p>老水手把他的竿子从水中拉出“哼，只是条丑鱼，从没看过这么丑的鳕鱼。”被鱼线串起的那条鱼有着许多不正常的鱼鳍跟尖刺，类似藤壶的东西长满全身。“嗯？是海伦吗？”吉迪恩问。</p><p>海伦告诉老水手她的妹妹失踪了。老人露出担忧的表情说：“小丽莎是个好孩子，我会帮忙，如果你们愿意带我去的话。”</p><p class=\"basic right\">进入 _冒险设置_.</p>",
+    "intro5": "<p>_引言5_: 你们跟着海伦走过艾湾镇破裂的滨海木板道。夜晚的天空灰蒙而沉重，但南方的地平线有微光闪烁，蓝绿色的光团在树顶远方缓慢移动，光线形成一些眼熟的图案：狮子的爪子、盛开的花朵、长船，最后组成一个模糊的人形轮廓。你们将视线拉回眼前，海伦的身影正走进洞口，消失在墨汁般漆黑的洞窟中。</p><p class=\"basic right\">进入_冒险设置_。</p>",
+    "nightSkip": "如果目前是 _第一夜_ 或 _第二夜_, 跳至 _引言5_. 否则： </blockquote>",
+    "title": "冒险: 迷途姊妹"
   },
   "remembered": {
-    "foundASetOfFootprints": "Found a set of footprints.",
-    "foundATornDogLeash": "Found a torn dog leash.",
-    "gideonIsSearchingForAnHeirloom": "Gideon is searching for an heirloom.",
-    "theoIsArguingWithHelen": "Theo is arguing with Helen."
+    "foundASetOfFootprints": "找到了一串脚印。",
+    "foundATornDogLeash": "找到了一条撕裂的狗绳。",
+    "gideonIsSearchingForAnHeirloom": "吉迪恩正在寻找传家宝。",
+    "theoIsArguingWithHelen": "西奥正在与海伦争吵。"
   },
   "resolutions": {
     "noResolution": {
@@ -90,23 +90,23 @@
     "cavernsDeck": "依照以下步骤构建“岩洞牌库”： </blockquote>",
     "currentDayMarker": "检查剧本日志，确认目前的日期与时刻。将时刻卡牌以对应的(_白日{'{'}day{'}'}_)或(_黑夜{'{'}night{'}'}_)面放置入场。",
     "currentDaySet": "此外，检查剧本日志，确认目前的日期，并收齐对应的*首日*、*次日*或*终日*遭遇组。这些遭遇组以以下符号表示：<section class='encounter-sets'><img src='{setImgPath}/the-first-day.png' /><img src='{setImgPath}/the-second-day.png' /><img src='{setImgPath}/the-final-day.png' /></section>",
-    "dayResidents": "如果目前是 (_白日{'{'}day{'}'}_), gather each 剧情支持 from the *Residents* 遭遇组中收齐所有剧情支持。 这个遭遇组以以下符号表示:<section class='encounter-sets'><img src='{setImgPath}/residents.png' /></section>",
+    "dayResidents": "如果当前为_白日{'{'}day{'}'}_，找出*居民*遭遇组中的每张剧情支援。该遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/residents.png\"/></section>",
     "gatherCavernsLocations": "收齐*迷途姊妹*和*石中骇物*遭遇组中的所有地点。",
-    "gatherSets": "Gather all cards from the following 遭遇组中的所有地点: *迷途姊妹*, *Blight*, *石中骇物*, *Mutations*, and *Myconids*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/the-lost-sister.png' /><img src='{setImgPath}/blight.png' /><img src='{setImgPath}/horrors-in-the-rock.png' /><img src='{setImgPath}/mutations.png' /><img src='{setImgPath}/myconids.png' /></section>",
-    "gideonMizrah": "如果目前是_第二日_或_第三日_：, put 吉迪恩．米兹拉 into play under the control of an investigator.",
+    "gatherSets": "找出下列遭遇组的所有卡牌：*迷途姊妹*、*枯萎*、*石中骇物*、*变异*和*真菌生物*。这些遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/the-lost-sister.png\"/><img src=\"{setImgPath}/blight.png\"/><img src=\"{setImgPath}/horrors-in-the-rock.png\"/><img src=\"{setImgPath}/mutations.png\"/><img src=\"{setImgPath}/myconids.png\"/></section>",
+    "gideonMizrah": "如果当前为_第二日_或_第三日_，将吉迪恩．米兹拉放置入场，由任意一位调查员控制。",
     "helenPeters": "将海伦．彼得斯放置入场，置于任意调查员的控制之下。本场冒险期间，她不占用盟友槽位。",
     "helenPetersNight": "将海伦．彼得斯放置入场，置于任意调查员的控制之下。本场冒险期间，她不占用盟友槽位。",
-    "nightResidents": "如果目前是 (_黑夜{'{'}night{'}'}_), gather each 剧情支持 from the *Residents* 遭遇组中收齐所有剧情支持。 这个遭遇组以以下符号表示:<section class='encounter-sets'><img src='{setImgPath}/residents.png' /></section>",
+    "nightResidents": "如果当前为_黑夜{'{'}night{'}'}_，找出*居民*遭遇组中的每张剧情支援。该遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/residents.png\"/></section>",
     "putAkwan": "将艾湾地点放置入场。 每位调查员从艾湾开始游戏。",
-    "putTopThree": "将岩洞牌库顶3张卡牌放置入场，未揭示面朝上，位于艾湾的下方、左侧和右侧 (see Location Adjacency on page 3).",
-    "removeResidents": "Remove each other card from the *Residents* 遭遇组的[[洞穴]]地点从游戏中移除。",
-    "removeResidentsNight": "Remove each other card from the *Residents* 遭遇组的[[洞穴]]地点从游戏中移除。",
+    "putTopThree": "将岩洞牌库顶3张卡牌以未揭示面朝上放置入场，分别位于艾湾的下方、左侧和右侧（参见第3页的“地点相邻”）。",
+    "removeResidents": "将*居民*遭遇组中的其他每张卡牌移出游戏。",
+    "removeResidentsNight": "将*居民*遭遇组中的其他每张卡牌移出游戏。",
     "removeTwoCaves": "随机将2张*石中骇物*遭遇组的_洞穴_地点从游戏中移除。",
     "setAsideEnemies": "将下列敌人放在一旁，置于场外：鲎属杂生物、2张晶化寄生虫，以及2张甲壳杂生物。",
     "setAsideFungalCave": "将真菌洞穴地点放在一旁，置于场外。",
     "shuffleCavernsDeck": "将剩余的所有地点混洗，组成岩洞牌库。将该牌库放在冒险参考卡牌旁。",
-    "theoPeters": "如果目前是_第一日_或_第二日_：, put 西奥．彼得斯 into play under the control of an investigator.",
-    "williamHemlock": "如果目前是_第三日_：, put 威廉．赫姆拉克 into play at Akwan."
+    "theoPeters": "如果当前为_第一日_或_第二日_，将西奥．彼得斯放置入场，由任意一位调查员控制。",
+    "williamHemlock": "如果当前为_第三日_，将威廉．赫姆拉克放置入场，位于艾湾。"
   },
   "specialRules": [
     {
@@ -120,27 +120,27 @@
   ],
   "tokens": {
     "easyStandard": {
-      "cultist": "-1. If you succeed, heal 1 horror.",
-      "elderThing": "-2. If an _Abomination_ enemy is at your location, reveal another标记.",
-      "skull": "-X. X is half the number of revealed _Cave_ locations in play (向上取整).",
-      "tablet": "-2. If you are at a _Cave_ location, treat this标记's modifier as -4 instead."
+      "cultist": "-1。若你成功，治疗1点恐惧。",
+      "elderThing": "-2。若你的地点有_畸变体_敌人，再抽取1个标记。",
+      "skull": "-X。X为场上已揭示的_洞穴_地点数量的一半（向上取整）。",
+      "tablet": "-2。若你位于_洞穴_地点，改为将此标记的修正值视为-4。"
     },
     "hardExpert": {
-      "cultist": "-1. If you succeed by 2 or more, heal 1 horror.",
-      "elderThing": "-3. If an _Abomination_ enemy is at your location, this test automatically fails instead.",
-      "skull": "-X. X is the number of revealed _Cave_ locations in play.",
-      "tablet": "-4. If you are at a _Cave_ location, treat this标记's modifier as -6 instead."
+      "cultist": "-1。若你成功且成功差值至少为2，治疗1点恐惧。",
+      "elderThing": "-3。若你的地点有_畸变体_敌人，本次检定改为自动失败。",
+      "skull": "-X。X为场上已揭示的_洞穴_地点数量。",
+      "tablet": "-4。若你位于_洞穴_地点，改为将此标记的修正值视为-6。"
     }
   },
   "tooltips": {
     "akwan": {
-      "resign": "You give up the search."
+      "resign": "你放弃搜索。"
     },
     "hiddenCove": {
-      "remember": "Remember that the investigators \"found a torn dog leash.\""
+      "remember": "请记住调查员“找到了一条撕裂的狗绳”。"
     },
     "undergroundPools": {
-      "remember": "Remember that the investigators \"found a set of footprints.\""
+      "remember": "请记住调查员“找到了一串脚印”。"
     }
   }
 }

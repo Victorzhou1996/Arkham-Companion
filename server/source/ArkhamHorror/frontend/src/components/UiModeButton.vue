@@ -1,7 +1,7 @@
 <script setup lang="ts">
 function legacy() {
   const url = new URL(window.location.href)
-  url.pathname = '/legacy-ui-20260826.3/'
+  url.pathname = '/legacy-ui-20260918.1/'
   url.searchParams.set('ui', 'legacy')
   try { localStorage.setItem('arkham-ui-version', 'legacy') } catch { /* explicit URL still works */ }
   window.location.assign(url.href)

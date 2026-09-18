@@ -1,5 +1,7 @@
 # 2026-09-17 前端更新与 Windows 打包交接
 
+> 本分支已追加 9 月 18 日汉化修复。最新版本、构建及验收要求见 [9 月 18 日交接](../release-source-20260918/README.md)；下文保留 9 月 17 日更新记录。
+
 ## 来源与范围
 
 - PR 目标：`Server`；工作分支：`agent/card-interactions-portraits-20260917`。

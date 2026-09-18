@@ -5,19 +5,19 @@
       "title": "{'{'}codex{'}'} 圣典Ω：柏蒂．马斯格雷夫"
     },
     "drRosaMarquez": {
-      "act1": "<h3>@:theFeastOfHemlockVale.fateOfTheVale.codex.drRosaMarque.title </h3><p>_如果目前是 Act 1:_</p><p>“玛莉卡？“这名黑发女子茫然地看着你，你忘记了自己的名字，但似乎不是玛莉卡……对吧？“我忘记了一些事，玛莉卡，但我还记得你。“</p><p class='basic right'>揭示深空牌库底部的6张卡牌，你可以抽取其中的任意张数，将剩余的卡牌按任意顺序放回深空牌库顶。任意一位调查员可以在不同场景再次触发此圣典。</p>",
-      "act3": "<p>_如果目前是场景3：a: “我懂了。”马尔克斯博士说，“这是一个活生生的存在。某种原始的物种，或者来自异世界的东西。它被带到这里，也许是赫姆拉克船长带回来的，然后深深潜入地下，渗透到水源、土壤、作物。它对周围的一切都具有毒性。像是一种活生生的瘴气。一种几乎没有意识的麻痹疾病。它在二十年前从珍珠山脉浮现，但它还没有打算……离开。”教授拿出一块磷光碎片，“我想它就是从这个来的。这是被带到岛上的原始碎片之一。这个生物像寄生虫一样吸取宿主的生命，只留下一个水晶般的外壳，冻结时间，接着寄生虫以气体形式从‘壳’中孵化出来，与它……合而为一。”</p><p>她叹了口气说：“拨款委员会是永远不会相信这个的。”</p>",
+      "act1": "<h3>@:theFeastOfHemlockVale.fateOfTheVale.codex.drRosaMarquez.title </h3><p>_如果当前为场景1：_</p><p>“玛莉卡？“这名黑发女子茫然地看着你，你忘记了自己的名字，但似乎不是玛莉卡……对吧？“我忘记了一些事，玛莉卡，但我还记得你。“</p><p class=\"basic right\">揭示深空牌库底部的6张卡牌，你可以抽取其中的任意张数，将剩余的卡牌按任意顺序放回深空牌库顶。任意一位调查员可以在不同场景再次触发此圣典。</p>",
+      "act3": "<p>_如果目前是场景3a：谷中宿命（版本I）：_“我懂了。”马尔克斯博士说，“这是一个活生生的存在。某种原始的物种，或者来自异世界的东西。它被带到这里，也许是赫姆拉克船长带回来的，然后深深潜入地下，渗透到水源、土壤、作物。它对周围的一切都具有毒性。像是一种活生生的瘴气。一种几乎没有意识的麻痹疾病。它在二十年前从珍珠山脉浮现，但它还没有打算……离开。”教授拿出一块磷光碎片，“我想它就是从这个来的。这是被带到岛上的原始碎片之一。这个生物像寄生虫一样吸取宿主的生命，只留下一个水晶般的外壳，冻结时间，接着寄生虫以气体形式从‘壳’中孵化出来，与它……合而为一。”</p><p>她叹了口气说：“拨款委员会是永远不会相信这个的。”</p><p class=\"basic right\">每位调查员获得1个线索*(从供应堆拿取)*。</p>",
       "label": {
         "doneDrawing": "完成抽取"
       },
       "otherwise": "<p>_否则：_</p><p>“我们不该来这里的，全都是我的错。”马尔克斯博士消沉地说。</p><p class='basic right'>每位调查员获得1个线索*(从供应堆拿取)*。任意一位调查员可以在不同场景再次触发此圣典。</p>",
-      "title": "{'{'}codex{'}'} Codex Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
+      "title": "{'{'}codex{'}'} 圣典 Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
     },
     "gideonMizrah": {
       "act2": "<h3>@:theFeastOfHemlockVale.fateOfTheVale.codex.gideonMizrah.title </h3><p>**如果目前是场景2：**</p><p>这位老水手的眼中映着多彩的深空：“这不是我第一次看到这个了。”他冷静地开口，但没有再多说什么。</p><p class='basic right'>每位调查员可以在他们的下一回合额外进行一次行动。任意一位调查员可以在不同场景再次触发此圣典。</p>",
       "act3": "<p>**如果目前是场景3a： 谷中宿命(版本一)：**</p><p>吉迪恩举起一块玻璃般的碎片：“它来自那块石头，船长扔进井里的那块。但我们从来没有摆脱它，从来没有。”</p><p class='basic right'>自动躲避你所在地点的星界神使敌人。</p>",
       "otherwise": "<p>_否则：_</p><p>“如果我没有从这里活着出去，找到我姪女，把这给她。她是我唯一的亲人了。”吉迪恩说着，将一本被海水浸过的日记递给你。</p><p class='basic right'>从当前密谋上移除1个毁灭标记。</p>",
-      "title": "{'{'}codex{'}'} Codex 6: 吉迪恩．米兹拉"
+      "title": "{'{'}codex{'}'} 圣典 6: 吉迪恩．米兹拉"
     },
     "judithPark": {
       "act2": "<h3>@:theFeastOfHemlockVale.fateOfTheVale.codex.judithPark.title </h3><p>**如果目前是场景2：**</p><p>茱蒂丝朝着闪烁的虚空开枪，然后放下来福枪，凝视着光芒和色彩的漩涡：“这到底是什么鬼玩意？”</p><p class='basic right'>选择一个位于任意地点的敌人并自动躲避该敌人。任意一位调查员可以在不同场景再次触发此圣典。</p>",
@@ -33,13 +33,13 @@
         "doNotExtend": "不要扩大搜寻范围",
         "drawItem": "抽取一张物品支援，或将搜寻范围扩大至一个牌组"
       },
-      "title": "{'{'}codex{'}'} Codex 2: 莉亚．阿特伍德"
+      "title": "{'{'}codex{'}'} 圣典 2: 莉亚．阿特伍德"
     },
     "riverHawthorne": {
       "act2": "<h3>@:theFeastOfHemlockVale.fateOfTheVale.codex.riverHawthorne.title </h3><p>**如果目前是场景2：**</p><p>“哦，我的星辰啊 — ”凝视着房间中心闪烁的恐怖之物，芮福有史以来第一次显得不善言辞。</p><p class='basic right'>你可以从手牌中打出一张_道具_卡牌，忽略所有费用。任意一位调查员可以在不同场景再次触发此圣典。</p>",
       "act3": "<p>**如果目前是场景3a：谷中宿命(版本二)：**</p><p>“快点！你比和我的亲戚一起度过的晚上还慢！”芮福把一位当地居民往你这边赶，“快，带他们走！”</p><p class='basic right'>从任意一个地点下方抽取一张_住民_卡牌并将其放置入场，位于该地点上，敌人面朝上并将其横置。</p>",
-      "otherwise": "<p>_否则： “唉，都白费力气了。”芮福沮丧地看着你，“但我想这个可悲的岛屿一直都是一个无可救药的地方。”他的表情变得戏谑，“至少赫姆拉克家族的财富回到了对的人手上。”</p>",
-      "title": "{'{'}codex{'}'} Codex 5: 芮福．霍桑"
+      "otherwise": "<p>_否则：_</p><p>“唉，都白费力气了。”芮福沮丧地看着你，“但我想这个可悲的岛屿一直都是一个无可救药的地方。”他的表情变得戏谑，“至少赫姆拉克家族的财富回到了对的人手上。”</p><p class=\"basic right\">获得4个资源。</p>",
+      "title": "{'{'}codex{'}'} 圣典 5: 芮福．霍桑"
     },
     "simeonAtwood": {
       "act2": "<h3>@:theFeastOfHemlockVale.fateOfTheVale.codex.simeonAtwood.title </h3><p>**如果目前是场景2：**</p><p>西缅睁大双眼看着那耀眼的光芒：“这比任何烟火都还要美。”他着迷地说到。</p><p class='basic right'>自动躲避在场上的每个星界神使敌人。任意一位调查员可以在不同场景再次触发此圣典。</p>",
@@ -49,7 +49,7 @@
         "gainResources": "获得 2 个资源"
       },
       "otherwise": "<p>_否则：_</p><p>“你有看到迪比吗？”西缅带着迷惘的神情四处张望。</p><p class='basic right'>每位调查员可以抽取1张卡牌或获得2资源。</p>",
-      "title": "{'{'}codex{'}'} Codex 3: 西缅．阿特伍德"
+      "title": "{'{'}codex{'}'} 圣典 3: 西缅．阿特伍德"
     },
     "theoPeters": {
       "act2": "<h3>@:theFeastOfHemlockVale.fateOfTheVale.codex.theoPeters.title </h3><p>**如果目前是场景2：**</p><p>“太美了。”西奥仰望着闪烁的光芒，伸出一只手，仿佛要去触摸它，“至少跟五个日落一样美丽，真希望丽莎也能看到。”他停顿了一下，“事实上，我很高兴她不需要看到这一切。”</p><p class='basic right'>你可以查找深空牌库，找出一张地点，将其放置入场并立即移动到该地点上。任意一位调查员可以在不同场景再次触发此圣典。</p>",
@@ -65,16 +65,16 @@
         "drawTwo": "抽取2张卡牌"
       },
       "otherwise": "<p>_否则：_</p><p>威廉在随身的小本子上写下另一首紫色的诗句，“我家族的传承就像苏格拉底的杯子。之中蕴含死亡与自由，拥抱自由，超脱执念……噢，而且，执念和‘盛宴’押韵呢……”</p><p class='basic right'>每位调查员可以抽取最多2张卡牌。</p>",
-      "title": "{'{'}codex{'}'} Codex 4: 威廉．赫姆拉克"
+      "title": "{'{'}codex{'}'} 圣典 4: 威廉．赫姆拉克"
     }
   },
   "cosmicEmissary": {
-    "body": "<h3>星界神使</h3><p class='basic'>星界神使由数个星界神使敌人构成。</p><ul><li>Each Cosmic Emissary enemy enters play \"in formation\" as shown in the placement diagram.</li><li>每个星界神使敌人必须总是依照该结构放置，除非另有指示。如果星界神使的结构发生改变，每个敌人将会独立于其他敌人进行移动。</li><li>你们可以分别攻击或躲避每个星界神使敌人。(如果他们没有生命值，则无法对其造成任何伤害。)</li><li>星界神使具有结构时，每个星界神使敌人都各自被视为位于其摆放位置上相邻的群镜之巢地点。</li></ul>",
+    "body": "<h3>星界神使</h3><p class=\"basic\">星界神使由数个星界神使敌人构成。</p><ul><li>每个星界神使敌人均按照放置示意图所示的“阵形”入场。</li><li>每个星界神使敌人必须总是依照该结构放置，除非另有指示。如果星界神使的结构发生改变，每个敌人将会独立于其他敌人进行移动。</li><li>你们可以分别攻击或躲避每个星界神使敌人。(如果他们没有生命值，则无法对其造成任何伤害。)</li><li>星界神使具有结构时，每个星界神使敌人都各自被视为位于其摆放位置上相邻的群镜之巢地点。</li></ul>",
     "prompt": {
-      "agendaAlt": "Current agenda card",
-      "body": "You have looked at the Cosmic Emissary enemy for more than 15 seconds. You are 发疯.",
+      "agendaAlt": "当前密谋卡",
+      "body": "你注视星界神使敌人已超过15秒。你陷入疯狂。",
       "continue": "继续",
-      "title": "星界神使 stares back"
+      "title": "星界神使回望着你"
     },
     "title": "星界神使"
   },
@@ -84,9 +84,9 @@
     "fateOfTheVale2": "<p>_谷中宿命2: 在马尔克斯博士的帮助下，你爬出了天坑，发现铁杉谷被血红色的迷雾所笼罩。你们在村庄中寻找幸存者，最后找到了几位朋友。“我们必须尽可能拯救更多的人。”马尔克斯博士说。当你开始搜寻时，那闪亮的实体从天坑中浮现，像破碎的玻璃般折射着光芒。</p>",
     "fateOfTheVale3": "<p>在马尔克斯博士的帮助下，你爬出了天坑，发现铁杉谷被血红色的迷雾所笼罩。如果这个外星存在正在以岛上的人、植物和动物为食，你也许仍来得及剥夺它的养分来源。村庄里满是烟火，或许足够引发让这座岛陷入火海的大火。</p><ul><li>将场景3a谷中宿命(版本三) 放置入场。将所有其他场景从游戏中移除。</li><li>跳至 _谷中宿命 5._</li></ul>",
     "fateOfTheVale4": "<p>_谷中宿命4:_ 在马尔克斯博士的帮助下，你爬出天坑，却发现赫姆拉克谷地已被血红色迷雾吞没。教授按着太阳穴观察四周。‘我们得找到我的笔记，还有柏蒂，如果他还活着的话。我……我不喜欢这样，但我们必须逃出去。南角灯塔也许离得够远，或许在那里会安全。’</p><ul><li>将场景3a谷中宿命(版本四)放置入场。将所有其他场景从游戏中移除。</li><li>进入 _谷中宿命 5._</li></ul>",
-    "fateOfTheVale5": "<p>_谷中宿命 5:_ 银色的光芒穿透雾气，投下奇异的阴影。其中一些是狂乱村民的身影。</p><ul><li>将每个群镜之巢和_洞穴_地点从游戏中移除。</li><li>将每个放在一旁的_铁杉谷_地点放置入场， (*Night*) side.<ul><li>将每位调查员移动到十字路口。</li></ul></li><li>检查剧本日志：<ul><li>*如果柏蒂殒落*，将放在一边的柏蒂．马斯格雷夫剧情支持移出游戏。否则，将其以支援面朝上放置入场，位于旅店。</li><li>查找*盛宴之日*遭遇组，找出2张丧心狂欢者敌人，将其与每张放在一旁的_住民_卡牌混洗，以敌人面朝上放置他们，将其放到除了十字路口以外的每个无人地点上，尽可能平均分配他们。(如果分配的过程中没有无人地点了，立即停止。)</li><li>将剩余的每张_住民_卡牌从游戏中移除。</li></ul></li><li>将每个星界神使敌人翻至其_破碎_面*(破坏其结构)*。将星界神使*(深空)*敌人放置到十字路口。混洗剩余的星界神使敌人并将其分别放到旅店、城镇大堂和阿特伍德大宅上。</li><li>继续进行游戏。</li></ul>",
-    "flipCosmicEmissaryEnemies": "将每个星界神使敌人翻至其_破碎_面。将星界神使 (*The Abyss*) 敌人放置到十字路口。混洗剩余的星界神使敌人并将其分别放到旅店、城镇大堂和阿特伍德大宅上。",
-    "ifTheHemlocksMadeATruce": "*If 赫姆拉克家族停战*, 查找所有场上及场外区域中的芮福．霍桑与威廉．赫姆拉克，将两者以支援面朝上放置入场，由任意调查员分别控制。",
+    "fateOfTheVale5": "<p>_谷中宿命 5:_ 银色的光芒穿透雾气，投下奇异的阴影。其中一些是狂乱村民的身影。</p><ul><li>将每个群镜之巢和_洞穴_地点从游戏中移除。</li><li>将每个放在一边的_铁杉谷_地点放置入场，*黑夜*面朝上。<ul><li>将每位调查员移动到十字路口。</li></ul></li><li>检查剧本日志：<ul><li>*如果柏蒂殒落*，将放在一边的柏蒂．马斯格雷夫剧情支持移出游戏。否则，将其以支援面朝上放置入场，位于旅店。</li><li>查找*盛宴之日*遭遇组，找出2张丧心狂欢者敌人，将其与每张放在一旁的_住民_卡牌混洗，以敌人面朝上放置他们，将其放到除了十字路口以外的每个无人地点上，尽可能平均分配他们。(如果分配的过程中没有无人地点了，立即停止。)</li><li>将剩余的每张_住民_卡牌从游戏中移除。</li></ul></li><li>将每个星界神使敌人翻至其_破碎_面*(破坏其结构)*。将星界神使*(深空)*敌人放置到十字路口。混洗剩余的星界神使敌人并将其分别放到旅店、城镇大堂和阿特伍德大宅上。</li><li>继续进行游戏。</li></ul>",
+    "flipCosmicEmissaryEnemies": "将每个星界神使敌人翻至其_破碎_面。将星界神使（*深渊*）敌人放置到十字路口。洗混剩余的星界神使敌人，将它们分别放置到旅店、城镇大堂和阿特伍德大宅。",
+    "ifTheHemlocksMadeATruce": "*如果赫姆拉克家族停战*, 查找所有场上及场外区域中的芮福．霍桑与威廉．赫姆拉克，将两者以支援面朝上放置入场，由任意调查员分别控制。",
     "ifThePetersFamilyWasReunited": "*如果彼得斯一家团聚了*, 查找所有场上及场外区域中的海伦．彼得斯与西奥．彼得斯，将两者以支援面朝上放置入场，由任意调查员分别控制。",
     "label": {
       "burnItAll": "烧光一切。",
@@ -100,11 +100,11 @@
     "putEachSetAsideHemlockValeLocationIntoPlay": "将每个放在一边的*赫姆拉克谷地*地点以（*黑夜*）面朝上放置入场。",
     "removeEachMirrorNestAndCave": "将每个群镜之巢和_洞穴_地点从游戏中移除。",
     "resumePlaying": "继续进行游戏。",
-    "title": "Scenario Interlude: 谷中宿命"
+    "title": "冒险幕间: 谷中宿命"
   },
   "intro": {
-    "body": "<p>你头晕目眩的起身，发现自己身处一个虹彩灿烂的洞穴里。光滑的墙壁闪烁着蓝色冷光，反射出梦魇般的影像。扭曲的钟乳石形成螺旋状，向着天花板伸展，犹如某种上古植物的茎。尖叫声充斥在空气中：洞穴地板上满是抓挠着四肢或头部的狂欢者，他们的皮肤上出现闪亮的裂缝，光芒并越来越强烈。整个灿烂的洞室被一种冰冷的磷光扭曲，你感觉就像在浓厚的暖空气中呼吸着浓烟。</p><p>在洞穴中心，转瞬即逝的形体环绕着一个火焰状的光辉。在纯白色光芒的内核前，映照出瑞秋主母的轮廓，她的头发披散开来，仿佛在深水中飘动。当凝视着这光辉时，你的头剧烈阵痛，于是垂头看向洞穴地板。受伤的狂欢者停止了活动，皮肤变得灰色而粉末状，有些人甚至像玻璃一样透明，将深空的明亮光线折射成一个个虹色的阵列。其他人则僵硬地站着，将手臂伸向光辉，每一张脸都被凝固在一幅悚异的笑容中。</p><p>瑞秋主母的笑声在洞穴中回荡，她凝视着深空，双臂高举过头。烟雾围绕着她，将她的身体溶解成气体。你对现在发生的事感到疑惑，沿着一个由石化的人形构成的山丘向瑞秋主母和深空跑去。无数骸骨和干枯的尸体在脚下碎裂，你终于攀爬到山顶。瑞秋主母看着你，满脸狂喜，然后她的身体升华成苍白的火焰。</p><p>一股过于熟悉的喜乐涌上你的感官，异异样的光芒跳跃并扭曲着四周的洞穴。你感觉到一只看不见的手放在你的肩膀上，你将它拨开，却感觉手上有异样，你举起一只手，看见手掌上出现一道小小的网状裂缝，裂缝逐渐延伸，蔓延到腕部，然后是手臂。随之而来的剧痛使你昏厥了过去。</p><p>你醒来，发现自己正站在一道宽阔的裂缝前，向下俯视。你看见自己不断变扌 奂， 一隹又黑 猫、一亻立女 王、一件氵票 流 白 勺东 西、一隹又在 氵军沌 与黑日 音 中爪巴 行白 勺生牛 物。 你是言隹 ？你为亻十 幺在辶言 里？</p><p class='basic right'>进入 _Setup_.</p>",
-    "title": "Scenario: 谷中宿命"
+    "body": "<p>你头晕目眩的起身，发现自己身处一个虹彩灿烂的洞穴里。光滑的墙壁闪烁着蓝色冷光，反射出梦魇般的影像。扭曲的钟乳石形成螺旋状，向着天花板伸展，犹如某种上古植物的茎。尖叫声充斥在空气中：洞穴地板上满是抓挠着四肢或头部的狂欢者，他们的皮肤上出现闪亮的裂缝，光芒并越来越强烈。整个灿烂的洞室被一种冰冷的磷光扭曲，你感觉就像在浓厚的暖空气中呼吸着浓烟。</p><p>在洞穴中心，转瞬即逝的形体环绕着一个火焰状的光辉。在纯白色光芒的内核前，映照出瑞秋主母的轮廓，她的头发披散开来，仿佛在深水中飘动。当凝视着这光辉时，你的头剧烈阵痛，于是垂头看向洞穴地板。受伤的狂欢者停止了活动，皮肤变得灰色而粉末状，有些人甚至像玻璃一样透明，将深空的明亮光线折射成一个个虹色的阵列。其他人则僵硬地站着，将手臂伸向光辉，每一张脸都被凝固在一幅悚异的笑容中。</p><p>瑞秋主母的笑声在洞穴中回荡，她凝视着深空，双臂高举过头。烟雾围绕着她，将她的身体溶解成气体。你对现在发生的事感到疑惑，沿着一个由石化的人形构成的山丘向瑞秋主母和深空跑去。无数骸骨和干枯的尸体在脚下碎裂，你终于攀爬到山顶。瑞秋主母看着你，满脸狂喜，然后她的身体升华成苍白的火焰。</p><p>一股过于熟悉的喜乐涌上你的感官，异异样的光芒跳跃并扭曲着四周的洞穴。你感觉到一只看不见的手放在你的肩膀上，你将它拨开，却感觉手上有异样，你举起一只手，看见手掌上出现一道小小的网状裂缝，裂缝逐渐延伸，蔓延到腕部，然后是手臂。随之而来的剧痛使你昏厥了过去。</p><p>你醒来，发现自己正站在一道宽阔的裂缝前，向下俯视。你看见自己不断变扌 奂， 一隹又黑 猫、一亻立女 王、一件氵票 流 白 勺东 西、一隹又在 氵军沌 与黑日 音 中爪巴 行白 勺生牛 物。 你是言隹 ？你为亻十 幺在辶言 里？</p><p class=\"basic right\">进入 _冒险设置_.</p>",
+    "title": "冒险: 谷中宿命"
   },
   "label": {
     "euphoria": {
@@ -145,12 +145,12 @@
     }
   },
   "remembered": {
-    "bertieIsFleeing": "Bertie is fleeing",
-    "theInvestigatorsFoundGas": "The investigators found gas",
-    "theInvestigatorsFoundTheosTruck": "The investigators found Theo's truck",
-    "theRoadIsClear": "The road is clear",
-    "theSamplesWereFound": "The samples were found",
-    "theSurveyNotesWereRecovered": "The survey notes were recovered"
+    "bertieIsFleeing": "伯蒂正在逃跑",
+    "theInvestigatorsFoundGas": "调查员找到了汽油",
+    "theInvestigatorsFoundTheosTruck": "调查员找到了西奥的卡车",
+    "theRoadIsClear": "道路畅通",
+    "theSamplesWereFound": "找到了样本",
+    "theSurveyNotesWereRecovered": "找回了调查笔记"
   },
   "resolutions": {
     "noResolution": {
@@ -186,8 +186,8 @@
   },
   "setup": {
     "connections": "注意每个群镜之巢地点连接到其顺时针和逆时针方向的地点。",
-    "createTheAbyss": "After drawing opening hands, create The Abyss (*see* _The Abyss_).",
-    "gatherSets": "Gather all cards from the following 遭遇组中的所有地点: *终日*, *谷中宿命*, *盛宴之日*, *异彩使徒*, *Fire!*, *石中骇物*, *Refractions*, *Residents*, *Transfiguration*, and *山谷*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/the-final-day.png' /><img src='{setImgPath}/fate-of-the-vale.png' /><img src='{setImgPath}/day-of-the-feast.png' /><img src='{setImgPath}/agents-of-the-colour.png' /><img src='{setImgPath}/fire.png' /><img src='{setImgPath}/horrors-in-the-rock.png' /><img src='{setImgPath}/refractions.png' /><img src='{setImgPath}/residents.png' /><img src='{setImgPath}/transfiguration.png' /><img src='{setImgPath}/the-vale.png' /></section>",
+    "createTheAbyss": "抽取起始手牌后，创建深渊（*参见*_深渊_）。",
+    "gatherSets": "找出下列遭遇组的所有卡牌：*终日*、*谷中宿命*、*盛宴之日*、*异彩使徒*、*着火了！*、*石中骇物*、*折射*、*居民*、*变形*和*山谷*。这些遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/the-final-day.png\"/><img src=\"{setImgPath}/fate-of-the-vale.png\"/><img src=\"{setImgPath}/day-of-the-feast.png\"/><img src=\"{setImgPath}/agents-of-the-colour.png\"/><img src=\"{setImgPath}/fire.png\"/><img src=\"{setImgPath}/horrors-in-the-rock.png\"/><img src=\"{setImgPath}/refractions.png\"/><img src=\"{setImgPath}/residents.png\"/><img src=\"{setImgPath}/transfiguration.png\"/><img src=\"{setImgPath}/the-vale.png\"/></section>",
     "mirrorNests": "收齐*谷中宿命*遭遇组的每个地点和每个双面的星界神使敌人。",
     "nightThree": "将**第三日**时刻卡牌放置入场。你并不孤单。",
     "placeTheAbyss": "将双面的深空卡牌放到深空的顶部，剧情卡牌面朝上。",
@@ -195,7 +195,7 @@
     "seedAbyssDeck": "将剩余的遭遇卡牌和每位调查员牌库顶的5张卡牌一起混洗。",
     "setAside": "将下列卡牌放在一旁，置于场外：深空剧情卡牌、*山谷*和*石中骇物*遭遇组的每个地点、*盛宴之日*、*住民*、*着火！*遭遇组、每张场景3a谷中宿命(版本一至四)，以及2张晶化寄生虫敌人。",
     "shatteredSelf": "将每位玩家的调查员卡牌替换成破碎的自我调查员卡牌*(见下方**破碎的自我**)*。将每张其他的破碎的自我从游戏中移除。",
-    "shuffleMirrorNests": "Shuffle the 4 群镜之巢 locations so you do not know which is which and put them into play, unrevealed, along with the Cosmic Emissary enemies according to the placement diagram. Each Cosmic Emissary enemy begins play with its _Colour_ side faceup.",
+    "shuffleMirrorNests": "将4张群镜之巢地点洗混，使你不知道各自是哪一张，然后按照放置示意图，将其以未揭示面朝上放置入场，并放置星界神使敌人。每个星界神使敌人在游戏开始时均以_异彩_面朝上。",
     "shuffleTrueSelves": "将混洗后的牌库分成一半，并将另一半先放在一旁。将每张“真实的”调查员卡牌洗入其中一半，然后将洗有调查员卡牌的一半放到另一半的顶部。这个牌库即为深空。",
     "startingLocation": "每位调查员从自己所选的一个不同的群镜之巢地点开始游戏。"
   },
@@ -209,22 +209,22 @@
   },
   "tokens": {
     "easyStandard": {
-      "cultist": "-4. If you fail, discard 1 card at random from your hand.",
-      "elderThing": "-2. If this is a fight or evasion attempt against Cosmic Emissary, reveal another标记.",
+      "cultist": "-4。若你失败，随机弃掉1张手牌。",
+      "elderThing": "-2。若本次检定是在攻击或闪避星界神使，再抽取1个标记。",
       "skull": "-X。X为当前场景编号+1。",
-      "tablet": "-5. You may place 1 doom on your investigator card to treat this标记's modifier as 0, instead."
+      "tablet": "-5。你可以在你的调查员卡上放置1个毁灭标记，改为将此标记的修正值视为0。"
     },
     "hardExpert": {
       "cultist": "-6. 随机从你手牌弃掉1张牌。",
-      "elderThing": "-5. If this is a fight or evasion attempt against Cosmic Emissary, you automatically fail instead.",
-      "skull": "-X. X is the number of _Colour_ enemies in play.",
-      "tablet": "-8. You may place 1 doom on your investigator card to treat this标记's modifier as -3, instead."
+      "elderThing": "-5。若本次检定是在攻击或闪避星界神使，你改为自动失败。",
+      "skull": "-X。X为场上_异彩_敌人的数量。",
+      "tablet": "-8。你可以在你的调查员卡上放置1个毁灭标记，改为将此标记的修正值视为-3。"
     }
   },
   "tooltips": {
     "fateOfTheValeV3": {
-      "drawFire": "{'{'}action{'}'} If your location has kindling on it equal to or greater than its shroud value, remove all kindling from it: Draw 1 set-aside Fire! treachery. (Group limit once per location.)",
-      "placeKindling": "{'{'}action{'}'} Spend X {'{'}perPlayer{'}'} clues: Place X resources on your location, as kindling (you may spend 5 resources or discard an _Item_ asset you control to place 1 additional kindling)."
+      "drawFire": "{'{'}action{'}'} 若你的地点上引火物的数量不少于其隐藏值，移除其上的所有引火物：抽取1张放在一边的“着火了！”诡计。（每个地点每组限制1次。）",
+      "placeKindling": "{'{'}action{'}'} 花费X{'{'}perPlayer{'}'}个线索：在你的地点放置X个资源，作为引火物（你可以花费5个资源，或弃掉1张你控制的_道具_支援，以额外放置1个引火物）。"
     }
   }
 }
