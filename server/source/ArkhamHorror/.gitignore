@@ -102,3 +102,6 @@ build-artifacts/
 # Local homebrew working data (guide transcriptions, codegen maps); the
 # checked-in guide is docs/homebrew.md
 docs/homebrew/
+
+# Generated classic UI; keep its prepared input, not rebuilt outputs.
+frontend/public/legacy-ui-20260918.2/

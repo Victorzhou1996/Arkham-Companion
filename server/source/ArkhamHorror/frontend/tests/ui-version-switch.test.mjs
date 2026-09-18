@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import vm from 'node:vm'
 import fs from 'node:fs'
-const script=fs.readFileSync(new URL('../public/ui-switch-v20260918.js',import.meta.url),'utf8')
+const script=fs.readFileSync(new URL('../public/ui-switch-v20260918b.js',import.meta.url),'utf8')
 function run(url,saved=null,blocked=false){
  const result={navigated:null,buttons:[],saved},storage={getItem(){if(blocked)throw Error('disabled');return result.saved},setItem(k,v){if(blocked)throw Error('disabled');result.saved=v}}
  const window={location:{href:url,assign(v){result.navigated=v}}}
@@ -11,17 +11,17 @@ function run(url,saved=null,blocked=false){
 }
 test('legacy switch preserves current game hash and query without touching saves',()=>{
  const {result,window}=run('https://example.test/?x=1#/games/fixture')
- window.arkhamSwitchUi('legacy');assert.equal(result.navigated,'https://example.test/legacy-ui-20260918.1/?x=1&ui=legacy#/games/fixture');assert.equal(result.saved,'legacy')
+ window.arkhamSwitchUi('legacy');assert.equal(result.navigated,'https://example.test/legacy-ui-20260918.2/?x=1&ui=legacy#/games/fixture');assert.equal(result.saved,'legacy')
 })
 test('explicit current recovery beats stale legacy preference and blocked storage',()=>{
  const current=run('https://example.test/?ui=current#/games/g','legacy');assert.equal(current.result.navigated,null)
- const blocked=run('https://example.test/legacy-ui-20260918.1/?ui=legacy#/games/g',null,true)
+ const blocked=run('https://example.test/legacy-ui-20260918.2/?ui=legacy#/games/g',null,true)
  assert.equal(blocked.result.buttons.length,1);blocked.result.buttons[0].onclick();assert.equal(blocked.result.navigated,'https://example.test/?ui=current#/games/g')
 })
 test('ordinary root entry restores selected legacy UI; only legacy gets floating return',()=>{
- assert.match(run('https://example.test/#/games/g','legacy').result.navigated,/legacy-ui-20260918.1/)
+ assert.match(run('https://example.test/#/games/g','legacy').result.navigated,/legacy-ui-20260918.2/)
  assert.equal(run('https://example.test/').result.buttons.length,0)
- assert.equal(run('https://example.test/legacy-ui-20260918.1/','legacy').result.buttons.length,1)
+ assert.equal(run('https://example.test/legacy-ui-20260918.2/','legacy').result.buttons.length,1)
 })
 test('dated legacy resources remain isolated and preload paths do not become protocol-relative',()=>{
  const base=new URL('../../legacy-ui-v20260826.3/',import.meta.url)
