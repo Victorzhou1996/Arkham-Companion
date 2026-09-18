@@ -1,4 +1,10 @@
 {
+  "choiceText": {
+    "discoverClueAt": "在{name}发现线索",
+    "damageTarget": "对{name}造成伤害",
+    "establishMotive": "构建动机",
+    "lieInWait": "守株待兔"
+  },
   "gameLoad": {
     "loading": "正在加载游戏",
     "wait": "正在读取游戏数据，请稍候。",
@@ -79,6 +85,7 @@
   "Fight": "攻击",
   "Engage": "交战",
   "Forced": "強制",
+  "Reaction": "反应",
   "Delayed": "延时效果",
   "Objective": "目标",
   "Haunted": "闹鬼",
@@ -560,6 +567,8 @@
     "solo": "单人"
   },
   "gameLog": {
+    "discardDownTo": "必须弃牌至剩余 {count} 张",
+    "discoveredClues": "发现了 {count} 个线索",
     "played": "打出了",
     "draws": "抽取了",
     "chaosToken": "混乱标记",

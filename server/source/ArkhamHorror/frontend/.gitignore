@@ -3,6 +3,7 @@ node_modules
 dist/*
 !dist/.gitkeep
 public/cards/
+public/legacy-ui-20260918.1/
 
 
 # local env files

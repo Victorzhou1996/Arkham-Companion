@@ -6,6 +6,10 @@ const normalized = (value: string) =>
     .toLowerCase()
     .replace(/[.。]+$/, '')
 
+// Older backend records humanize keys without preserving punctuation or accents.
+const recordKey = (value: string) => '@record:' + normalized(value)
+  .normalize('NFKD').replace(/\p{M}/gu, '').replace(/[^\p{L}\p{N}]/gu, '')
+
 export function buildKnownTranslations(
   source: unknown,
   target: unknown,
@@ -13,7 +17,13 @@ export function buildKnownTranslations(
 ) {
   if (typeof source === 'string' && typeof target === 'string') {
     const key = normalized(source)
-    if (key && source !== target && !source.includes('<')) result.set(key, target)
+    if (key && source !== target && !source.includes('<')) {
+      result.set(key, target)
+      const alias = recordKey(source)
+      const existing = result.get(alias)
+      // Ambiguous normalized phrases must not acquire an unrelated translation.
+      result.set(alias, existing === undefined || existing === target ? target : '')
+    }
     return result
   }
 
@@ -46,7 +56,8 @@ export function translateGameLogText(
   const directive = text.match(/^(Remember|Forgot|Record) "(.+)"(?: \((\d+)\))?$/)
   if (directive) {
     const [, action, rawValue, amount] = directive
-    const value = knownTranslations.get(normalized(rawValue)) ?? rawValue
+    const value = knownTranslations.get(normalized(rawValue))
+      ?? (knownTranslations.get(recordKey(rawValue)) || rawValue)
     const key = action === 'Remember' ? 'remember' : action === 'Forgot' ? 'forgot' : 'record'
     const translated = t(`gameLog.${key}`, { value })
     return amount ? `${translated} (${amount})` : translated
@@ -55,5 +66,12 @@ export function translateGameLogText(
   const leading = text.match(/^\s*/)?.[0] ?? ''
   const trailing = text.match(/\s*$/)?.[0] ?? ''
   const core = text.slice(leading.length, text.length - trailing.length)
-  return `${leading}${knownTranslations.get(normalized(core)) ?? core}${trailing}`
+  const known = knownTranslations.get(normalized(core))
+  if (known !== undefined) return `${leading}${known}${trailing}`
+  const translated = core
+    .replace(/\bmust\s+discard\s+down\s+to\s+(\d+)\s+cards?\b/gi,
+      (_match, count) => t('gameLog.discardDownTo', { count: Number(count) }))
+    .replace(/\bdiscovered\s+(\d+)\s+clues?\b/gi,
+      (_match, count) => t('gameLog.discoveredClues', { count: Number(count) }))
+  return `${leading}${translated}${trailing}`
 }

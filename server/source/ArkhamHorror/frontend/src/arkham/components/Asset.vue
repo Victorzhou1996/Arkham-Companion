@@ -21,7 +21,8 @@ import Event from '@/arkham/components/Event.vue';
 import Enemy from '@/arkham/components/Enemy.vue';
 import Treachery from '@/arkham/components/Treachery.vue';
 import TokenPool, { type TokenPoolItem } from '@/arkham/components/TokenPool.vue';
-import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
+import AssetSideStack from '@/arkham/components/AssetSideStack.vue';
+import CardView from '@/arkham/components/Card.vue';
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibility'
@@ -245,6 +246,18 @@ const triggerModeAbilities = computed(() => {
 })
 
 const cardsUnderneath = computed(() => props.asset.cardsUnderneath)
+const attachmentImages = computed(() => [
+  ...props.asset.events.map(id => props.game.events[id]),
+  ...props.asset.treacheries.map(id => props.game.treacheries[id]),
+  ...(isTheBeyond.value ? [] : (props.asset.assets ?? []).map(id => props.game.assets[id])),
+  ...(isTheBeyond.value ? [] : (props.asset.enemies ?? []).map(id => props.game.enemies[id])),
+].filter(Boolean).map(card => 'flipped' in card && card.flipped
+  ? imgsrc('backs/back_player.jpg')
+  : cardImage(card.cardCode)).concat(props.asset.scarletKeys.map(id => {
+  const key = props.game.scarletKeys[id]
+  return cardImage(key.id, key.stability === 'Unstable' ? 'b' : '')
+})))
+const underneathImages = computed(() => cardsUnderneath.value.map(card => imgsrc(cardToImage(card))))
 
 const keys = computed(() => props.asset.keys)
 
@@ -528,15 +541,15 @@ function startDrag(event: DragEvent) {
         <CardConfig :game="game" :playerId="playerId" :cardCode="cardCode" />
       </div>
       <span v-if="pending" class="pending-label">{{ $t('needsSlots') }}</span>
-      <CardsUnderIndicator
+      <AssetSideStack
         v-if="cardsUnderneath.length > 0"
-        class="asset-cards-under"
-        :cards="cardsUnderneath"
-        :game="game"
-        :playerId="playerId"
-        label="Cards underneath"
-        @choose="$emit('choose', $event)"
-      />
+        side="right"
+        :images="underneathImages"
+        label="压在下面 / Cards underneath"
+      >
+        <CardView v-for="(card, index) in cardsUnderneath" :key="index" :card="card" :game="game" :playerId="playerId" @choose="$emit('choose', $event)" />
+      </AssetSideStack>
+      <AssetSideStack v-if="attachmentImages.length" side="left" :images="attachmentImages" label="附着卡 / Attached cards">
       <Event
         v-for="eventId in asset.events"
         :event="game.events[eventId]"
@@ -565,6 +578,11 @@ function startDrag(event: DragEvent) {
         @choose="choose"
         :attached="true"
       />
+      <template v-if="!isTheBeyond">
+        <Asset v-for="assetId in asset.assets" :asset="game.assets[assetId]" :game="game" :playerId="playerId" :key="assetId" @choose="$emit('choose', $event)" />
+        <Enemy v-for="enemyId in asset.enemies" :enemy="game.enemies[enemyId]" :game="game" :playerId="playerId" :key="enemyId" @choose="$emit('choose', $event)" />
+      </template>
+      </AssetSideStack>
       <template v-if="debug.active">
         <button @click="debugging = true">{{ $t('enemy.debug') }}</button>
       </template>
@@ -588,24 +606,6 @@ function startDrag(event: DragEvent) {
           />
         </div>
       </template>
-      <template v-else>
-        <Asset
-          v-for="assetId in asset.assets"
-          :asset="game.assets[assetId]"
-          :game="game"
-          :playerId="playerId"
-          :key="assetId"
-          @choose="$emit('choose', $event)"
-        />
-        <Enemy
-          v-for="enemyId in asset.enemies"
-          :enemy="game.enemies[enemyId]"
-          :game="game"
-          :playerId="playerId"
-          :key="enemyId"
-          @choose="$emit('choose', $event)"
-        />
-      </template>
     </div>
     <DebugAsset v-if="debugging" :game="game" :asset="asset" :playerId="playerId" @close="debugging = false" @choose="$emit('choose', $event)"/>
       </MobileCard>
@@ -625,9 +625,14 @@ function startDrag(event: DragEvent) {
 }
 
 .asset {
+  position: relative;
+  min-width: var(--card-width);
   display: flex;
   flex-direction: column;
 }
+
+.asset:has(> .asset-side-stack--left) { margin-left: 22px; }
+.asset:has(> .asset-side-stack--right) { margin-right: 22px; }
 
 .exhausted {
   --exhaust-rotation: 90deg;

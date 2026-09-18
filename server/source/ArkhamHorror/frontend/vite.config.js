@@ -59,7 +59,7 @@ export default defineConfig({
         target: process.env.ARKHAM_DEV_ASSETS || "http://127.0.0.1:3000",
         changeOrigin: true,
       },
-      "^/img/arkham/(cards|zh/cards|en/cards|portraits)/": {
+      "^/img/arkham/(cards|zh/cards|en/cards)/": {
         target: process.env.ARKHAM_DEV_ASSETS || "http://127.0.0.1:3000",
         changeOrigin: true,
       },

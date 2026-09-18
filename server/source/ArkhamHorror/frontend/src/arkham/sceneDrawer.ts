@@ -41,7 +41,7 @@ export function scenePreviewSurfaces(card: HTMLElement): HTMLElement[] {
   const surfaces = [card]
   // A trigger may have both a tooltip and a dropdown; their aria-describedby
   // values can replace one another. These owned content markers are stable.
-  surfaces.push(...document.querySelectorAll<HTMLElement>('.stack-popover[data-edge-scene-preview="true"], .cards-under-popover[data-edge-scene-preview="true"]'))
+  surfaces.push(...document.querySelectorAll<HTMLElement>('.stack-popover[data-edge-scene-preview="true"], .cards-under-popover[data-edge-scene-preview="true"], .abilities[data-edge-scene-abilities="true"]'))
   if (card.querySelector('.mobile-card--open')) {
     const preview = document.querySelector<HTMLElement>('.mobile-card-preview')
     if (preview) surfaces.push(preview)

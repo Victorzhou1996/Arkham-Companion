@@ -106,7 +106,7 @@ watch(enabled, () => nextTick(measure))
 .adaptive-hand :deep(.adaptive-hand-row) { display: flex; align-items: flex-start; gap: 0; overflow: visible; width: max(100%, var(--hand-content-width)); min-height: calc(var(--hand-card-width) * 1.4); padding: 0; }
 .adaptive-hand :deep(.adaptive-hand-row > *) { flex: 0 0 var(--hand-card-width); width: var(--hand-card-width); min-width: var(--hand-card-width); position: relative; transition: translate 140ms ease, filter 140ms ease; }
 .adaptive-hand :deep(.adaptive-hand-row > * + *) { margin-left: calc(var(--hand-step) - var(--hand-card-width)); }
-.adaptive-hand :deep(.adaptive-hand-row > :is(:hover, :focus-within)) { z-index: 100; translate: 0 -20px; filter: drop-shadow(0 6px 6px #0009); }
+.adaptive-hand :deep(.adaptive-hand-row > :is(:hover, :focus-within)) { z-index: 100; filter: drop-shadow(0 6px 6px #0009); }
 /* A previously keyboard-focused card must not cover the card now under the
    pointer. When the pointer leaves, keyboard focus remains fully revealed. */
 .adaptive-hand :deep(.adaptive-hand-row > :hover) { z-index: 101; }

@@ -1,4 +1,10 @@
 {
+  "choiceText": {
+    "discoverClueAt": "Discover Clue at {name}",
+    "damageTarget": "Damage {name}",
+    "establishMotive": "Establish Motive",
+    "lieInWait": "Lie in Wait"
+  },
   "gameLoad": {
     "loading": "Loading game",
     "wait": "Reading game data. Please wait.",
@@ -624,6 +630,8 @@
     "solo": "Solo"
   },
   "gameLog": {
+    "discardDownTo": "must discard down to {count} card | must discard down to {count} cards",
+    "discoveredClues": "discovered {count} clue | discovered {count} clues",
     "played": "played",
     "draws": "draws",
     "chaosToken": "chaos token",

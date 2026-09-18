@@ -150,6 +150,9 @@
 #game.edge-tabletop .edge-scene-shelf .scenario-decks { display: grid !important; grid-template-columns: repeat(var(--scene-columns,2),minmax(0,1fr)) !important; grid-template-rows: none !important; grid-template-areas: none !important; gap: 6px !important; align-items: stretch; width: 100%; max-height: min(65dvh,600px); overflow: auto; --card-width: clamp(60px,7vw,150px); --card-height: calc(var(--card-width) * 1.4); }
 #game.edge-tabletop .edge-scene-shelf .scenario-decks > :is(.agenda-container,.act-container) { grid-area: auto !important; justify-self: stretch !important; min-width: 0; width: 100%; position: relative; padding: 0 3px 3px; background: #10281ff5; border: 1px solid #b2a371; border-radius: 8px 8px 0 0; }
 #game.edge-tabletop .edge-scene-shelf .mobile-card { position: static; }
+#game.edge-tabletop .edge-scene-shelf button[data-game-actionable] { min-height: 44px; min-width: 0; width: 100%; flex: 0 0 auto; font-size: 14px; line-height: 20px; white-space: normal; overflow-wrap: anywhere; }
+#game.edge-tabletop .edge-scene-shelf button[data-game-actionable] .button-label { min-width: 0; padding: 8px; }
+#game.edge-tabletop .edge-scene-shelf button[data-game-actionable]::before { font-size: 20px; align-items: center; }
 #game.edge-tabletop .edge-scene-aux:empty { display: none; }
 #game.edge-tabletop .edge-scene-shelf .tabletop-card-heading { display: none; }
 #game.edge-tabletop .edge-scene-name { display: block; width: 100%; height: 28px; padding: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 0; border-radius: 7px 7px 0 0; background: #244534; color: #eee1b2; font-size: 12px; text-align: left; cursor: pointer; }
@@ -158,7 +161,7 @@
 #game.edge-tabletop #game-log-sidebar { top: 0; bottom: var(--edge-bottom); height: auto; width: var(--tabletop-log-width,280px); z-index: 25; background: #10281f; }
 #game.edge-tabletop.tabletop-log-collapsed #game-log-sidebar { display: none; }
 #game.edge-tabletop .tabletop-dividers { z-index: 60; }
-#game.edge-tabletop .location-cards .location-investigator-column img.portrait { width: clamp(44px,3.6vw,100px); height: clamp(44px,3.6vw,100px); }
+#game.edge-tabletop .location-cards .location-investigator-column img.portrait { width: clamp(33px,2.7vw,75px); height: clamp(33px,2.7vw,75px); }
 #game.edge-tabletop .scenario-cards :is(.scenario-decks,.agenda-container,.act-container), #game.edge-tabletop .scenario-encounter-decks > * { background-color: transparent; border: 0; box-shadow: none; }
 #game.edge-tabletop .tabletop-divider span { background: #a3976b; }
 #game.edge-tabletop .tabletop-divider__grip { width: 28px; height: 28px; }

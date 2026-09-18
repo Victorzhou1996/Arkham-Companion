@@ -830,7 +830,6 @@ img.card.source-highlight {
 .swarm-indicator:hover {
   background: rgba(0, 0, 0, 0.68);
   border-color: rgba(255, 255, 255, 0.32);
-  transform: translateY(-1px);
 }
 
 .swarm-indicator--highlighted {
