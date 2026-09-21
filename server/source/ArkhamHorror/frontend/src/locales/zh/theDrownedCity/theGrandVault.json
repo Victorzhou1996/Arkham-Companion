@@ -59,6 +59,7 @@
     }
   },
   "label": {
+    "ancientVault": { "takeDamageAndHorror": "受到合计指定数量的伤害和／或恐惧" },
     "deadlyMechanisms": {
       "deactivate": "使最近的已启动秘库地点禁用。",
       "drawAttendant": "抽取1名放在一边的秘库随从敌人。",

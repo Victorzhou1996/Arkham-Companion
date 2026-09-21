@@ -103,5 +103,7 @@ build-artifacts/
 # checked-in guide is docs/homebrew.md
 docs/homebrew/
 
-# Generated classic UI; keep its prepared input, not rebuilt outputs.
+# Generated from the immutable legacy bundle during frontend prebuild.
+frontend/public/legacy-ui-20260826.3/
+frontend/public/legacy-ui-20260918.1/
 frontend/public/legacy-ui-20260918.2/

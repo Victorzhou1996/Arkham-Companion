@@ -17,6 +17,7 @@ User json sql=users
     passwordDigest Text
     beta Bool
     dev Bool default=False
+    phaseTransitionNotifications Bool default=False
     admin Bool default=False
     UniqueUsername username
     UniqueEmail email

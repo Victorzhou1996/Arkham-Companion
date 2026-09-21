@@ -85,6 +85,7 @@
     "stunnedThePriest": "震慑了高阶祭司。"
   },
   "label": {
+    "abandonedByTheGods": { "choose": "选择{count}项" },
     "wakeUp": "醒来",
     "remainOnSurface": "留在幻梦境表层",
     "ventureIntoUnderworld": "深入地下世界寻找你的同伴"

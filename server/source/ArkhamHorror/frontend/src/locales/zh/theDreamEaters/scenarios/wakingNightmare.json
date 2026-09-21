@@ -1,4 +1,7 @@
 {
+  "message": {
+    "infestationTokenDrawn": "蛛群滋生检定抽出了{token}"
+  },
   "heading": "剧本 I-B",
   "tokens": {
     "easyStandard": {
@@ -13,6 +16,9 @@
     }
   },
   "tooltips": {
+    "containingTheOutbreak": {
+      "sealRift": "{'{'}action{'}'}：进行{'{'}willpower{'}'}(X)检定，尝试封闭裂隙。X为本地点的隐藏值。本地点的调查员可以共同花费1{'{'}perPlayer{'}'}个线索，使检定自动成功。如果成功，将本地点的伤害标记替换为恐惧标记。直到本场游戏结束，本地点不能变成蛛巢。"
+    },
     "waitingRoom": {
       "resign": "你逃离医院，将你的同伴抛在身后。"
     }

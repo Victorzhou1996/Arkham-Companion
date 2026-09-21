@@ -13,6 +13,7 @@ const companionUrl = 'https://localhost:8688'
 const companionProbeTimeout = 2500
 
 async function detectCompanion() {
+  if (import.meta.env.VITE_DISABLE_COMPANION === 'true') return ''
   if (typeof window === 'undefined') return ''
 
   const controller = new AbortController()

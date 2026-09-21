@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
 import { displayTabooId, displayTabooList } from '@/arkham/taboo';
 import { computed, ref, inject, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { Game } from '@/arkham/types/Game';
@@ -384,13 +386,13 @@ const overlayOpen = ref(false)
 
 const overlaySummary = computed(() => {
   const o = overlay.value
-  if (!o) return 'none'
+  if (!o) return ct('None')
   const parts: string[] = []
-  if (o.investigator) parts.push('investigator')
+  if (o.investigator) parts.push(ct('investigator'))
   const cards =
     Object.keys(o.swaps).length + Object.keys(o.add).length + Object.keys(o.remove).length
-  if (cards) parts.push(`${cards} card${cards === 1 ? '' : 's'}`)
-  return parts.join(', ') || 'none'
+  if (cards) parts.push(ct('{count} cards', { count: cards }))
+  return parts.join(', ') || ct('None')
 })
 
 const emit = defineEmits(['choose'])
@@ -545,9 +547,9 @@ const needsReply = computed(() => {
                         <span
                           v-if="deckHasOverlay(deck)"
                           class="deck-item-overlaid"
-                          title="This deck is laid over with custom cards"
+                          :title="ct('This deck is laid over with custom cards')"
                         >
-                          <font-awesome-icon icon="layer-group" /> Overlay
+                          <font-awesome-icon icon="layer-group" /> {{ ct('Overlay') }}
                         </span>
                         <span v-if="deckId === deck.id && error" class="deck-item-error">{{ error }}</span>
                       </div>
@@ -555,7 +557,7 @@ const needsReply = computed(() => {
                         v-if="customCardsEnabled && hasLibraryCards"
                         type="button"
                         class="deck-item-overlay"
-                        :title="`Overlay: ${overlaySummary}`"
+                        :title="`${ct('Overlay')}: ${overlaySummary}`"
                         @click.stop.prevent="deckId = deck.id; overlayOpen = !overlayOpen"
                       >
                         <font-awesome-icon icon="layer-group" />
@@ -575,12 +577,11 @@ const needsReply = computed(() => {
                       </button>
                       <div v-if="deckId === deck.id && overlayOpen" class="weakness-pool-panel deck-item-weakness-pool" @click.stop>
                         <div class="weakness-pool-heading">
-                          <span>Overlay</span>
+                          <span>{{ ct('Overlay') }}</span>
                           <span class="weakness-pool-summary">{{ overlaySummary }}</span>
                         </div>
                         <p class="weakness-pool-help">
-                          Custom cards, laid over this deck for this game only. The deck itself is
-                          not changed.
+                          {{ ct('Custom cards, laid over this deck for this game only. The deck itself is not changed.') }}
                         </p>
                         <OverlayEditor v-model="overlay" :slots="deck.list.slots" :investigator="deck.list.investigator_code" />
                       </div>
@@ -1108,6 +1109,14 @@ const needsReply = computed(() => {
   flex: 0 0 100%;
   margin-top: 0;
   cursor: default;
+  padding: 0 12px 12px;
+}
+
+/* OverlayEditor is also used in the deck page and campaign roster. Keep its
+ * contents off the panel edge here, where the heading/help have their own
+ * padding. */
+.deck-item-weakness-pool :deep(.overlay-editor) {
+  padding: 0;
 }
 
 .weakness-pool-toggle {
@@ -1132,7 +1141,7 @@ const needsReply = computed(() => {
 }
 
 .weakness-pool-heading {
-  padding: 10px 12px;
+  padding: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1156,7 +1165,7 @@ const needsReply = computed(() => {
 .weakness-pool-help,
 .deck-form p.weakness-pool-help {
   margin: 0;
-  padding: 0 12px 10px;
+  padding: 0 12px 12px;
   color: rgba(255,255,255,0.6);
   font-size: 0.82em;
 }

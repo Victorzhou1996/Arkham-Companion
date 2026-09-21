@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
 import { watch, shallowRef, ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router'
 import { fetchDeck, deleteDeck, fetchCards, syncDeck, setDeckOverlay, removeDeckOverlay } from '@/arkham/api';
@@ -143,7 +145,7 @@ const overlaySummary = computed(() => {
     const card = libraryCards().find(
       (c) => stripCardCodePrefix(c.def.cardCode) === stripCardCodePrefix(o.investigator!),
     )
-    parts.push(card ? card.def.name.title : 'a custom investigator')
+    parts.push(card ? card.def.name.title : ct('a custom investigator'))
   }
   const added = Object.values(o.add).reduce((a, b) => a + b, 0)
   const removed = Object.values(o.remove).reduce((a, b) => a + b, 0)
@@ -159,10 +161,10 @@ async function removeOverlay() {
     await removeDeckOverlay(deck.value.id)
     deck.value = await fetchDeck(deck.value.id)
     overlayEditing.value = false
-    toast.success('Overlay removed')
+    toast.success(ct('Overlay removed'))
   } catch (e) {
     console.error(e)
-    toast.error('Could not remove the overlay')
+    toast.error(ct('Could not remove the overlay'))
   } finally {
     savingOverlay.value = false
   }
@@ -177,10 +179,10 @@ async function saveOverlay() {
     else await removeDeckOverlay(deck.value.id)
     deck.value = await fetchDeck(deck.value.id)
     overlayEditing.value = false
-    toast.success(applying ? 'Overlay applied' : 'Overlay removed')
+    toast.success(ct(applying ? 'Overlay applied' : 'Overlay removed'))
   } catch (e) {
     console.error(e)
-    toast.error('Could not save the overlay')
+    toast.error(ct('Could not save the overlay'))
   } finally {
     savingOverlay.value = false
   }
@@ -471,12 +473,12 @@ watch(deckRef, (el) => {
               <span v-if="tabooList" class="taboo-badge"><font-awesome-icon icon="book" /> Taboo: {{ tabooList }}</span>
               <span v-if="hasOverlay" class="overlay-badge">
                 <font-awesome-icon icon="layer-group" />
-                <span>Overlay<template v-if="overlaySummary">: {{ overlaySummary }}</template></span>
+                <span>{{ ct('Overlay') }}<template v-if="overlaySummary">: {{ overlaySummary }}</template></span>
                 <button
                   type="button"
                   class="overlay-badge-remove"
                   :disabled="savingOverlay"
-                  title="Remove the overlay — the deck's own list comes back exactly as it was"
+                  :title="ct('Remove the overlay — the deck\u0027s own list comes back exactly as it was')"
                   @click="removeOverlay"
                 >
                   <font-awesome-icon icon="times" />
@@ -501,7 +503,7 @@ watch(deckRef, (el) => {
                 class="action-btn"
                 :class="{ 'action-btn--on': overlayEditing || hasOverlay }"
                 href="#"
-                title="Edit overlay"
+                :title="ct('Edit overlay')"
                 @click.prevent="startOverlay"
               ><font-awesome-icon icon="layer-group" /></a>
               <a class="action-btn action-btn--delete" href="#" :title="$t('deck.deleteDeck')" @click.prevent="deleting = true"><font-awesome-icon icon="trash" /></a>
@@ -509,17 +511,15 @@ watch(deckRef, (el) => {
           </div>
           <div v-if="overlayEditing" class="overlay-bar">
             <p class="overlay-help">
-              Custom cards, laid over this deck. Pick what to add below; take cards out with the −
-              on each card in the list. The deck's own list is kept, so removing the overlay puts
-              it back exactly as it was.
+              {{ ct('Custom cards, laid over this deck. Pick what to add below; take cards out with the − on each card in the list. The deck\u0027s own list is kept, so removing the overlay puts it back exactly as it was.') }}
             </p>
             <!-- Cards come out on the list below, so the picker only puts them in. -->
             <OverlayEditor v-model="overlay" :slots="{}" :investigator="deck.list.investigator_code" />
             <div class="overlay-actions">
               <button type="button" :disabled="savingOverlay" @click="saveOverlay">
-                {{ overlayIsEmpty(overlay) ? 'Remove overlay' : 'Apply overlay' }}
+                {{ ct(overlayIsEmpty(overlay) ? 'Remove overlay' : 'Apply overlay') }}
               </button>
-              <button type="button" @click="overlayEditing = false">Cancel</button>
+              <button type="button" @click="overlayEditing = false">{{ t('cancel') }}</button>
             </div>
           </div>
         </template>

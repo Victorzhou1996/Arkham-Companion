@@ -14,22 +14,18 @@ Arkham Companion is a Chinese-localized distribution of Arkham Horror: The Card 
 
 The default branch is `Companion`. The `Mac` and `Server` branches are complete snapshots for their respective environments.
 
-Latest frontend source: **2026.09.17-scene-actions**, including card interaction
-fixes and 214 bundled investigator portraits. See the
-[Windows packaging handoff](docs/release-source-20260917/README.md).
-This increment updates source, not the prebuilt release directory.
-
-Prebuilt Server snapshot: **2026.09.15-online-undo**. PR #9 and PR #10 are merged.
-The prebuilt server frontend is the earlier verified September 15 online
-release, including phone/tablet UI, game-entry recovery and undo fixes.
-The Linux backend remains the verified September 13 rules build.
-See [`server/RELEASE-20260915.md`](server/RELEASE-20260915.md) for exact hashes,
+Latest source and prebuilt Server snapshot: **2026.09.21-custom-cards-archive**.
+This includes the Chinese custom-card editor and classic UI integration,
+shared archive navigation, and a newly compiled Linux rules engine through
+upstream `ffb6d5e80b`. Existing local features and Chinese card resources remain.
+See [`server/RELEASE-20260921.md`](server/RELEASE-20260921.md) for Windows handoff,
+source boundaries, hashes,
 profile selection and a mandatory artifact verification command. Ordinary
 self-hosted Linux/Windows packages use a separate false-mode build; do not
 silently substitute one profile for the other.
 
 发布与跨平台打包请先阅读 [新版本产物流程](docs/NEW-RELEASE-ARTIFACT-WORKFLOW.md)
-和 [2026-09-15 Server 发布说明](server/RELEASE-20260915.md)。
+和 [2026-09-21 Server 发布说明](server/RELEASE-20260921.md)。
 
 需要让 AI 协助新装或更新 Linux 服务器时，请先阅读
 [Server AI 部署指南](server/AI-DEPLOYMENT.md)。该指南包含分支与 Git LFS

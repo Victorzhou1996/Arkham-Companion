@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
 /* The card builder: your library on the left, the card you are working on to
  * the right. Cards live against your account, so they outlive any one game.
  *
@@ -12,7 +14,8 @@ import CardOverlay from '@/arkham/components/CardOverlay.vue'
 import CardSetStrip from '@/arkham/components/CardSetStrip.vue'
 import SegmentedToggle from '@/components/SegmentedToggle.vue'
 import Prompt from '@/components/Prompt.vue'
-import { stripCardCodePrefix } from '@/arkham/customCards'
+import { cardArtReference, stripCardCodePrefix } from '@/arkham/customCards'
+import { cardImg } from '@/arkham/helpers'
 import {
   mintCustomCardCode,
   renderCardPlaceholder,
@@ -30,6 +33,7 @@ import {
   updateAvailable,
   importSet,
   libraryCard,
+  byPrintedNumber,
   libraryCards,
   libraryLoaded,
   librarySet,
@@ -133,13 +137,7 @@ const cards = computed(() => libraryCards())
 const sets = computed(() => librarySets())
 const activeSet = computed(() => librarySet(activeSetId.value))
 
-/* Printed order -- the card number, which is the order the set's author put
- * them in. `setCards` hands them back most-recently-edited first, which is the
- * wrong order anywhere a whole set is on show. */
-const inPrintedOrder = (setId: string) =>
-  setCards(setId).sort((a, b) =>
-    (a.def.meta?.number ?? '').localeCompare(b.def.meta?.number ?? '', undefined, { numeric: true }),
-  )
+const inPrintedOrder = (setId: string) => setCards(setId).sort(byPrintedNumber)
 
 /* The set being worked on, and the cards in it. A card is built into a set, so
  * the builder shows one at a time rather than the whole library at once. */
@@ -256,7 +254,10 @@ watch([visibleSets, setQuery], () => nextTick(measurePreviews))
 
 onUnmounted(() => previewObserver?.disconnect())
 
-const cardArt = (card: CustomCard) => card.art ?? renderCardPlaceholder(card.def)
+const cardArt = (card: CustomCard) => {
+  const reference = cardArtReference(card.art)
+  return reference ? cardImg(reference) : card.art ?? renderCardPlaceholder(card.def)
+}
 const isSelected = (code: string) => selected.value.includes(code)
 
 function toggleSelected(code: string) {
@@ -960,7 +961,7 @@ async function onImport(event: Event) {
             <img :src="cardArt(card)" :data-image-id="card.def.cardCode" alt="" />
             <span class="text">
               <span class="name">{{ card.def.name.title }}</span>
-              <small>{{ card.def.cardType.replace(/Type$/, '') }}</small>
+              <small>{{ ct(card.def.cardType.replace(/Type$/, '')) }}</small>
             </span>
           </button>
           <div class="row-actions">

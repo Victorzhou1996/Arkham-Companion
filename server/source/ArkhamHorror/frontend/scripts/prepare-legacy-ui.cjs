@@ -61,10 +61,32 @@ function patchLegacyText(source, frontend) {
     's=function(f){return formatContent(communityChoices.translateChoiceText(handleEmbeddedI18n(f,o),o,(name,type)=>useDbCardStore().getCardName(name,type)))}');
 }
 
+function patchLegacyCustomCards(source, name) {
+  const replace = (from, to) => {
+    assert.equal(source.split(from).length, 2, `Unknown legacy ${name} custom-card hook`);
+    source = source.replace(from, to);
+  };
+  if (name === 'index') {
+    replace('function cL(e){const t=xv()', 'function cL(e){const custom=window.arkhamLegacyCustomCards?.resolveArt(e);if(custom)return custom.url||cL(custom.reference);const t=xv()');
+  } else if (name === 'cards') {
+    replace('state:()=>({cards:[],loaded:!1})', 'state:()=>({cards:[],custom:[],loaded:!1})');
+    replace('getCards(t){return t.cards}', 'getCards(t){return [...t.cards,...t.custom]}');
+    replace('actions:{async fetchCards()', 'actions:{async fetchCustomCards(id){try{this.custom=await window.arkhamLegacyCustomCards.load(id)}catch(e){console.error(e)}},async fetchCards()');
+  } else if (name === 'game') {
+    replace('const I=Es(null);', 'const I=Es(null);let customLoading=false;re(I,g=>{if(!customLoading&&window.arkhamLegacyCustomCards?.unknownCards(g)){customLoading=true;p.fetchCustomCards(n.gameId).finally(()=>customLoading=false)}});');
+    replace('then(async({game:b,playerId:Z,multiplayerMode:ge,eventId:Ee})=>{window.g=b', 'then(async({game:b,playerId:Z,multiplayerMode:ge,eventId:Ee})=>{await p.fetchCustomCards(n.gameId);window.g=b');
+  } else if (name === 'player') {
+    const button = 'window.arkhamLegacyCustomCards?.enabled()?(openBlock(),createElementBlock("button",{key:"legacy-custom-card-add",class:"legacy-custom-card-add",type:"button",onClick:withModifiers(()=>window.arkhamLegacyCustomCards.openPicker(e.game,e.investigator.id),["stop"])},window.arkhamLegacyCustomCards.buttonLabel())):createCommentVNode("",!0)';
+    replace('createBaseVNode("button",{type:"button",onClick:q},"+ Card to hand")', `createBaseVNode("button",{type:"button",onClick:q},"+ Card to hand"),${button}`);
+    replace('unref(Ve).active?withDirectives((openBlock(),createElementBlock("button",{key:0,class:"hand-debug-add-button"', `unref(Ve).active?${button}:createCommentVNode("",!0),unref(Ve).active?withDirectives((openBlock(),createElementBlock("button",{key:0,class:"hand-debug-add-button"`);
+  } else throw new Error(`Unknown legacy hook target: ${name}`);
+  return source;
+}
+
 async function prepare() {
   const frontend = path.resolve(__dirname, '..');
   const source = path.join(frontend, '../legacy-ui-v20260826.3/prepared');
-  const output = path.join(frontend, 'public/legacy-ui-20260918.2');
+  const output = path.join(frontend, 'public/legacy-ui-20260921.1');
   fs.cpSync(source, output, { recursive: true });
   const { createServer } = await import('vite');
   const server = await createServer({ root: frontend, appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });
@@ -83,16 +105,22 @@ async function prepare() {
       const file = path.join(directory, entry.name);
       if (entry.isDirectory()) rebase(file);
       else if (/\.(js|css|html)$/.test(file)) {
-        fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('legacy-ui-20260826.3', 'legacy-ui-20260918.2').replaceAll('ui-switch-v20260916.js', 'ui-switch-v20260918b.js'));
+        fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('legacy-ui-20260826.3', 'legacy-ui-20260921.1').replaceAll('ui-switch-v20260916.js', 'ui-switch-v20260921.js'));
       } else if (/\.(gz|br)$/.test(file)) fs.unlinkSync(file);
     }
   }
   rebase(output);
+  for (const [name, filename] of [['index', 'index-BQrQvsth.js'], ['cards', 'cards-CChhgmQ0.js'], ['game', 'Game-UD6Kvl9c.js'], ['player', 'GameLog-Cf4LRTFm.js']]) {
+    const file = path.join(output, 'assets', filename);
+    fs.writeFileSync(file, patchLegacyCustomCards(fs.readFileSync(file, 'utf8'), name));
+  }
+  const html = path.join(output, 'index.html');
+  fs.writeFileSync(html, fs.readFileSync(html, 'utf8').replace('<head>', '<head>\n<script type="module" src="/legacy-custom-cards-v20260921.js"></script>\n<style>.hand-area-IsMobile>.legacy-custom-card-add{position:absolute;top:44px;left:8px;z-index:4;min-height:32px;padding:4px 8px;background:#3b465a;color:white;border:1px solid #829076;border-radius:4px}</style>'));
   if (process.env.VITE_DISABLE_COMPANION === 'true') {
     const entry = path.join(output, 'assets/index-BQrQvsth.js');
     fs.writeFileSync(entry, disableLegacyCompanion(fs.readFileSync(entry, 'utf8')));
   }
 }
 
-module.exports = { disableLegacyCompanion, patchCampaignMessages, patchLegacyText };
+module.exports = { disableLegacyCompanion, patchCampaignMessages, patchLegacyText, patchLegacyCustomCards };
 if (require.main === module) prepare().catch(error => { console.error(error); process.exitCode = 1; });

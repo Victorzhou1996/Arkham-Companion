@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onUnmounted, Ref } from 'vue'
+import { ref, computed, nextTick, onUnmounted, Ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter, useRoute } from 'vue-router'
 import {
@@ -170,6 +170,7 @@ const newGame = ref(route.path === "/new-game" || false)
 const showImportGame = ref(false)
 const importGameRef = ref<any>(null)
 const supportQrSrc = `${import.meta.env.BASE_URL}wechat_qr.png`
+const harborSrc = `${import.meta.env.BASE_URL}img/archive-harbor-20260921.png`
 const importGameSelected = computed(() => !!importGameRef.value?.selectedFile)
 const importGameCanSubmit = computed(() => importGameRef.value?.canSubmit ?? false)
 const importGameLoading = computed(() => importGameRef.value?.loading ?? false)
@@ -197,8 +198,12 @@ const toggleNewGame = () => {
   })
 }
 
-const toggleImportGame = () => {
+const toggleImportGame = async () => {
   showImportGame.value = !showImportGame.value
+  if (showImportGame.value) {
+    await nextTick()
+    document.querySelector('.load-game-panel')?.scrollIntoView({ block: 'nearest' })
+  }
 }
 
 const dismissNotification = (notification: AppNotification) => {
@@ -232,6 +237,21 @@ const isSupportNotification = (notification: AppNotification) => {
     </NewGame>
 
     <div v-if="!newGame" class="home page-content">
+      <section class="archive-hero" :aria-label="zh ? '调查档案' : 'Investigation archive'">
+        <img class="archive-hero-art" :src="harborSrc" alt="" fetchpriority="high" />
+        <div class="archive-hero-copy">
+          <p class="archive-eyebrow">{{ zh ? '诡镇奇谈 · 档案馆' : 'ARKHAM HORROR · ARCHIVES' }}</p>
+          <h1>{{ zh ? '诡镇奇谈' : 'Arkham Horror' }}</h1>
+          <h2>{{ continueGame?.name ?? (zh ? '一段新的调查' : 'A new investigation') }}</h2>
+          <p class="archive-lede">{{ zh ? '打开档案，召集调查员。沿着灯火留下的方向，继续未完的故事。' : 'Open the archives. Gather your investigators. Follow the lamplight into the next chapter.' }}</p>
+          <div class="archive-actions">
+            <RouterLink v-if="currentUser && continueGame" class="archive-primary" :to="`/games/${continueGame.id}`">{{ zh ? '继续' : 'Continue' }}</RouterLink>
+            <button v-else-if="currentUser" class="archive-primary" type="button" @click="toggleNewGame">{{ $t('newGame') }}</button>
+            <RouterLink v-else class="archive-primary" to="/sign-in">{{ $t('logIn') }}</RouterLink>
+            <button v-if="currentUser" class="archive-secondary" type="button" @click="toggleImportGame">{{ $t('home.loadGame') }}</button>
+          </div>
+        </div>
+      </section>
       <div class="notification" v-for="notification in notifications" :key="notification.id">
         <p v-html="notification.body"></p>
         <a @click.prevent="dismissNotification(notification)" href="#">{{ $t('home.dismiss') }}</a>
@@ -261,10 +281,6 @@ const isSupportNotification = (notification: AppNotification) => {
         <div class="container">
           <div v-if="currentUser && gamesLoadError" class="site-notice" role="status">{{ zh ? '暂时无法刷新游戏列表，现有缓存仍可查看。请稍后刷新重试。' : 'Could not refresh games. Cached entries are still available; please retry shortly.' }}</div>
           <div v-if="gamesLoading && !games.length" class="site-notice" role="status">{{ zh ? '正在读取游戏列表…' : 'Loading games…' }}</div>
-          <section v-if="currentUser && continueGame" class="continue-game">
-            <div><small>{{ zh ? '回到桌面' : 'Back to the table' }}</small><h2>{{ continueGame.name }}</h2></div>
-            <RouterLink :to="`/games/${continueGame.id}`">{{ zh ? '继续游戏 →' : 'Continue game →' }}</RouterLink>
-          </section>
           <section>
             <header class="main-header">
               <h2>{{ $t('activeGames') }}</h2>

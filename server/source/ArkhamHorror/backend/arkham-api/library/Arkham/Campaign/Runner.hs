@@ -266,7 +266,9 @@ defaultCampaignRunner msg a = case msg of
       let weaknessMessages =
             if morrigan then [] else map (AddCampaignCardToDeck iid ShuffleIn) randomWeaknesses
       ancients <- hasBoon BoonOfTheAncients
-      purchaseTrauma <- initDeckTrauma deck' iid CampaignTarget
+      purchaseTrauma <- case mDecklist >>= decklistTrauma of
+        Just (physical, mental) -> pure [SetTrauma iid physical mental]
+        Nothing -> initDeckTrauma deck' iid CampaignTarget
       initXp <- initDeckXp deck' iid CampaignTarget
       pid <- getPlayer iid
 

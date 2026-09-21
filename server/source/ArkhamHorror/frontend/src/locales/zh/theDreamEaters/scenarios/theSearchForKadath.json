@@ -1,4 +1,8 @@
 {
+  "kingdomOfTheSkai": "你找到一位愿意载你前往幻梦境偏远地带的船长。你或许能在那里找到神迹，为你指明卡达斯的方向。",
+  "tooltips": {
+    "portResign": "_撤退_。继续探索未知领域太过危险，你带着收集到的信息返回安全之地。"
+  },
   "heading": "剧本 II-A",
   "specialRules": [
     {
@@ -34,6 +38,10 @@
     }
   },
   "label": {
+    "visitOriab": "前往南方的奥瑞巴岛。结算战役指南中的_奥瑞巴设置_。",
+    "visitMnar": "前往西方的古老米纳尔。结算战役指南中的_米纳尔设置_。",
+    "visitForbiddenLands": "前往北方的禁忌之地。结算战役指南中的_禁忌之地设置_。",
+    "visitTimelessRealm": "前往东方的永恒国度。结算战役指南中的_永恒国度设置_。",
     "leaveEmptyHanded": "空手离开",
     "forceIntoTemple": "强行进入神庙。",
     "placeNightgaunt": "将幽暗夜魇放置在城市地点",

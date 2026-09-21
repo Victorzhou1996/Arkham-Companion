@@ -513,6 +513,7 @@ ALTER TABLE ONLY public.password_resets
 
 SET search_path = public, pg_catalog;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS dev boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phase_transition_notifications boolean NOT NULL DEFAULT false;
 
 BEGIN;
 

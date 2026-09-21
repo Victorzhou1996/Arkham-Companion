@@ -11,7 +11,6 @@ import Arkham.Campaigns.TheDrownedCity.CampaignSteps (
 import Arkham.Campaigns.TheDrownedCity.Import
 import Arkham.Campaigns.TheDrownedCity.Key qualified as Key
 import Arkham.Campaigns.TheInnsmouthConspiracy.Helpers (getFloodLevelFor)
-import Arkham.Card
 import Arkham.ChaosToken
 import Arkham.EncounterSet qualified as Set
 import Arkham.Enemy.CardDefs.TheDrownedCity.StarSpawn qualified as Enemies
@@ -33,7 +32,6 @@ import Arkham.Matcher
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
 import Arkham.Modifier (UIModifier (..))
-import Arkham.Placement
 import Arkham.Projection
 import Arkham.Resolution
 import Arkham.Scenario.Import.Lifted
@@ -257,16 +255,15 @@ instance RunMessage TheWesternWall where
       -- v.II offers an earned Artifact or an Expedition Item; v.I only the Item.
       headedWest <- getHasRecord TheExpeditionHeadedWest
       artifacts <- if headedWest then pure [] else getAvailableArtifacts
+      items <- getAvailableExpeditionItems
       chooseOneM iid do
         questionLabeled "chooseExpeditionAssetQuestion"
         labeled "noExpeditionAsset" nothing
-        for_ (artifacts <> expeditionItems) \asset ->
+        for_ (artifacts <> items) \asset ->
           cardLabeled asset.cardCode $ handleTarget iid attrs (CardCodeTarget asset.cardCode)
       pure s
     HandleTargetChoice iid (isSource attrs -> True) (CardCodeTarget cardCode) -> do
-      for_ (lookupCardDef cardCode) \def -> do
-        card <- EncounterCard <$> genEncounterCard def
-        createAssetAt_ card (InPlayArea iid)
+      grantExpeditionAsset iid cardCode
       pure s
     ResolveChaosToken _ Cultist iid | isHardExpert attrs -> do
       whenM ((== FullyFlooded) <$> getFloodLevelFor iid) $ assignDamage iid Cultist 1

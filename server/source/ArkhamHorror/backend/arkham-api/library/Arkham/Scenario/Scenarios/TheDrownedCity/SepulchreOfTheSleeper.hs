@@ -116,16 +116,15 @@ instance RunMessage SepulchreOfTheSleeper where
       -- The earned Artifacts are handed out afterwards, one at a time.
       doStep 1 Setup
     ForInvestigator iid Setup -> do
+      items <- getAvailableExpeditionItems
       chooseOneM iid do
         questionLabeled "chooseExpeditionItem"
         labeled "noExpeditionItem" nothing
-        for_ expeditionItems \item ->
+        for_ items \item ->
           cardLabeled item.cardCode $ handleTarget iid attrs (CardCodeTarget item.cardCode)
       pure s
     HandleTargetChoice iid (isSource attrs -> True) (CardCodeTarget cardCode) -> do
-      for_ (lookupCardDef cardCode) \def -> do
-        card <- EncounterCard <$> genEncounterCard def
-        createAssetAt_ card (InPlayArea iid)
+      grantExpeditionAsset iid cardCode
       pure s
     DoStep 1 Setup -> do
       -- "Gather all earned Artifact assets and put each of them into play under an
@@ -145,7 +144,7 @@ instance RunMessage SepulchreOfTheSleeper where
         -- so far are eligible, and the players pick between them.
         unless (null counts) do
           let fewest = minimumEx $ map snd counts
-          card <- EncounterCard <$> genEncounterCard def
+          card <- expeditionAssetCard def
           lead <- getLead
           chooseOrRunOneM lead do
             questionLabeled "chooseArtifactInvestigator"

@@ -1950,6 +1950,8 @@ abilityMatches a@Ability {..} = \case
   AbilityIsAction Action.Activate -> pure $ abilityIsActivate a
   AbilityIsAction action -> pure $ action `elem` abilityActions a
   AbilityIsActionAbility -> pure $ abilityIsActionAbility a && not (abilityIndex >= 100 && abilityIndex <= 105)
+  AbilityWithoutActionDesignator ->
+    pure $ abilityIsActionAbility a && null (abilityActions a)
   AbilityIsFastAbility -> pure $ abilityIsFastAbility a
   AbilityIsForcedAbility -> pure $ abilityIsForcedAbility a
   AbilityIsReactionAbility -> pure $ abilityIsReactionAbility a
@@ -2055,6 +2057,8 @@ getAbilitiesMatching matcher = guardYourLocation $ \_ -> do
     AbilityIsAction action -> pure $ filter (elem action . abilityActions) as
     AbilityIsActionAbility ->
       pure $ filter (\a -> abilityIsActionAbility a && not (a.index >= 100 && a.index <= 105)) as
+    AbilityWithoutActionDesignator ->
+      pure $ filter (\a -> abilityIsActionAbility a && null (abilityActions a)) as
     AbilityIsFastAbility -> pure $ filter abilityIsFastAbility as
     AbilityIsForcedAbility -> pure $ filter abilityIsForcedAbility as
     AbilityIsReactionAbility -> pure $ filter abilityIsReactionAbility as
@@ -3259,13 +3263,18 @@ getAssetsMatching' matcher = do
     AssetWithPlacement placement -> pure $ filter ((== placement) . attr assetPlacement) as
     AssetControlledBy investigatorMatcher -> do
       iids <- select investigatorMatcher
-      as & filterM \a -> do
-        mods <- getModifiers a.id
-        let asIfControllers = [iid | AsIfUnderControlOf iid <- mods]
-        orM
-          [ pure $ any (`elem` iids) asIfControllers
-          , fieldP AssetController (maybe False (`elem` iids)) a.id
-          ]
+      -- A card still in hand gets a pseudo-asset entity with a controller set (for
+      -- `cdCardInHandEffects`, or temporarily via `withCardEntity`) so its own abilities
+      -- resolve. It is not an asset you control. #5695
+      as & filterM \a -> case attr assetPlacement a of
+        Placement.StillInHand _ -> pure False
+        _ -> do
+          mods <- getModifiers a.id
+          let asIfControllers = [iid | AsIfUnderControlOf iid <- mods]
+          orM
+            [ pure $ any (`elem` iids) asIfControllers
+            , fieldP AssetController (maybe False (`elem` iids)) a.id
+            ]
     UnownedAsset -> filterM (fieldP AssetOwner isNothing . toId) as
     AssetOwnedBy investigatorMatcher -> do
       iids <- select investigatorMatcher
@@ -3316,6 +3325,14 @@ getAssetsMatching' matcher = do
         placement <- field EventPlacement eid
         pure $ case placementToAttached placement of
           Just (AssetTarget aid) -> Just aid
+          _ -> Nothing
+      pure $ filter ((`elem` aids) . toId) as
+    AssetWithAttachedAsset assetMatcher -> do
+      attached <- select assetMatcher
+      aids <- flip mapMaybeM attached $ \aid -> do
+        placement <- field AssetPlacement aid
+        pure $ case placementToAttached placement of
+          Just (AssetTarget host) -> Just host
           _ -> Nothing
       pure $ filter ((`elem` aids) . toId) as
     AssetWithAttachedTreachery treacheryMatcher -> do
@@ -3385,6 +3402,10 @@ getAssetsMatching' matcher = do
     AssetWithMostClues assetMatcher -> do
       matches' <- filterMatcher as assetMatcher
       maxes <$> forToSnd matches' (field AssetClues . toId)
+    AssetWithMostTokensExcluding excluded assetMatcher -> do
+      matches' <- filterMatcher as assetMatcher
+      let total = sum . Map.elems . Map.filterWithKey (\tkn _ -> tkn `notElem` excluded)
+      maxes <$> forToSnd matches' (fieldMap AssetTokens total . toId)
     AssetWithUses uType -> filterM (fieldMap AssetUses ((> 0) . findWithDefault 0 uType) . toId) as
     AssetWithoutUses -> filterM (fieldMap AssetStartingUses (== NoUses) . toId) as
     AssetWithAnyRemainingHealth -> do
@@ -3599,6 +3620,12 @@ getEventsMatching matcher = case matcher of
       pure $ filter (\a -> case attr eventTarget a of Just (InvestigatorTarget _) -> True; _ -> False) as
     EventTargetsEnemy ->
       pure $ filter (\a -> case attr eventTarget a of Just (EnemyTarget _) -> True; _ -> False) as
+    EventTargetsAsset assetMatcher -> do
+      aids <- select assetMatcher
+      pure
+        $ filter
+          (\a -> case attr eventTarget a of Just (AssetTarget aid) -> aid `elem` aids; _ -> False)
+          as
     EventMatches ms -> foldM filterMatcher as ms
     EventOneOf ms -> nub . concat <$> traverse (filterMatcher as) ms
     AnyEvent -> pure as

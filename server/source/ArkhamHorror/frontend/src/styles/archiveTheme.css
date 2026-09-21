@@ -1,0 +1,108 @@
+/* Shared app chrome. This file is not loaded by the frozen legacy application. */
+:root {
+  --nav-height: 58px;
+  --archive-ink: #18352f;
+  --archive-paper: #e8e5dc;
+  --archive-line: #b6ad94;
+  --archive-serif: Georgia, 'Songti SC', 'STSong', 'Noto Serif SC', serif;
+}
+#app #nav {
+  background: #102c27 url('/img/arkham/tabletop-felt-20260914-v2.png') center / 640px;
+  border-bottom: 1px solid #8b8061;
+  box-shadow: 0 2px 9px #0003;
+  padding: 0 16px;
+  gap: 8px;
+}
+#app #nav .main-links { min-width: 0; }
+#app #nav :is(.home-link, .nav-link, .user-links a, .user-btn) { color: #e2e6dc; }
+#app #nav :is(.home-link, .nav-link) { padding-inline: 11px; }
+#app #nav .home-link { gap: 10px; flex-shrink: 0; margin-right: 14px; }
+#app #nav .home-link img { object-fit: contain; border-radius: 4px; filter: invert(.8) sepia(.4); }
+.brand-wordmark { display: grid; gap: 2px; line-height: 1.1; }
+.brand-wordmark strong { font: 600 22px var(--archive-serif); letter-spacing: 0; }
+.brand-wordmark small { font: 9px Georgia, serif; letter-spacing: 0; }
+#app #nav .nav-link { font-size: 14px; }
+#app #nav :is(.nav-link, .user-btn):hover { background: #26423a; color: #fff; }
+#app #nav .nav-link.router-link-active { color: #f0dca6; }
+#app #nav .nav-link.router-link-active::after { background: #bca76e; }
+#app #nav .user-btn { min-height: 38px; max-width: 180px; padding: 8px 10px; border: 1px solid #8e9a8c; border-radius: 3px; }
+#app #nav .user-btn span { overflow: hidden; text-overflow: ellipsis; }
+#app #nav .user-links { gap: 10px; padding-inline: 6px; }
+#app #nav :is(.user-dropdown, .mobile-menu) { background: #122e28; }
+#app #nav .mobile-menu a { color: #e2e6dc; }
+#app #nav .mobile-menu-btn { color: #e2e6dc; flex-shrink: 0; }
+#app #nav :is(a, button):focus-visible { outline: 2px solid #e1c579; outline-offset: -3px; }
+#app #subnav { background: #18382f; border-color: #8b806166; }
+#app #subnav .sub-link { color: #d7dfd1; }
+#app #subnav .sub-link.on { color: #f0dca6; }
+#app #subnav .sub-link.on::after { background: #bca76e; }
+#app .site-workspace :is(h1, h2, h3, .page-title) { font-family: var(--archive-serif); letter-spacing: 0; }
+#app .site-workspace :is(button, input, select, textarea) { letter-spacing: 0; }
+
+/* The lobby is the paper archive; the game board keeps its dark playing surface. */
+#app .tabletop-lobby { background: var(--archive-paper); color: #263530; --text: #35443e; --title: #20332c; --box-border: #b6ad9480; }
+#app .tabletop-lobby .home { width: min(1500px, calc(100% - 64px)); padding-top: 28px; }
+.archive-hero { position: relative; isolation: isolate; min-height: 420px; height: min(55vh, 540px); margin: 0 0 30px; overflow: hidden; }
+.archive-hero-art { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.archive-hero-copy { width: min(46%, 560px); min-width: 340px; height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 30px 42px; box-sizing: border-box; color: #1b302b; }
+.archive-eyebrow { margin: 0 0 18px; font-size: 13px; font-weight: 600; color: #365852; }
+#app .tabletop-lobby .archive-hero h1 { color: #1b302b; margin: 0 0 22px; font: 600 66px/1.12 var(--archive-serif); overflow-wrap: anywhere; }
+#app .tabletop-lobby .archive-hero h2 { color: #213c34; font: 600 24px/1.35 var(--archive-serif); margin: 0 0 12px; text-transform: none; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.archive-lede { max-width: 390px; margin: 0; font: 17px/1.8 var(--archive-serif); color: #344b43; }
+.archive-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 25px; }
+.archive-actions :is(a, button) { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 10px 24px; font: 600 16px/1.3 var(--archive-serif); border-radius: 3px; border: 1px solid #7a806a; text-decoration: none; cursor: pointer; box-sizing: border-box; }
+.archive-actions .archive-primary { color: #f4f1df; background: #23483d; }
+.archive-actions .archive-secondary { color: #263b31; background: #eee8d9; }
+.archive-actions .archive-primary:hover { background: #16392f; }
+.archive-actions .archive-secondary:hover { background: #faf7eb; }
+#app .tabletop-lobby .home-layout { width: 100%; }
+#app .tabletop-lobby .home .main-header { border-bottom: 1px solid #a8a18c; margin-bottom: 16px; padding-bottom: 16px; }
+#app .tabletop-lobby .home .main-header h2 { color: #25372f; font: 500 30px/1.3 var(--archive-serif); }
+#app .tabletop-lobby .home .game { background: #f2efe5; color: #26382f; border-color: #bbb29c; box-shadow: none; }
+#app .tabletop-lobby .home .game:hover { background: #faf6eb; }
+#app .tabletop-lobby .home .game :is(a, h2, h3) { color: #253d32; }
+#app .tabletop-lobby .home .game a:not(.game-delete a):hover { color: #456c54; }
+#app .tabletop-lobby .home .game .game-subdetails { background: #d9d6c655; }
+#app .tabletop-lobby .home .game :is(.game-scenario, .game-details, .game-difficulty, .game-player-count) { color: #4c5e50; }
+#app .tabletop-lobby .home :is(.box, .load-game-panel) { background: #f2efe5; color: #26382f; box-shadow: none; }
+#app .tabletop-lobby .home .header-actions button { background: #23483d; color: #f4f1df; border-color: #7a806a; min-height: 44px; }
+#app .tabletop-lobby .home .header-actions .secondary-cta { background: #eee8d9; color: #263b31; }
+#app .tabletop-lobby .home .support-card { background: transparent; color: #46564b; border: 0; border-top: 1px solid #b6ad94; border-radius: 0; }
+#app .tabletop-lobby .support-card summary { color: #3d5847; }
+#app .tabletop-lobby .finished-games summary { color: #3d5847; }
+#app .tabletop-lobby .site-notice { background: #eee8d9; color: #344b3e; }
+#app .app-version { color: #304637; background: #e8e5dc; padding: 2px 5px; opacity: .9; }
+@media (max-width: 1400px) {
+  #app #nav .nav-link { padding-inline: 7px; font-size: 13px; }
+  #app #nav .home-link { margin-right: 4px; padding-inline: 4px; }
+  .brand-wordmark strong { font-size: 19px; }
+}
+@media (max-width: 1200px) {
+  #app #nav .nav-link { display: none; }
+  #app #nav .mobile-menu-btn { display: flex; }
+}
+@media (max-width: 700px) {
+  :root { --nav-height: 54px; }
+  #app #nav { padding-inline: 4px; gap: 0; }
+  #app #nav .home-link { gap: 6px; }
+  #app #nav .home-link img { width: 27px; height: 27px; }
+  .brand-wordmark strong { font-size: 17px; }
+  .brand-wordmark small { font-size: 8px; }
+  #app #nav .user-links { gap: 5px; }
+  #app #nav .user-btn { max-width: 105px; padding: 7px; font-size: 12px; }
+  #app .tabletop-lobby .home { width: calc(100% - 24px); padding: 14px 0 0; }
+  .archive-hero { min-height: 365px; height: auto; margin-bottom: 20px; }
+  .archive-hero-art { object-position: 25% center; opacity: .32; }
+  .archive-hero-copy { width: 100%; min-width: 0; padding: 26px 20px; }
+  #app .tabletop-lobby .archive-hero h1 { font-size: 43px; margin-bottom: 22px; }
+  #app .tabletop-lobby .archive-hero h2 { font-size: 21px; }
+  .archive-eyebrow { font-size: 12px; margin-bottom: 14px; }
+  .archive-lede { font-size: 16px; }
+  .archive-actions { margin-top: 22px; }
+  .archive-actions :is(a, button) { padding-inline: 20px; }
+  #app .tabletop-lobby .home .main-header h2 { font-size: 25px; }
+}
+@media (max-width: 380px) {
+  #app #nav .home-link img { display: none; }
+  #app #nav .user-btn { max-width: 84px; }
+}

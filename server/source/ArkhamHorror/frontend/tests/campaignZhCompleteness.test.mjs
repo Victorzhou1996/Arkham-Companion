@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
-import { basename, join, relative } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { createServer } from 'vite'
@@ -41,11 +41,10 @@ test('cycles 5, 9 and 10 retain every source key, parameter, image and translate
   const issues = []
   for (const campaign of campaigns) {
     for (const file of files(join(root, 'en', campaign))) {
-      const zhFile = join(root, 'zh', relative(join(root, 'en'), file))
-      const zh = Object.fromEntries(leaves(JSON.parse(readFileSync(zhFile, 'utf8'))))
+      const zh = Object.fromEntries(leaves(JSON.parse(readFileSync(file.replace('/en/', '/zh/'), 'utf8'))))
       for (const [key, en] of leaves(JSON.parse(readFileSync(file, 'utf8')))) {
         const target = zh[key]
-        const path = `${campaign}/${basename(file)}:${key}`
+        const path = `${campaign}/${file.split('/').at(-1)}:${key}`
         if (typeof target !== 'string' || (en.trim() && !target.trim())) {
           issues.push(`${path}: missing translation`)
           continue
@@ -71,7 +70,7 @@ test('all campaign entries compile and render through the real zh and zh-cn load
   const { messages: en } = await loadLocaleMessages('en')
   for (const language of ['zh', 'zh-cn']) {
     const { locale, messages } = await loadLocaleMessages(language)
-    assert.equal(locale, 'zh')
+    assert.equal(locale, language)
     const historical = { theDreamEaters: { historicalOnly: 'kept' }, otherCampaign: { title: 'kept' } }
     const patched = patchCampaignMessages(`const old=${JSON.stringify(historical)};export{old as default};`, messages)
     const sandbox = {}
@@ -93,7 +92,7 @@ test('all campaign entries compile and render through the real zh and zh-cn load
         if (typeof text !== 'string') { issues.push(`${path}: absent from loaded locale`); continue }
         baseCompile(text, { onError: error => issues.push(`${path}: compile: ${error.message}`) })
         const values = Object.fromEntries(params(text).map(name => [name, 7]))
-        Object.assign(values, { imgPath: '/img/arkham', setImgPath: '/img/arkham/encounter-sets', token: 'skull' })
+        Object.assign(values, { imgPath: '/img/arkham', setImgPath: '/img/arkham/encounter-sets', token: '{skull}' })
         const rendered = formatContent(translator(path, values))
         if (source && !rendered.trim()) issues.push(`${path}: empty render`)
         if (rendered.includes("{'{'}") || rendered.includes('@:')) issues.push(`${path}: unresolved syntax`)

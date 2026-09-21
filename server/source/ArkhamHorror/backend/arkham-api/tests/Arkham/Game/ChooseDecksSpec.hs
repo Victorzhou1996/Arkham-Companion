@@ -3,6 +3,7 @@ module Arkham.Game.ChooseDecksSpec (spec) where
 import Arkham.Asset.Cards qualified as Assets
 import Arkham.Campaign (lookupCampaign)
 import Arkham.Classes.HasGame (getGame)
+import Arkham.Decklist (setDecklistTrauma)
 import Arkham.Decklist.Type qualified as Decklist
 import Arkham.Difficulty (Difficulty (Easy))
 import Arkham.Game.State
@@ -30,6 +31,16 @@ import TestImport.New
 -- question; the answer branches re-ask any seats still owed one via AskMap.
 spec :: Spec
 spec = describe "deck selection" do
+  it "restores completed-deck trauma without buying starting trauma again" . gameTest $ \self -> do
+    overTest \g -> g {gameMode = This (lookupCampaign "01" Easy)}
+    inTheThickOfIt <- genPlayerCard Assets.inTheThickOfIt
+    let decklist = setDecklistTrauma 2 3 inTheThickOfItDecklist
+    run $ InitDeck $ InitDeckAttrs (toId self) Nothing (Just decklist) (Deck [inTheThickOfIt])
+
+    field InvestigatorPhysicalTrauma (toId self) `shouldReturn` 2
+    field InvestigatorMentalTrauma (toId self) `shouldReturn` 3
+    (gameQuestion <$> getGame) `shouldReturn` mempty
+
   it "clears the trauma question once the answer resolves" . gameTest $ \self -> do
     initDeckWith self
     answerTrauma self 0 2

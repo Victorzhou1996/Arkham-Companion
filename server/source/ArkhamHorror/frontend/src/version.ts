@@ -1,1 +1,1 @@
-export const APP_VERSION = '2026.09.18-community-zh'
+export const APP_VERSION = '2026.09.21-custom-cards-archive'

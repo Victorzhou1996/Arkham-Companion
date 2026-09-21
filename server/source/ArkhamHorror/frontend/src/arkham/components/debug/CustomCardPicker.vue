@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* Adding one of your custom cards to the game.
  *
  * Building and editing live on the card builder page, where there is room for
@@ -6,6 +9,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useDebug } from '@/arkham/debug'
 import { useCardStore } from '@/stores/cards'
+import { cardImg } from '@/arkham/helpers'
 import {
   PLAYER_CARD_TYPES,
   customCards,
@@ -17,7 +21,7 @@ import {
 import { libraryCards, libraryLoaded, loadLibrary } from '@/arkham/customCardLibrary'
 import type { Game } from '@/arkham/types/Game'
 
-const props = defineProps<{ game: Game; investigatorId: string }>()
+const props = defineProps<{ game: Game; investigatorId: string; editorHref?: string }>()
 const emit = defineEmits<{ close: [] }>()
 
 const debug = useDebug()
@@ -34,7 +38,7 @@ onMounted(() => loadLibrary())
 
 const cards = computed(() => libraryCards())
 const selectedCard = computed(() => cards.value.find((c) => c.def.cardCode === selected.value))
-const cardArt = (card: CustomCard) => card.art ?? renderCardPlaceholder(card.def)
+const cardArt = (card: CustomCard) => card.art ? cardImg(card.def.cardCode) : renderCardPlaceholder(card.def)
 
 const isPlayerCard = computed(
   () => !!selectedCard.value && PLAYER_CARD_TYPES.includes(selectedCard.value.def.cardType),
@@ -106,14 +110,12 @@ async function add(placement: Placement) {
   <div class="picker-overlay" @click.self="emit('close')">
     <div class="picker-modal">
       <header>
-        <h3>Add a custom card</h3>
-        <router-link to="/card-builder" target="_blank" class="builder-link">Open card builder</router-link>
+        <h3>{{ ct("Add a custom card") }}</h3>
+        <a :href="editorHref ?? '/#/card-builder'" target="_blank" rel="noopener" class="builder-link">{{ ct("Open card builder") }}</a>
       </header>
 
-      <p v-if="!libraryLoaded" class="muted">Loading your library…</p>
-      <p v-else-if="!cards.length" class="muted">
-        Your library is empty. Build a card in the card builder and it will show up here.
-      </p>
+      <p v-if="!libraryLoaded" class="muted">{{ ct("Loading your library…") }}</p>
+      <p v-else-if="!cards.length" class="muted">{{ ct("Your library is empty. Build a card in the card builder and it will show up here.") }}</p>
 
       <div v-else class="grid">
         <div
@@ -125,27 +127,19 @@ async function add(placement: Placement) {
         >
           <img :src="cardArt(card)" :data-image-id="card.def.cardCode" alt="" />
           <span class="name">{{ card.def.name.title }}</span>
-          <small>{{ card.def.cardType.replace(/Type$/, '') }}</small>
+          <small>{{ ct(card.def.cardType.replace(/Type$/, '')) }}</small>
         </div>
       </div>
 
-      <p v-if="error" class="error">{{ error }}</p>
-      <p v-else-if="refreshed !== null" class="muted">
-        Reloaded {{ refreshed }} card{{ refreshed === 1 ? '' : 's' }} from your library.
-      </p>
+      <p v-if="error" class="error">{{ ct(error) }}</p>
+      <p v-else-if="refreshed !== null" class="muted">{{ ct("Reloaded") }}: {{ $t('customCardSets.cardCount', { n: refreshed }, refreshed) }}</p>
 
       <div class="actions">
-        <button type="button" :disabled="busy || !selectedCard" @click="add('play')">Put into play</button>
-        <button type="button" :disabled="busy || !selectedCard" @click="add('hand')">Add to hand</button>
-        <button v-if="isPlayerCard" type="button" :disabled="busy" @click="add('campaignDeck')">
-          Add to deck for campaign
-        </button>
-        <button v-if="selectedCard && !isPlayerCard" type="button" :disabled="busy" @click="add('encounterDeck')">
-          Shuffle into encounter deck
-        </button>
-        <button type="button" class="secondary" :disabled="busy" @click="refresh">
-          Reload edited cards
-        </button>
+        <button type="button" :disabled="busy || !selectedCard" @click="add('play')">{{ ct("Put into play") }}</button>
+        <button type="button" :disabled="busy || !selectedCard" @click="add('hand')">{{ ct("Add to hand") }}</button>
+        <button v-if="isPlayerCard" type="button" :disabled="busy" @click="add('campaignDeck')">{{ ct("Add to deck for campaign") }}</button>
+        <button v-if="selectedCard && !isPlayerCard" type="button" :disabled="busy" @click="add('encounterDeck')">{{ ct("Shuffle into encounter deck") }}</button>
+        <button type="button" class="secondary" :disabled="busy" @click="refresh">{{ ct("Reload edited cards") }}</button>
         <button type="button" class="secondary" @click="emit('close')">{{ $t('close') }}</button>
       </div>
     </div>
