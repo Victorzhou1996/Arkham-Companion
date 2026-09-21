@@ -1,0 +1,570 @@
+{
+  "package": "ArkhamHorrorLocal-Windows-v20260826.3.zip",
+  "packageSha256": "b5359402930b2a2582bafb8e23e725b872978cedca80fccaef30b52936ffec9b",
+  "files": [
+    {
+      "path": "index.html",
+      "originalSha256": "68b31fe80e218cc403dd9ff5df429f24091203cb39154d11ad3b94ec73f0582f",
+      "preparedSha256": "1aaed6586719447328707de8b3053033d8f3958f0f26b85a9121844951215f0f",
+      "size": 912
+    },
+    {
+      "path": "basic-entry-zh-runtime.js",
+      "originalSha256": "ee47390b61eb0aa0c3cca4b9b982da11d9bcfb97602772b10972ae958b7c6792",
+      "preparedSha256": "ee47390b61eb0aa0c3cca4b9b982da11d9bcfb97602772b10972ae958b7c6792",
+      "size": 1272
+    },
+    {
+      "path": "assets/About-DFYSRAOU.css",
+      "originalSha256": "06fc9310002a0170bc06cbbed28d7b9c34987da75993d434ec45c6c1944f92da",
+      "preparedSha256": "06fc9310002a0170bc06cbbed28d7b9c34987da75993d434ec45c6c1944f92da",
+      "size": 219
+    },
+    {
+      "path": "assets/About-Dixznc_F.js",
+      "originalSha256": "981d20b90dcfb641cbbda9baa5cf0de138c2ea89d20cab856c7ab5642408ee0a",
+      "preparedSha256": "981d20b90dcfb641cbbda9baa5cf0de138c2ea89d20cab856c7ab5642408ee0a",
+      "size": 1228
+    },
+    {
+      "path": "assets/Achievements-D79TG4Zw.css",
+      "originalSha256": "af37e9b97af4ee2735ac15c662e3252c8b82572a8d447f2bbceb09401288aa4b",
+      "preparedSha256": "af37e9b97af4ee2735ac15c662e3252c8b82572a8d447f2bbceb09401288aa4b",
+      "size": 4066
+    },
+    {
+      "path": "assets/achievements-DJaAemtM.js",
+      "originalSha256": "5bc041d0397bdadd7ee0c3e0cc0ff38117082994e3f23742a814c7fe4ae7514b",
+      "preparedSha256": "5bc041d0397bdadd7ee0c3e0cc0ff38117082994e3f23742a814c7fe4ae7514b",
+      "size": 11399
+    },
+    {
+      "path": "assets/Achievements-DsMEYSvS.js",
+      "originalSha256": "ed35b771147bf883e9c051f2005c13af6c681e99e11bbbdd315af717d5aa54bf",
+      "preparedSha256": "ed35b771147bf883e9c051f2005c13af6c681e99e11bbbdd315af717d5aa54bf",
+      "size": 4717
+    },
+    {
+      "path": "assets/Admin-BXBQeNlG.css",
+      "originalSha256": "ab124aa1f90fbfc143430b48255f7bcfbb637d55df79f0ef189eb435ad2766bd",
+      "preparedSha256": "ab124aa1f90fbfc143430b48255f7bcfbb637d55df79f0ef189eb435ad2766bd",
+      "size": 2928
+    },
+    {
+      "path": "assets/Admin-D5gj0Adb.js",
+      "originalSha256": "eff60dbbe9d0fef1aa4e28507613f2a253c562cab7a2255ffd2bdc0d2a91bef2",
+      "preparedSha256": "eff60dbbe9d0fef1aa4e28507613f2a253c562cab7a2255ffd2bdc0d2a91bef2",
+      "size": 5889
+    },
+    {
+      "path": "assets/api-BQ1BYW-_.js",
+      "originalSha256": "ec725189b237297051809b39a7613f292c92ffb827240c5b99d69b1cf8c0de03",
+      "preparedSha256": "ec725189b237297051809b39a7613f292c92ffb827240c5b99d69b1cf8c0de03",
+      "size": 123858
+    },
+    {
+      "path": "assets/BugAntIcon-D-uyQuv9.js",
+      "originalSha256": "94ed3ea4247c10f3359e53bf876aa1d6d180c824ec939d7e3535fe01c962918e",
+      "preparedSha256": "94ed3ea4247c10f3359e53bf876aa1d6d180c824ec939d7e3535fe01c962918e",
+      "size": 1734
+    },
+    {
+      "path": "assets/Bugs-B4pZ1KqA.css",
+      "originalSha256": "12c6dbaadfa51def8ded94bc7dfb2bb1e0e80c75859e2c35db26d8ac376b4bcb",
+      "preparedSha256": "12c6dbaadfa51def8ded94bc7dfb2bb1e0e80c75859e2c35db26d8ac376b4bcb",
+      "size": 2725
+    },
+    {
+      "path": "assets/Bugs-BuMItJNU.js",
+      "originalSha256": "4e8c1075432088315b06bbec6aeef18de8e1838381ee726f2f6eada26056ec87",
+      "preparedSha256": "4e8c1075432088315b06bbec6aeef18de8e1838381ee726f2f6eada26056ec87",
+      "size": 5649
+    },
+    {
+      "path": "assets/CampaignLog-CMseA8fz.css",
+      "originalSha256": "e9f1843e73e874ea48c8508934df8ac11a6b022d8e75cb6b20542f31d9a63781",
+      "preparedSha256": "e9f1843e73e874ea48c8508934df8ac11a6b022d8e75cb6b20542f31d9a63781",
+      "size": 29833
+    },
+    {
+      "path": "assets/CampaignLog-D485HKOL.css",
+      "originalSha256": "b3514a86ec38a15cf3e1f0ac30e5815d4baa22b8e34b6ef816a332bdccf57b30",
+      "preparedSha256": "b3514a86ec38a15cf3e1f0ac30e5815d4baa22b8e34b6ef816a332bdccf57b30",
+      "size": 686
+    },
+    {
+      "path": "assets/CampaignLog-D6ZDGPjb.js",
+      "originalSha256": "5c99c5c35dc16f91d284fbd597904ce031269fe9d070629ba6c2954afe3c6e35",
+      "preparedSha256": "5c99c5c35dc16f91d284fbd597904ce031269fe9d070629ba6c2954afe3c6e35",
+      "size": 1402
+    },
+    {
+      "path": "assets/CampaignLog-DbVbJU5c.js",
+      "originalSha256": "282fc8476bf3b1cb8c1dd13eb81124ec23e9990ff310171b5f0cdbef2377cd75",
+      "preparedSha256": "282fc8476bf3b1cb8c1dd13eb81124ec23e9990ff310171b5f0cdbef2377cd75",
+      "size": 47867
+    },
+    {
+      "path": "assets/campaigns-uKlnaEBi.js",
+      "originalSha256": "a2d484d647ad8a466836a11e3dc45e172a455f45943e9067cea422a7280c09f4",
+      "preparedSha256": "a2d484d647ad8a466836a11e3dc45e172a455f45943e9067cea422a7280c09f4",
+      "size": 33364
+    },
+    {
+      "path": "assets/CardImage-BdqFipXe.css",
+      "originalSha256": "550eecd6b01c04a94ed226e795081412daa0fbcfd69a5095a14529ffc5213cff",
+      "preparedSha256": "550eecd6b01c04a94ed226e795081412daa0fbcfd69a5095a14529ffc5213cff",
+      "size": 1323
+    },
+    {
+      "path": "assets/CardImage-Y1BpCO6s.js",
+      "originalSha256": "b0628077243b1b51939a1c9a76f4d77c43182217147d558addd4b63a7ee9c580",
+      "preparedSha256": "b0628077243b1b51939a1c9a76f4d77c43182217147d558addd4b63a7ee9c580",
+      "size": 12773
+    },
+    {
+      "path": "assets/cards-CChhgmQ0.js",
+      "originalSha256": "3a2380f2138c4f7edfde048f412ff672c5f85a1f9cc4ab75119706a4459f1eaa",
+      "preparedSha256": "3a2380f2138c4f7edfde048f412ff672c5f85a1f9cc4ab75119706a4459f1eaa",
+      "size": 311
+    },
+    {
+      "path": "assets/ClaimSeat-Cw6pQ7UJ.js",
+      "originalSha256": "6dbf664a5078ed99b19ad8ef2af8511e18ad728d841dc0aad11c828013733b7b",
+      "preparedSha256": "6dbf664a5078ed99b19ad8ef2af8511e18ad728d841dc0aad11c828013733b7b",
+      "size": 1088
+    },
+    {
+      "path": "assets/ClaimSeat-DNuYPigB.css",
+      "originalSha256": "acef4226810b2c2d1014857b71366ad20cc59cdbe83a1af545831165a6545053",
+      "preparedSha256": "acef4226810b2c2d1014857b71366ad20cc59cdbe83a1af545831165a6545053",
+      "size": 176
+    },
+    {
+      "path": "assets/create-Ch3ewwZl.js",
+      "originalSha256": "bfe3414765231c190f0c7eef5d259b8c259f521e6a650ba8caf49733fa8c265e",
+      "preparedSha256": "bfe3414765231c190f0c7eef5d259b8c259f521e6a650ba8caf49733fa8c265e",
+      "size": 15388
+    },
+    {
+      "path": "assets/dbCards-BLc3HiQX.js",
+      "originalSha256": "f8c84d282ff863131c5f6871ef29ce7f95fd5d389d33c84da704a0c338849b3f",
+      "preparedSha256": "a538eceb4c757a2941075991b687078848c9e3abbffb93f7091b9beb8a3b579f",
+      "size": 1298
+    },
+    {
+      "path": "assets/Deck-B6uNKzrR.css",
+      "originalSha256": "9a6e42a7b3c8aff5eb50b0658265717b62bad388780a07cf8c91ffe4adcb34ab",
+      "preparedSha256": "9a6e42a7b3c8aff5eb50b0658265717b62bad388780a07cf8c91ffe4adcb34ab",
+      "size": 10616
+    },
+    {
+      "path": "assets/Deck-D0BRuFxA.js",
+      "originalSha256": "60edfb376a3283ce368f1e768f26f298458d1f705254079685303aa48413c775",
+      "preparedSha256": "60edfb376a3283ce368f1e768f26f298458d1f705254079685303aa48413c775",
+      "size": 12729
+    },
+    {
+      "path": "assets/Decks-BVdDG5w6.js",
+      "originalSha256": "751bcdf75d9a6ee87be3ec326cfd9112c1e1ef88a7830c1dcdae2ae6a1a7fb58",
+      "preparedSha256": "751bcdf75d9a6ee87be3ec326cfd9112c1e1ef88a7830c1dcdae2ae6a1a7fb58",
+      "size": 5337
+    },
+    {
+      "path": "assets/Decks-C6gRxN6q.css",
+      "originalSha256": "021ff0646c2ed506585d35a88113dd170575bbdc7f18bfcb7b60b8e9eb5b2e60",
+      "preparedSha256": "021ff0646c2ed506585d35a88113dd170575bbdc7f18bfcb7b60b8e9eb5b2e60",
+      "size": 4100
+    },
+    {
+      "path": "assets/DeckToolbar-DpzbA97f.js",
+      "originalSha256": "34291c1532962dd515dbbd67525cfc43e41df0d71836939135ab65bb5f4d3278",
+      "preparedSha256": "34291c1532962dd515dbbd67525cfc43e41df0d71836939135ab65bb5f4d3278",
+      "size": 8271
+    },
+    {
+      "path": "assets/DeckToolbar-DV4QGNTP.css",
+      "originalSha256": "c6255297b1f24dee5b44487738d23797c59b294d3b94a7ae665b3a6855606fc4",
+      "preparedSha256": "c6255297b1f24dee5b44487738d23797c59b294d3b94a7ae665b3a6855606fc4",
+      "size": 8618
+    },
+    {
+      "path": "assets/en-Ci2ZxBe9.js",
+      "originalSha256": "9e216dde6e94bfe3dd0eb3704d2ff4fb9f3ba291cc803d6cb3c73ac7e604034a",
+      "preparedSha256": "9e216dde6e94bfe3dd0eb3704d2ff4fb9f3ba291cc803d6cb3c73ac7e604034a",
+      "size": 2314182
+    },
+    {
+      "path": "assets/es-4vMZmUxF.js",
+      "originalSha256": "a6e9b13a56cdfe87ab8b111eb87ebdcfe790f1eb2d142a18b84433ba59c8d508",
+      "preparedSha256": "a6e9b13a56cdfe87ab8b111eb87ebdcfe790f1eb2d142a18b84433ba59c8d508",
+      "size": 11649
+    },
+    {
+      "path": "assets/es-hQflf9v4.js",
+      "originalSha256": "a5d051ef765223b69f33dddb4f495c02ad726f14e5c06086bf5adc4fb4627800",
+      "preparedSha256": "a5d051ef765223b69f33dddb4f495c02ad726f14e5c06086bf5adc4fb4627800",
+      "size": 64117
+    },
+    {
+      "path": "assets/event-DQvC98EN.js",
+      "originalSha256": "3b38b0d4f4e50f006af74510701416f9a7ec3800c79639cbfac695e02cf8fc51",
+      "preparedSha256": "3b38b0d4f4e50f006af74510701416f9a7ec3800c79639cbfac695e02cf8fc51",
+      "size": 1120
+    },
+    {
+      "path": "assets/EventCountdown-CdHATDw6.js",
+      "originalSha256": "26d81d75279c604ddc7a36b4753c15609d192a61bb6bb87d9fcd72989d07915d",
+      "preparedSha256": "26d81d75279c604ddc7a36b4753c15609d192a61bb6bb87d9fcd72989d07915d",
+      "size": 1332
+    },
+    {
+      "path": "assets/EventCountdown-CJHiwgcq.css",
+      "originalSha256": "6f3014f4992d2844afa59b555ecbf434f11080c219352a66414ea1d6d9994fa9",
+      "preparedSha256": "6f3014f4992d2844afa59b555ecbf434f11080c219352a66414ea1d6d9994fa9",
+      "size": 491
+    },
+    {
+      "path": "assets/fr-Ca0EmoOs.js",
+      "originalSha256": "d8efe315fc36d2665fc8f8365f9f1b5c165e683cef16eb5adb6fe09c1d167291",
+      "preparedSha256": "d8efe315fc36d2665fc8f8365f9f1b5c165e683cef16eb5adb6fe09c1d167291",
+      "size": 1341036
+    },
+    {
+      "path": "assets/fr-DsOAPvhE.js",
+      "originalSha256": "04c29ab39cb4b9046fed0082c86b8456d945705051306c489ad64bf5ba0e6fc5",
+      "preparedSha256": "04c29ab39cb4b9046fed0082c86b8456d945705051306c489ad64bf5ba0e6fc5",
+      "size": 149414
+    },
+    {
+      "path": "assets/Game-C7Yx_z7t.css",
+      "originalSha256": "482fef208e8940bdde04a481aefedf62d2daac0d6d7737982e829ef7d30b940c",
+      "preparedSha256": "482fef208e8940bdde04a481aefedf62d2daac0d6d7737982e829ef7d30b940c",
+      "size": 62590
+    },
+    {
+      "path": "assets/Game-UD6Kvl9c.js",
+      "originalSha256": "cbe7e6c7d051f05b0d6cf55548c897fbf7791ba979eb692beba29a2da229c2d6",
+      "preparedSha256": "cbe7e6c7d051f05b0d6cf55548c897fbf7791ba979eb692beba29a2da229c2d6",
+      "size": 151702
+    },
+    {
+      "path": "assets/GameLog-CaFgbZsU.css",
+      "originalSha256": "41e6eec06790b645dd6d484cc7664221cd6fd48d22ae92fd3a972ab47e15b112",
+      "preparedSha256": "41e6eec06790b645dd6d484cc7664221cd6fd48d22ae92fd3a972ab47e15b112",
+      "size": 229805
+    },
+    {
+      "path": "assets/GameLog-Cf4LRTFm.js",
+      "originalSha256": "f27337ba0fb3ac1e0f74b50695b53c807abfe6f6977605086d5fe6418fba247a",
+      "preparedSha256": "f27337ba0fb3ac1e0f74b50695b53c807abfe6f6977605086d5fe6418fba247a",
+      "size": 1089456
+    },
+    {
+      "path": "assets/GameRow-C7MWApJk.css",
+      "originalSha256": "a7c4565ad365812993861a6a9b447e2788d0a4efb3acff2f2f3975dffb3802a4",
+      "preparedSha256": "a7c4565ad365812993861a6a9b447e2788d0a4efb3acff2f2f3975dffb3802a4",
+      "size": 4962
+    },
+    {
+      "path": "assets/GameRow-Dirm2Sfr.js",
+      "originalSha256": "f4287b0c1ec56f75e1e4502f93f17bb85697fb406e544121a86eeee9f5557be5",
+      "preparedSha256": "f4287b0c1ec56f75e1e4502f93f17bb85697fb406e544121a86eeee9f5557be5",
+      "size": 3821
+    },
+    {
+      "path": "assets/Home-CdlGhleg.js",
+      "originalSha256": "3cc63190117a32c479f61d883b4e369eb1e299f37794423aca554df8579cd853",
+      "preparedSha256": "3cc63190117a32c479f61d883b4e369eb1e299f37794423aca554df8579cd853",
+      "size": 11461
+    },
+    {
+      "path": "assets/Home-izWRFNZB.css",
+      "originalSha256": "fbbcf873bbfbd2372c6056f96fc06037699e9ff322fdc87cae0e30ca1c89283a",
+      "preparedSha256": "fbbcf873bbfbd2372c6056f96fc06037699e9ff322fdc87cae0e30ca1c89283a",
+      "size": 12199
+    },
+    {
+      "path": "assets/i18n-CYsallPH.js",
+      "originalSha256": "219da869b0fb022ac17728582cd803555a07a23086ba8debf0a2fca95952c435",
+      "preparedSha256": "219da869b0fb022ac17728582cd803555a07a23086ba8debf0a2fca95952c435",
+      "size": 1733
+    },
+    {
+      "path": "assets/index-BQrQvsth.js",
+      "originalSha256": "ba32ed355d12ac2c4fd07ee55070eea78f957db5a564c4859d3594fb2ebb65d2",
+      "preparedSha256": "c3ed2b5d15b652b8884b9d3ce7345083b5fc9c51a540214e8e1c985fe6b7ee75",
+      "size": 436760
+    },
+    {
+      "path": "assets/index-QHQq6zrS.css",
+      "originalSha256": "920c3999a01135e3c7909cfe9b48e1864b965132302cb4d7e9f549fb70f483e4",
+      "preparedSha256": "920c3999a01135e3c7909cfe9b48e1864b965132302cb4d7e9f549fb70f483e4",
+      "size": 35062
+    },
+    {
+      "path": "assets/it-BuPRNYDF.js",
+      "originalSha256": "ba1a1863913291b733f002de48f148367ca7b5793a5f4a78170a826838149091",
+      "preparedSha256": "ba1a1863913291b733f002de48f148367ca7b5793a5f4a78170a826838149091",
+      "size": 191
+    },
+    {
+      "path": "assets/ita--S96PIbn.js",
+      "originalSha256": "9a5b523558e9e47b0e0acc0d81d8e93da883042df62833cf31a09c2dfa63b96a",
+      "preparedSha256": "9a5b523558e9e47b0e0acc0d81d8e93da883042df62833cf31a09c2dfa63b96a",
+      "size": 48767
+    },
+    {
+      "path": "assets/JoinGame-B6rUNcO7.css",
+      "originalSha256": "ac89a57cb87f9bdd66a5e51cb3382afc29df57f2379b084bf1e6ec64ed5188e9",
+      "preparedSha256": "ac89a57cb87f9bdd66a5e51cb3382afc29df57f2379b084bf1e6ec64ed5188e9",
+      "size": 4543
+    },
+    {
+      "path": "assets/JoinGame-CXEQB70B.js",
+      "originalSha256": "a948e6ff9e140d02dda877ba108c3f5035f2f7fd7139a827dd357dfe9e847917",
+      "preparedSha256": "a948e6ff9e140d02dda877ba108c3f5035f2f7fd7139a827dd357dfe9e847917",
+      "size": 2284
+    },
+    {
+      "path": "assets/ko-C3daKE3O.js",
+      "originalSha256": "23555980b4e7899984deb99939bd8e87faede64093e2e262afb3e3d9c999b7aa",
+      "preparedSha256": "23555980b4e7899984deb99939bd8e87faede64093e2e262afb3e3d9c999b7aa",
+      "size": 34
+    },
+    {
+      "path": "assets/ko-Dj0uAwER.js",
+      "originalSha256": "90d6ceef325b536f4d2c5658328700ae4317f0ac87c440ec997984f10ef3c70d",
+      "preparedSha256": "90d6ceef325b536f4d2c5658328700ae4317f0ac87c440ec997984f10ef3c70d",
+      "size": 980482
+    },
+    {
+      "path": "assets/localStorage-rETqQM3q.js",
+      "originalSha256": "93e5addd59061f4bb51a5c543681a494fee9d10cb0885666ea57b83196e1f99d",
+      "preparedSha256": "93e5addd59061f4bb51a5c543681a494fee9d10cb0885666ea57b83196e1f99d",
+      "size": 1013
+    },
+    {
+      "path": "assets/LogIcons-D_X_CtUD.js",
+      "originalSha256": "c54896aef5525216232cb362b9b59cd5607199e5d6ae5afdaa248b576e145fff",
+      "preparedSha256": "c54896aef5525216232cb362b9b59cd5607199e5d6ae5afdaa248b576e145fff",
+      "size": 47198
+    },
+    {
+      "path": "assets/LogIcons-ML2rWupL.css",
+      "originalSha256": "b39e5d231ac8ba8d46658006ed9f340c85ec9d51201a6af3741cd4737bc529d7",
+      "preparedSha256": "b39e5d231ac8ba8d46658006ed9f340c85ec9d51201a6af3741cd4737bc529d7",
+      "size": 18657
+    },
+    {
+      "path": "assets/MultiplayerLobby-Ba0O6Duh.css",
+      "originalSha256": "fbe1543a47fb26ef62978eb8ec5395578983f114ce7e659ac15b6e102e9882df",
+      "preparedSha256": "fbe1543a47fb26ef62978eb8ec5395578983f114ce7e659ac15b6e102e9882df",
+      "size": 3235
+    },
+    {
+      "path": "assets/MultiplayerLobby-Bx7ji2OI.js",
+      "originalSha256": "7101f0f188ddf82d1f59e666b641774188d9faba1813ad38862b90ceb1a2b1b4",
+      "preparedSha256": "7101f0f188ddf82d1f59e666b641774188d9faba1813ad38862b90ceb1a2b1b4",
+      "size": 4547
+    },
+    {
+      "path": "assets/NewCampaign-CP-MK6Nh.js",
+      "originalSha256": "d8374fbb8c7afda45fb5bb4517b824afb5c27e5f96ba7277ac8208e8d3febef5",
+      "preparedSha256": "d8374fbb8c7afda45fb5bb4517b824afb5c27e5f96ba7277ac8208e8d3febef5",
+      "size": 38561
+    },
+    {
+      "path": "assets/NewCampaign-DrlCgSBf.css",
+      "originalSha256": "3e114ae7da7c4549cb3f44542438910ab20875cf560b1508eb9f3f1d59a28474",
+      "preparedSha256": "3e114ae7da7c4549cb3f44542438910ab20875cf560b1508eb9f3f1d59a28474",
+      "size": 21879
+    },
+    {
+      "path": "assets/NewGame-Kv1DVrm_.js",
+      "originalSha256": "d252d24eb6237276488884ffcf3524a62419b896ce00ea63317040808e115625",
+      "preparedSha256": "d252d24eb6237276488884ffcf3524a62419b896ce00ea63317040808e115625",
+      "size": 85
+    },
+    {
+      "path": "assets/OrganizerDashboard-BJl9woQf.js",
+      "originalSha256": "a05f05db46b1a558333acad65414f886514bbcfd7fca53cb02c326b085da1643",
+      "preparedSha256": "a05f05db46b1a558333acad65414f886514bbcfd7fca53cb02c326b085da1643",
+      "size": 6985
+    },
+    {
+      "path": "assets/OrganizerDashboard-eppGs2eI.css",
+      "originalSha256": "57f7f8feb87edd2e939ac939f8c08d53a0222bbd2bd5153b3cb8613ded0d5a98",
+      "preparedSha256": "57f7f8feb87edd2e939ac939f8c08d53a0222bbd2bd5153b3cb8613ded0d5a98",
+      "size": 6550
+    },
+    {
+      "path": "assets/PasswordReset-BhRzwKPT.css",
+      "originalSha256": "d528abd80fc391cc3f10e5834e04450a5a05e30e8ae080c53b08b4afb936144d",
+      "preparedSha256": "d528abd80fc391cc3f10e5834e04450a5a05e30e8ae080c53b08b4afb936144d",
+      "size": 835
+    },
+    {
+      "path": "assets/PasswordReset-CKyo6eeQ.js",
+      "originalSha256": "3dedf8ee83db770de6fdeab9a8951aaf037b7586afbf142dff01785edb6fc2f0",
+      "preparedSha256": "3dedf8ee83db770de6fdeab9a8951aaf037b7586afbf142dff01785edb6fc2f0",
+      "size": 968
+    },
+    {
+      "path": "assets/PrimaryButton-ho8CUvJD.css",
+      "originalSha256": "3e2e5db11de1fbf0ceecb6ed1f0c982a4b4f616be600023defcc0f4fe7bcf45b",
+      "preparedSha256": "3e2e5db11de1fbf0ceecb6ed1f0c982a4b4f616be600023defcc0f4fe7bcf45b",
+      "size": 555
+    },
+    {
+      "path": "assets/PrimaryButton-jBVc-NU3.js",
+      "originalSha256": "2c966c9a4dcf4d1314acde07e8416d6ad61992bdbb460b4ad11c3a5b71954b1c",
+      "preparedSha256": "2c966c9a4dcf4d1314acde07e8416d6ad61992bdbb460b4ad11c3a5b71954b1c",
+      "size": 375
+    },
+    {
+      "path": "assets/Prompt-C_jp50Cw.css",
+      "originalSha256": "d09050831d1865257c633c6c751bd08ba789c5bb0a88f8956632a282d1a6b104",
+      "preparedSha256": "d09050831d1865257c633c6c751bd08ba789c5bb0a88f8956632a282d1a6b104",
+      "size": 1789
+    },
+    {
+      "path": "assets/Prompt-DgDb1acA.js",
+      "originalSha256": "932cd5cbfa707cd08b8bcff1d6777c930f4eb1730b56c0a03f4ccc210172f0e8",
+      "preparedSha256": "932cd5cbfa707cd08b8bcff1d6777c930f4eb1730b56c0a03f4ccc210172f0e8",
+      "size": 1130
+    },
+    {
+      "path": "assets/ReplayGame-DaayaHvs.css",
+      "originalSha256": "969d453140ddc62d30dff64025cdbcea975bbe4d67ee471928f6ba51218c000c",
+      "preparedSha256": "969d453140ddc62d30dff64025cdbcea975bbe4d67ee471928f6ba51218c000c",
+      "size": 1154
+    },
+    {
+      "path": "assets/ReplayGame-IGwWmpz8.js",
+      "originalSha256": "95e99bc3b86a9b2a535158dd6123fab016a9fae7201547c986d289a50a9004cf",
+      "preparedSha256": "95e99bc3b86a9b2a535158dd6123fab016a9fae7201547c986d289a50a9004cf",
+      "size": 4167
+    },
+    {
+      "path": "assets/Rooms-BHobnMkr.css",
+      "originalSha256": "00f9aa6a258cfc06f21768f4c35faecacebb4f24615b3fe223adcd82cab61f92",
+      "preparedSha256": "00f9aa6a258cfc06f21768f4c35faecacebb4f24615b3fe223adcd82cab61f92",
+      "size": 2215
+    },
+    {
+      "path": "assets/Rooms-Dms5Xatq.js",
+      "originalSha256": "c935f4ecbf76149b31ee85fa4028460d7306f83677b2e076e820e56703f5dde7",
+      "preparedSha256": "c935f4ecbf76149b31ee85fa4028460d7306f83677b2e076e820e56703f5dde7",
+      "size": 1710
+    },
+    {
+      "path": "assets/settings-C-p0xpSK.js",
+      "originalSha256": "df2b0a12fa328a4dba54608ac3271c73f7a132633626594d2a44c367bfdcfb92",
+      "preparedSha256": "df2b0a12fa328a4dba54608ac3271c73f7a132633626594d2a44c367bfdcfb92",
+      "size": 1095
+    },
+    {
+      "path": "assets/Settings-CgeLv4OZ.js",
+      "originalSha256": "4118817bcccf20740fdb8896c8e3463c5a9fae84ef419ecf087c4bb099bd016e",
+      "preparedSha256": "4118817bcccf20740fdb8896c8e3463c5a9fae84ef419ecf087c4bb099bd016e",
+      "size": 11106
+    },
+    {
+      "path": "assets/Settings-CWHSL3h1.css",
+      "originalSha256": "6705aa6f4e66abc2ccde059740503436e8747774394ddc398787c9fc9a255e82",
+      "preparedSha256": "6705aa6f4e66abc2ccde059740503436e8747774394ddc398787c9fc9a255e82",
+      "size": 2009
+    },
+    {
+      "path": "assets/SignIn-e2JXxroM.js",
+      "originalSha256": "8642bc4102b55dce75457315b73b30cf092f06c3221d20c401a6338ccf736e1d",
+      "preparedSha256": "8642bc4102b55dce75457315b73b30cf092f06c3221d20c401a6338ccf736e1d",
+      "size": 1704
+    },
+    {
+      "path": "assets/SignIn-JK0q-LgB.css",
+      "originalSha256": "15b7f8a09d539dc498208fb024597cb75e2123f9daa51bc283ba72d7ff3f3670",
+      "preparedSha256": "15b7f8a09d539dc498208fb024597cb75e2123f9daa51bc283ba72d7ff3f3670",
+      "size": 1447
+    },
+    {
+      "path": "assets/SignUp-CfmE3eR_.js",
+      "originalSha256": "c330086f6cd0fed1899058f855c1def3e5fdb4063022d71bf13d61722f187148",
+      "preparedSha256": "c330086f6cd0fed1899058f855c1def3e5fdb4063022d71bf13d61722f187148",
+      "size": 2117
+    },
+    {
+      "path": "assets/SignUp-D7TUbFIu.css",
+      "originalSha256": "757d63980bdf53369c51cd9b26e14055a092028e4f5f3702f265b889b7b07b19",
+      "preparedSha256": "757d63980bdf53369c51cd9b26e14055a092028e4f5f3702f265b889b7b07b19",
+      "size": 934
+    },
+    {
+      "path": "assets/taboo-B4t5Y6Ff.js",
+      "originalSha256": "39ab70c24f87c8ab14edd0b9e34fc9a5a5673609cd4e73c2a0ec8f4681957531",
+      "preparedSha256": "39ab70c24f87c8ab14edd0b9e34fc9a5a5673609cd4e73c2a0ec8f4681957531",
+      "size": 907
+    },
+    {
+      "path": "assets/theFeastOfHemlockVale-_Yt--kzo.js",
+      "originalSha256": "8c8154b041a65db6151470f5b8654099f8a18ef9b99b661a9c874bda1a3a9344",
+      "preparedSha256": "8c8154b041a65db6151470f5b8654099f8a18ef9b99b661a9c874bda1a3a9344",
+      "size": 378181
+    },
+    {
+      "path": "assets/UI-DqzfJiQb.css",
+      "originalSha256": "cb22ef70cb14720198f51ba5a8c62dc23fe6b9531b07f240819fa9519e0c642c",
+      "preparedSha256": "cb22ef70cb14720198f51ba5a8c62dc23fe6b9531b07f240819fa9519e0c642c",
+      "size": 4542
+    },
+    {
+      "path": "assets/UI-DYf75t_Z.js",
+      "originalSha256": "b0ba009125b832593f84811da81bc9c60c79ce2b6637b02d3603d67d97bdc1d6",
+      "preparedSha256": "b0ba009125b832593f84811da81bc9c60c79ce2b6637b02d3603d67d97bdc1d6",
+      "size": 2059
+    },
+    {
+      "path": "assets/UpdatePassword-BpN9dGl7.css",
+      "originalSha256": "b0d3b4d7bcb3c5e5bd93d0fc04c45f67c8e04fed3d4a8a8c01305309f8898413",
+      "preparedSha256": "b0d3b4d7bcb3c5e5bd93d0fc04c45f67c8e04fed3d4a8a8c01305309f8898413",
+      "size": 886
+    },
+    {
+      "path": "assets/UpdatePassword-Z5V6dp7d.js",
+      "originalSha256": "7e5d02b5148ed6f0b6192977602bac2e331e8db1775a0b923b91ba23234c0604",
+      "preparedSha256": "7e5d02b5148ed6f0b6192977602bac2e331e8db1775a0b923b91ba23234c0604",
+      "size": 819
+    },
+    {
+      "path": "assets/useEpicHelpers-BgHLrRxS.js",
+      "originalSha256": "c8a05c3a8e204cedd1fe8b0f47c5ff1eec394366cf3b297af0611893d0a6015a",
+      "preparedSha256": "c8a05c3a8e204cedd1fe8b0f47c5ff1eec394366cf3b297af0611893d0a6015a",
+      "size": 383
+    },
+    {
+      "path": "assets/XpBreakdown-okREq0Ez.css",
+      "originalSha256": "ba71a71574983b4bfc134a90a80885bef0489693a3fa0b669f1004fd134491d1",
+      "preparedSha256": "ba71a71574983b4bfc134a90a80885bef0489693a3fa0b669f1004fd134491d1",
+      "size": 38352
+    },
+    {
+      "path": "assets/XpBreakdown-_9hRogLs.js",
+      "originalSha256": "43d495fa1696e40df527b357d782eaf9f4c40293c1f54eadb70d07c28df927bf",
+      "preparedSha256": "43d495fa1696e40df527b357d782eaf9f4c40293c1f54eadb70d07c28df927bf",
+      "size": 109119
+    },
+    {
+      "path": "assets/zh-DAG2tbjn.js",
+      "originalSha256": "7d19d126bef11f424197621fbdd87b1a32bb3710430ae459bc540fb34ed5c0a0",
+      "preparedSha256": "7d19d126bef11f424197621fbdd87b1a32bb3710430ae459bc540fb34ed5c0a0",
+      "size": 2435844
+    },
+    {
+      "path": "assets/zh-DxvknHJq.js",
+      "originalSha256": "d242d86a50cd2a9cc1c33d42f2ac5aae8a4a7424538eb97d6c9867235d208c46",
+      "preparedSha256": "d242d86a50cd2a9cc1c33d42f2ac5aae8a4a7424538eb97d6c9867235d208c46",
+      "size": 164640
+    }
+  ]
+}

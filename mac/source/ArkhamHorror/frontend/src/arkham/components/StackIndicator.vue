@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { isScenePreviewSource } from '@/arkham/sceneDrawer'
 import { Dropdown } from 'floating-vue'
 import { type Card, cardImage, toCardContents, asCardCode } from '@/arkham/types/Card'
 import { resolvedSideArt } from '@/arkham/cardImages'
@@ -80,6 +81,16 @@ const expandable = computed(() =>
   props.completedCards.length > 0 || props.remainingCards.length > 0 || hasCardGroups.value
 )
 const placement = computed(() => props.placement ?? 'bottom')
+const trigger = ref<HTMLElement | null>(null)
+const shown = ref(false)
+const scenePreview = ref(false)
+function markScenePreview() { scenePreview.value = isScenePreviewSource(trigger.value) }
+function closeScenePreview() { if (scenePreview.value) shown.value = false }
+function escapePreview(event: KeyboardEvent) { if (event.key === 'Escape') shown.value = false }
+onMounted(() => document.addEventListener('keydown', escapePreview))
+onBeforeUnmount(() => document.removeEventListener('keydown', escapePreview))
+onMounted(() => document.addEventListener('arkham:scene-drawer-dismiss', closeScenePreview))
+onBeforeUnmount(() => document.removeEventListener('arkham:scene-drawer-dismiss', closeScenePreview))
 
 const currentPosition = computed(() => {
   const index = pips.value.findIndex((state) => state === 'current')
@@ -94,6 +105,8 @@ const tooltip = computed(() => {
 
 <template>
   <Dropdown
+    v-model:shown="shown"
+    @show="markScenePreview" @hide="scenePreview = false"
     :placement="placement"
     :distance="8"
     :disabled="!expandable"
@@ -101,7 +114,10 @@ const tooltip = computed(() => {
     theme="stack-indicator-popover"
   >
     <div
+      ref="trigger"
       class="stack-indicator"
+      :role="expandable ? 'button' : undefined" :tabindex="expandable ? 0 : undefined" :aria-expanded="expandable ? shown : undefined" :aria-label="tooltip"
+      @keydown.enter.prevent="expandable && (shown = !shown)" @keydown.space.prevent="expandable && (shown = !shown)"
       :class="{ 'is-expandable': expandable }"
       v-tooltip="tooltip"
     >
@@ -113,7 +129,7 @@ const tooltip = computed(() => {
       />
     </div>
     <template #popper>
-      <div class="stack-popover" :class="{ 'stack-popover--grouped': hasCardGroups }">
+      <div class="stack-popover" :data-edge-scene-preview="scenePreview || undefined" :class="{ 'stack-popover--grouped': hasCardGroups }">
         <div
           v-for="(group, groupIndex) in popoverGroups"
           :key="`${group.label}-${groupIndex}`"

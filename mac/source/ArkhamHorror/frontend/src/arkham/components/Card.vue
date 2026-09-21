@@ -2,7 +2,7 @@
 import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { useMobileBoard } from '@/arkham/mobile/context'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { imgsrc } from '@/arkham/helpers';
 import { cardImage } from '@/arkham/cardImages';
 import type { Modifier } from '@/arkham/types/Modifier';
@@ -12,7 +12,7 @@ import type { Game } from '@/arkham/types/Game';
 import * as ArkhamGame from '@/arkham/types/Game';
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message';
 import { MessageType } from '@/arkham/types/Message';
-import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import CardAbilityControls from '@/arkham/components/CardAbilityControls.vue'
 import TokenPool from '@/arkham/components/TokenPool.vue'
 import { useDebug } from '@/arkham/debug'
 import * as DebugMove from '@/arkham/debugCardMove'
@@ -38,6 +38,7 @@ const emit = defineEmits<{
 }>()
 const debug = useDebug()
 const mobileBoard = useMobileBoard()
+const cardFrame = ref<HTMLElement | null>(null)
 const cardStore = useCardStore()
 
 onMounted(() => {
@@ -281,15 +282,9 @@ function startDrag(event: DragEvent) {
       title="Debug customize"
       @click.stop="debugCustomize"
     ><font-awesome-icon icon="bug" /></button>
-    <AbilityButton
-      v-if="!mobileBoard?.touchEnabled.value"
-      v-for="ability in abilities"
-      :key="ability.index"
-      :ability="ability.contents"
-      :data-image="image"
-      :game="game"
-      @click="$emit('choose', ability.index)"
-      />
+    <div ref="cardFrame" class="card-ability-anchor"></div>
+    <CardAbilityControls v-if="!mobileBoard?.touchEnabled.value" :game="game"
+      :abilities="abilities" :frame="cardFrame" :image="image" @choose="emit('choose', $event)" />
     <AbilitiesMenu v-if="mobileBoard?.touchEnabled.value && abilities.length" :game="game" :abilities="abilities" :frame="null" @choose="emit('choose', $event)" />
       </MobileCard>
   </div>
@@ -343,6 +338,7 @@ function startDrag(event: DragEvent) {
   flex-direction: column;
   position: relative;
 }
+.card-ability-anchor { position: absolute; bottom: 0; left: 0; width: 100%; height: 1px; }
 
 .debug-customize {
   position: absolute;

@@ -1,0 +1,2 @@
+# Preserve the verified historical frontend bytes, including original line endings.
+prepared/** -text -diff !eol

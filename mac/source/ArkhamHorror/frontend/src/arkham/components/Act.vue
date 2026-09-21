@@ -4,6 +4,7 @@ import { ComputedRef, computed, ref, watch } from 'vue'
 import { BookOpenIcon } from '@heroicons/vue/24/outline'
 import { Dropdown } from 'floating-vue'
 import { useCardStore } from '@/stores/cards'
+import { useDbCardStore } from '@/stores/dbCards'
 import { type Game } from '@/arkham/types/Game'
 import { type Card, cardImage, asCardCode, toCardContents } from '@/arkham/types/Card'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
@@ -179,6 +180,8 @@ const cardStage = (code: string): number | null => cardDefFor(code)?.stage ?? nu
 // a title are variant printings of that act, each of which is played in turn,
 // so those get a pip each.
 const cardTitle = (code: string): string => cardDefFor(code)?.name.title ?? code
+const sceneNames = useDbCardStore()
+const sceneTitle = computed(() => sceneNames.getCardName(cardTitle(props.act.id), 'act'))
 
 // The face a completed act/agenda was resolved on, so the popover can offer the
 // side that only ever flashed past on advance.
@@ -447,6 +450,7 @@ const chooseFromStoryCollection = (choice: number) => {
 <template>
   <div class="act-container" :data-tabletop-label="tabletop.act">
       <MobileCard>
+    <button type="button" data-mobile-direct class="edge-scene-name" :aria-label="`${tabletop.act}：${sceneTitle}`">{{ tabletop.act }} · {{ sceneTitle }}</button>
     <h3 class="tabletop-card-heading"><BookOpenIcon aria-hidden="true" />{{ tabletop.act }}</h3>
     <div class="act-row">
       <div
@@ -610,6 +614,7 @@ const chooseFromStoryCollection = (choice: number) => {
 </template>
 
 <style scoped>
+.edge-scene-name { display: none; }
 .act-container :deep(.card) {
   flex: 0;
   width: var(--card-width);

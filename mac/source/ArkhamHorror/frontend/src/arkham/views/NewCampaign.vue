@@ -1,5 +1,8 @@
 <script lang="ts" setup>
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { locale } = useI18n()
+const zh = computed(() => locale.value.toLowerCase().startsWith('zh'))
 import { useUserStore } from '@/stores/user'
 import { useRoute, useRouter } from 'vue-router'
 import * as Arkham from '@/arkham/types/Deck'
@@ -441,13 +444,21 @@ async function start() {
 </script>
 
 <template>
-  <div class="new-campaign-content">
+  <div class="new-campaign-content site-workspace">
     <header class="main-header">
       <h2>{{ $t('newGame') }}</h2>
       <slot name="cancel" />
     </header>
 
     <form v-if="ready" id="new-campaign" @submit.prevent="goNext">
+      <nav class="wizard-progress" :aria-label="zh ? '创建进度' : 'Creation progress'">
+        <button type="button" :aria-current="step === 'ChooseMode' ? 'step' : undefined" @click="goBack">1 · {{ zh ? '选择战役 / 剧本' : 'Choose campaign / scenario' }}</button>
+        <span :aria-current="step === 'GameOptions' ? 'step' : undefined">2 · {{ zh ? '配置与确认' : 'Configure and confirm' }}</span>
+      </nav>
+      <div v-if="step === 'GameOptions'" class="configuration-summary" role="status">
+        <strong>{{ currentCampaignName }}</strong>
+        <span>{{ playerCount }} {{ zh ? '位调查员' : 'investigators' }} · {{ $t('create.' + selectedDifficulty) }} · {{ $t(`create.undoMode.${undoMode}.name`) }}</span>
+      </div>
       <ChooseMode
         v-if="step === 'ChooseMode'"
         v-model:gameMode="gameMode"
@@ -497,7 +508,7 @@ async function start() {
         :chosenSideStoryId="gameMode === 'SideStory' ? selectedScenario : null"
       />
 
-      <p v-if="creationError" class="creation-error">{{ creationError }}</p>
+      <p v-if="creationError" class="creation-error" role="alert">{{ creationError }}</p>
 
       <div class="wizard-actions buttons">
         <button
@@ -515,10 +526,11 @@ async function start() {
           type="submit"
           :disabled="nextDisabled || creating"
         >
-          {{ $t('create.create') }}
+          {{ creating ? (zh ? '正在创建…' : 'Creating…') : $t('create.create') }}
         </button>
       </div>
     </form>
+    <p v-else class="site-notice" role="status">{{ zh ? '正在读取创建选项…' : 'Loading options…' }}</p>
   </div>
 </template>
 

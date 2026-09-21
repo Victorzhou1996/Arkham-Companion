@@ -1,0 +1,26 @@
+/* Shared editor in the classic shell. Does not change the user's UI preference. */
+html[data-ui='legacy-editor'] {
+  --nav-height: 40px;
+  --background: #2e3440;
+  --background-dark: #232831;
+  --box-background: #363d4b;
+  --surface-input: #242a34;
+  --surface-panel: #363d4b;
+  --surface-raised: #414a59;
+  --surface-hover: #4c5767;
+  --app-background: #2e3440;
+  --text: #d8dee9;
+  --title: #d8dee9;
+  --spooky-green: #8fa34a;
+  --button: #424c5a;
+  --button-highlight: #8fa34a;
+  --archive-serif: system-ui, sans-serif;
+}
+html[data-ui='legacy-editor'] #app #nav { background: #232831; border-bottom: 1px solid #4c566a; box-shadow: none; padding-inline: 8px; }
+html[data-ui='legacy-editor'] #app #nav :is(a, .user-btn) { color: #b2c276; }
+html[data-ui='legacy-editor'] #app #nav .user-btn { border: 0; min-height: 30px; }
+html[data-ui='legacy-editor'] #app #subnav { background: #303847; }
+html[data-ui='legacy-editor'] #app .site-workspace { color: #d8dee9; }
+html[data-ui='legacy-editor'] #app .site-workspace :is(h1, h2, h3, .page-title) { color: #eceff4; }
+html[data-ui='legacy-editor'] #app .site-workspace :is(input:not([type=checkbox]):not([type=radio]):not([type=image]):not([type=range]), select, textarea) { background: #242a34; color: #eceff4; border-color: #647085; }
+html[data-ui='legacy-editor'] #app footer { background: #232831; color: #bac2d0; }

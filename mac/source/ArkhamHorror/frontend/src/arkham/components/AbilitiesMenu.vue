@@ -10,6 +10,7 @@ const props = withDefaults(defineProps<{
   game: Game;
   abilities: AbilityMessage[];
   frame: HTMLElement | null;
+  ignore?: HTMLElement[];
   position?: 'top' | 'bottom' | 'left' | 'right';
   showMove?: boolean
   hostHasSwarm?: boolean
@@ -34,8 +35,9 @@ interface Position {
 
 const abilitiesRef = ref<HTMLElement | null>(null);
 const showAbilities = defineModel()
-const abilitiesPosition = ref<Position>({ bottom: '0px', top: '0px', left: '0px' });
-const positionClass = computed(() => props.position || 'top');
+const abilitiesPosition = ref<Position>({ top: '0px', left: '0px' });
+const sceneAbilities = computed(() => !!props.frame?.closest('#game.edge-tabletop .edge-scene-group'));
+const positionClass = computed(() => sceneAbilities.value ? 'top' : props.position || 'top');
 
 // Every property the anchored path relies on has to be tested: anchor-name
 // shipped ahead of position-area (Chromium 125-128 spelled it inset-area), and a
@@ -164,13 +166,19 @@ function updatePosition() {
   if (showAbilities.value) calculatePosition();
 }
 
+function dismissSceneAbilities() {
+  if (sceneAbilities.value) showAbilities.value = false;
+}
+
 onMounted(() => {
+  document.addEventListener('arkham:scene-drawer-dismiss', dismissSceneAbilities);
   if (supportsAnchor) return;
   window.addEventListener('resize', updatePosition);
   window.addEventListener('scroll', updatePosition, true);
 });
 
 onUnmounted(() => {
+  document.removeEventListener('arkham:scene-drawer-dismiss', dismissSceneAbilities);
   props.frame?.style.removeProperty('anchor-name');
   window.removeEventListener('resize', updatePosition);
   window.removeEventListener('scroll', updatePosition, true);
@@ -186,8 +194,8 @@ onUnmounted(() => {
     </div>
   </div>
   <Teleport v-else-if="!mobileEnabled" to="body">
-    <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame] }">
-      <div class="abilities" :class="[positionClass, { anchored: useAnchor }]" :style="anchorStyle" ref="abilitiesRef" >
+    <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame, ...(ignore || [])] }">
+      <div class="abilities" :class="[positionClass, { anchored: useAnchor, 'abilities--scene': sceneAbilities }]" :data-edge-scene-abilities="sceneAbilities || undefined" :style="anchorStyle" ref="abilitiesRef" >
         <button
           v-if="playAction !== undefined"
           class="play-card-button"
@@ -259,6 +267,26 @@ onUnmounted(() => {
   position: fixed;
   position-try-fallbacks: flip-block, flip-inline;
 }
+
+/* Drawer actions remain readable and clickable independently of card size. */
+.abilities.abilities--scene {
+  min-width: min(220px, calc(100vw - 16px));
+  padding: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  overscroll-behavior: contain;
+}
+.abilities.abilities--scene button {
+  min-height: 44px;
+  min-width: 0;
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.abilities--scene :deep(.button-label) { min-width: 0; padding: 8px; }
+.abilities--scene :deep(button::before) { font-size: 20px; align-items: center; }
 
 .abilities.anchored.top { position-area: top span-right; }
 .abilities.anchored.bottom { position-area: bottom span-right; }

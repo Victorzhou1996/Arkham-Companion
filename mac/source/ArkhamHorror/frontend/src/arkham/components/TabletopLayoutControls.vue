@@ -9,6 +9,7 @@ import { useAccountPanels } from '@/arkham/composables/useAccountPanels'
 import { collapsedLogWidth, logCollapsed, movePanel, normalizePanels, panelDefaults, panelLimits, persistentPanels, temporaryPileDefaults, type PanelKey, type PanelLayout } from '@/arkham/tabletopPanels'
 
 const desktopWidth = useMediaQuery(TABLETOP_MEDIA_QUERY)
+const props = defineProps<{ edge?: boolean; unreadLogCount?: number }>()
 const showLog = defineModel<boolean>('showLog', { default: true })
 const mobileBoard = useMobileBoard()
 const tablet = computed(() => !!mobileBoard?.tablet.value)
@@ -33,7 +34,7 @@ watch(() => size.value.width * layout.value.log / 100, width => {
   }
 }, { immediate: true })
 const logClosed = computed(() => logIsCollapsed.value || !showLog.value)
-const logWidth = computed(() => logClosed.value ? collapsedLogWidth : size.value.width * layout.value.log / 100)
+const logWidth = computed(() => logClosed.value ? (props.edge ? 0 : collapsedLogWidth) : size.value.width * layout.value.log / 100)
 watch(showLog, visible => {
   if (visible && logIsCollapsed.value && size.value.width > 1) setPanel('log', Math.max(panelDefaults.log, 190 / size.value.width * 100))
 })
@@ -54,21 +55,47 @@ const names: Record<PanelKey, [string, string]> = {
   pileRows: ['抽牌堆 / 弃牌堆', 'Draw / discard piles'],
 }
 const vertical = (key: PanelKey) => ['left', 'investigator', 'right', 'log', 'threat', 'piles'].includes(key)
-const label = (key: PanelKey) => names[key][zh.value ? 0 : 1]
+const label = (key: PanelKey) => props.edge && key === 'right' ? (zh.value ? '场景与密谋宽度' : 'Act / agenda width') : names[key][zh.value ? 0 : 1]
 function measure() {
   if (!board.value || !root.value) return
   const style = getComputedStyle(root.value)
-  size.value = { width: board.value.clientWidth, height: board.value.clientHeight,
-    phase: root.value.querySelector('.phases')?.clientHeight ?? 36,
-    tabs: root.value.querySelector('.tabs-row')?.clientHeight ?? (parseFloat(style.getPropertyValue('--tabletop-tab-height')) || 32) }
+  const next = { width: board.value.clientWidth, height: board.value.clientHeight,
+    phase: props.edge ? 0 : root.value.querySelector('.phases')?.clientHeight ?? 36,
+    tabs: props.edge ? 0 : root.value.querySelector('.tabs-row')?.clientHeight ?? (parseFloat(style.getPropertyValue('--tabletop-tab-height')) || 32) }
+  if (Object.keys(next).some(k => next[k as keyof typeof next] !== size.value[k as keyof typeof next])) size.value = next
 }
-useResizeObserver([board, root], measure)
+const edgeZone = computed(() => props.edge ? root.value?.querySelector<HTMLElement>('#player-zone') : null)
+useResizeObserver([board, root, edgeZone], measure)
 const lowerTop = computed(() => size.value.height * layout.value.upper / 100 + size.value.tabs + 2)
 const lowerHeight = computed(() => Math.max(1, size.value.height - lowerTop.value))
 const middleWidth = computed(() => size.value.width * (100 - layout.value.investigator - layout.value.right) / 100)
 const threatX = computed(() => size.value.width * layout.value.investigator / 100 + middleWidth.value * layout.value.threat / 100)
 function position(key: PanelKey) {
   const p = layout.value, s = size.value
+  if (props.edge && board.value && root.value) {
+    const base = board.value.getBoundingClientRect()
+    const zone = root.value.querySelector('#player-zone')?.getBoundingClientRect()
+    const person = root.value.querySelector('.tab:not([style*="display: none"]) .player-container')?.getBoundingClientRect()
+    const hand = root.value.querySelector('.tab:not([style*="display: none"]) .hand-area')?.getBoundingClientRect()
+    const equipment = root.value.querySelector('.tab:not([style*="display: none"]) .tabletop-equipment')?.getBoundingClientRect()
+    if (zone) {
+      if (key === 'upper') return { top: `${zone.top - base.top}px`, left: `${zone.left - base.left}px`, right: '0' }
+      if (key === 'right') {
+        const shelf = root.value.querySelector('.edge-scene-shelf')?.getBoundingClientRect()
+        return { left: `${(shelf?.left ?? zone.right) - base.left}px`, bottom: '0', height: '30px' }
+      }
+      if (key === 'log') {
+        const map = root.value.querySelector<HTMLElement>('.location-cards-container')
+        // Native scrollbars can paint over DOM overlays on Windows. Put the
+        // collapsed handle inside the content edge, not over the scrollbar.
+        const gutter = map ? Math.max(0, map.offsetWidth - map.clientWidth) : 0
+        return { left: `${root.value.getBoundingClientRect().right - base.left - (logClosed.value ? gutter + 20 : logWidth.value)}px`, top: '0', height: `${zone.top - base.top}px` }
+      }
+      if (person && key === 'investigator') return { left: `${person.right - base.left}px`, top: `${zone.top - base.top}px`, bottom: '0' }
+      if (hand && key === 'threat') return { left: `${hand.left - base.left}px`, top: `${hand.top - base.top}px`, bottom: '0' }
+      if (hand && key === 'hand') return { left: `${(equipment?.left ?? hand.left) - base.left}px`, right: `${base.right - zone.right}px`, top: `${hand.top - base.top}px` }
+    }
+  }
   const left = s.width * p.left / 100, right = s.width * (100 - p.right) / 100
   switch (key) {
     case 'left': return { left: `${left}px`, top: `${s.phase}px`, height: `${Math.max(0, s.height * p.upper / 100 - s.phase)}px` }
@@ -135,7 +162,7 @@ onBeforeUnmount(end)
 <template>
   <div ref="layer" class="tabletop-dividers" :class="{ 'tabletop-dividers--dragging': dragging, 'tabletop-dividers--touch': tablet, 'tabletop-dividers--holding': dragHold.waiting.value }">
     <template v-if="desktop">
-      <div v-for="(_, key) in panelDefaults" :key="key" role="separator" tabindex="0"
+      <div v-for="(_, key) in panelDefaults" v-show="!props.edge || !['left', 'piles', 'pileRows'].includes(key)" :key="key" role="separator" tabindex="0"
         class="tabletop-divider" :class="vertical(key) ? 'tabletop-divider--vertical' : 'tabletop-divider--horizontal'"
         :data-panel="key" :style="position(key)" :aria-label="label(key)"
         :aria-orientation="vertical(key) ? 'vertical' : 'horizontal'" :aria-valuenow="Math.round(layout[key])"
@@ -143,13 +170,14 @@ onBeforeUnmount(end)
         :title="`${label(key)} · ${tablet ? (zh ? '长按后拖动调整' : 'Hold then drag to resize') : (zh ? '拖动调整；双击复位' : 'Drag to resize; double-click to reset')}`"
         @pointerdown.stop="start($event, key)" @pointermove.stop="move" @pointerup.stop="end"
         @pointercancel="end" @lostpointercapture="end" @keydown="keyboard($event, key)"
-        @dblclick.stop="setPanel(key, panelDefaults[key])"><span /><i class="tabletop-divider__grip" aria-hidden="true" /></div>
+        @dblclick.stop="setPanel(key, panelDefaults[key])"><span /><i class="tabletop-divider__grip" aria-hidden="true" /><button v-if="key === 'log' && logClosed && unreadLogCount" class="log-unread" type="button" :aria-label="zh ? `${unreadLogCount}条新日志，展开日志` : `${unreadLogCount} new entries, open log`" @pointerdown.stop @keydown.enter.stop @keydown.space.stop @click.stop="showLog = true">{{ unreadLogCount > 99 ? '99+' : unreadLogCount }}</button></div>
     </template>
   </div>
 </template>
 
 <style scoped>
 .tabletop-dividers { position: absolute; inset: 0; pointer-events: none; z-index: 18; }
+.log-unread { position: absolute; right: 1px; top: calc(50% + 18px); min-width: 24px; min-height: 24px; padding: 2px; border: 1px solid #c7b47c; border-radius: 5px; color: #f3e7c4; background: #18372b; cursor: pointer; font-size: 11px; font-style: normal; }
 .tabletop-divider { position: absolute; pointer-events: auto; touch-action: none; user-select: none; outline: none; }
 .tabletop-divider--vertical { width: 9px; transform: translateX(-50%); cursor: col-resize; }
 .tabletop-divider--horizontal { height: 9px; transform: translateY(-50%); cursor: row-resize; }

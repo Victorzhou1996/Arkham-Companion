@@ -184,6 +184,8 @@ function selectGameMode(mode: 'Campaign' | 'SideStory') {
         >
           <img
             class="scenario-box"
+            :alt="s.name" role="button" tabindex="0" :aria-label="s.name"
+            @keydown.enter.prevent="selectedScenario = s.id; emits('go')" @keydown.space.prevent="selectedScenario = s.id; emits('go')"
             :class="{ 'selected-scenario': selectedScenario == s.id }"
             :src="imgsrc(`boxes/${s.id}.jpg`)"
             @click="selectedScenario = s.id; emits('go')"
@@ -214,6 +216,7 @@ function selectGameMode(mode: 'Campaign' | 'SideStory') {
             <input
               v-if="!c.homebrew || !missingBoxArt[c.id]"
               type="image"
+              :alt="c.name" :aria-label="c.name"
               class="campaign-box"
               :class="{ 'selected-campaign': selectedCampaign == c.id }"
               :src="campaignBoxSrc(c)"

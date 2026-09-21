@@ -1,4 +1,5 @@
 import * as JsonDecoder from 'ts.data.json';
+import { visibleTriggerChoices } from '@/arkham/triggerModeChoices';
 import { v2Optional, withDefault } from '@/arkham/parser';
 import { UndoMode } from '@/arkham/types/NewGame';
 import { Investigator, InvestigatorDetails, investigatorDecoder, investigatorDetailsDecoder } from '@/arkham/types/Investigator';
@@ -171,6 +172,7 @@ export type EnemyAttackTarget = {
 };
 
 const choicesCache = new WeakMap<Game, Map<string, Message[]>>();
+const visibleChoicesCache = new WeakMap<Game, Map<string, Message[]>>();
 const choicesSourceCache = new WeakMap<Game, Map<string, Source | null>>();
 const choicesTooltipCache = new WeakMap<Game, Map<string, string | null>>();
 
@@ -220,10 +222,19 @@ function questionChoices(question: Question): Message[] {
   }
 }
 
-export function choices(game: Game, playerId: string): Message[] {
+export function rawChoices(game: Game, playerId: string): Message[] {
   return cachedByPlayer(choicesCache, game, playerId, () => {
     const question = game.question[playerId];
     return question ? questionChoices(question) : [];
+  });
+}
+
+export function choices(game: Game, playerId: string): Message[] {
+  return cachedByPlayer(visibleChoicesCache, game, playerId, () => {
+    const raw = rawChoices(game, playerId);
+    // Never hide choices in an ordinary mandatory selection/payment prompt.
+    return activeQuestionIsPlayerWindow(game, playerId) || activeQuestionIsResponseWindow(game, playerId)
+      ? visibleTriggerChoices(game, raw) : raw;
   });
 }
 

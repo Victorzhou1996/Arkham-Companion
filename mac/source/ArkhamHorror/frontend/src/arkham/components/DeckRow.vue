@@ -55,7 +55,7 @@ const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
 </script>
 
 <template>
-  <div class="decklist box" :class="deckClass" @click="navigateToDeck">
+  <div class="decklist box" :class="deckClass" role="link" tabindex="0" :aria-label="deck.name" @click="navigateToDeck" @keydown.enter.self="navigateToDeck">
     <img class="portrait--decklist" :src="cardImg(deckInvestigator)" />
     <div class="deck-details">
       <div class="deck-main">

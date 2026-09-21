@@ -169,9 +169,13 @@ body:has(.tabletop-game) #nav { background: #11271e; }
   #game.tabletop-game .tabletop-reset-label { font-size: .8em; white-space: nowrap; }
   #game.tabletop-game .zoom-btn:has(.tabletop-reset-label) { width: auto; gap: 5px; padding-inline: 6px; }
   #game.tabletop-game .location-cards .location-container { position: relative; }
-  #game.tabletop-game .location-cards .location-investigator-column { position: absolute; top: -7px; left: 50px; display: flex; flex-direction: row; flex-wrap: wrap; gap: 3px; width: calc(var(--card-width) + 20px); max-width: calc(var(--card-width) + 20px); z-index: 8; }
+  #game.tabletop-game .location-cards .location-investigator-column { position: absolute; top: -7px; left: 50px; display: flex; flex-direction: row; flex-wrap: wrap; gap: 3px; width: calc(var(--card-width) + 20px); max-width: calc(var(--card-width) + 20px); z-index: 1; pointer-events: none; }
   #game.tabletop-game .location-cards .location-investigator-column div { margin-top: 0; }
-  #game.tabletop-game .location-cards .location-investigator-column img.portrait { width: clamp(22px, 1.8vw, 50px); height: clamp(22px, 1.8vw, 50px); object-fit: cover; object-position: top; border-radius: 50%; border: 2px solid #7db1cd; }
+  #game.tabletop-game .location-cards .location-investigator-column img.portrait { width: clamp(16.5px, 1.35vw, 37.5px); height: clamp(16.5px, 1.35vw, 37.5px); object-fit: cover; object-position: top; border-radius: 50%; border: 2px solid #7db1cd; pointer-events: auto; }
+  /* Let tokens and ability controls share the miniature's stacking context. */
+  #game.tabletop-game .location-cards .location-column .card-frame:has(> .card-frame-inner) { isolation: auto; }
+  #game.tabletop-game .location-cards .location-column .card-frame-inner { z-index: 0; }
+  #game.tabletop-game .location-cards .location-column .location-pool { z-index: 3; }
   #game.tabletop-game .tabletop-tools .game-bar { padding-left: 38px; font-size: 12px; }
   #game.tabletop-game .phases { padding-left: 0; }
   #game.tabletop-game #game-log-sidebar { position: absolute; top: 0; right: 0; width: var(--tabletop-right); max-width: none; height: var(--tabletop-upper-height); background: linear-gradient(#152b23, #071a13); border: 1px solid var(--tabletop-line); z-index: 2; overflow: hidden; }

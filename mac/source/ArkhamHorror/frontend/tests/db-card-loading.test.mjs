@@ -8,7 +8,8 @@ function fixture(fetch) {
   const source=readFileSync(new URL('../src/stores/dbCards.ts',import.meta.url),'utf8')
     .replace(/^import .*$/gm,'').replace(/export /g,'').replaceAll('import.meta.env.BASE_URL',"'/base/'")
   const code=ts.transpileModule(source+'\n;useDbCardStore', {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText
-  const store=vm.runInNewContext(code, {fetch,Date:{now:()=>now},localStorage:{getItem:()=> 'zh-CN'},
+  const fetchWithHeaders=async (...args)=>({headers:new Headers({'content-type':'application/json'}),...await fetch(...args)})
+  const store=vm.runInNewContext(code, {fetch:fetchWithHeaders,Date:{now:()=>now},localStorage:{getItem:()=> 'zh-CN'},
     defineStore:(_,options)=>Object.assign(options.state(),options.actions)})
   return {store,advance:()=>{now+=31000}}
 }
@@ -33,5 +34,12 @@ test('malformed JSON shape does not poison the name index',async()=>{
   const {store}=fixture(async()=>({ok:true,json:async()=>({error:'missing'})}))
   await assert.rejects(store.initDbCards(),/Invalid card-name data/)
   assert.equal(store.dbCards.length,0)
+  assert.equal(store.loadedLang,null)
+})
+test('HTML SPA fallbacks are rejected before reading JSON',async()=>{
+  let parsed=false
+  const {store}=fixture(async()=>({ok:true,headers:new Headers({'content-type':'text/html'}),json:async()=>{parsed=true;return []}}))
+  await assert.rejects(store.initDbCards(),/not JSON/)
+  assert.equal(parsed,false)
   assert.equal(store.loadedLang,null)
 })

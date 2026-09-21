@@ -296,6 +296,10 @@ const flippableCard = (cardCode: string) => {
 .entry {
   border-radius: 5px;
   background: #dcd6d0;
+  /* Narrative embeds use dark ink/paper colours, unlike the surrounding app. */
+  color: #252b24;
+  --text: #252b24;
+  --title: #263c30;
   padding: 20px;
   box-shadow:
     inset 0 0 170px rgba(0, 0, 0, 0.5),

@@ -199,9 +199,14 @@ const stepKinds = [
   'parley',
   'attack',
   'ready',
+  'takeAction',
   'draw',
   'gather',
   'customize',
+  'activateAbility',
+  'place',
+  'discover',
+  'setAside',
 ]
 
 export const stepKind = (step: any): string =>

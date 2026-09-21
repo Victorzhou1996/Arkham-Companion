@@ -133,14 +133,28 @@ export default defineComponent({
       return translateGameLogText(split, this.t, knownTranslations)
     })
 
-    return h('div', { className: 'message-body' }, els)
+    // Only rendered references are previewable; never fetch hidden cards.
+    return h('div', { className: 'message-body', onClick: (event: MouseEvent) => {
+      const target = (event.target as HTMLElement)?.closest<HTMLElement>('[data-image-id]')
+      if (target) document.dispatchEvent(new CustomEvent('arkham:preview-card', { detail: target }))
+    }, onKeydown: (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+      const target = (event.target as HTMLElement)?.closest<HTMLElement>('[data-image-id]')
+      if (target) { event.preventDefault(); document.dispatchEvent(new CustomEvent('arkham:preview-card', { detail: target })) }
+    } }, els.map(el => {
+      if (typeof el === 'object' && el?.props?.['data-image-id']) { el.props.role = 'button'; el.props.tabindex = 0 }
+      return el
+    }))
   },
 })
 </script>
 
 <style scoped>
 span[data-image-id] {
-  color: #bbb;
+  color: #e0ce99;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 

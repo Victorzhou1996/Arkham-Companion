@@ -7,7 +7,7 @@ import Card from '@/arkham/components/Card.vue';
 import Draggable from '@/components/Draggable.vue';
 import { useDebug } from '@/arkham/debug'
 import * as DebugMove from '@/arkham/debugCardMove';
-import { computed } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import * as ArkhamGame from '@/arkham/types/Game';
 
 const debug = useDebug()
@@ -56,6 +56,20 @@ const emit = defineEmits<{
   choose: [value: number]
   close: []
 }>()
+const preview = ref<HTMLElement | null>(null)
+function dismissPreview(event: Event) {
+  if (event instanceof KeyboardEvent) {
+    if (event.key === 'Escape') emit('close')
+    return
+  }
+  const target = event.target
+  // Only this optional inspection window is dismissed. Mandatory choices and
+  // layout editing remain untouched; related card popovers count as inside.
+  if (target instanceof Element && !preview.value?.closest('.draggable')?.contains(target)
+    && !target.closest('.card-overlay, .v-popper__popper')) emit('close')
+}
+onMounted(() => { document.addEventListener('keydown', dismissPreview); document.addEventListener('pointerdown', dismissPreview) })
+onBeforeUnmount(() => { document.removeEventListener('keydown', dismissPreview); document.removeEventListener('pointerdown', dismissPreview) })
 
 function startDrag(event: DragEvent, card: (CardContents | CardT.Card)) {
   if (!debug.active) {
@@ -76,7 +90,7 @@ function startDrag(event: DragEvent, card: (CardContents | CardT.Card)) {
     <template #handle>
       <h2>{{title}}</h2>
     </template>
-    <div class="card-row-container">
+    <div ref="preview" class="card-row-container" data-preview-dialog>
       <div class="card-row-cards">
         <div v-for="card in cards" :key="CardT.toCardContents(card).id" class="card-row-card" :class="{ discard: isDiscards && !isCardInChoices(card)}">
           <Card 

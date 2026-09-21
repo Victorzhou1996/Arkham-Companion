@@ -113,7 +113,7 @@ async function sync(deck: Arkham.Deck) {
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container site-workspace site-decks">
     <div id="decks">
       <header class="decks-header">
         <h2>{{ $t('decks') }}</h2>

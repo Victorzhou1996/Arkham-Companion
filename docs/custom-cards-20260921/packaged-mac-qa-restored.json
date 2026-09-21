@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "source": "Mounted release DMG, isolated HOME, packaged launcher, packaged database/API/nginx, no production data",
+  "restoredOldData": true,
+  "originalPlayerDataPreserved": true,
+  "checked": [
+    {
+      "route": "/",
+      "status": 200,
+      "bytes": 1084
+    },
+    {
+      "route": "/build/",
+      "status": 200,
+      "bytes": 2944
+    },
+    {
+      "route": "/img/arkham/zh/cards/09099.avif",
+      "status": 200,
+      "bytes": 78047
+    },
+    {
+      "route": "/img/arkham/zh/cards/05188-5.avif",
+      "status": 200,
+      "bytes": 208901
+    }
+  ],
+  "starterDecks": 2,
+  "distinctIcons": true,
+  "managerEntry": true,
+  "customArtBackupRestored": true,
+  "legacyBackupCompatible": true,
+  "unsafeArchiveRejected": true,
+  "sameDayPackageUpgrade": true
+}

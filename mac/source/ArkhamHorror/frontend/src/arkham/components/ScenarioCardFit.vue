@@ -11,7 +11,7 @@ let frame = 0
 function measure() {
   cancelAnimationFrame(frame)
   frame = requestAnimationFrame(() => {
-    if (!props.enabled || !content.value || !host.value) { scale.value = 1; return }
+    if (!props.enabled || !content.value || !host.value || host.value.closest('.edge-tabletop')) { scale.value = 1; return }
     // offset/scroll dimensions are untransformed: resizing never feeds the
     // previous scale back into the next measurement. Include attachments and
     // extra scenario decks, not just the usual one agenda + one act.

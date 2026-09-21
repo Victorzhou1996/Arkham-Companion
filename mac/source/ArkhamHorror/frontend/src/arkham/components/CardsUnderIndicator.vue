@@ -9,6 +9,7 @@ import type { Game } from '@/arkham/types/Game'
 import * as ArkhamGame from '@/arkham/types/Game'
 import CardView from '@/arkham/components/Card.vue'
 import { useDebug } from '@/arkham/debug'
+import { isScenePreviewSource } from '@/arkham/sceneDrawer'
 
 const props = withDefaults(defineProps<{
   cards: (ArkhamCard | CardContents)[]
@@ -61,6 +62,15 @@ const shown = computed({
 // that loses a card keeps its old left edge and drifts away from the trigger.
 // Ask it to recompute whenever the contents change underneath it.
 const dropdown = ref<{ onResize?: () => void } | null>(null)
+const trigger = ref<HTMLElement | null>(null)
+const scenePreview = ref(false)
+function markScenePreview() { scenePreview.value = isScenePreviewSource(trigger.value) }
+function closeScenePreview() { if (scenePreview.value) shown.value = false }
+function escapePreview(event: KeyboardEvent) { if (event.key === 'Escape') shown.value = false }
+onMounted(() => document.addEventListener('keydown', escapePreview))
+onBeforeUnmount(() => document.removeEventListener('keydown', escapePreview))
+onMounted(() => document.addEventListener('arkham:scene-drawer-dismiss', closeScenePreview))
+onBeforeUnmount(() => document.removeEventListener('arkham:scene-drawer-dismiss', closeScenePreview))
 
 async function reposition() {
   await nextTick()
@@ -203,6 +213,7 @@ onBeforeUnmount(() => finishDrag())
 <template>
   <Dropdown
     ref="dropdown"
+    @show="markScenePreview" @hide="scenePreview = false"
     :placement="placement"
     :distance="8"
     v-model:shown="shown"
@@ -212,6 +223,7 @@ onBeforeUnmount(() => finishDrag())
     theme="cards-under-popover"
   >
     <button
+      ref="trigger"
       type="button"
       class="cards-under-indicator"
       data-mobile-direct
@@ -241,6 +253,7 @@ onBeforeUnmount(() => finishDrag())
     <template #popper>
       <div
         class="cards-under-popover"
+        :data-edge-scene-preview="scenePreview || undefined"
         :class="{ 'cards-under-popover--dragged-over': draggedOver }"
         @dragover="onDragOver"
         @dragenter="onDragEnter"
@@ -300,7 +313,6 @@ onBeforeUnmount(() => finishDrag())
 .cards-under-indicator:hover {
   background: rgba(0, 0, 0, 0.68);
   border-color: rgba(255, 255, 255, 0.32);
-  transform: translateY(-1px);
 }
 
 .cards-under-indicator--highlighted {

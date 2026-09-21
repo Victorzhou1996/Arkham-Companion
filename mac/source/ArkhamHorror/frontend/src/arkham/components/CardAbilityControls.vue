@@ -13,6 +13,7 @@ const board = useMobileBoard()
 const card = inject(mobileCardKey, null)
 const touch = computed(() => !!board?.touchEnabled.value && !!card)
 const shown = ref(false)
+const controls = ref<HTMLElement | null>(null)
 const { locale } = useI18n()
 const label = computed(() => locale.value.startsWith('zh') ? '查看卡牌能力' : 'Card abilities')
 function activate() {
@@ -26,14 +27,14 @@ defineExpose({ activate })
 
 <template>
   <!-- Controls stay on the card, not below a clipped hand/threat viewport. -->
-  <div v-if="!touch && abilities.length" class="card-ability-controls">
+  <div v-if="!touch && abilities.length" ref="controls" class="card-ability-controls">
     <AbilityButton v-if="abilities.length === 1" :game="game" :ability="abilities[0].contents"
       :data-image="image" @click.stop="emit('choose', abilities[0].index)" />
     <button v-else type="button" class="card-ability-picker" data-game-actionable="true"
       :aria-label="label" @click.stop="shown = true">⚡ {{ abilities.length }}</button>
   </div>
   <AbilitiesMenu v-if="touch || abilities.length > 1" v-model="shown" :game="game"
-    :abilities="abilities" :frame="frame" position="top" @choose="emit('choose', $event)" />
+    :abilities="abilities" :frame="frame" :ignore="controls ? [controls] : []" position="top" @choose="emit('choose', $event)" />
 </template>
 
 <style scoped>

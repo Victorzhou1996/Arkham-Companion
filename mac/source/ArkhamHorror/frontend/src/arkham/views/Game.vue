@@ -15,8 +15,13 @@ import { useToast } from 'vue-toastification'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { tabletopUndoKey } from '@/arkham/tabletopControls'
+import { appendedLogCount } from '@/arkham/logPresentation'
+import { automaticTriggerSkip, authorizedAutomaticSeat } from '@/arkham/triggerModeChoices'
 import { undoShortcut, allowsUndoInput } from '@/arkham/undoShortcut'
 import TabletopLayoutControls from '@/arkham/components/TabletopLayoutControls.vue'
+import EdgeTabletopControls from '@/arkham/components/EdgeTabletopControls.vue'
+import UiModeButton from '@/components/UiModeButton.vue'
+import '@/styles/edgeTabletop.css'
 import { deviceInfoKey, provideMobileBoard } from '@/arkham/mobile/context'
 import { phonePresentation, readDeviceInfo } from '@/arkham/mobile/devicePresentation'
 import MobileGameHeader from '@/arkham/mobile/MobileGameHeader.vue'
@@ -88,6 +93,7 @@ import { buildGameIndexes, gameIndexesKey } from '@/arkham/composables/useGameIn
 import { Card, asCardCode, cardDecoder, toCardContents } from '@/arkham/types/Card'
 import { customCardDef, isCustomCardCode } from '@/arkham/customCards'
 import * as Message from '@/arkham/types/Message'
+import type { Phase } from '@/arkham/types/Phase'
 import { type Question } from '@/arkham/types/Question'
 import type { Source } from '@/arkham/types/Source'
 import { TarotCard, tarotCardDecoder, tarotCardImage } from '@/arkham/types/TarotCard'
@@ -137,6 +143,7 @@ type ServerResult =
   | { tag: 'GameCard'; contents: string }
   | { tag: 'GameCardOnly'; contents: string }
   | { tag: 'GameUpdate'; contents: string }
+  | { tag: 'PhaseChanged'; contents: Phase }
   | { tag: 'GameShowDiscard'; contents: string }
   | { tag: 'GameShowUnder'; contents: string }
   | { tag: 'GameUI'; contents: string }
@@ -412,8 +419,14 @@ const isCthulhuDeckReveal = computed(() => {
 const showTheSilenceModal = ref(false)
 const playabilityInfo = ref<PlayabilityInfo | null>(null)
 const gameLog = shallowRef<readonly string[]>(Object.freeze([]))
+const unreadLogCount = ref(0)
 const playerId = ref<string | null>(null)
+// Authentication seat is distinct from the freely selectable viewing perspective.
+const authenticatedSeat = ref<string | null>(null)
 const ready = ref(false)
+watch(ready, loaded => {
+  if (loaded) { try { localStorage.setItem('arkham-last-opened-game', props.gameId) } catch { /* optional browsing preference */ } }
+})
 const loadFailure = ref<GameLoadFailure | null>(null)
 const resultQueue = ref<any>([])
 const showLog = ref(false)
@@ -425,12 +438,23 @@ const isMobileViewport = () =>
 const showSidebar = ref(
   isMobileViewport()
     ? false
-    : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true'),
+    : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'false'),
 )
 const sidebarViewport = window.matchMedia(mobileSidebarQuery)
 const onSidebarViewportChange = (event: MediaQueryListEvent) => {
-  showSidebar.value = isMobileViewport() ? false : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true')
+  showSidebar.value = isMobileViewport() ? false : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'false')
 }
+watch(showSidebar, value => { if (!isMobileViewport()) setGameLocalStorageItem(props.gameId, 'showSidebar', JSON.stringify(value)) })
+let logBaselineReady = false
+let lastObservedLog: readonly string[] = []
+watch([gameLog, ready, showSidebar], ([entries, loaded, visible]) => {
+  if (!loaded) { logBaselineReady = false; unreadLogCount.value = 0 }
+  else if (visible || !logBaselineReady) unreadLogCount.value = 0
+  else if (entries.length < lastObservedLog.length || lastObservedLog.some((entry, index) => entries[index] !== entry)) unreadLogCount.value = 0
+  else unreadLogCount.value += appendedLogCount(lastObservedLog, entries)
+  lastObservedLog = entries
+  logBaselineReady = loaded
+}, { flush: 'sync' })
 const socketError = ref(false)
 const error = ref<string | null>(null)
 const solo = ref(false)
@@ -471,6 +495,56 @@ const storyAnswerPending = ref(false)
 const oldQuestion = ref<Record<string, Question> | null>(null)
 const skipAllPending = ref<Set<string>>(new Set())
 const { t } = useI18n()
+const phaseNotification = ref<Phase | null>(null)
+const phaseNotificationQueue = ref<Phase[]>([])
+const standardPhases: Phase[] = ['MythosPhase', 'InvestigationPhase', 'EnemyPhase', 'UpkeepPhase']
+const phaseNotificationPlaying = ref(false)
+const phaseNotificationColor = computed(() => ({
+  MythosPhase: '#7b4b91',
+  InvestigationPhase: '#a87532',
+  EnemyPhase: '#9f2929',
+  UpkeepPhase: '#315b70',
+  CampaignPhase: '#5b5b5b',
+}[phaseNotification.value ?? 'CampaignPhase']))
+
+function showPhaseNotification(phase: Phase) {
+  if (!userStore.currentUser?.phaseTransitionNotifications) return
+
+  const target = game.value?.phase
+  const phases = phase === 'EnemyPhase'
+    ? ['EnemyPhase', 'UpkeepPhase', 'MythosPhase'] as Phase[]
+    : standardPhases.includes(phase) && target && standardPhases.includes(target) && target !== phase
+    ? (() => {
+        const cycle = [...standardPhases, ...standardPhases]
+        const start = cycle.indexOf(phase)
+        const end = cycle.indexOf(target, start + 1)
+        return end >= 0 ? cycle.slice(start, end + 1) : [phase]
+      })()
+    : [phase]
+
+  for (const nextPhase of phases) {
+    if (phaseNotification.value === nextPhase || phaseNotificationQueue.value.includes(nextPhase)) continue
+    phaseNotificationQueue.value.push(nextPhase)
+  }
+  if (!uiLock.value) void drainPhaseNotificationQueue()
+}
+
+const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
+
+async function drainPhaseNotificationQueue() {
+  if (phaseNotificationPlaying.value) return
+  phaseNotificationPlaying.value = true
+  try {
+    while (phaseNotificationQueue.value.length > 0) {
+      phaseNotification.value = phaseNotificationQueue.value.shift() ?? null
+      await wait(1300)
+      phaseNotification.value = null
+      await nextTick()
+    }
+  } finally {
+    phaseNotificationPlaying.value = false
+  }
+}
 
 const format = (str: string) => {
   return handleEmbeddedI18n(str, t)
@@ -922,6 +996,7 @@ const initialGameLoad = createGameLoader<Awaited<ReturnType<typeof fetchGame>>>(
   loading() { ready.value = false; loadFailure.value = null },
   loaded({ game: newGame, playerId: newPlayerId, multiplayerMode, eventId }) {
     if (!newPlayerId) { loadFailure.value = 'forbidden'; return }
+    authenticatedSeat.value = newPlayerId
     ;(window as Window & { g?: Arkham.Game }).g = newGame
     game.value = newGame
     solo.value = multiplayerMode === 'Solo'
@@ -1180,6 +1255,25 @@ const { send, close } = useWebSocket(websocketUrl, {
   onMessage,
 })
 
+// Already-queued optional windows may survive a saved mode change. No polling;
+// one attempt per exact server question/version, never auto-end a turn.
+const automaticSkipAttempts = new Set<string>()
+watch([game, ready, processing, uiLock, authenticatedSeat, solo], () => {
+  const g = game.value
+  if (!g || !ready.value || processing.value || uiLock.value || props.spectate || skipAllInProgress.value) return
+  for (const [pid,q] of Object.entries(g.question)) {
+    if (!authorizedAutomaticSeat(solo.value,authenticatedSeat.value,pid)) continue
+    const index = automaticTriggerSkip(g,q,ArkhamGame.rawChoices(g,pid))
+    if (index < 0) continue
+    const key = JSON.stringify([g.id,g.scenarioSteps,pid,q])
+    if (automaticSkipAttempts.has(key)) continue
+    automaticSkipAttempts.add(key)
+    if (automaticSkipAttempts.size > 32) automaticSkipAttempts.delete(automaticSkipAttempts.values().next().value!)
+    sendSkipFor(pid,index)
+    break
+  }
+}, {flush: 'post'})
+
 /*
  * A GameUpdate is the only message carrying new board state, and it reaches us
  * over a different path than the log lines do: the server broadcasts log lines
@@ -1402,6 +1496,9 @@ const handleResult = (result: ServerResult) => {
       if (eid) void eventStore.load(eid).catch((e) => console.error(e))
       return
     }
+    case 'PhaseChanged':
+      showPhaseNotification(result.contents as Phase)
+      return
     case 'GameUpdate':
       // Flush the latest state onto the board even while a revelation/modal holds
       // the UI lock, so the table behind it reflects the current situation instead
@@ -1415,13 +1512,15 @@ const handleResult = (result: ServerResult) => {
 
 watch(uiLock, async () => {
   if (uiLock.value) return
-  // drain result queue
+  // Drain queued revelation/effect results first. Phase notifications start only
+  // after the last blocking result has finished, so they cannot race the overlay.
   for (;;) {
     const r = qPop()
     if (!r) break
     handleResult(r)
     if (uiLock.value) break
   }
+  if (!uiLock.value) void drainPhaseNotificationQueue()
 })
 
 const confirmingUndoScenario = ref(false)
@@ -2098,8 +2197,8 @@ onUnmounted(() => {
       </section>
     </div>
   </div>
-  <div id="game" ref="mobileGameRoot" v-else-if="ready && game && playerId" :inert="touchEnabled && !!mobilePreview" :class="{ 'tabletop-game': isActualScenarioView && !mobileEnabled, 'mobile-game': mobileEnabled, 'touch-game': touchEnabled, 'tablet-game': isActualScenarioView && tabletEnabled, 'mobile-tools-open': mobileTools, 'mobile-top-collapsed': mobileEnabled && mobileTopCollapsed, 'mobile-bottom-collapsed': mobileEnabled && mobileBottomCollapsed }" :data-mobile-zone="mobileEnabled ? mobileZone : undefined" :style="{ '--epic-bar-height': epicBarHeight + 'px', '--tabletop-tools-height': tabletopToolsHeight + 'px', ...(touchEnabled ? mobileViewport : {}) }">
-    <MobileGameHeader v-if="mobileEnabled" :game="game" @log="toggleSidebar" />
+  <div id="game" ref="mobileGameRoot" v-else-if="ready && game && playerId" :inert="touchEnabled && !!mobilePreview" :class="{ 'tabletop-game': isActualScenarioView && !mobileEnabled, 'edge-tabletop': isActualScenarioView && !mobileEnabled, 'mobile-game': mobileEnabled, 'touch-game': touchEnabled, 'tablet-game': isActualScenarioView && tabletEnabled, 'mobile-tools-open': mobileTools, 'mobile-top-collapsed': mobileEnabled && mobileTopCollapsed, 'mobile-bottom-collapsed': mobileEnabled && mobileBottomCollapsed }" :data-mobile-zone="mobileEnabled ? mobileZone : undefined" :style="{ '--epic-bar-height': epicBarHeight + 'px', '--tabletop-tools-height': tabletopToolsHeight + 'px', ...(touchEnabled ? mobileViewport : {}) }">
+    <MobileGameHeader v-if="mobileEnabled" :game="game" :unread-log-count="unreadLogCount" @log="toggleSidebar" />
     <dialog v-if="error" class="error-dialog">
       <h2>{{ $t('error') }}</h2>
       <p class="error-message">{{ error }}</p>
@@ -2111,6 +2210,17 @@ onUnmounted(() => {
         <button @click="error = null">{{ $t('close') }}</button>
       </div>
     </dialog>
+    <Transition name="phase-notification">
+      <div
+        v-if="phaseNotification"
+        class="phase-notification"
+        :style="{ '--phase-color': phaseNotificationColor }"
+        role="status"
+        aria-live="polite"
+      >
+        <span :key="phaseNotification" class="phase-notification__name">{{ $t(`phaseTransition.${phaseNotification}`) }}</span>
+      </div>
+    </Transition>
     <div v-if="showProcessing" class="processing">
       <LottieAnimation
         :animation-data="processingJSON"
@@ -2279,6 +2389,7 @@ onUnmounted(() => {
     </div>
     <div ref="tabletopToolsRef" class="tabletop-tools">
     <div class="game-bar">
+      <UiModeButton />
       <div class="game-bar-item">
         <div>
           <button @click="showLog = !showLog">
@@ -2422,7 +2533,7 @@ onUnmounted(() => {
         </div>
       </template>
       <div class="right">
-        <ResponseStatusBar v-if="isActualScenarioView && !mobileEnabled" :game="game" />
+        <ResponseStatusBar v-if="isActualScenarioView && !mobileEnabled" :game="game" :playerId="playerId" :processing="processing" />
         <button
           v-if="canUseUndo"
           class="touch-undo"
@@ -2437,6 +2548,7 @@ onUnmounted(() => {
         </button>
         <button v-if="isActualScenarioView" @click="toggleSidebar">
           <ArrowsRightLeftIcon aria-hidden="true" /> {{ $t('gameBar.toggleSidebar') }}
+          <span v-if="unreadLogCount" class="log-unread-count">({{ unreadLogCount }})</span>
         </button>
         <NarrationMenu />
       </div>
@@ -2486,7 +2598,8 @@ onUnmounted(() => {
         </template>
       </CampaignLog>
       <div v-else class="game-main">
-        <TabletopLayoutControls v-if="isActualScenarioView && !mobileEnabled" v-model:show-log="showSidebar" />
+        <TabletopLayoutControls v-if="isActualScenarioView && !mobileEnabled" edge :unread-log-count="unreadLogCount" v-model:show-log="showSidebar" />
+        <EdgeTabletopControls v-if="isActualScenarioView && !mobileEnabled" :root="mobileGameRoot" :game="game" v-model:show-log="showSidebar" />
         <div v-if="showTheSilenceModal" class="the-silence-modal-backdrop">
           <div
             class="the-silence-modal"
@@ -2941,7 +3054,8 @@ onUnmounted(() => {
 
   p {
     padding: 10px;
-    background: #fff;
+    background: var(--surface-panel);
+    color: #e5e7d3;
     border-radius: 4px;
   }
 }
@@ -4134,6 +4248,52 @@ dialog {
     margin-top: 1rem;
   }
 }
+
+.phase-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: clamp(4.5rem, 9vw, 7rem);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--phase-color) 54%, rgba(8, 11, 13, 0.88));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
+  animation: phase-notification-bloom 1.2s ease-out both;
+}
+
+.phase-notification__name {
+  color: rgba(242, 232, 207, 0.94);
+  font-family: Teutonic, serif;
+  font-size: clamp(1.8rem, 4vw, 3.8rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 0 35px color-mix(in srgb, var(--phase-color) 80%, transparent), 0 5px 26px rgba(0, 0, 0, 0.8);
+  animation: phase-notification-title 1.2s ease-out both;
+}
+
+@keyframes phase-notification-bloom {
+  0% { opacity: 0; }
+  14%, 78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes phase-notification-title {
+  0% { opacity: 0; transform: translateX(-110%); filter: blur(8px); }
+  22% { opacity: 1; transform: translateX(0); filter: blur(0); }
+  72% { opacity: 1; transform: translateX(0); filter: blur(0); }
+  100% { opacity: 0; transform: translateX(110%); filter: blur(8px); }
+}
+
+.phase-notification-enter-active,
+.phase-notification-leave-active { transition: opacity 0.35s ease; }
+.phase-notification-enter-from,
+.phase-notification-leave-to { opacity: 0; }
 
 .debug-playability-content {
   display: flex;
