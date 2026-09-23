@@ -1,39 +1,43 @@
-/* Isolated game UIs share one card editor, API and authenticated origin. */
+/* Share every feature page; only the classic playing table uses the pinned UI. */
 (function () {
   'use strict';
   var key = 'arkham-ui-version';
-  var legacyPath = '/legacy-ui-20260921.1/';
+  var legacyPath = '/legacy-ui-20260923.1/';
   var here = new URL(window.location.href);
   var legacy = /^\/legacy-ui-[^/]+\//.test(here.pathname);
-  var cardPage = /^#\/(card-builder|card-marketplace)(\/|\?|$)/.test(here.hash);
+  function gamePage(url) { return /^#\/games\/[^/?#]+(?:\/|\?|$)/.test(url.hash); }
   var requested = here.searchParams.get('ui');
-  var preferred = requested === 'legacy' || requested === 'current' ? requested : null;
-  try { preferred = preferred || localStorage.getItem(key); } catch (_) {}
-  function switchMode(mode) {
-    var next = new URL(window.location.href);
-    next.pathname = mode === 'legacy' && !cardPage ? legacyPath : '/';
-    next.searchParams.set('ui', mode);
-    try { localStorage.setItem(key, mode); } catch (_) {}
-    window.location.assign(next.href);
+  var preferred;
+  try { preferred = localStorage.getItem(key); } catch (_) {}
+  if (preferred !== 'legacy' && preferred !== 'current') {
+    preferred = requested === 'legacy' || requested === 'current' ? requested : legacy ? 'legacy' : 'current';
+    try { localStorage.setItem(key, preferred); } catch (_) {}
   }
-  window.arkhamSwitchUi = switchMode;
-  if (cardPage && preferred === 'legacy') {
-    if (legacy) { switchMode('legacy'); return; }
+  function navigate(mode) {
+    var next = new URL(window.location.href);
+    next.pathname = mode === 'legacy' && gamePage(next) ? legacyPath : '/';
+    next.searchParams.set('ui', mode);
+    window.location.replace(next.href);
+  }
+  window.arkhamSwitchUi = function (mode) {
+    if (!/^#\/settings(?:\?|$)/.test(window.location.hash) || (mode !== 'legacy' && mode !== 'current')) return;
+    try { localStorage.setItem(key, mode); } catch (_) {}
+    navigate(mode);
+  };
+  // Stale bookmarks must not change an explicit preference.
+  if (requested !== preferred) {
+    here.searchParams.set('ui', preferred);
+    window.history.replaceState(window.history.state, '', here.href);
+  }
+  if (!gamePage(here) && (preferred === 'legacy' || (legacy && preferred !== 'current'))) {
+    if (legacy) { navigate('legacy'); return; }
     document.documentElement.dataset.ui = 'legacy-editor';
     return;
   }
-  if (!legacy && preferred === 'legacy') { switchMode('legacy'); return; }
-  if (legacy && preferred === 'current') { switchMode('current'); return; }
+  if (preferred === 'legacy' && (!legacy || here.pathname !== legacyPath)) { navigate('legacy'); return; }
+  if (legacy && preferred === 'current') { navigate('current'); return; }
   if (!legacy) return;
-  function mount() {
-    if (document.getElementById('legacy-ui-return')) return;
-    var button = document.createElement('button');
-    button.id = 'legacy-ui-return'; button.type = 'button';
-    button.textContent = '切换新版 UI';
-    button.title = '切换到新版界面，保留当前游戏地址';
-    button.style.cssText = 'position:fixed;right:140px;top:3px;z-index:100000;padding:5px 10px;border:1px solid #bca878;border-radius:5px;background:#17362a;color:#f1e5bf;font:13px sans-serif;cursor:pointer;max-width:40vw';
-    button.onclick = function () { switchMode('current'); };
-    document.body.appendChild(button);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true }); else mount();
+  window.addEventListener('hashchange', function () {
+    if (!gamePage(new URL(window.location.href))) navigate('legacy');
+  });
 })();

@@ -9,6 +9,7 @@ version:        0.0.0
 build-type:     Simple
 extra-source-files:
     digital-ocean.crt
+    data/community-starter-decks.json
 
 flag dev
   description: Turn on development settings, like auto-reload templates.

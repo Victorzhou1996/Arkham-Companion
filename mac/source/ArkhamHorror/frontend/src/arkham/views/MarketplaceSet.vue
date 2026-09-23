@@ -122,7 +122,7 @@ async function take() {
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container site-workspace">
     <section class="set-page">
       <router-link class="back-button" :to="{ name: 'CardMarketplace' }">
         <font-awesome-icon icon="arrow-left" class="back-icon" />

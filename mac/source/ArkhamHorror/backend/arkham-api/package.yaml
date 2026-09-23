@@ -4,6 +4,7 @@ language: GHC2021
 
 extra-source-files:
 - digital-ocean.crt
+- data/community-starter-decks.json
 
 default-extensions:
 - AllowAmbiguousTypes

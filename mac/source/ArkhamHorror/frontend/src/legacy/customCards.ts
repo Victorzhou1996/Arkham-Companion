@@ -3,8 +3,30 @@ import {
   customCards, isCustomCardCode, registerCustomCards, stripCardCodePrefix, unregisterCustomCard,
 } from '@/arkham/customCards'
 import { LEGACY_UI_PATH } from './editorMode'
+import { createApp, type App } from 'vue'
+import MusicControls from '@/arkham/components/MusicControls.vue'
+import { setMusicScenario } from '@/arkham/bgm'
 
 let generation = 0
+let musicApp: App | null = null
+let musicHost: HTMLElement | null = null
+function mountMusic() {
+  if (musicHost && !musicHost.isConnected) {
+    musicApp?.unmount()
+    musicApp = null
+    musicHost = null
+  }
+  const panel = document.querySelector('#narration-panel')
+  if (!panel || musicHost) return
+  musicHost = document.createElement('div')
+  panel.prepend(musicHost)
+  musicApp = createApp(MusicControls)
+  musicApp.mount(musicHost)
+  const heading = document.createElement('h3')
+  heading.textContent = text('语音朗读', 'Voice narration')
+  heading.style.cssText = 'font-size:16px;color:inherit;margin:0 0 10px'
+  musicHost.after(heading)
+}
 const enabled = () => localStorage.getItem('arkhamCustomCardsEnabled') === 'true'
 const chinese = () => (localStorage.getItem('language') ?? 'en').startsWith('zh')
 const text = (zh: string, en: string) => chinese() ? zh : en
@@ -53,6 +75,9 @@ function unknownCards(game: any): boolean {
 
 // The old app is a pinned compiled bundle. Its exact hooks are verified at build time.
 ;(window as any).arkhamLegacyCustomCards = {
+  updateMusic(game: any) {
+    setMusicScenario(game?.id ?? null, game?.phase === 'CampaignPhase' || game?.gameState?.tag === 'IsOver' ? null : game?.scenario?.id ?? null)
+  },
   load, resolveArt, unknownCards, enabled,
   buttonLabel: () => text('+ 自定义卡牌', '+ Custom card'),
   async openPicker(game: any, investigatorId: string) {
@@ -63,6 +88,7 @@ function unknownCards(game: any): boolean {
 }
 
 function mountNavigation() {
+  mountMusic()
   if (!enabled()) for (const link of document.querySelectorAll('[data-custom-deck-link]')) link.remove()
   for (const deck of document.querySelectorAll<HTMLAnchorElement>('a[href*="#/deck/"]')) {
     const id = /#\/deck\/([a-zA-Z0-9-]+)/.exec(deck.href)?.[1]
@@ -75,6 +101,14 @@ function mountNavigation() {
     deck.parentElement?.appendChild(link)
   }
   for (const nav of document.querySelectorAll<HTMLElement>('#nav .main-links, #nav .mobile-menu')) {
+    if (localStorage.getItem('arkham-token') && !nav.querySelector('a[href$="#/cards"]')) {
+      const link = document.createElement('a')
+      link.className = 'nav-link'
+      link.href = '/?ui=legacy#/cards'
+      link.textContent = text('卡牌', 'Cards')
+      for (const attribute of nav.querySelector('a')?.attributes ?? []) if (attribute.name.startsWith('data-v-')) link.setAttribute(attribute.name, '')
+      nav.appendChild(link)
+    }
     const existing = nav.querySelector('[data-custom-cards-link]')
     if (!enabled()) { existing?.remove(); continue }
     if (existing || !localStorage.getItem('arkham-token')) continue
@@ -114,6 +148,9 @@ if (location.pathname.startsWith(LEGACY_UI_PATH)) {
   const observer = new MutationObserver(mountNavigation)
   observer.observe(document.body, { childList: true, subtree: true })
   window.addEventListener('hashchange', mountNavigation)
+  window.addEventListener('hashchange', () => {
+    if (!/^#\/games\//.test(location.hash)) setMusicScenario(null, null)
+  })
   window.addEventListener('pagehide', () => observer.disconnect(), { once: true })
   mountNavigation()
 }

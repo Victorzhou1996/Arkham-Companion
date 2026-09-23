@@ -10,15 +10,10 @@
 #app .site-workspace :is(.notice, .status-message, .status-ok) { color: #d9e7c8; }
 .site-notice { padding: 12px 16px; background: #153126; color: #e2e7d6; border: 1px solid #8b805a; border-radius: 6px; margin-bottom: 12px; }
 
-/* Lobby: the current game is the primary destination. Support stays available
-   below the game list, rather than displacing it with a full-height QR column. */
+/* Keep the game list full-width below the homepage introduction. */
 #app .tabletop-lobby .home-layout { grid-template-columns: minmax(0, 1fr); width: min(1200px, 100%); margin: 0 auto; }
 #app .tabletop-lobby .home-layout::after { display: none; }
 #app .tabletop-lobby .home-layout > .container { grid-row: 1; }
-#app .tabletop-lobby .home .support-card { grid-row: 2; position: static; width: 100%; box-sizing: border-box; box-shadow: none; border-width: 1px; }
-#app .tabletop-lobby .support-card summary { cursor: pointer; color: #d5c899; font-weight: 600; padding: 4px; }
-#app .tabletop-lobby .support-card[open] summary { margin-bottom: 16px; }
-#app .tabletop-lobby .support-card img { width: 150px; }
 .continue-game { display: flex; gap: 20px; justify-content: space-between; align-items: center; padding: 20px; margin-bottom: 24px; background: #173d2d; border: 1px solid #958458; border-radius: 8px; }
 .continue-game small { color: #c7d1bb; }
 #app .tabletop-lobby .continue-game h2 { margin-top: 6px; overflow-wrap: anywhere; }

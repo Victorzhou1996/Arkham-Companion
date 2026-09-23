@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
+const { patchLegacyProtocol, patchLegacyTokenArt } = require('./legacy-protocol.cjs');
 
 function disableLegacyCompanion(source) {
   // This historical bundle has no rebuildable source in the release. Patch only
@@ -19,7 +20,7 @@ function disableLegacyCompanion(source) {
 function patchCampaignMessages(source, messages) {
   const match = source.match(/export\{(\w+) as default\};\s*$/);
   assert.ok(match, 'Unknown legacy locale export');
-  const campaigns = ['theDreamEaters', 'theFeastOfHemlockVale', 'theDrownedCity'];
+  const campaigns = ['nightOfTheZealot', 'theDunwichLegacy', 'thePathToCarcosa', 'theForgottenAge', 'theCircleUndone', 'theDreamEaters', 'theInnsmouthConspiracy', 'edgeOfTheEarth', 'theScarletKeys', 'theFeastOfHemlockVale', 'theDrownedCity'];
   const updates = Object.fromEntries(campaigns.map(name => {
     assert.ok(messages[name] && typeof messages[name] === 'object', `Missing ${name}`);
     return [name, messages[name]];
@@ -27,11 +28,12 @@ function patchCampaignMessages(source, messages) {
   for (const name of ['Reaction', 'choiceText', 'gameLog']) {
     if (messages[name]) updates[name] = messages[name];
   }
+  updates.gameBar = { narration: { title: messages.nav?.home === '首页' ? '音乐与语音' : 'Music & voice' } };
   for (const name of ['thePathToCarcosa', 'theForgottenAge', 'returnToTheForgottenAge', 'theCircleUndone', 'theInnsmouthConspiracy', 'edgeOfTheEarth', 'theScarletKeys']) {
-    if (messages[name]?.specialRules) updates[name] = { specialRules: messages[name].specialRules };
+    if (messages[name]?.specialRules) updates[name] = { ...updates[name], specialRules: messages[name].specialRules };
   }
   if (messages.theScarletKeys?.dealingsInTheDark?.act2Setup) {
-    updates.theScarletKeys = { ...updates.theScarletKeys, dealingsInTheDark: {
+    updates.theScarletKeys = { ...updates.theScarletKeys, dealingsInTheDark: { ...updates.theScarletKeys.dealingsInTheDark,
       act2Setup: messages.theScarletKeys.dealingsInTheDark.act2Setup,
     } };
   }
@@ -67,13 +69,15 @@ function patchLegacyCustomCards(source, name) {
     source = source.replace(from, to);
   };
   if (name === 'index') {
+    replace('function ul(e,t){return vA.has(t)?', 'function ul(e,t){if(/^(cards|customizations|tarot|seals)\\//.test(t))return `${e}${e.includes("?")?"&":"?"}v=cards-20260923`;return vA.has(t)?');
     replace('function cL(e){const t=xv()', 'function cL(e){const custom=window.arkhamLegacyCustomCards?.resolveArt(e);if(custom)return custom.url||cL(custom.reference);const t=xv()');
   } else if (name === 'cards') {
     replace('state:()=>({cards:[],loaded:!1})', 'state:()=>({cards:[],custom:[],loaded:!1})');
     replace('getCards(t){return t.cards}', 'getCards(t){return [...t.cards,...t.custom]}');
     replace('actions:{async fetchCards()', 'actions:{async fetchCustomCards(id){try{this.custom=await window.arkhamLegacyCustomCards.load(id)}catch(e){console.error(e)}},async fetchCards()');
   } else if (name === 'game') {
-    replace('const I=Es(null);', 'const I=Es(null);let customLoading=false;re(I,g=>{if(!customLoading&&window.arkhamLegacyCustomCards?.unknownCards(g)){customLoading=true;p.fetchCustomCards(n.gameId).finally(()=>customLoading=false)}});');
+    replace('(E,C)=>S(s).supported?(r(),l("div",og,', '(E,C)=>!0?(r(),l("div",og,');
+    replace('const I=Es(null);', 'const I=Es(null);let customLoading=false;re(I,g=>{window.arkhamLegacyCustomCards?.updateMusic(g);if(!customLoading&&window.arkhamLegacyCustomCards?.unknownCards(g)){customLoading=true;p.fetchCustomCards(n.gameId).finally(()=>customLoading=false)}});');
     replace('then(async({game:b,playerId:Z,multiplayerMode:ge,eventId:Ee})=>{window.g=b', 'then(async({game:b,playerId:Z,multiplayerMode:ge,eventId:Ee})=>{await p.fetchCustomCards(n.gameId);window.g=b');
   } else if (name === 'player') {
     const button = 'window.arkhamLegacyCustomCards?.enabled()?(openBlock(),createElementBlock("button",{key:"legacy-custom-card-add",class:"legacy-custom-card-add",type:"button",onClick:withModifiers(()=>window.arkhamLegacyCustomCards.openPicker(e.game,e.investigator.id),["stop"])},window.arkhamLegacyCustomCards.buttonLabel())):createCommentVNode("",!0)';
@@ -86,8 +90,10 @@ function patchLegacyCustomCards(source, name) {
 async function prepare() {
   const frontend = path.resolve(__dirname, '..');
   const source = path.join(frontend, '../legacy-ui-v20260826.3/prepared');
-  const output = path.join(frontend, 'public/legacy-ui-20260921.1');
+  const output = path.join(frontend, 'public/legacy-ui-20260923.1');
   fs.cpSync(source, output, { recursive: true });
+  const imageDigest = fs.readFileSync(path.join(frontend, 'src/digests/zh.json'), 'utf8');
+  fs.writeFileSync(path.join(output, 'assets/zh-DxvknHJq.js'), `export default ${JSON.stringify(JSON.parse(imageDigest))};`);
   const { createServer } = await import('vite');
   const server = await createServer({ root: frontend, appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });
   try {
@@ -98,14 +104,16 @@ async function prepare() {
       fs.writeFileSync(localeFile, patchCampaignMessages(fs.readFileSync(localeFile, 'utf8'), messages));
     }
     const gameLog = path.join(output, 'assets/GameLog-Cf4LRTFm.js');
-    fs.writeFileSync(gameLog, patchLegacyText(fs.readFileSync(gameLog, 'utf8'), frontend));
+    fs.writeFileSync(gameLog, patchLegacyTokenArt(patchLegacyText(fs.readFileSync(gameLog, 'utf8'), frontend)));
+    const api = path.join(output, 'assets/api-BQ1BYW-_.js');
+    fs.writeFileSync(api, patchLegacyProtocol(fs.readFileSync(api, 'utf8')));
   } finally { await server.close(); }
   function rebase(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const file = path.join(directory, entry.name);
       if (entry.isDirectory()) rebase(file);
       else if (/\.(js|css|html)$/.test(file)) {
-        fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('legacy-ui-20260826.3', 'legacy-ui-20260921.1').replaceAll('ui-switch-v20260916.js', 'ui-switch-v20260921.js'));
+        fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('legacy-ui-20260826.3', 'legacy-ui-20260923.1').replaceAll('ui-switch-v20260916.js', 'ui-switch-v20260921.js?v=20260923.1'));
       } else if (/\.(gz|br)$/.test(file)) fs.unlinkSync(file);
     }
   }

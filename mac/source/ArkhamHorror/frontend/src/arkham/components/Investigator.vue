@@ -25,7 +25,6 @@ import { useMenu } from '@/composable/menu';
 import { useI18n } from 'vue-i18n';
 import useEmitter from '@/composable/useEmitter';
 import Resources from '@/arkham/components/Resources.vue';
-import PoolItem from '@/arkham/components/PoolItem.vue';
 import ActionCount from '@/arkham/components/ActionCount.vue';
 import ActionExtras from '@/arkham/components/ActionExtras.vue';
 import { tabletopUndoKey } from '@/arkham/tabletopControls';
@@ -255,11 +254,6 @@ const emitter = useEmitter()
 const cardsUnderneath = computed(() => props.investigator.cardsUnderneath)
 const cardsUnderneathLabel = computed(() => t('investigator.underneathCards', {count: cardsUnderneath.value.length}))
 const devoured = computed(() => props.investigator.devoured)
-const controlColumns = computed(() => Math.max(1, Math.ceil((
-  2 + abilities.value.length + Number(Boolean(tabletopUndo?.enabled.value))
-  + Number(Boolean(devoured.value?.length)) + Number(cardsUnderneath.value.length > 0)
-  + Number(debug.active) + Number(debug.active && (props.investigator.modifiers ?? []).length > 0)
-) / 3)))
 
 onMounted(() => {
   emitter.on('showUnder', (id: string) => {
@@ -527,20 +521,10 @@ const spadeInjury = computed(() => {
     />
   </div>
   <div v-else class="player-container">
-    <div v-if="!isMobile" class="edge-personal-totals" aria-label="全局标记">
-      <PoolItem type="doom" :amount="game.totalDoom" tooltip="Total Doom / 总毁灭" />
-      <PoolItem type="clue" :amount="game.totalClues" tooltip="Total Spendable Clues / 总可花费线索" />
-    </div>
       <MobileCard>
     <div class="player-area">
       <div class="player-card">
-        <div class="stats">
-          <div class="willpower willpower-icon">{{willpower}}</div>
-          <div class="intellect intellect-icon">{{intellect}}</div>
-          <div class="combat combat-icon">{{combat}}</div>
-          <div class="agility agility-icon">{{agility}}</div>
-        </div>
-        <div class="investigator-image">
+        <div v-if="!isMobile" class="investigator-status">
             <span v-if="!isMobile" class="action-container">
               <i class="spade" v-if="spadeInjury"></i>
               <i class="heart" v-if="heartInjury"></i>
@@ -567,6 +551,15 @@ const spadeInjury = computed(() => {
                 </svg>
               </span>
             </span>
+          <Resources :game="game" :investigator="investigator" :choices="choices" :playerId="playerId" inline-tokens @choose="$emit('choose', $event)" />
+        </div>
+        <div class="stats">
+          <div class="willpower willpower-icon">{{willpower}}</div>
+          <div class="intellect intellect-icon">{{intellect}}</div>
+          <div class="combat combat-icon">{{combat}}</div>
+          <div class="agility agility-icon">{{agility}}</div>
+        </div>
+        <div class="investigator-image">
           <img
             :class="{ 'investigator--can-interact': investigatorAction !== -1 }"
             class="card card--sideways"
@@ -601,8 +594,8 @@ const spadeInjury = computed(() => {
           />
         </div>
       </div>
-      <div>
-        <div class="player-buttons" :style="{'--control-columns': controlColumns}" :class="{'player-buttons--multi': controlColumns > 1}">
+      <div class="player-controls">
+        <div class="player-buttons">
           <div class="button-group" :class="{ 'button-group--skip-all-pending': isCurrentPlayersInvestigator && skipAllInProgress }">
             <button v-if="!isMobile && tabletopUndo?.enabled.value" class="tabletop-undo" :disabled="tabletopUndo.locked.value" @click="tabletopUndo.run()">↶ {{ $t('gameBar.undo') }}</button>
             <template v-if="debug.active">
@@ -675,14 +668,6 @@ const spadeInjury = computed(() => {
         />
       </div>
     </div>
-    <Resources
-      v-if="!isMobile"
-      :game="game"
-      :investigator="investigator"
-      :choices="choices"
-      :playerId="playerId"
-      @choose="$emit('choose', $event)"
-    />
 
     <Draggable v-if="doShowBonded">
       <template #handle><header><h2>{{$t('gameBar.bonded')}}</h2></header></template>
@@ -698,7 +683,6 @@ const spadeInjury = computed(() => {
 </template>
 
 <style scoped>
-.edge-personal-totals { display: none; }
 i.action {
   font-family: 'Arkham';
   font-style: normal;

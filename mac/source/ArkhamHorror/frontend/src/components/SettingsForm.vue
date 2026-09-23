@@ -10,6 +10,7 @@ import { useSettings } from '@/stores/settings'
 import { checkImageExists } from '@/arkham/helpers'
 import { isDevBuild } from '@/arkham/displayRules'
 import { loadLocaleMessages, normalizeLocale } from '@/locales/messages'
+import UiModeButton from '@/components/UiModeButton.vue'
 import {
   applyCardHoverZoom,
   CARD_HOVER_ZOOM_DEFAULT,
@@ -249,6 +250,8 @@ onMounted(refreshRuntimeInfo)
   <div class="page-container site-workspace site-settings">
     <div class="page-content column">
       <h2 class="title">{{ $t('settings') }}</h2>
+
+      <UiModeButton />
 
       <section class="box column">
         <h3>{{ $t('language') }}</h3>

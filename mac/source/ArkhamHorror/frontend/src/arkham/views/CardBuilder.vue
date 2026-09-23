@@ -644,7 +644,7 @@ async function onImport(event: Event) {
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container site-workspace">
 
   <!-- Your sets, full width. The editor is one card at a time, so it has no
        room to show a set; here a set can open up and show its cards. -->

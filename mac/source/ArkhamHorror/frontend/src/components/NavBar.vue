@@ -8,7 +8,6 @@ import { OnClickOutside } from '@vueuse/components'
 import { storeToRefs } from 'pinia'
 import { useSettings } from '@/stores/settings'
 import { isDevBuild } from '@/arkham/displayRules'
-import UiModeButton from '@/components/UiModeButton.vue'
 import { isLegacyEditor } from '@/legacy/editorMode'
 
 const expanded = ref(false);
@@ -96,7 +95,6 @@ async function logout() {
 
     <OnClickOutside @trigger="expanded = false">
       <div class="user-links">
-        <UiModeButton />
         <template v-if="currentUser">
           <button class="user-btn" :class="{ open: expanded }" :aria-expanded="expanded" @click="expanded = !expanded">
             <span>{{currentUser.username}}</span>

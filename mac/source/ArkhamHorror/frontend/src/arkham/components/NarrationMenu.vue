@@ -9,13 +9,15 @@ import {
 } from '@heroicons/vue/20/solid'
 import { useI18n } from 'vue-i18n'
 import { type NarrationCategory, useNarration } from '@/arkham/narration'
+import MusicControls from './MusicControls.vue'
 import {
   cardNarrationCsvState,
   loadCardNarrationCsv,
   reloadCardNarrationCsv,
 } from '@/arkham/narrationCsv'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const audioTitle = computed(() => locale.value.startsWith('zh') ? '音乐与语音' : 'Music & voice')
 const narration = useNarration()
 
 const groups: { title: string; categories: NarrationCategory[] }[] = [
@@ -95,19 +97,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="narration.supported" class="narration-menu">
+  <div class="narration-menu">
     <button
       ref="buttonRef"
       type="button"
       class="narration-button"
       :class="{ active: narration.speaking.value, open: menuOpen }"
-      :title="t('gameBar.narration.title')"
+      :title="audioTitle"
       :aria-expanded="menuOpen"
       aria-controls="narration-panel"
       @click="toggleMenu"
     >
       <SpeakerWaveIcon aria-hidden="true" />
-      {{ t('gameBar.narration.title') }}
+      <span class="audio-menu-label">{{ audioTitle }}</span>
       <ChevronDownIcon class="chevron" aria-hidden="true" />
     </button>
     <Teleport to="body">
@@ -118,8 +120,11 @@ onBeforeUnmount(() => {
         class="narration-panel"
         :style="panelStyle"
         role="dialog"
-        :aria-label="t('gameBar.narration.title')"
+        :aria-label="audioTitle"
       >
+          <MusicControls />
+          <h3 class="voice-heading">{{ locale.startsWith('zh') ? '语音朗读' : 'Voice narration' }}</h3>
+          <template v-if="narration.supported">
           <label class="master-toggle">
             <input v-model="narration.preferences.autoRead" type="checkbox" />
             <span>{{ t('gameBar.narration.autoRead') }}</span>
@@ -203,12 +208,14 @@ onBeforeUnmount(() => {
               />
             </label>
           </div>
+          </template>
       </div>
     </Teleport>
   </div>
 </template>
 
 <style scoped>
+.voice-heading { font-size: 16px; color: inherit; margin: 0 0 10px; }
 .narration-menu {
   position: relative;
   display: inline-flex;

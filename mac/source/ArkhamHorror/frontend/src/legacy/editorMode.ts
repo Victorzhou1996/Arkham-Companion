@@ -1,5 +1,6 @@
-export const LEGACY_UI_PATH = '/legacy-ui-20260921.1/'
+export const LEGACY_UI_PATH = '/legacy-ui-20260923.1/'
 export const isSharedCardRoute = (path: string) => /^\/(card-builder|card-marketplace)(\/|\?|$)/.test(path)
+export const isLegacyGameRoute = (path: string) => /^\/games\/[^/?#]+(?:\/|\?|$)/.test(path)
 
 export function isLegacyEditor(): boolean {
   return typeof document !== 'undefined' && document.documentElement.dataset.ui === 'legacy-editor'

@@ -114,7 +114,7 @@ const versionedUiAssets = new Set([
 
 function withUiAssetRevision(url: string, path: string) {
   if (/^(cards|customizations|tarot|seals)\//.test(path)) {
-    return `${url}${url.includes('?') ? '&' : '?'}v=cards-20260913`
+    return `${url}${url.includes('?') ? '&' : '?'}v=cards-20260923`
   }
   if (!versionedUiAssets.has(path)) return url
   return `${url}${url.includes('?') ? '&' : '?'}v=ui-20260721-1`

@@ -36,6 +36,9 @@ test('groups share location reset but never use game mutations or undo', () => {
   assert.doesNotMatch(c, /updateGame|choose\(|fetch\(|setInterval|requestAnimationFrame/)
   for (const event of ['pointercancel', 'blur', 'keydown']) assert.ok(c.includes(`removeEventListener('${event}'`))
   assert.match(c, /onBeforeUnmount\(\(\) => \{ cancel\(\); observer\?\.disconnect\(\)/)
+  assert.match(c, /const roots = \{ auxiliary, encounter, totals \}/)
+  assert.match(s, /id="totals" ref="totalsGroup"/)
+  assert.match(s, /mapCardGroups.start\(\$event, 'totals'\)/)
 })
 test('upper and lower map cards share a single desktop-only size and narrower rail', () => {
   const css = read('styles/edgeTabletop.css')

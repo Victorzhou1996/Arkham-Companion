@@ -20,7 +20,6 @@ import { automaticTriggerSkip, authorizedAutomaticSeat } from '@/arkham/triggerM
 import { undoShortcut, allowsUndoInput } from '@/arkham/undoShortcut'
 import TabletopLayoutControls from '@/arkham/components/TabletopLayoutControls.vue'
 import EdgeTabletopControls from '@/arkham/components/EdgeTabletopControls.vue'
-import UiModeButton from '@/components/UiModeButton.vue'
 import '@/styles/edgeTabletop.css'
 import { deviceInfoKey, provideMobileBoard } from '@/arkham/mobile/context'
 import { phonePresentation, readDeviceInfo } from '@/arkham/mobile/devicePresentation'
@@ -115,6 +114,7 @@ import StandaloneScenario from '@/arkham/components/StandaloneScenario.vue'
 import AchievementToast from '@/arkham/components/AchievementToast.vue'
 import ResponseStatusBar from '@/arkham/components/ResponseStatusBar.vue'
 import NarrationMenu from '@/arkham/components/NarrationMenu.vue'
+import { setMusicScenario } from '@/arkham/bgm'
 import { clearCurrentNarration, stopNarration } from '@/arkham/narration'
 import StoryQuestion from '@/arkham/components/StoryQuestion.vue'
 import Draggable from '@/components/Draggable.vue'
@@ -289,6 +289,11 @@ interface PlayabilityInfo {
 }
 
 const game = shallowRef<Arkham.Game | null>(null)
+watch(() => [game.value?.id, game.value?.scenario?.id, game.value?.phase, game.value?.gameState.tag], () => {
+  const current = game.value
+  setMusicScenario(current?.id ?? null, current?.phase === 'CampaignPhase' || current?.gameState.tag === 'IsOver' ? null : current?.scenario?.id ?? null)
+})
+onUnmounted(() => setMusicScenario(null, null))
 let stopDeckSaveNotifications: (() => void) | null = null
 let applyingSavedDeck = false
 const onlineMode = import.meta.env.VITE_ONLINE_MODE === 'true'
@@ -2389,7 +2394,6 @@ onUnmounted(() => {
     </div>
     <div ref="tabletopToolsRef" class="tabletop-tools">
     <div class="game-bar">
-      <UiModeButton />
       <div class="game-bar-item">
         <div>
           <button @click="showLog = !showLog">
