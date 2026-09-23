@@ -9,6 +9,15 @@ These files are the Windows/WSL package-specific layer used by the portable loca
 
 The authenticated in-browser `/local-management` page deliberately exposes only current-user operations and read-only status. It must not call these system-level maintenance commands.
 
+## Latest source: 2026-09-23
+
+Use the [September 23 release notes](../RELEASE-20260923.md) and the complete
+`server/source/ArkhamHorror` snapshot. Rebuild the frontend with `VITE_ONLINE_MODE=false`
+for a local Windows package. The prebuilt frontend is current but online-mode;
+the supplied backend executable is Linux amd64, not Windows native. Starter-deck
+changes require the matching backend. Preserve the portable launcher and manager.
+Run `git lfs pull` so images and music are real files, not pointer text.
+
 ## Current portable layer: 2026-09-15 / Windows v20260915.5
 
 This folder now matches the verified clean Windows release's scripts, including all 44 manager functions and the NUL/ANSI error-message repair. The historical notes below are not instructions to re-add already implemented functions.

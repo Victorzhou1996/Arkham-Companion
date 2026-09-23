@@ -71,6 +71,7 @@ const TOKEN_CONFIG: Partial<Record<Token, { type: string; tooltip?: string }>> =
 
 const props = withDefaults(defineProps<{
   tokens?: Tokens
+  row?: boolean
   order?: readonly Token[]
   overrides?: Partial<Record<Token, TokenPoolOverride>>
   extraItems?: readonly TokenPoolItem[]
@@ -120,10 +121,10 @@ const items = computed(() => [
 const CLUMP_THRESHOLD = 2
 const mobileBoard = useMobileBoard()
 const mobileCard = inject(mobileCardKey, null)
-const clumped = computed(() => items.value.length > CLUMP_THRESHOLD && !(mobileBoard?.touchEnabled.value && mobileCard?.preview.value))
+const clumped = computed(() => !props.row && items.value.length > CLUMP_THRESHOLD && !(mobileBoard?.touchEnabled.value && mobileCard?.preview.value))
 // Keep exactly-two-token pools side by side (the parent .pool wraps, which can
 // stack them vertically on narrow asset cards).
-const pairRow = computed(() => !clumped.value && items.value.length === 2)
+const pairRow = computed(() => props.row || (!clumped.value && items.value.length === 2))
 const expanded = ref(false)
 
 type ClumpLayout = {

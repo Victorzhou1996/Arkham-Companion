@@ -4,7 +4,7 @@
   --edge-rail: 48px;
   --edge-map-card: clamp(55px,5vw,105px);
   --edge-map-pile-height: calc(var(--edge-map-card) * 1.4 + 52px);
-  --edge-person: clamp(160px, calc(var(--panel-investigator, 18) * .83333vw), 410px);
+  --edge-person: clamp(280px, calc(var(--panel-investigator, 18) * .83333vw), 500px);
   --edge-piles: clamp(82px, 7vw, 160px);
   --edge-bottom: clamp(260px, calc((100 - var(--panel-upper, 62)) * .9dvh), 500px);
   --tabletop-lower-height: calc(var(--edge-bottom) - 8px);
@@ -59,41 +59,30 @@
 #game.tabletop-game.edge-tabletop #player-zone .tabs__header > li .switch-investigators[aria-pressed="true"] { background: #456448; color: #fff0b6; border-radius: 7px; }
 #game.edge-tabletop #player-zone .tab { height: 100%; }
 #game.edge-tabletop .player-cards { grid-template-columns: var(--edge-person) var(--edge-piles) minmax(0,1fr); grid-template-rows: 1fr 1fr; }
-#game.edge-tabletop .investigator-and-deck > .player-container { padding: 116px 8px 0; justify-content: flex-end; --person-control-width: clamp(72px,6vw,88px); container-type: inline-size; }
-#game.edge-tabletop .player-container .player-buttons { top: 8px; left: auto; right: 6px; width: calc(var(--person-control-width) * var(--control-columns,1)); max-width: calc(100% - 116px); min-height: 0; max-height: none; overflow: visible; background: transparent; margin: 0; align-items: stretch; }
-#game.edge-tabletop .player-container .player-buttons .button-group { display: grid; grid-auto-flow: column; grid-template-rows: repeat(3,28px); grid-template-columns: repeat(var(--control-columns,1),minmax(0,1fr)); align-items: stretch; gap: 3px; }
-#game.edge-tabletop .player-container .player-buttons .button-group > :is(button,.skip-triggers-group) { min-width: 0; height: 28px; margin: 0; }
-#game.edge-tabletop .player-container .player-buttons button { overflow-wrap: anywhere; line-height: 12px; }
+#game.edge-tabletop .investigator-and-deck > .player-container { padding: 8px; justify-content: flex-start; --person-control-width: 88px; container-type: size; }
+#game.edge-tabletop .player-container > .mobile-card { position: static; height: 100%; min-height: 0; }
+#game.edge-tabletop .player-container .player-area { display: grid; grid-template-columns: minmax(0,1fr) var(--person-control-width); gap: 8px; height: 100%; min-height: 0; align-items: end; }
+#game.edge-tabletop .player-container .player-card { width: min(100%,calc((100cqh - 62px) * 1.43)); min-width: 0; gap: 4px; }
+#game.edge-tabletop .player-container .player-controls { min-width: 0; max-height: 100%; overflow-y: auto; scrollbar-width: thin; }
+#game.edge-tabletop .player-container .player-buttons { position: static; width: 100%; max-width: none; min-height: 0; background: transparent; margin: 0; align-items: stretch; }
+#game.edge-tabletop .player-container .player-buttons .button-group { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 4px; }
+#game.edge-tabletop .player-container .player-buttons .button-group > :is(button,.skip-triggers-group) { flex: 0 0 auto; width: 100%; min-width: 0; min-height: 28px; height: auto; margin: 0; }
+#game.edge-tabletop .player-container .player-buttons button { overflow-wrap: anywhere; line-height: 16px; }
 #game.edge-tabletop .player-container .skip-triggers-group { width: 100%; }
 #game.edge-tabletop .player-container .skip-triggers-button { flex: 1; min-width: 0; }
-#game.edge-tabletop .player-container .button-group > button,#game.edge-tabletop .skip-triggers-group button { font-size: 11px; line-height: 11px; padding: 2px; background: #193c2c; color: #e4e8d8; border-color: #8b815a; }
-#game.edge-tabletop .player-container .action-container { position: static; max-width: none; font-size: 14px; background: transparent; }
-#game.edge-tabletop .player-container > .mobile-card { position: static; }
-#game.edge-tabletop .player-container .resources { position: absolute; top: 8px; bottom: auto; left: 8px; right: calc(var(--person-control-width) + 14px); max-height: 36px; overflow: auto; --pool-token-width: 28px; }
-#game.edge-tabletop .player-container .investigator-image > img.card { max-height: calc(var(--edge-bottom) - 138px); width: 100%; object-position: left bottom; }
-#game.edge-tabletop .player-container .stats { position: absolute; top: 48px; left: 8px; max-width: calc(100% - var(--person-control-width) - 22px); overflow-x: auto; font-size: 14px; }
-#game.edge-tabletop .player-container .edge-personal-totals { display: flex; position: absolute; top: 78px; left: 8px; right: calc(var(--person-control-width) + 14px); gap: 8px; overflow-x: auto; --pool-token-width: 28px; font-size: 13px; }
-#game.edge-tabletop .player-container:has(.player-buttons--multi) :is(.resources,.stats,.edge-personal-totals) { width: 100px; max-width: 100px; right: auto; overflow: visible; }
-#game.edge-tabletop .player-container:has(.player-buttons--multi) .resources { display: grid; grid-template-columns: repeat(2,max-content); gap: 2px 4px; max-height: none; --pool-token-width: 24px; }
-#game.edge-tabletop .player-container:has(.player-buttons--multi) .stats { top: 72px; font-size: 11px; }
-#game.edge-tabletop .player-container:has(.player-buttons--multi) .edge-personal-totals { top: 94px; --pool-token-width: 24px; }
-@container (max-width: 300px) {
- #game.edge-tabletop .player-container .player-buttons--multi { top: 118px; left: 8px; right: 8px; width: auto; max-width: none; }
- #game.edge-tabletop .player-container:has(.player-buttons--multi) .investigator-image { padding-top: 96px; }
- #game.edge-tabletop .player-container:has(.player-buttons--multi) .investigator-image > img.card { max-height: max(36px,calc(var(--edge-bottom) - 234px)); }
-}
-#game.edge-tabletop #totals > :is(.poolItem-doom,.poolItem-clue) { display: none; }
-#game.edge-tabletop #totals:not(:has(.totals-rule)) { display: none; }
+#game.edge-tabletop .player-container .button-group > button,#game.edge-tabletop .skip-triggers-group button { font-size: 12px; line-height: 16px; padding: 4px; background: #193c2c; color: #e4e8d8; border-color: #8b815a; }
+#game.edge-tabletop .investigator-status { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; width: 100%; min-height: 30px; overflow-x: auto; scrollbar-width: thin; --pool-token-width: 24px; --card-token-width: 24px; }
+#game.edge-tabletop .player-container .action-container { position: static; display: inline-flex; flex: 0 0 auto; flex-wrap: nowrap; max-width: none; font-size: 13px; background: transparent; }
+#game.edge-tabletop .player-container .resources { position: static; display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; gap: 3px; max-height: none; overflow: visible; margin: 0; }
+#game.edge-tabletop .player-container .resources > * { flex-shrink: 0; }
+#game.edge-tabletop .player-container .resources :is(.keys,.seals) { display: flex; flex-wrap: nowrap; align-items: center; }
+#game.edge-tabletop .investigator-status .action-extras[open] .action-extras-options { position: static; flex-wrap: nowrap; width: max-content; padding: 2px; }
+#game.edge-tabletop .player-container .investigator-image > img.card { max-height: none; width: 100%; height: auto; object-position: left top; }
+#game.edge-tabletop .player-container .stats { position: static; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: 100%; max-width: none; margin: 0; font-size: 14px; }
+#game.edge-tabletop .player-container .stats > div { padding-inline: 1px; }
 #game.edge-tabletop #totals .totals-rule { display: none; }
-/* Fullscreen hides the investigator area: keep its global counters available. */
+/* Fullscreen hides the investigator area, not the global counters. */
 #game.edge-tabletop:has(.location-cards-container--fullscreen) #totals { display: flex; position: fixed; left: 16px; bottom: 16px; z-index: 55; }
-#game.edge-tabletop:has(.location-cards-container--fullscreen) #totals > :is(.poolItem-doom,.poolItem-clue) { display: grid; }
-@container (max-width: 240px) {
-  #game.edge-tabletop .player-container .resources { display: grid; grid-template-columns: repeat(2,max-content); --pool-token-width: 24px; gap: 2px 4px; padding: 0; margin: 0; max-height: 64px; overflow: visible; }
-  #game.edge-tabletop .player-container .stats { top: 74px; font-size: 11px; }
-  #game.edge-tabletop .player-container .stats > div { padding-inline: 1px; }
-  #game.edge-tabletop .player-container .edge-personal-totals { top: 94px; --pool-token-width: 24px; gap: 4px; font-size: 11px; }
-}
 #game.edge-tabletop .in-play-row { grid-column: 3; }
 #game.edge-tabletop .player-cards .hand-area { grid-column: 3; height: calc(100% - var(--tabletop-hand)); --card-width: var(--edge-card); padding: 2px 6px; overflow: visible; }
 #game.edge-tabletop .in-play { grid-template-rows: var(--tabletop-hand) minmax(0,1fr); }
@@ -113,6 +102,9 @@
 #game.edge-tabletop .investigator-and-deck > :is(.deck-container,.discard) { position: relative; grid-column: 2; grid-row: 2; align-self: stretch; width: 100%; height: 100%; min-height: 0; padding: 22px 6px 4px; --pile-width: calc(var(--edge-piles) - 12px); --card-width: min(calc(var(--edge-piles) - 12px),calc((var(--edge-bottom) / 2 - 48px) / 1.4)); --card-height: calc(var(--card-width) * 1.4); background: #10271d; border-left: 1px solid #756f50; border-right: 1px solid #756f50; z-index: 5; }
 #game.edge-tabletop .investigator-and-deck > .discard { grid-row: 1; }
 #game.edge-tabletop .investigator-and-deck > .deck-container { border-top: 1px solid #756f50; }
+#game.edge-tabletop .investigator-and-deck > :is(.deck-container,.discard) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+#game.edge-tabletop .investigator-and-deck :is(.top-of-deck,.tabletop-discard-empty) { flex-shrink: 0; margin: 0; }
+#game.edge-tabletop .investigator-and-deck .top-of-deck > .deck-size { transform: none; }
 /* A real extra grid column, not a half-width absolute overlay on the hand. */
 #game.edge-tabletop .player-cards:has(.hunch-deck) { grid-template-columns: var(--edge-person) var(--edge-piles) var(--edge-piles) minmax(0,1fr); }
 #game.edge-tabletop .player-cards:has(.hunch-deck) > .in-play-row,
@@ -138,7 +130,9 @@
 #game.edge-tabletop .map-card-group--unlocked * { cursor: inherit; touch-action: none; }
 #game.edge-tabletop .map-card-group--dragging { cursor: grabbing; z-index: 24; }
 #game.edge-tabletop .scenario-balance-placeholder { display: none; }
-#game.edge-tabletop #totals { position: absolute; left: calc(var(--edge-rail) + 12px); right: auto; bottom: calc(var(--edge-bottom) + var(--edge-map-pile-height) + 16px); z-index: 15; }
+#game.edge-tabletop #totals { position: absolute; display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; left: 8px; right: auto; bottom: calc(var(--edge-bottom) + var(--edge-map-pile-height) + 16px); max-width: calc(100% - var(--edge-rail) - 24px); overflow-x: auto; --pool-token-width: 28px; font-size: 13px; padding: 4px 6px; margin: 0; border: 1px solid #8b815a; border-radius: 4px; background: #10281feb; z-index: 15; }
+#game.edge-tabletop #totals > .poolItem { flex-shrink: 0; }
+#game.edge-tabletop #totals.map-card-group--dragging { z-index: 24; }
 /* Only scene / agenda cards live here. They cover, never reserve, player space. */
 #game.edge-tabletop .edge-scene-shelf { position: absolute; right: 8px; bottom: 0; width: calc(var(--panel-right,14) * 1.8%); height: 30px; z-index: 40; pointer-events: none; }
 #game.edge-tabletop .edge-scene-group { position: absolute; bottom: 0; width: 100%; padding: 0; background: transparent; border: 0; pointer-events: auto; translate: 0 calc(100% - 30px); scale: 1; transform-origin: right bottom; transition: translate 160ms ease, scale 150ms ease; }
@@ -173,7 +167,7 @@
 #game.edge-tabletop.tabletop-log-collapsed .tabletop-divider[data-panel="log"] span { display: none; }
 #game.edge-tabletop .card-ability-anchor { position: absolute; bottom: 0; left: 0; width: 100%; height: 1px; }
 @media (max-width: 1050px) {
- #game.tabletop-game.edge-tabletop { --edge-person: clamp(150px,calc(var(--panel-investigator,18) * .9vw),240px); --edge-piles: 85px; --edge-bottom: clamp(260px,calc((100 - var(--panel-upper,62)) * .973dvh),390px); --edge-card: 74px; }
+ #game.tabletop-game.edge-tabletop { --edge-person: clamp(280px,calc(var(--panel-investigator,18) * .9vw),300px); --edge-piles: 85px; --edge-bottom: clamp(260px,calc((100 - var(--panel-upper,62)) * .973dvh),390px); --edge-card: 74px; }
  #game.edge-tabletop .edge-scene-shelf { width: max(230px,calc(var(--panel-right,14) * 1.8%)); }
 }
 @media (max-height: 600px) {

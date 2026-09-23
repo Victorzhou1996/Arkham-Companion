@@ -21,6 +21,7 @@ export interface Props {
   investigator: Arkham.Investigator
   game: Game
   portrait?: boolean
+  inlineTokens?: boolean
   playerId: string
 }
 
@@ -272,7 +273,7 @@ const hiGradId = computed(() => `auxMagentaHi-${iid.value}`)
       >+</button>
     </template>
 
-    <TokenPool :tokens="otherTokens" />
+    <TokenPool :tokens="otherTokens" :row="inlineTokens" />
   </div>
 </template>
 

@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.23.1-compatibility-content",
+  "version": "2026.09.23.3-investigator-alignment",
   "files": [
     {
       "path": "server/source/ArkhamHorror/.dir-locals.el",
@@ -43,8 +43,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/.gitignore",
-      "sha256": "642d6181c5966d8d87d701304f27f420ce411645ee18e5fcab487e316aff19d5",
-      "size": 1720
+      "sha256": "92cfb09149edade979efcb6bda94ae9629915284be04828f4d4b9fbb3356c777",
+      "size": 2032
     },
     {
       "path": "server/source/ArkhamHorror/.kamal/hooks/post-deploy.sample",
@@ -78,13 +78,18 @@
     },
     {
       "path": "server/source/ArkhamHorror/Makefile",
-      "sha256": "d7852a4f16d3f13d0be242a426c88f829e4127ee81e7e9f94589ded785e8abdb",
-      "size": 9254
+      "sha256": "f489190ffe109046993158a5d61e05ede67128d3fd30f45e3c4238da209e2a94",
+      "size": 9373
     },
     {
       "path": "server/source/ArkhamHorror/README.md",
-      "sha256": "61001477fa2c156ed8a7c39bd21a65b7f990a1df13076da85e3361ab8867de9b",
-      "size": 11019
+      "sha256": "1d2f9f283fed01d6c1af7170c8d1d4368e7c26415513677511effabea105a4a9",
+      "size": 11537
+    },
+    {
+      "path": "server/source/ArkhamHorror/RELEASE-20260921.md",
+      "sha256": "2cd2d444fd5b5b98ece0494f947d55ec838ba1008a2182d7cce5ff39e5b07ce8",
+      "size": 6375
     },
     {
       "path": "server/source/ArkhamHorror/backend/.gitignore",
@@ -43442,6 +43447,11 @@
       "size": 76
     },
     {
+      "path": "server/source/ArkhamHorror/dev.up",
+      "sha256": "7815fba2aaeeeeeb11595977afc2eda5f5361a14807fbf23bd00137321e3142f",
+      "size": 11353
+    },
+    {
       "path": "server/source/ArkhamHorror/docker-compose.yml",
       "sha256": "3b7c99a23c0b5ca503476f3355da7ccda771dd9bcc8ebac1e6e4bb168fd5d489",
       "size": 2882
@@ -54812,31 +54822,6 @@
       "size": 24
     },
     {
-      "path": "server/source/ArkhamHorror/frontend/public/skilltest-mockup-board.jpg",
-      "sha256": "5d94a52c866b4b5a2375542d6fd2ff470951b5608f91dbe5f9910b2f0b15ce70",
-      "size": 22596
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/skilltest-token-effect-mockups.html",
-      "sha256": "c16ee8da86a52b8b9d926aef18f719a1718f1d20810c35bfad707072379a9e26",
-      "size": 16218
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/totals-mockups-2.html",
-      "sha256": "c12b16bea0aa6b399f6761b70afd0bd5c2d92c61c3cc50780e9565b10e0ec973",
-      "size": 25284
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/totals-mockups-3.html",
-      "sha256": "167efc265b023331410ef43d47d06608a6a9dd9a5d58dc5930f962f1adb289ab",
-      "size": 22306
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/totals-mockups.html",
-      "sha256": "e6dcabcbfcf7bfce7ecdb1e5a24160e69601ffb7e50665d314c2f60bec20ac3d",
-      "size": 16488
-    },
-    {
       "path": "server/source/ArkhamHorror/frontend/public/ui-switch-v20260916.js",
       "sha256": "a35338c94c9d2da3dec6faea1895980dd5c945245b14706900373b9c9aca48cf",
       "size": 1982
@@ -55423,8 +55408,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/Investigator.vue",
-      "sha256": "e66f0a3513e0f388461682994f15073fb6435569aa2ea68edeb775f7db5307d2",
-      "size": 38582
+      "sha256": "dac3197f5eb7e79051e09d0a30705ae03caafbd15433d7b11d54e20f3e7a5e51",
+      "size": 37818
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/InvestigatorRow.vue",
@@ -55553,8 +55538,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/Resources.vue",
-      "sha256": "b2a518c8f61921ce662cc34f53274a826f7144ea2804dd9cd45bf7f8278d3a6f",
-      "size": 13631
+      "sha256": "4ad7a61796e3c16bace7347b9bb586e88ca9d040c69ca2c50166743ebfdf0885",
+      "size": 13676
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/ResponseStatusBar.vue",
@@ -55568,8 +55553,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/Scenario.vue",
-      "sha256": "54f13bec80090c30ae3f8da9afae09949af3ba13325dd14a06aa467b1995cd98",
-      "size": 173401
+      "sha256": "6f6e561f6bce35c96029102f59e44974cdc61a488e5bcbe857f9e030a25411d6",
+      "size": 173914
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/ScenarioCardFit.vue",
@@ -55753,8 +55738,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/TokenPool.vue",
-      "sha256": "43c7c8c0412ddda93070cbb673bd3bbeda77c56f7618c3aeff02c8afabd6f3cf",
-      "size": 14452
+      "sha256": "e0360f73a1b81fc0452d1e73d6c87e7ae5d0d817f40b0f04832d6e6a7b9405ee",
+      "size": 14497
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/Treachery.vue",
@@ -55918,8 +55903,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/composables/useMapCardGroups.ts",
-      "sha256": "a4ce29cf9a7c793d7ea9b5505bc6b0a53556dda775834ac0af18085970b7ea32",
-      "size": 6011
+      "sha256": "f4ec5ba1028779b41fb76b650c1364957aff1300d4da904a5122a2b49029a9b9",
+      "size": 6103
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/composables/useMapViewport.ts",
@@ -60713,8 +60698,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/styles/edgeTabletop.css",
-      "sha256": "1fd42a45c3720ab8a421f31439f8a5f951bfb1ab80ed0348eba698f71696defa",
-      "size": 23627
+      "sha256": "7333862c7e43e9ca0a3ca7d2b426da08ce77c0924fe76c8bc5989441076120f6",
+      "size": 23260
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/styles/fonts.css",
@@ -60818,8 +60803,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/version.ts",
-      "sha256": "c1d03752d53fabf357508b93ed6dd9975e0b6a52f0582e4c380e7ffacf211523",
-      "size": 64
+      "sha256": "83c1dabb349559f4bcdf69a93ec35a608d2e2b0e9492140ce9daa083c271213c",
+      "size": 65
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/views/About.vue",
@@ -61128,8 +61113,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/tests/map-card-groups.test.mjs",
-      "sha256": "74706c083f9cec32ff4abb9688dd04178fe7ae41b8240e7a9e4eb07ecdb28223",
-      "size": 3192
+      "sha256": "15c7dcdb31e446c64f72a5d93c4220b314e96c39cf189a46c3cfc01ce0f57e8f",
+      "size": 3375
     },
     {
       "path": "server/source/ArkhamHorror/frontend/tests/map-viewport.test.mjs",
@@ -61223,13 +61208,13 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/tests/trigger-mode-queued.test.mjs",
-      "sha256": "761c30182945f532ebf36489e697cf2b7f55c5f8919d2867135c50fd06b4027e",
-      "size": 3907
+      "sha256": "a91db072880811c8224828f59ba3fb649f2a136563670d25f5a216c0574eba56",
+      "size": 3944
     },
     {
       "path": "server/source/ArkhamHorror/frontend/tests/ui-polish.test.mjs",
-      "sha256": "c44a77ac907d71f83c58a747c06b3a6d1b99323124d4d96fca60639be2790cad",
-      "size": 2498
+      "sha256": "3d47b2d67cdac0d89e5d15918099f1d89459eb6c029ea2920bd86ed932ef1edc",
+      "size": 2931
     },
     {
       "path": "server/source/ArkhamHorror/frontend/tests/ui-version-switch.test.mjs",

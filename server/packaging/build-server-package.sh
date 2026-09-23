@@ -20,7 +20,7 @@ rsync -a --exclude '.DS_Store' --exclude '__pycache__/' --exclude '*.pyc' "$ROOT
 rsync -a --exclude '.DS_Store' "$ROOT_DIR/server/deploy/" "$STAGING_DIR/deploy/"
 rsync -a --exclude '.DS_Store' --exclude '__pycache__/' --exclude '*.pyc' "$ROOT_DIR/server/linux/" "$STAGING_DIR/linux/"
 
-cp "$ROOT_DIR/server/RELEASE-20260916.md" "$STAGING_DIR/PACKAGE-README.md"
+cp "$ROOT_DIR/server/RELEASE-20260923.md" "$STAGING_DIR/PACKAGE-README.md"
 
 (
   cd "$STAGING_DIR"

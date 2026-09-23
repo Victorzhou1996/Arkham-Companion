@@ -341,7 +341,7 @@ function decreaseZoom() {
 
 const locationsUnlocked = ref(false)
 const mapCardGroups = useMapCardGroups(() => props.game.id, tabletopDesktop, locationsUnlocked)
-const { auxiliary: auxiliaryGroup, encounter: encounterGroup, editable: groupsEditable, dragging: draggingGroup } = mapCardGroups
+const { auxiliary: auxiliaryGroup, encounter: encounterGroup, totals: totalsGroup, editable: groupsEditable, dragging: draggingGroup } = mapCardGroups
 const phaseLabel = (key: string) => tabletopDesktop.value ? compactPhaseLabel(t(key)) : t(key)
 const locationsFullscreen = ref(false)
 function onFullscreenKeydown(event: KeyboardEvent) {
@@ -3153,9 +3153,12 @@ async function addChaosToken(face: any){
             </button>
           </div>
         </PlayerTabs>
-        <div id="totals">
-          <PoolItem type="doom" :amount="game.totalDoom" tooltip="Total Doom" />
-          <PoolItem type="clue" :amount="game.totalClues" tooltip="Total Spendable Clues" />
+        <div id="totals" ref="totalsGroup" aria-label="全局标记"
+          :class="{ 'map-card-group--unlocked': groupsEditable, 'map-card-group--dragging': draggingGroup === 'totals' }"
+          :style="mapCardGroups.style('totals')" @pointerdown.capture="mapCardGroups.start($event, 'totals')"
+          @click.capture="mapCardGroups.suppress" @dblclick.capture="mapCardGroups.suppress" @contextmenu.capture="mapCardGroups.suppress" @dragstart.capture="mapCardGroups.suppress">
+          <PoolItem type="doom" :amount="game.totalDoom" tooltip="Total Doom / 总毁灭" />
+          <PoolItem type="clue" :amount="game.totalClues" tooltip="Total Spendable Clues / 总可花费线索" />
           <hr v-if="hasBagTotals" class="totals-rule" />
           <PoolItem v-if="blessTokens > 0" type="chaos-tokens/ct-bless" :amount="blessTokens" />
           <PoolItem v-if="curseTokens > 0" type="chaos-tokens/ct-curse" :amount="curseTokens" />
