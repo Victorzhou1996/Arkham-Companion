@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* Builds the `_abilities` and `_handlers` blocks of a custom card's meta.
  *
  * Each ability is an AbilityType plus optional criteria/limit, and a list of
@@ -117,8 +120,29 @@ const bindingsFor = (tag: string) => [
   ...messageFields(tag).map((_, at) => `$${at}`),
 ]
 
-const isBinding = (value: string) => value.trim().startsWith('$')
-const isKnownBinding = (tag: string, value: string) => bindingsFor(tag).includes(value.trim())
+/* A requirement compares two substituted values, and what a binding stands for
+ * is rarely a string -- a placement comes back as `{"tag": "Limbo"}`. So both
+ * sides are any JSON, and asking whether one is a binding has to survive being
+ * handed an object. */
+const isBinding = (value: unknown) => typeof value === 'string' && value.trim().startsWith('$')
+const isKnownBinding = (tag: string, value: unknown) =>
+  typeof value === 'string' && bindingsFor(tag).includes(value.trim())
+
+/* The text box shows the JSON for anything that is not a string, and reads it
+ * back, so editing a requirement that names a placement does not flatten it
+ * into the literal text `[object Object]`. */
+const requirementText = (value: unknown) =>
+  typeof value === 'string' ? value : value === undefined || value === null ? '' : JSON.stringify(value)
+
+const parseRequirement = (text: string): any => {
+  const trimmed = text.trim()
+  if (!/^[[{]/.test(trimmed)) return text
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return text
+  }
+}
 
 /* An ability that triggers on a window reads that window's fields as $w0, $w1,
  * … the way a handler reads a message's — that is how "heal that many" gets its
@@ -431,9 +455,10 @@ const addHandler = () =>
 /* A message that merely mentions this card is not necessarily about it: an
  * enemy defeated by someone else still names this card if it was the target.
  * A requirement pins the field that has to be this card down. */
-const requiresOf = (handler: any): [string, string][] => handler.requires ?? []
+const requiresOf = (handler: any): [any, any][] => handler.requires ?? []
 
-const setRequirement = (index: number, at: number, side: 0 | 1, value: string) => {
+const setRequirement = (index: number, at: number, side: 0 | 1, text: string) => {
+  const value = parseRequirement(text)
   const requires = requiresOf(handlers.value[index]).map((pair, i) =>
     i === at ? (side === 0 ? [value, pair[1]] : [pair[0], value]) : pair,
   )
@@ -461,9 +486,10 @@ const removeModifier = (i: number) =>
  * only compares bindings, which is what you need when the question itself would
  * ask for modifiers while modifiers are being collected -- telling a card in
  * hand from the same card committed, say. */
-const modifierRequires = (modifier: any): [string, string][] => modifier.requires ?? []
+const modifierRequires = (modifier: any): [any, any][] => modifier.requires ?? []
 
-const setModifierRequirement = (index: number, at: number, side: 0 | 1, value: string) => {
+const setModifierRequirement = (index: number, at: number, side: 0 | 1, text: string) => {
+  const value = parseRequirement(text)
   const requires = modifierRequires(modifiers.value[index]).map((pair, i) =>
     i === at ? (side === 0 ? [value, pair[1]] : [pair[0], value]) : pair,
   )
@@ -518,13 +544,13 @@ function handlerScope(handler: any, index: number): Binding[] {
 
 <template>
   <div class="ability-editor">
-    <p v-if="!schemaLoaded" class="loading">Loading type schema…</p>
+    <p v-if="!schemaLoaded" class="loading">{{ ct("Loading type schema…") }}</p>
 
     <template v-else>
       <template v-if="props.section === 'abilities'">
       <!-- Sits on top of the open panel, joined to it: the active tab has no
            bottom edge, so the two read as one box with a tab row. -->
-      <div class="entry-tabs" role="tablist" aria-label="What this card does">
+      <div class="entry-tabs" role="tablist" :aria-label="ct('What this card does')">
         <button
           v-for="entry in entries"
           :key="entry.key"
@@ -545,28 +571,24 @@ function handlerScope(handler: any, index: number): Binding[] {
           @drop.prevent="onDrop(entry)"
           @dragend="endDrag"
         >
-          <i v-if="entry.icon" :class="entry.icon" aria-hidden="true" />{{ entry.label }}
+          <i v-if="entry.icon" :class="entry.icon" aria-hidden="true" />{{ ct(entry.label) }}
         </button>
         <button
           type="button"
           class="entry-add"
           :aria-expanded="adding"
           @click="adding = !adding"
-        >
-          + Add
-        </button>
+        >{{ ct("+ Add") }}</button>
       </div>
 
       <select v-if="adding" class="entry-menu" @change="add(($event.target as HTMLSelectElement).value)">
-        <option value="">Ability type</option>
+        <option value="">{{ ct("Ability type") }}</option>
         <option v-for="choice in addable" :key="choice.key" :value="choice.key">
-          {{ choice.label }}
+          {{ ct(choice.label) }}
         </option>
       </select>
 
-      <p v-if="!entries.length" class="hint muted">
-        Nothing yet. A card with no abilities, no modifiers and no revelation just sits there.
-      </p>
+      <p v-if="!entries.length" class="hint muted">{{ ct("Nothing yet. A card with no abilities, no modifiers and no revelation just sits there.") }}</p>
 
       <div
         v-for="(ability, index) in abilities"
@@ -577,15 +599,15 @@ function handlerScope(handler: any, index: number): Binding[] {
         <div class="block-head">
           <strong
             ><i v-if="abilityKind(ability)?.icon" :class="abilityKind(ability)?.icon" aria-hidden="true" />{{
-              abilityLabel(ability)
+              ct(abilityLabel(ability))
             }}</strong
           >
-          <button type="button" @click="removeAbility(index)">Remove</button>
+          <button type="button" @click="removeAbility(index)">{{ ct("Remove") }}</button>
         </div>
 
         <ValueEditor
           type="AbilityType"
-          label="When / how it is used"
+          :label="ct('When / how it is used')"
           :bindings="cardBindings(props.cardType)"
           :modelValue="ability.type"
           @update:modelValue="setAbility(index, { type: $event })"
@@ -593,7 +615,7 @@ function handlerScope(handler: any, index: number): Binding[] {
         <ValueEditor
           optional
           type="Criterion"
-          label="Criteria (optional) — gates whether the ability is available"
+          :label="ct('Criteria (optional) — gates whether the ability is available')"
           :bindings="cardBindings(props.cardType)"
           :modelValue="ability.criteria"
           @update:modelValue="setAbility(index, { criteria: $event })"
@@ -601,42 +623,34 @@ function handlerScope(handler: any, index: number): Binding[] {
         <ValueEditor
           optional
           type="AbilityLimit"
-          label="Limit (optional)"
+          :label="ct('Limit (optional)')"
           :bindings="cardBindings(props.cardType)"
           :modelValue="ability.limit"
           @update:modelValue="setAbility(index, { limit: $event })"
         />
-        <label class="zone">
-          Active
-          <select
+        <label class="zone">{{ ct("Active") }}<select
             :value="ability.zone ?? ''"
             @change="setAbility(index, { zone: ($event.target as HTMLSelectElement).value || undefined })"
           >
-            <option v-for="(text, zone) in ZONES" :key="zone" :value="zone">{{ text }}</option>
+            <option v-for="(text, zone) in ZONES" :key="zone" :value="zone">{{ ct(text) }}</option>
           </select>
         </label>
-        <label>
-          Tooltip (optional)
-          <input
+        <label>{{ ct("Tooltip (optional)") }}<input
             :value="ability.tooltip ?? ''"
-            placeholder="Forced - When you suffer any number of horror…"
+            :placeholder="ct('Forced - When you suffer any number of horror…')"
             @input="setAbility(index, { tooltip: ($event.target as HTMLInputElement).value || undefined })"
             @keydown.stop
           />
         </label>
 
         <template v-if="abilityWindowMatcher(ability)">
-          <label :id="abilityAnchor(index)" :class="{ needed: !windowSettled(ability) }">
-            Triggers on window
-            <select
+          <label :id="abilityAnchor(index)" :class="{ needed: !windowSettled(ability) }">{{ ct("Triggers on window") }}<select
               :value="ability.windowHint === NO_WINDOW ? NO_WINDOW : abilityWindow(ability)"
               :class="{ needed: !windowSettled(ability) }"
               @change="setAbility(index, { windowHint: ($event.target as HTMLSelectElement).value })"
             >
-              <option v-if="!windowSettled(ability)" value="">
-                — pick one: $w bindings stay unnamed until you do —
-              </option>
-              <option :value="NO_WINDOW">— never fires on a window —</option>
+              <option v-if="!windowSettled(ability)" value="">{{ ct("— pick one: $w bindings stay unnamed until you do —") }}</option>
+              <option :value="NO_WINDOW">{{ ct("— never fires on a window —") }}</option>
               <option
                 v-for="name in windowCandidates(abilityWindowMatcher(ability))"
                 :key="name"
@@ -647,25 +661,17 @@ function handlerScope(handler: any, index: number): Binding[] {
             </select>
           </label>
           <ul v-if="abilityWindow(ability)" class="bindings">
-            <li><code>$window</code> the whole window</li>
+            <li><code>$window</code>{{ ct("the whole window") }}</li>
             <li v-for="(field, at) in windowFields(abilityWindow(ability))" :key="at">
               <code>$w{{ at }}</code> {{ field.name ? `${field.name} ::` : '::' }} {{ field.type }}
             </li>
           </ul>
           <p v-if="windowSettled(ability) && !abilityWindow(ability)" class="hint muted">
-            <code>{{ abilityWindowMatcher(ability) }}</code> never fires on its own, so there are
-            no <code>$w</code> bindings. The ability is reached another way — an elder sign, or
-            another card's Use an ability step.
-          </p>
+            <code>{{ abilityWindowMatcher(ability) }}</code>{{ ct("never fires on its own, so there are no") }}<code>$w</code>{{ ct("bindings. The ability is reached another way — an elder sign, or another card's Use an ability step.") }}</p>
           <p v-else-if="!abilityWindow(ability)" class="hint needed">
             <code>{{ abilityWindowMatcher(ability) }}</code>
-            <template v-if="windowsFor(abilityWindowMatcher(ability)).length > 1">
-              fires on more than one window, so which fields <code>$w0</code>… are depends on
-              which. Its own are listed first.
-            </template>
-            <template v-else>
-              fires on no window of its own, so there are no <code>$wN</code> to describe.
-            </template>
+            <template v-if="windowsFor(abilityWindowMatcher(ability)).length > 1">{{ ct("fires on more than one window, so which fields") }}<code>$w0</code>{{ ct("… are depends on which. Its own are listed first.") }}</template>
+            <template v-else>{{ ct("fires on no window of its own, so there are no") }}<code>$wN</code>{{ ct("to describe.") }}</template>
           </p>
         </template>
 
@@ -686,28 +692,26 @@ function handlerScope(handler: any, index: number): Binding[] {
         class="block"
       >
         <div class="block-head">
-          <strong>Constant — gives modifiers to</strong>
-          <button type="button" @click="removeModifier(index)">Remove</button>
+          <strong>{{ ct("Constant — gives modifiers to") }}</strong>
+          <button type="button" @click="removeModifier(index)">{{ ct("Remove") }}</button>
         </div>
-        <label>
-          What to match
-          <select
+        <label>{{ ct("What to match") }}<select
             :value="modifier.kind"
             @change="setModifier(index, { kind: ($event.target as HTMLSelectElement).value, matcher: null })"
           >
-            <option v-for="(_, kind) in MODIFIER_KINDS" :key="kind" :value="kind">{{ kind }}</option>
+            <option v-for="(_, kind) in MODIFIER_KINDS" :key="kind" :value="kind">{{ ct(kind) }}</option>
           </select>
         </label>
         <ValueEditor
           :type="MODIFIER_KINDS[modifier.kind] ?? 'EnemyMatcher'"
           :bindings="cardBindings(props.cardType)"
-          label="Matcher"
+          :label="ct('Matcher')"
           :modelValue="modifier.matcher"
           @update:modelValue="setModifier(index, { matcher: $event })"
         />
         <ValueEditor
           type="[ModifierType]"
-          label="Modifiers"
+          :label="ct('Modifiers')"
           :bindings="cardBindings(props.cardType)"
           :modelValue="modifier.modifiers"
           @update:modelValue="setModifier(index, { modifiers: $event })"
@@ -715,27 +719,23 @@ function handlerScope(handler: any, index: number): Binding[] {
         <ValueEditor
           optional
           type="Criterion"
-          label="Only if (optional) — a question asked of the game"
+          :label="ct('Only if (optional) — a question asked of the game')"
           :bindings="cardBindings(props.cardType)"
           :modelValue="modifier.if"
           @update:modelValue="setModifier(index, { if: $event })"
         />
 
         <div v-for="(pair, at) in modifierRequires(modifier)" :key="at" class="row">
-          <label>
-            Only when
-            <input
-              :value="pair[0]"
+          <label>{{ ct("Only when") }}<input
+              :value="requirementText(pair[0])"
               :class="{ binding: isBinding(pair[0]) }"
               placeholder="$placement"
               @input="setModifierRequirement(index, at, 0, ($event.target as HTMLInputElement).value)"
               @keydown.stop
             />
           </label>
-          <label>
-            is
-            <input
-              :value="pair[1]"
+          <label>{{ ct("is") }}<input
+              :value="requirementText(pair[1])"
               :class="{ binding: isBinding(pair[1]) }"
               placeholder="$source"
               @input="setModifierRequirement(index, at, 1, ($event.target as HTMLInputElement).value)"
@@ -744,41 +744,27 @@ function handlerScope(handler: any, index: number): Binding[] {
           </label>
           <button type="button" @click="removeModifierRequirement(index, at)">×</button>
         </div>
-        <button type="button" class="add" @click="addModifierRequirement(index)">
-          + Requirement
-        </button>
+        <button type="button" class="add" @click="addModifierRequirement(index)">{{ ct("+ Requirement") }}</button>
 
-        <p class="hint">
-          Applies while this card is in play, to everything the matcher selects. Match
-          <strong>card</strong> rather than an entity to reach a card before it is in play — that is
-          what a keyword needs when the engine reads it at draw or spawn time.
-        </p>
-        <p class="hint muted">
-          A requirement only compares bindings, so it can gate on where the card is. Use it rather
-          than <em>Only if</em> when the question would ask for modifiers while modifiers are being
-          collected.
-        </p>
+        <p class="hint">{{ ct("Applies while this card is in play, to everything the matcher selects. Match") }}<strong>{{ ct("card") }}</strong>{{ ct("rather than an entity to reach a card before it is in play — that is what a keyword needs when the engine reads it at draw or spawn time.") }}</p>
+        <p class="hint muted">{{ ct("A requirement only compares bindings, so it can gate on where the card is. Use it rather than") }}<em>{{ ct("Only if") }}</em>{{ ct("when the question would ask for modifiers while modifiers are being collected.") }}</p>
       </div>
 
       <!-- Revelation: what the card does as it is drawn. Only here at all once
            it has one, which is also how the saved card records it. -->
       <div v-if="hasRevelation" v-show="isOpen('revelation')" class="block">
         <div class="block-head">
-          <strong>Revelation</strong>
-          <button v-if="!revelationImplied" type="button" @click="removeOpen">Remove</button>
+          <strong>{{ ct("Revelation") }}</strong>
+          <button v-if="!revelationImplied" type="button" @click="removeOpen">{{ ct("Remove") }}</button>
         </div>
-        <p v-if="revelationImplied" class="hint">
-          This card always resolves as it is drawn, so it always has a revelation.
-        </p>
-        <label v-if="hasRevelationPlacement">
-          Where it ends up
-          <select v-model="revelationPlacement">
+        <p v-if="revelationImplied" class="hint">{{ ct("This card always resolves as it is drawn, so it always has a revelation.") }}</p>
+        <label v-if="hasRevelationPlacement">{{ ct("Where it ends up") }}<select v-model="revelationPlacement">
             <option v-for="place in revelationPlacements ?? []" :key="place.value" :value="place.value">
-              {{ place.label }}
+              {{ ct(place.label) }}
             </option>
           </select>
         </label>
-        <p class="hint">What it does when it is revealed:</p>
+        <p class="hint">{{ ct("What it does when it is revealed:") }}</p>
         <StepsEditor
           :queryKinds="QUERY_KINDS"
           :bindings="cardBindings(props.cardType)"
@@ -790,17 +776,12 @@ function handlerScope(handler: any, index: number): Binding[] {
 
       <div v-if="hasElderSign" v-show="isOpen('elderSign')" class="block">
         <div class="block-head">
-          <strong><i class="elder-sign" aria-hidden="true" />Elder sign</strong>
-          <button type="button" @click="removeOpen">Remove</button>
+          <strong><i class="elder-sign" aria-hidden="true" />{{ ct("Elder sign") }}</strong>
+          <button type="button" @click="removeOpen">{{ ct("Remove") }}</button>
         </div>
-        <label>
-          Modifier
-          <input v-model="elderSign" type="number" @keydown.stop />
+        <label>{{ ct("Modifier") }}<input v-model="elderSign" type="number" @keydown.stop />
         </label>
-        <p class="hint">
-          What happens the moment it is drawn, before anything can react to the reveal — where a
-          flag this card's own abilities read has to be set:
-        </p>
+        <p class="hint">{{ ct("What happens the moment it is drawn, before anything can react to the reveal — where a flag this card's own abilities read has to be set:") }}</p>
         <StepsEditor
           :queryKinds="QUERY_KINDS"
           :bindings="cardBindings(props.cardType)"
@@ -808,7 +789,7 @@ function handlerScope(handler: any, index: number): Binding[] {
           :modelValue="elderSignRevealSteps"
           @update:modelValue="elderSignRevealSteps = $event"
         />
-        <p class="hint">What it does when it resolves, beyond the modifier:</p>
+        <p class="hint">{{ ct("What it does when it resolves, beyond the modifier:") }}</p>
         <StepsEditor
           :queryKinds="QUERY_KINDS"
           :bindings="cardBindings(props.cardType)"
@@ -816,10 +797,7 @@ function handlerScope(handler: any, index: number): Binding[] {
           :modelValue="elderSignSteps"
           @update:modelValue="elderSignSteps = $event"
         />
-        <p class="hint">
-          And what it does only if you then succeed — success is not known when the token resolves,
-          so these run when the test is passed:
-        </p>
+        <p class="hint">{{ ct("And what it does only if you then succeed — success is not known when the token resolves, so these run when the test is passed:") }}</p>
         <StepsEditor
           :queryKinds="QUERY_KINDS"
           :bindings="cardBindings(props.cardType)"
@@ -837,12 +815,10 @@ function handlerScope(handler: any, index: number): Binding[] {
         </datalist>
       <div v-for="(handler, index) in handlers" :key="`h${index}`" class="block">
         <div class="block-head">
-          <strong>Listener {{ index + 1 }}</strong>
-          <button type="button" @click="removeHandler(index)">Remove</button>
+          <strong>{{ ct("Listener") }}{{ index + 1 }}</strong>
+          <button type="button" @click="removeHandler(index)">{{ ct("Remove") }}</button>
         </div>
-        <label :id="handlerAnchor(index)">
-          Message tag
-          <input
+        <label :id="handlerAnchor(index)">{{ ct("Message tag") }}<input
             :value="handler.on"
             list="custom-message-tags"
             placeholder="EnemyDamaged"
@@ -850,20 +826,14 @@ function handlerScope(handler: any, index: number): Binding[] {
             @keydown.stop
           />
         </label>
-        <p class="hint">
-          Fires when a message with this tag mentions this card &mdash; by its target, its source
-          or its id. The whole message is <code>$message</code>.
+        <p class="hint">{{ ct("Fires when a message with this tag mentions this card — by its target, its source or its id. The whole message is") }}<code>$message</code>.
         </p>
         <BoolField
-          label="fires for messages that do not mention this card"
+          :label="ct('fires for messages that do not mention this card')"
           :modelValue="!!handler.global"
           @update:modelValue="setHandler(index, { global: $event || undefined })"
         />
-        <p v-if="handler.global" class="hint muted">
-          Now runs for every message with this tag, so gate it with a requirement below (an id
-          from the message compared against one of this card's, say) or it will fire for
-          everyone.
-        </p>
+        <p v-if="handler.global" class="hint muted">{{ ct("Now runs for every message with this tag, so gate it with a requirement below (an id from the message compared against one of this card's, say) or it will fire for everyone.") }}</p>
         <!-- A message with no fields simply lists nothing. The warning below is
              about the message not being known, which is a different thing. -->
         <ul v-if="messageFields(handler.on).length" class="bindings">
@@ -871,15 +841,11 @@ function handlerScope(handler: any, index: number): Binding[] {
             <code>${{ at }}</code> {{ field.name ? `${field.name} ::` : '::' }} {{ field.type }}
           </li>
         </ul>
-        <p v-if="handler.on && !knownMessage(handler.on)" class="hint muted">
-          Not a message the engine sends.
-        </p>
+        <p v-if="handler.on && !knownMessage(handler.on)" class="hint muted">{{ ct("Not a message the engine sends.") }}</p>
 
         <div v-for="(pair, at) in requiresOf(handler)" :key="at" class="row">
-          <label>
-            Only when
-            <input
-              :value="pair[0]"
+          <label>{{ ct("Only when") }}<input
+              :value="requirementText(pair[0])"
               :class="{
                 binding: isKnownBinding(handler.on, pair[0]),
                 unknown: isBinding(pair[0]) && !isKnownBinding(handler.on, pair[0]),
@@ -890,10 +856,8 @@ function handlerScope(handler: any, index: number): Binding[] {
               @keydown.stop
             />
           </label>
-          <label>
-            is
-            <input
-              :value="pair[1]"
+          <label>{{ ct("is") }}<input
+              :value="requirementText(pair[1])"
               :class="{
                 binding: isKnownBinding(handler.on, pair[1]),
                 unknown: isBinding(pair[1]) && !isKnownBinding(handler.on, pair[1]),
@@ -909,12 +873,8 @@ function handlerScope(handler: any, index: number): Binding[] {
         <datalist id="custom-handler-bindings">
           <option v-for="name in bindingsFor(handler.on)" :key="name" :value="name" />
         </datalist>
-        <button type="button" class="add" @click="addRequirement(index)">+ Requirement</button>
-        <p class="hint">
-          Mentioning this card is not the same as being about it — an enemy someone else defeated
-          still names this card if it was the target. A requirement pins down which field has to be
-          this card, the way a hand-written card matches on its source.
-        </p>
+        <button type="button" class="add" @click="addRequirement(index)">{{ ct("+ Requirement") }}</button>
+        <p class="hint">{{ ct("Mentioning this card is not the same as being about it — an enemy someone else defeated still names this card if it was the target. A requirement pins down which field has to be this card, the way a hand-written card matches on its source.") }}</p>
 
         <StepsEditor
           :queryKinds="QUERY_KINDS"
@@ -925,7 +885,7 @@ function handlerScope(handler: any, index: number): Binding[] {
         />
       </div>
 
-      <button type="button" class="add" @click="addHandler">+ Listener</button>
+      <button type="button" class="add" @click="addHandler">{{ ct("+ Listener") }}</button>
       </div>
     </template>
   </div>
@@ -1154,7 +1114,7 @@ label {
 
 input,
 select {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -1168,7 +1128,7 @@ select {
 select {
   -webkit-appearance: none;
   appearance: none;
-  background: #111827 var(--select-caret) no-repeat right 0.6rem center;
+  background: var(--surface-input) var(--select-caret) no-repeat right 0.6rem center;
   background-size: var(--select-caret-size);
   padding: 0.3rem 1.6rem 0.3rem 0.4rem;
 }

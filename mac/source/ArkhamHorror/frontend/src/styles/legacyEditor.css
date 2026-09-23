@@ -1,0 +1,20 @@
+/* Shared feature pages in the classic shell; the playing table remains isolated. */
+html[data-ui='legacy-editor'] {
+  --nav-height: 40px;
+  --background: #314940;
+  --background-dark: #2b4037;
+  --box-background: #3c5449;
+  --surface-input: #2b4037;
+  --surface-panel: #3c5449;
+  --surface-raised: #435d4f;
+  --surface-hover: #486453;
+  --app-background: #314940;
+  --text: #ebe7d6;
+  --title: #f4efdf;
+  --spooky-green: #e1e3be;
+  --button: #2b4037;
+  --button-highlight: #a6be97;
+  --archive-serif: system-ui, sans-serif;
+}
+html[data-ui='legacy-editor'] #app #nav { box-shadow: none; padding-inline: 8px; }
+html[data-ui='legacy-editor'] #app #nav .user-btn { border: 0; min-height: 30px; }

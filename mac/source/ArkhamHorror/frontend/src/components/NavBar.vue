@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { useRoute, useRouter } from 'vue-router'
 import type { User } from '@/types'
@@ -7,10 +8,16 @@ import { OnClickOutside } from '@vueuse/components'
 import { storeToRefs } from 'pinia'
 import { useSettings } from '@/stores/settings'
 import { isDevBuild } from '@/arkham/displayRules'
+import { isLegacyEditor } from '@/legacy/editorMode'
 
 const expanded = ref(false);
 const mobileOpen = ref(false);
 const route = useRoute()
+const { locale } = useI18n()
+const chinese = computed(() => locale.value.startsWith('zh'))
+const brandIcon = `${import.meta.env.BASE_URL}img/icons/apple-touch-icon.png`
+const legacyEditor = isLegacyEditor()
+watch(() => route.fullPath, () => { mobileOpen.value = false; expanded.value = false })
 const router = useRouter()
 const store = useUserStore()
 const currentUser = computed<User | null>(() => store.currentUser)
@@ -58,12 +65,18 @@ async function logout() {
 
 <template>
   <header id="nav">
-    <button v-if="currentUser" class="mobile-menu-btn" @click="mobileOpen = !mobileOpen">
+    <button v-if="currentUser" class="mobile-menu-btn" :aria-expanded="mobileOpen" :aria-label="chinese ? '导航菜单' : 'Navigation'" @click="mobileOpen = !mobileOpen">
       <font-awesome-icon icon="bars" />
     </button>
 
     <nav class="main-links">
-      <router-link to="/" class="home-link">{{$t('nav.home')}}</router-link>
+      <router-link to="/" class="home-link" :aria-label="$t('nav.home')">
+        <template v-if="!legacyEditor">
+          <img :src="brandIcon" alt="" width="34" height="34" />
+          <span class="brand-wordmark"><strong>{{ chinese ? '诡镇奇谈' : 'Arkham Horror' }}</strong><small>{{ chinese ? 'ARKHAM HORROR' : 'THE CARD GAME' }}</small></span>
+        </template>
+        <span v-else>{{ $t('nav.home') }}</span>
+      </router-link>
       <router-link v-if="currentUser" to="/decks" class="nav-link">{{$t('nav.myDecks')}}</router-link>
       <a v-if="currentUser" :href="buildHref" class="nav-link">Build</a>
       <router-link v-if="currentUser" to="/achievements" class="nav-link">{{$t('nav.achievements')}}</router-link>
@@ -83,7 +96,7 @@ async function logout() {
     <OnClickOutside @trigger="expanded = false">
       <div class="user-links">
         <template v-if="currentUser">
-          <button class="user-btn" :class="{ open: expanded }" @click="expanded = !expanded">
+          <button class="user-btn" :class="{ open: expanded }" :aria-expanded="expanded" @click="expanded = !expanded">
             <span>{{currentUser.username}}</span>
             <font-awesome-icon icon="angle-down" class="dropdown-icon" :class="{ open: expanded }" />
           </button>
@@ -100,6 +113,7 @@ async function logout() {
     </OnClickOutside>
 
     <div v-if="mobileOpen" class="mobile-menu" @click="mobileOpen = false">
+      <router-link to="/">{{$t('nav.home')}}</router-link>
       <router-link to="/decks">{{$t('nav.myDecks')}}</router-link>
       <a :href="buildHref">Build</a>
       <router-link to="/achievements">{{$t('nav.achievements')}}</router-link>
@@ -109,6 +123,8 @@ async function logout() {
       <router-link to="/about">{{$t('nav.about')}}</router-link>
       <router-link to="/about?support">{{$t('nav.support')}}</router-link>
       <router-link v-if="currentUser && currentUser.admin" to="/admin">{{$t('nav.admin')}}</router-link>
+      <router-link to="/settings">{{$t('settings')}}</router-link>
+      <button @click="logout">{{ $t('logOut') }}</button>
     </div>
   </header>
 

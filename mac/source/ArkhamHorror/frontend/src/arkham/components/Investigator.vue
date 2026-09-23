@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { useSettings } from '@/stores/settings';
 import { storeToRefs } from 'pinia';
 import { onUnmounted, onMounted, computed, inject, ref, watch } from 'vue'
@@ -11,7 +12,7 @@ import { useDebug } from '@/arkham/debug'
 import { ForwardIcon, PaperClipIcon } from '@heroicons/vue/20/solid'
 import type { Game } from '@/arkham/types/Game'
 import { imgsrc } from '@/arkham/helpers'
-import { cardArt, cardImage, portraitImage, sourceCardCode } from '@/arkham/cardImages'
+import { cardArt, cardImage, customInvestigatorUsesCardPortrait, portraitImage, sourceCardCode } from '@/arkham/cardImages'
 import * as Arkham from '@/arkham/types/Investigator'
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
 import { MessageType } from '@/arkham/types/Message'
@@ -23,8 +24,10 @@ import { triggerModeAbilitiesForCard } from '@/arkham/abilityTriggerModeEligibil
 import { useMenu } from '@/composable/menu';
 import { useI18n } from 'vue-i18n';
 import useEmitter from '@/composable/useEmitter';
-import useHighlighter from '@/composable/useHighlighter';
 import Resources from '@/arkham/components/Resources.vue';
+import ActionCount from '@/arkham/components/ActionCount.vue';
+import ActionExtras from '@/arkham/components/ActionExtras.vue';
+import { tabletopUndoKey } from '@/arkham/tabletopControls';
 import Draw from '@/arkham/components/Draw.vue';
 import { IsMobile } from '@/arkham/isMobile';
 const { t } = useI18n();
@@ -38,11 +41,10 @@ export interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), { portrait: false })
+const tabletopUndo = inject(tabletopUndoKey)
 const emit = defineEmits(['showCards', 'hideCards', 'choose'])
 
 const id = computed(() => props.investigator.id)
-const highlighter = useHighlighter()
-const isHighlighted = computed(() => highlighter.highlighted.value === props.investigator.id)
 const isAttackTarget = computed(() => props.game.enemyAttackTargets.some((e) => e.target.contents === props.investigator.id))
 const debug = useDebug()
 const choose = (idx: number) => emit('choose', idx)
@@ -208,6 +210,18 @@ const investigatorPortraitImage = computed(() => {
 
   return portraitImage(props.investigator.cardCode, suffix)
 })
+
+const investigatorPortraitUsesCardArt = computed(() => {
+  if (props.investigator.form.tag !== 'RegularForm') return false
+  const suffix = props.investigator.endedTurn ? 'b' : ''
+  return customInvestigatorUsesCardPortrait(props.investigator.cardCode, suffix)
+})
+
+const investigatorCardPortraitStyle = computed(() => ({
+  // A CSS crop cannot flip like an image element. Keep the recognisable face;
+  // the ended-turn class supplies the visual back-side cue instead.
+  backgroundImage: `url(${JSON.stringify(portraitImage(props.investigator.cardCode))})`,
+}))
 
 const miniCardDevoured = computed(() => {
   const devouredMiniCards = props.game.scenario?.meta?.devouredMiniCards
@@ -441,13 +455,15 @@ const spadeInjury = computed(() => {
 <template>
   <div v-if="portrait" class="portrait-container">
     <span v-if="isMobile">
-      <i class="action" v-for="n in investigator.remainingActions" :key="n"></i>
+      <ActionCount :count="investigator.remainingActions" />
+      <ActionExtras :count="investigator.additionalActions.length">
       <template v-for="action in investigator.additionalActions" :key="action">
         <button @click="useEffectAction(action)" v-if="action.tag === 'EffectAction'" v-tooltip="action.contents[0]" :class="[{ activeButton: isActiveEffectAction(action)}, `${investigatorClass.toLowerCase()}ActionButton`]">
           <i class="action"></i>
         </button>
         <i v-else class="action" :class="`${investigatorClass.toLowerCase()}Action`"></i>
       </template>
+      </ActionExtras>
     </span>
     <span
       v-if="isMobile && isTakingImmediateAction"
@@ -477,6 +493,19 @@ const spadeInjury = computed(() => {
       {{ replacementMiniCardInitials }}
       <img class="portrait--blob-overlay" :src="imgsrc('extra/the-blob-that-ate-everything/blob-overlay.png')" alt="" aria-hidden="true" />
     </div>
+    <div
+      v-else-if="investigatorPortraitUsesCardArt"
+      class="portrait portrait--card-art"
+      :class="[portraitClasses, { 'portrait--ended-turn': investigator.endedTurn }]"
+      :style="investigatorCardPortraitStyle"
+      :draggable="debug.active"
+      @click="clicked"
+      @dragstart="startDrag($event)"
+      @dragstop="endDrag"
+      @drop="onDrop($event)"
+      @dragover.prevent="dragover($event)"
+      @dragenter.prevent
+    ></div>
     <img
       v-else
       :src="investigatorPortraitImage"
@@ -492,8 +521,38 @@ const spadeInjury = computed(() => {
     />
   </div>
   <div v-else class="player-container">
+      <MobileCard>
     <div class="player-area">
       <div class="player-card">
+        <div v-if="!isMobile" class="investigator-status">
+            <span v-if="!isMobile" class="action-container">
+              <i class="spade" v-if="spadeInjury"></i>
+              <i class="heart" v-if="heartInjury"></i>
+              <i class="diamond" v-if="diamondInjury"></i>
+              <i class="club" v-if="clubInjury"></i>
+              <ActionCount :count="investigator.remainingActions" />
+              <ActionExtras :count="investigator.additionalActions.length">
+              <template v-for="action in investigator.additionalActions" :key="action">
+                <button @click="useEffectAction(action)" v-if="action.tag === 'EffectAction'" v-tooltip="action.contents[0]" :class="[{ activeButton: isActiveEffectAction(action)}, `${investigatorClass.toLowerCase()}ActionButton`]">
+                  <i class="action"></i>
+                </button>
+                <i v-else class="action" :class="`${investigatorClass.toLowerCase()}Action`"></i>
+              </template>
+              </ActionExtras>
+              <span
+                v-if="isTakingImmediateAction"
+                class="no-free-abilities"
+                v-tooltip="{ content: $t('investigator.freeAbilitiesUnavailable'), html: true }"
+              >
+                <span class="fast-icon"></span>
+                <svg class="no-sign" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="5" y1="5" x2="19" y2="19" />
+                </svg>
+              </span>
+            </span>
+          <Resources :game="game" :investigator="investigator" :choices="choices" :playerId="playerId" inline-tokens @choose="$emit('choose', $event)" />
+        </div>
         <div class="stats">
           <div class="willpower willpower-icon">{{willpower}}</div>
           <div class="intellect intellect-icon">{{intellect}}</div>
@@ -502,7 +561,7 @@ const spadeInjury = computed(() => {
         </div>
         <div class="investigator-image">
           <img
-            :class="{ 'investigator--can-interact': investigatorAction !== -1, 'ability-target': isHighlighted || isAttackTarget }"
+            :class="{ 'investigator--can-interact': investigatorAction !== -1 }"
             class="card card--sideways"
             :src="image"
             @click="clicked"
@@ -535,33 +594,10 @@ const spadeInjury = computed(() => {
           />
         </div>
       </div>
-      <div>
+      <div class="player-controls">
         <div class="player-buttons">
           <div class="button-group" :class="{ 'button-group--skip-all-pending': isCurrentPlayersInvestigator && skipAllInProgress }">
-            <span v-if="!isMobile" class="action-container">
-              <i class="spade" v-if="spadeInjury"></i>
-              <i class="heart" v-if="heartInjury"></i>
-              <i class="diamond" v-if="diamondInjury"></i>
-              <i class="club" v-if="clubInjury"></i>
-              <i class="action" v-for="n in investigator.remainingActions" :key="n"></i>
-              <template v-for="action in investigator.additionalActions" :key="action">
-                <button @click="useEffectAction(action)" v-if="action.tag === 'EffectAction'" v-tooltip="action.contents[0]" :class="[{ activeButton: isActiveEffectAction(action)}, `${investigatorClass.toLowerCase()}ActionButton`]">
-                  <i class="action"></i>
-                </button>
-                <i v-else class="action" :class="`${investigatorClass.toLowerCase()}Action`"></i>
-              </template>
-              <span
-                v-if="isTakingImmediateAction"
-                class="no-free-abilities"
-                v-tooltip="{ content: $t('investigator.freeAbilitiesUnavailable'), html: true }"
-              >
-                <span class="fast-icon"></span>
-                <svg class="no-sign" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="5" y1="5" x2="19" y2="19" />
-                </svg>
-              </span>
-            </span>
+            <button v-if="!isMobile && tabletopUndo?.enabled.value" class="tabletop-undo" :disabled="tabletopUndo.locked.value" @click="tabletopUndo.run()">↶ {{ $t('gameBar.undo') }}</button>
             <template v-if="debug.active">
               <button
                 @click.exact="debug.send(game.id, {tag: 'GainActions', contents: [id, {tag: 'TestSource', contents: []}, 1]})"
@@ -577,6 +613,7 @@ const spadeInjury = computed(() => {
               />
             <button
             :class="{ active: endTurnAction !== -1 && investigator.remainingActions === 0 }"
+            data-mobile-direct
             :disabled="endTurnAction == -1"
             :data-game-actionable="endTurnAction !== -1 || undefined"
             @click="$emit('choose', endTurnAction)"
@@ -593,6 +630,7 @@ const spadeInjury = computed(() => {
                 :data-game-actionable="canSkipTriggers && !skipAllInProgress || undefined"
                 @click="skipTriggers"
                 class="skip-triggers-button"
+                data-mobile-direct
               >{{ isMobile ? t('skip') : $t('investigator.skipTriggers') }}</button>
               <button
                 v-if="showSkipAll"
@@ -630,14 +668,6 @@ const spadeInjury = computed(() => {
         />
       </div>
     </div>
-    <Resources
-      v-if="!isMobile"
-      :game="game"
-      :investigator="investigator"
-      :choices="choices"
-      :playerId="playerId"
-      @choose="$emit('choose', $event)"
-    />
 
     <Draggable v-if="doShowBonded">
       <template #handle><header><h2>{{$t('gameBar.bonded')}}</h2></header></template>
@@ -648,6 +678,7 @@ const spadeInjury = computed(() => {
       </div>
       <button class="close button" @click="toggleShowBonded">{{$t('close')}}</button>
     </Draggable>
+      </MobileCard>
   </div>
 </template>
 
@@ -835,6 +866,21 @@ i.action {
 .portrait {
   border-radius: 3px;
   width: calc(var(--card-width) * 0.6);
+}
+
+/* A portrait-less custom investigator uses its landscape card without
+ * distorting it: keep the mini's portrait proportions and crop from the left. */
+.portrait--card-art {
+  aspect-ratio: 121 / 186;
+  background-position: 15% bottom;
+  background-repeat: no-repeat;
+  /* Oversize and bottom-align the card so the mini cuts off the title area at
+   * the top rather than squeezing the whole landscape face into view. */
+  background-size: auto 125%;
+}
+
+.portrait--ended-turn {
+  filter: grayscale(1);
 }
 
 .portrait--replacement-marker {

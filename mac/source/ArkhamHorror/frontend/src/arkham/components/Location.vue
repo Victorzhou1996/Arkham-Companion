@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeUnmount, ComputedRef, ref, computed, watch, nextTick } from 'vue'
 import { useDebug } from '@/arkham/debug'
@@ -623,6 +624,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
         />
       </div>
       <div class="location-column">
+      <MobileCard>
         <div class="card-frame" :class="{ explosion, 'location--objective': hasObjective, 'objective-ring': hasObjective }" ref="frame" @click="clicked">
           <Locus v-if="locus" class="locus" />
           <span v-if="blocked" class="status-icon" v-tooltip="'Blocked'">
@@ -673,7 +675,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
                 :data-id="id"
                 class="card card--locations"
                 :src="displayedImage"
-                :class="{ 'location--can-interact': canInteract && !hasObjective && !blocked, 'location--can-interact-cursor': canInteract, 'source-highlight': sourceHighlighted }"
+                :class="{ 'location--can-interact': canInteract && !hasObjective && !blocked, 'location--can-interact-cursor': canInteract }"
                 draggable="false"
                 @drop="onDrop"
                 @dragover.prevent="dragover"
@@ -780,6 +782,7 @@ const hasAnyLocationVehicleAssets = computed(() =>
         <template v-if="debug.active">
           <button @click="debugging = true">{{ $t('enemy.debug') }}</button>
         </template>
+      </MobileCard>
       </div>
       <div class="attachments" v-if="hasAttachments">
         <Treachery
@@ -1091,21 +1094,8 @@ img.card.source-highlight {
   &:deep(.poolItem) {
     width: calc(var(--card-width) * 0.4) !important;
   }
-  &:hover {
-    animation-fill-mode: forwards;
-    > div:not(:last-child) {
-      margin-top: 10px;
-    }
-  }
-
-  animation-fill-mode: fowards;
-
-  div {
-    transition: all 0.2s;
-  }
-
   > div:not(:last-child) {
-    margin-top: -40px;
+    margin-top: 10px;
   }
 }
 

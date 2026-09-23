@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Game } from '@/arkham/types/Game';
 import { OnClickOutside } from '@vueuse/components'
-import { ref, watch, computed, nextTick, onMounted, onUnmounted, useId } from 'vue';
+import { ref, watch, computed, nextTick, onMounted, onUnmounted, useId, inject } from 'vue';
+import { useMobileBoard, mobileCardKey } from '@/arkham/mobile/context';
 import type { AbilityMessage } from '@/arkham/types/Message';
 import AbilityButton from '@/arkham/components/AbilityButton.vue'
 
@@ -9,6 +10,7 @@ const props = withDefaults(defineProps<{
   game: Game;
   abilities: AbilityMessage[];
   frame: HTMLElement | null;
+  ignore?: HTMLElement[];
   position?: 'top' | 'bottom' | 'left' | 'right';
   showMove?: boolean
   hostHasSwarm?: boolean
@@ -18,6 +20,11 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<{
   (e: 'choose', index: number): void;
 }>();
+const mobileBoard = useMobileBoard();
+const mobileCard = inject(mobileCardKey, null);
+const mobileEnabled = computed(() => !!mobileBoard?.touchEnabled.value && !!mobileCard);
+const mobilePreview = computed(() => mobileCard?.preview.value ?? false);
+const mobileForced = computed(() => props.abilities.some(a => 'ability' in a.contents && JSON.stringify(a.contents.ability.type).includes('ForcedAbility')));
 
 interface Position {
   bottom?: string;
@@ -28,8 +35,9 @@ interface Position {
 
 const abilitiesRef = ref<HTMLElement | null>(null);
 const showAbilities = defineModel()
-const abilitiesPosition = ref<Position>({ bottom: '0px', top: '0px', left: '0px' });
-const positionClass = computed(() => props.position || 'top');
+const abilitiesPosition = ref<Position>({ top: '0px', left: '0px' });
+const sceneAbilities = computed(() => !!props.frame?.closest('#game.edge-tabletop .edge-scene-group'));
+const positionClass = computed(() => sceneAbilities.value ? 'top' : props.position || 'top');
 
 // Every property the anchored path relies on has to be tested: anchor-name
 // shipped ahead of position-area (Chromium 125-128 spelled it inset-area), and a
@@ -66,8 +74,8 @@ function verifyAnchorPlacement() {
   if (!useAnchor.value || !abilitiesRef.value) return;
   const rect = abilitiesRef.value.getBoundingClientRect();
   const onScreen =
-    rect.bottom > 0 && rect.right > 0
-    && rect.top < window.innerHeight && rect.left < window.innerWidth;
+    rect.top >= 0 && rect.left >= 0
+    && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
   if (onScreen) return;
 
   anchorFailed.value = true;
@@ -78,6 +86,7 @@ function verifyAnchorPlacement() {
 }
 
 function calculatePosition() {
+  if (mobileEnabled.value) return;
   if (useAnchor.value) return;
   if (props.frame) {
     const rect = props.frame.getBoundingClientRect();
@@ -116,6 +125,15 @@ function calculatePosition() {
         break;
     }
 
+    const menuHeight = menuRect?.height ?? 80;
+    const requestedTop = positionStyle.top ? parseFloat(positionStyle.top)
+      : window.innerHeight - parseFloat(positionStyle.bottom ?? '0') - menuHeight;
+    positionStyle.top = `${Math.max(margin, Math.min(requestedTop, window.innerHeight - menuHeight - margin))}px`;
+    delete positionStyle.bottom;
+    if (positionStyle.right) {
+      positionStyle.left = clampedLeft(window.innerWidth - parseFloat(positionStyle.right) - menuWidth);
+      delete positionStyle.right;
+    }
     abilitiesPosition.value = positionStyle;
   }
 }
@@ -138,6 +156,7 @@ watch(
 );
 
 watch(showAbilities, (newValue) => {
+  if (mobileEnabled.value) { if (newValue) mobileCard?.open(); return }
   if (newValue) {
     nextTick(() => { calculatePosition(); verifyAnchorPlacement(); });
   }
@@ -147,13 +166,19 @@ function updatePosition() {
   if (showAbilities.value) calculatePosition();
 }
 
+function dismissSceneAbilities() {
+  if (sceneAbilities.value) showAbilities.value = false;
+}
+
 onMounted(() => {
+  document.addEventListener('arkham:scene-drawer-dismiss', dismissSceneAbilities);
   if (supportsAnchor) return;
   window.addEventListener('resize', updatePosition);
   window.addEventListener('scroll', updatePosition, true);
 });
 
 onUnmounted(() => {
+  document.removeEventListener('arkham:scene-drawer-dismiss', dismissSceneAbilities);
   props.frame?.style.removeProperty('anchor-name');
   window.removeEventListener('resize', updatePosition);
   window.removeEventListener('scroll', updatePosition, true);
@@ -161,9 +186,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame] }">
-      <div class="abilities" :class="[positionClass, { anchored: supportsAnchor }]" :style="anchorStyle" ref="abilitiesRef" >
+  <div v-if="mobileEnabled && abilities.length" class="mobile-inline-abilities">
+    <button v-if="!mobilePreview" class="mobile-ability-anchor" type="button" data-mobile-ability-available="true" :data-mobile-forced="mobileForced || undefined" aria-label="打开大图查看能力" @click.stop="mobileCard?.open()">⚡ 能力</button>
+    <div v-else class="mobile-preview-abilities">
+      <button v-if="playAction !== undefined" type="button" class="play-card-button" @click="chooseAbility(playAction)">{{ $t('label.play') }}</button>
+      <AbilityButton v-for="{index, contents} in abilities" :key="index" :ability="contents" :show-move="showMove" :host-has-swarm="hostHasSwarm" :game="game" @click="chooseAbility(index)" />
+    </div>
+  </div>
+  <Teleport v-else-if="!mobileEnabled" to="body">
+    <OnClickOutside @trigger="showAbilities = false" v-if="showAbilities" :options="{ ignore: [frame, ...(ignore || [])] }">
+      <div class="abilities" :class="[positionClass, { anchored: useAnchor, 'abilities--scene': sceneAbilities }]" :data-edge-scene-abilities="sceneAbilities || undefined" :style="anchorStyle" ref="abilitiesRef" >
         <button
           v-if="playAction !== undefined"
           class="play-card-button"
@@ -188,6 +220,9 @@ onUnmounted(() => {
 
 <style scoped>
 .abilities {
+  max-height: calc(100dvh - 16px);
+  max-width: calc(100vw - 16px);
+  overflow: auto;
   position: fixed;
   padding: min(3px, 1vw);
   background: rgba(0, 0, 0, 0.8);
@@ -232,6 +267,26 @@ onUnmounted(() => {
   position: fixed;
   position-try-fallbacks: flip-block, flip-inline;
 }
+
+/* Drawer actions remain readable and clickable independently of card size. */
+.abilities.abilities--scene {
+  min-width: min(220px, calc(100vw - 16px));
+  padding: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  overscroll-behavior: contain;
+}
+.abilities.abilities--scene button {
+  min-height: 44px;
+  min-width: 0;
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.abilities--scene :deep(.button-label) { min-width: 0; padding: 8px; }
+.abilities--scene :deep(button::before) { font-size: 20px; align-items: center; }
 
 .abilities.anchored.top { position-area: top span-right; }
 .abilities.anchored.bottom { position-area: bottom span-right; }

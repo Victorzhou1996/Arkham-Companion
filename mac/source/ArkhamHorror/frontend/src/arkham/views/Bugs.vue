@@ -148,7 +148,7 @@ function changePage(page: number) {
 </script>
 
 <template>
-  <main ref="pageContainer" class="bugs-page">
+  <main ref="pageContainer" class="bugs-page site-workspace site-bugs">
     <header class="bugs-header">
       <div>
         <h1>Bug列表</h1>
@@ -175,9 +175,9 @@ function changePage(page: number) {
       </div>
     </section>
 
-    <p v-if="notice" class="notice">{{ notice }}</p>
-    <p v-if="error" class="error">{{ error }}</p>
-    <p v-if="loading" class="muted">读取中...</p>
+    <p v-if="notice" class="notice" role="status">{{ notice }}</p>
+    <p v-if="error" class="error" role="alert">{{ error }}</p>
+    <p v-if="loading" class="muted" role="status">读取中...</p>
     <p v-else-if="sortedReports.length === 0" class="muted">还没有提交的Bug报告。</p>
 
     <section v-else class="bug-list">

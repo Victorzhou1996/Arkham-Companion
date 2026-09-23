@@ -1,5 +1,11 @@
 <script lang="ts" setup>
-import { nextTick, ref, onMounted, onBeforeUnmount, useId } from 'vue'
+import { nextTick, ref, onMounted, onBeforeUnmount, useId, inject, computed } from 'vue'
+import { useMobileBoard, mobileCardKey } from '@/arkham/mobile/context'
+import { useDragHold } from '@/arkham/mobile/useDragHold'
+const mobileBoard = useMobileBoard()
+const mobileCard = inject(mobileCardKey, null)
+const mobileNested = computed(() => !!mobileBoard?.touchEnabled.value && !!mobileCard?.preview.value)
+const dragHold = useDragHold()
 
 const props = withDefaults(defineProps<{
   centerInSelector?: string
@@ -191,6 +197,13 @@ function drag(e: PointerEvent) {
   const target = e.target as HTMLElement | null
   if (!target || target.closest('.minimize-btn')) return
   if (!target.closest('header') || isMinimized.value) return
+  if (mobileBoard?.touchEnabled.value && e.pointerType !== 'mouse') {
+    e.preventDefault()
+    dragHold.start(e, () => beginDrag(e))
+  } else beginDrag(e)
+}
+
+function beginDrag(e: PointerEvent) {
 
   const el = draggable.value
   if (!el) return
@@ -198,7 +211,7 @@ function drag(e: PointerEvent) {
   e.preventDefault()
   isDragging.value = true
   dragPointerId = e.pointerId
-  el.setPointerCapture(e.pointerId)
+  if (e.isTrusted) el.setPointerCapture(e.pointerId)
 
   const rect = el.getBoundingClientRect()
   initialMouseX.value = e.clientX
@@ -212,6 +225,7 @@ function drag(e: PointerEvent) {
 
   el.addEventListener('pointermove', elementDrag, { passive: false })
   el.addEventListener('pointerup', stopDrag, { once: true })
+  el.addEventListener('pointercancel', stopDrag, { once: true })
 }
 
 function elementDrag(e: PointerEvent) {
@@ -239,12 +253,15 @@ function elementDrag(e: PointerEvent) {
 }
 
 function stopDrag() {
+  dragHold.cancel()
   hasBeenDragged.value = true
   const el = draggable.value
   if (el) {
     el.style.transition = ''
     setAnchorFromRect(el.getBoundingClientRect())
     el.removeEventListener('pointermove', elementDrag as any)
+    el.removeEventListener('pointerup', stopDrag)
+    el.removeEventListener('pointercancel', stopDrag)
     if (dragPointerId !== null) {
       try { el.releasePointerCapture(dragPointerId) } catch {}
     }
@@ -367,7 +384,7 @@ function moveUp() {
   <div
     @pointerdown="moveUp"
     class="draggable"
-    :class="{ 'click-through-chrome': props.clickThroughChrome, 'position-stable': props.preservePosition }"
+    :class="{ 'click-through-chrome': props.clickThroughChrome, 'position-stable': props.preservePosition, 'mobile-nested-dialog': mobileNested, 'draggable--minimized': isMinimized }"
     ref="draggable"
     :id="id"
     :style="{
@@ -376,7 +393,7 @@ function moveUp() {
       minWidth: props.preserveWidth && !isMinimized && widestWidth > 0 ? `min(${widestWidth}px, calc(100vw - 32px))` : undefined,
     }"
   >
-    <header @pointerdown="drag" @click.stop="isMinimized && minimize()">
+    <header @pointerdown="drag" :class="{ 'touch-drag-handle': mobileBoard?.touchEnabled.value, 'touch-drag-handle--holding': dragHold.waiting.value }" @click.stop="isMinimized && minimize()">
         <span class="header-title">
           <slot name="handle"></slot>
         </span>
@@ -397,6 +414,8 @@ function moveUp() {
 </template>
 
 <style scoped>
+.touch-drag-handle { touch-action: none; user-select: none; -webkit-touch-callout: none; }
+.touch-drag-handle--holding { box-shadow: inset 0 -2px #c4ac68; }
 .draggable {
   position: absolute;
   background: rgba(94, 123, 115, 0.5);
@@ -649,7 +668,7 @@ function moveUp() {
 
     > header {
       border-radius: 16px 16px 0 0;
-      background: #0a0d10;
+      background: var(--surface-input);
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
 

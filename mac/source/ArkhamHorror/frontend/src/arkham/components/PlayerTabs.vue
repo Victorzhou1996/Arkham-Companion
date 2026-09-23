@@ -14,7 +14,9 @@ import type { TarotCard } from '@/arkham/types/TarotCard';
 import { imgsrc, isTypingTarget } from '@/arkham/helpers';
 import { gameLocalStorageKey } from '@/arkham/localStorage';
 import { IsMobile } from '@/arkham/isMobile';
+import { useMobileBoard } from '@/arkham/mobile/context';
 import { useDbCardStore } from '@/stores/dbCards'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
 
 export interface Props {
   game: Game
@@ -26,8 +28,10 @@ export interface Props {
 }
 
 const props = defineProps<Props>()
+const tabletop = useTabletopLabels()
 
-const storageKey = computed(() => gameLocalStorageKey(props.game.id, 'selected-tab'))
+const mobileBoard = useMobileBoard()
+const storageKey = computed(() => gameLocalStorageKey(props.game.id, mobileBoard?.enabled.value ? 'mobile:selected-tab' : 'selected-tab'))
 const selectedTab = useStorage<string>(storageKey, props.playerId)
 const playerInfo = ref<HTMLElement | null>(null)
 
@@ -54,10 +58,11 @@ function tabClass(investigator: Investigator) {
   return [
     {
       'tab--selected': pid === selectedTab.value,
+      'tab--perspective': pid === props.playerId,
       'tab--active-player': investigator.id === props.activePlayerId,
       'tab--lead-player': investigator.id === props.game.leadInvestigatorId,
       'tab--has-actions': pid !== selectedTab.value && hasChoices(pid),
-      'glow-effect': investigator.id === 'c89001',
+      'mobile-zone-action': !!mobileBoard?.enabled.value && pid !== selectedTab.value && (hasChoices(pid) || Object.values(mobileBoard.actions.value.players[pid] ?? {}).some(Boolean)),
     },
     `tab--${investigatorClass}`,
   ]
@@ -69,11 +74,8 @@ function hasSwitch(investigator: Investigator) {
 }
 
 function instructions(investigator: Investigator) {
-  if (investigator.playerId !== props.playerId) {
-    return "Switch to this investigator's perspective"
-  }
-
-  return null
+  const label = investigator.playerId === props.playerId ? tabletop.value.currentPerspective : tabletop.value.switchPerspective
+  return `${label}: ${getInvestigatorName(investigator.name.title)}`
 }
 
 type SwitchReason = 'baseline' | 'tab-action' | 'sole-question' | 'covered-question'
@@ -174,6 +176,15 @@ function humanQuestionPlayers() {
 // tied to something that just happened and still deserve focus.
 function isDeclinableFastWindow(playerId: string) {
   if (!ArkhamGame.activeQuestionIsPlayerWindow(props.game, playerId)) return false
+  return hasSkipTriggersButton(playerId)
+}
+
+// The seat can walk away from its question. runWindow only offers Skip Triggers for a
+// window it built as skippable, and the forced-ability branch never offers one at all,
+// so this separates "may be held back" from "must claim the perspective to advance the
+// game". Unlike isDeclinableFastWindow it does not require a PlayerWindowChooseOne: the
+// skill test's own fast windows decode as WindowChooseOne (#5730).
+function hasSkipTriggersButton(playerId: string) {
   return ArkhamGame.choices(props.game, playerId)
     .some(choice => choice.tag === MessageType.SKIP_TRIGGERS_BUTTON)
 }
@@ -403,22 +414,27 @@ function inspectActions() {
   }
 
   // A sole question owns the tab even if Vue has left stale actionable controls
-  // on another tab. During a skill test, however, another investigator's fast
-  // window does not pull focus away from the test taker unless that
-  // investigator's tab is the sole place with an actionable control.
+  // on another tab. During a skill test, however, another investigator's
+  // declinable window does not pull focus away from the test taker unless that
+  // investigator's tab is the sole place with an actionable control. The test's
+  // own ST1/ST2 windows decode as WindowChooseOne rather than
+  // PlayerWindowChooseOne, so this asks for the Skip Triggers button directly
+  // instead of going through isDeclinableFastWindow, which would never match
+  // here and would hand every bystander's fast window the perspective (#5730).
   //
   // Only a *declinable* window may be held back that way. game.skillTest stays
   // populated after the test resolves, while the consequences of the result are
   // still resolving -- an Arcane Barrier leave cost that fails can discard the
   // location, move everyone off it, and hand each investigator in turn a forced
-  // ability, all with the failed test still open. A forced ability or reaction
-  // cannot be declined and is the only thing that can advance the game, so it
-  // has to claim the perspective even then; otherwise the sole answerable
-  // question sits behind a tab with no control rendered anywhere on screen.
+  // ability, all with the failed test still open. A forced ability carries no
+  // Skip Triggers button, cannot be declined and is the only thing that can
+  // advance the game, so it has to claim the perspective even then; otherwise
+  // the sole answerable question sits behind a tab with no control rendered
+  // anywhere on screen.
   const skillTestHoldsFocus =
     !!skillTestPlayer
     && soleQuestionPlayer !== skillTestPlayer
-    && isDeclinableFastWindow(soleQuestionPlayer as string)
+    && hasSkipTriggersButton(soleQuestionPlayer as string)
   if (solo?.value === true && soleQuestionPlayer && !skillTestHoldsFocus) {
     if (selectedTab.value !== soleQuestionPlayer || props.playerId !== soleQuestionPlayer) {
       if (!automaticSwitchIsStable(`sole-question:${soleQuestionPlayer}`)) return
@@ -444,6 +460,16 @@ function inspectActions() {
   if (automaticSwitchStackEnabled) unwindSwitchStack(tabs)
 }
 
+function locatePlayer(event: Event) {
+  const detail = (event as CustomEvent<{ gameId: string; playerId: string }>).detail
+  if (!detail || detail.gameId !== props.game.id || mobileBoard?.enabled.value) return
+  if (!investigators.value.some(i => i?.playerId === detail.playerId)) return
+  if (processing.value || uiLock.value) return
+  // Follow the same user-initiated path as a tab/perspective click; no game action.
+  if (solo?.value && !spectate.value) selectTabExtended(detail.playerId)
+  else selectTab(detail.playerId)
+}
+
 onMounted(() => {
   const scope = playerInfo.value?.closest<HTMLElement>('#scenario') ?? playerInfo.value
   if (scope) {
@@ -457,10 +483,12 @@ onMounted(() => {
   }
   scheduleActionInspection()
   document.addEventListener('keydown', handleSeatShortcut)
+  document.addEventListener('arkham:locate-player', locatePlayer)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleSeatShortcut)
+  document.removeEventListener('arkham:locate-player', locatePlayer)
   actionObserver?.disconnect()
   if (inspectionFrame !== null) cancelAnimationFrame(inspectionFrame)
 })
@@ -481,11 +509,15 @@ watch(
         @click='selectTab(investigator.playerId)'
         :class='tabClass(investigator)'
       >
-        <span v-if="isMobile">{{ getInvestigatorName(investigator.name.title).split(' ')[0] }}</span>
-        <span v-else>{{ getInvestigatorName(investigator.name.title) }}</span>
+        <span class="investigator-full-name" :title="getInvestigatorName(investigator.name.title)">{{ isMobile ? getInvestigatorName(investigator.name.title).split(' ')[0] : getInvestigatorName(investigator.name.title) }}</span>
+        <span class="investigator-short-name" :title="getInvestigatorName(investigator.name.title)">{{ getInvestigatorName(investigator.name.title).split(/[·‧・\s]/)[0] }}</span>
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
+          :aria-label="instructions(investigator)"
+          :aria-pressed="investigator.playerId === props.playerId"
+          :title="instructions(investigator)"
+          :data-perspective-id="investigator.playerId"
           :disabled="investigator.playerId === props.playerId"
           class="switch-investigators"
           @click.stop="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>
@@ -501,10 +533,15 @@ watch(
         class="inactive"
         :class='tabClass(investigator)'
       >
-        <span>{{ investigator.name.title }}</span>
+        <span class="investigator-full-name">{{ investigator.name.title }}</span>
+        <span class="investigator-short-name" :title="getInvestigatorName(investigator.name.title)">{{ getInvestigatorName(investigator.name.title).split(/[·‧・\s]/)[0] }}</span>
         <button
           v-if="solo"
           v-tooltip="instructions(investigator)"
+          :aria-label="instructions(investigator)"
+          :aria-pressed="investigator.playerId === props.playerId"
+          :title="instructions(investigator)"
+          :data-perspective-id="investigator.playerId"
           :disabled="investigator.playerId === props.playerId"
           class="switch-investigators"
           @click.stop="selectTabExtended(investigator.playerId)"><font-awesome-icon icon="eye" :class="{ 'fa-icon': hasSwitch(investigator) }" /></button>
@@ -559,6 +596,7 @@ watch(
 </template>
 
 <style scoped>
+.investigator-short-name { display: none; }
 .tabs-row {
   display: flex;
   align-items: flex-end;

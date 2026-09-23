@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
 import { inject, computed, ref, onMounted, watch, type Ref } from 'vue'
 import { toCamelCase } from '@/arkham/helpers'
 import { imgsrc } from '@/arkham/helpers'
@@ -433,7 +435,7 @@ async function applyOverlay(investigatorId: string) {
     overlayFor.value = null
   } catch (e) {
     console.error(e)
-    rosterError.value = 'Could not apply the overlay'
+    rosterError.value = ct('Could not apply the overlay')
   } finally {
     overlayBusy.value = false
   }
@@ -566,7 +568,7 @@ const setIcon = computed(() => {
                 class="roster-btn"
                 :class="{ 'roster-btn--on': overlayFor === investigator.id }"
                 :disabled="overlayBusy"
-                v-tooltip="'Lay custom cards over this deck'"
+                v-tooltip="ct('Lay custom cards over this deck')"
                 @click="openOverlay(investigator.id)"
               ><font-awesome-icon icon="layer-group" /></button>
               <button
@@ -598,8 +600,7 @@ const setIcon = computed(() => {
         </InvestigatorRow>
         <div v-if="overlayFor === investigator.id" class="overlay-panel">
           <p class="overlay-help">
-            Custom cards, laid over this deck for the rest of the campaign. Nothing is bought,
-            so no xp is spent and no trauma is taken for what it adds.
+            {{ ct('Custom cards, laid over this deck for the rest of the campaign. Nothing is bought, so no xp is spent and no trauma is taken for what it adds.') }}
           </p>
           <OverlayEditor
             v-model="overlay"
@@ -608,7 +609,7 @@ const setIcon = computed(() => {
           />
           <div class="overlay-actions">
             <button class="roster-btn" :disabled="overlayBusy" @click="applyOverlay(investigator.id)">
-              Apply overlay
+              {{ ct('Apply overlay') }}
             </button>
             <button class="roster-btn" @click="overlayFor = null">{{ t('cancel') }}</button>
           </div>
@@ -758,7 +759,7 @@ const setIcon = computed(() => {
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--background);
+  background: var(--app-background);
   color: #fff;
 
   h2 {
@@ -1006,7 +1007,11 @@ button {
   border-radius: 6px;
   color: #e6ece4;
   margin: 0 0 10px;
-  padding: 10px;
+  padding: 14px;
+}
+
+.overlay-panel :deep(.overlay-editor) {
+  padding: 0;
 }
 
 .overlay-help {
@@ -1017,8 +1022,11 @@ button {
 }
 
 .overlay-actions {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
 }
 </style>

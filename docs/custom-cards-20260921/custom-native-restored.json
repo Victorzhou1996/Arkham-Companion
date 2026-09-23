@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "database": "restored",
+  "partialSettings": true,
+  "schemaTypes": 300,
+  "importRoundtrip": true,
+  "repeatedImport": true,
+  "accountIsolation": true,
+  "malformedRejected": 400,
+  "customAbilityExecuted": true,
+  "before": 6,
+  "after": 8
+}

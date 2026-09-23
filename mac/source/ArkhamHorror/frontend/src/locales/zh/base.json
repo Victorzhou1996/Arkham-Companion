@@ -1,4 +1,22 @@
 {
+  "choiceText": {
+    "discoverClueAt": "在{name}发现线索",
+    "damageTarget": "对{name}造成伤害",
+    "establishMotive": "构建动机",
+    "lieInWait": "守株待兔"
+  },
+  "gameLoad": {
+    "loading": "正在加载游戏",
+    "wait": "正在读取游戏数据，请稍候。",
+    "failed": "暂时无法打开这局游戏",
+    "pageUnavailable": "页面组件未能加载，可能是文件缺失、缓存过期或浏览器拦截。请重新加载；仍失败时请在管理工具中检查前端资源，无需关闭浏览器安全限制。",
+    "signedOut": "登录状态已失效，请重新登录后继续。",
+    "forbidden": "当前账号无法进入这局游戏，请确认登录的是对应账号。",
+    "missing": "此服务器上找不到这局存档。纯净版不包含旧存档，请从首页新建游戏，或通过管理工具恢复你自己的备份。",
+    "unavailable": "无法连接游戏服务，或服务暂时没有响应。请检查管理工具中的运行状态后重试。",
+    "invalid": "游戏数据加载失败，可能与版本不兼容有关。请保留存档，并检查服务日志。",
+    "retry": "重新加载"
+  },
   "serviceUnavailable": "服务不可用",
   "pleaseTryAgainLater": "请稍后再试。",
   "nav": {
@@ -67,6 +85,7 @@
   "Fight": "攻击",
   "Engage": "交战",
   "Forced": "強制",
+  "Reaction": "反应",
   "Delayed": "延时效果",
   "Objective": "目标",
   "Haunted": "闹鬼",
@@ -548,6 +567,8 @@
     "solo": "单人"
   },
   "gameLog": {
+    "discardDownTo": "必须弃牌至剩余 {count} 张",
+    "discoveredClues": "发现了 {count} 个线索",
     "played": "打出了",
     "draws": "抽取了",
     "chaosToken": "混乱标记",

@@ -9,6 +9,7 @@ import type { Game } from '@/arkham/types/Game'
 import * as ArkhamGame from '@/arkham/types/Game'
 import CardView from '@/arkham/components/Card.vue'
 import { useDebug } from '@/arkham/debug'
+import { isScenePreviewSource } from '@/arkham/sceneDrawer'
 
 const props = withDefaults(defineProps<{
   cards: (ArkhamCard | CardContents)[]
@@ -61,6 +62,15 @@ const shown = computed({
 // that loses a card keeps its old left edge and drifts away from the trigger.
 // Ask it to recompute whenever the contents change underneath it.
 const dropdown = ref<{ onResize?: () => void } | null>(null)
+const trigger = ref<HTMLElement | null>(null)
+const scenePreview = ref(false)
+function markScenePreview() { scenePreview.value = isScenePreviewSource(trigger.value) }
+function closeScenePreview() { if (scenePreview.value) shown.value = false }
+function escapePreview(event: KeyboardEvent) { if (event.key === 'Escape') shown.value = false }
+onMounted(() => document.addEventListener('keydown', escapePreview))
+onBeforeUnmount(() => document.removeEventListener('keydown', escapePreview))
+onMounted(() => document.addEventListener('arkham:scene-drawer-dismiss', closeScenePreview))
+onBeforeUnmount(() => document.removeEventListener('arkham:scene-drawer-dismiss', closeScenePreview))
 
 async function reposition() {
   await nextTick()
@@ -80,6 +90,7 @@ const interactive = computed(() => props.game !== undefined && props.playerId !=
 // An ability's source names the entity, not the card, so resolve it back to the
 // card id the stack holds. Assets and threat-area treacheries both land here.
 function sourceCardId(source: Source): string | undefined {
+  if (source.sourceTag === 'ProxySource') return sourceCardId(source.source)
   if (source.sourceTag !== 'OtherSource' || !source.contents) return undefined
   const sourceId = source.contents
   return props.game?.assets[sourceId]?.cardId
@@ -89,7 +100,15 @@ function sourceCardId(source: Source): string | undefined {
 
 function cardMatchesChoice(card: ArkhamCard | CardContents, choice: Message): boolean {
   const cardId = toCardContents(card).id
-  if (choice.tag === 'TargetLabel') return choice.target.tag === 'CardIdTarget' && cardId === choice.target.contents
+  if (choice.tag === 'TargetLabel') {
+    const { tag, contents } = choice.target
+    if (typeof contents !== 'string') return false
+    // These are also accepted by the CardView rendered inside the popover.
+    if (contents === cardId) return true
+    if (tag === 'EnemyTarget') return props.game?.enemies[contents]?.cardId === cardId
+    if (tag === 'SkillTarget') return props.game?.skills[contents]?.cardId === cardId
+    return false
+  }
   if (choice.tag === 'AbilityLabel') return sourceCardId(choice.ability.source) === cardId
   return false
 }
@@ -194,6 +213,7 @@ onBeforeUnmount(() => finishDrag())
 <template>
   <Dropdown
     ref="dropdown"
+    @show="markScenePreview" @hide="scenePreview = false"
     :placement="placement"
     :distance="8"
     v-model:shown="shown"
@@ -203,8 +223,11 @@ onBeforeUnmount(() => finishDrag())
     theme="cards-under-popover"
   >
     <button
+      ref="trigger"
       type="button"
       class="cards-under-indicator"
+      data-mobile-direct
+      :data-game-actionable="count > 0 && isHighlighted || undefined"
       :class="{ 'cards-under-indicator--highlighted': isHighlighted, 'cards-under-indicator--with-label': showLabel, 'cards-under-indicator--full-width': fullWidth, 'cards-under-indicator--vertical': vertical, 'cards-under-indicator--dragged-over': draggedOver }"
       :aria-label="tooltip"
       v-tooltip="tooltip"
@@ -230,6 +253,7 @@ onBeforeUnmount(() => finishDrag())
     <template #popper>
       <div
         class="cards-under-popover"
+        :data-edge-scene-preview="scenePreview || undefined"
         :class="{ 'cards-under-popover--dragged-over': draggedOver }"
         @dragover="onDragOver"
         @dragenter="onDragEnter"
@@ -289,7 +313,6 @@ onBeforeUnmount(() => finishDrag())
 .cards-under-indicator:hover {
   background: rgba(0, 0, 0, 0.68);
   border-color: rgba(255, 255, 255, 0.32);
-  transform: translateY(-1px);
 }
 
 .cards-under-indicator--highlighted {

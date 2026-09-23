@@ -1073,7 +1073,7 @@ use {
 .drawer {
   width: 100%;
   height: 100%;
-  background: #1b2635;
+  background: var(--box-background);
   color: #fff;
   border-top-left-radius: 0.5rem;
   border-top-right-radius: 0.5rem;

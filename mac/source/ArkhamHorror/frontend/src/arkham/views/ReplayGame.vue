@@ -178,7 +178,8 @@ onUnmounted(() => clearInterval(interval.value))
 
   p {
     padding: 10px;
-    background: #FFF;
+    background: var(--surface-panel);
+    color: #e5e7d3;
     border-radius: 4px;
   }
 }
@@ -189,7 +190,7 @@ onUnmounted(() => clearInterval(interval.value))
   max-width: 500px;
   display: flex;
   flex-direction: column;
-  background: #d0d9dc;
+  background: var(--box-background);
 }
 
 .processing {

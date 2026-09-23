@@ -22,6 +22,7 @@ import Arkham.Homebrew.CircusExMortis.Sets qualified as Set
 import Arkham.Id (InvestigatorId)
 import Arkham.Investigator.Types (Field (InvestigatorHand))
 import Arkham.Matcher
+import Arkham.Message (pattern FailedThisSkillTest)
 import Arkham.Message.Lifted.Choose
 import Arkham.Message.Lifted.Log
 import Arkham.Projection
@@ -40,7 +41,14 @@ newtype AllPointsWest = AllPointsWest ScenarioAttrs
 
 allPointsWest :: Difficulty -> AllPointsWest
 allPointsWest difficulty =
-  scenario AllPointsWest ":circus-ex-mortis:074" "All Points West" difficulty []
+  scenario
+    AllPointsWest
+    ":circus-ex-mortis:074"
+    "All Points West"
+    difficulty
+    [ "equals square    star heart"
+    , "moon   hourglass plus ."
+    ]
 
 freightCars :: [CardDef]
 freightCars =
@@ -184,28 +192,54 @@ instance HasChaosTokenValue AllPointsWest where
 instance RunMessage AllPointsWest where
   runMessage msg s@(AllPointsWest attrs) = runQueueT $ scenarioI18n "allPointsWest" $ case msg of
     PreScenarioSetup -> scope "intro" do
+      flavor $ h "title" >> p "check"
       fromNewOrleans <- playedCurseOfTheRougarouEnRoute
       if fromNewOrleans
         then do
-          flavor $ h "title" >> scope "backOnTrack" (h_ "title" >> p "body")
-          -- Guide p14: each reward card the side story left behind gains a ☾
-          -- release reaction. The reaction is printed on the Circus version of
-          -- the card, so the gain is modelled by upgrading it in place.
-          whenM (selectAny $ DeckWith $ HasCard $ cardIs TreacheryCards.curseOfTheRougarou) do
-            scope "whatAHorribleNight" $ flavor $ setTitle "title" >> p "body"
+          cursed <- selectAny $ DeckWith $ HasCard $ cardIs TreacheryCards.curseOfTheRougarou
+          when cursed do
             upgradeCampaignCard TreacheryCards.curseOfTheRougarou Treacheries.curseOfTheRougarou
-          whenM (selectAny $ DeckWith $ HasCard $ cardIs AssetCards.ladyEsprit) do
-            scope "goodJuju" $ flavor $ setTitle "title" >> p "body"
+          goodJuju <- selectAny $ DeckWith $ HasCard $ cardIs AssetCards.ladyEsprit
+          when goodJuju do
             upgradeCampaignCard AssetCards.ladyEsprit Assets.ladyEsprit
-        else flavor $ h "title" >> scope "rightOnSchedule" (h_ "title" >> p "body")
+
+          flavor do
+            h "title"
+            p "backOnTrack"
+            p.green.validate cursed "whatAHorribleNight"
+            p.green.validate goodJuju "goodJuju"
+            ul do
+              li "fromNewOrleans"
+              li "skipToSetup"
+        else flavor do
+          h "title"
+          p "rightOnSchedule"
+          ul do
+            li "fromArkham"
+            li "proceedToSetup"
       pure s
     Setup -> runScenarioSetup AllPointsWest attrs do
+      fromNewOrleans <- playedCurseOfTheRougarouEnRoute
+
+      setup $ ul do
+        li "gatherSets"
+        li.validate (not fromNewOrleans) "fromArkham"
+        li.validate fromNewOrleans "fromNewOrleans"
+        li "placeLocations"
+        li "allies"
+        li "setAside"
+        li.nested.byDifficulty "addTokens" do
+          li.validate (attrs.difficulty == Easy) "easy"
+          li.validate (attrs.difficulty == Standard) "standard"
+          li.validate (attrs.difficulty == Hard) "hard"
+          li.validate (attrs.difficulty == Expert) "expert"
+        unscoped $ li "shuffleRemainder"
+
       gather Set.AllPointsWest
       gather Set.CultOfShubNiggurath
       gather Set.NewMoonDaredevils
       gather Set.PrimordialEvils
 
-      fromNewOrleans <- playedCurseOfTheRougarouEnRoute
       let (act1, unusedAct1) =
             if fromNewOrleans
               then (Acts.throughTheForestsVII, Acts.throughTheForestsVI)
@@ -237,13 +271,24 @@ instance RunMessage AllPointsWest where
 
       setAgendaDeck [Agendas.scheduleToKeep]
       setActDeck [act1, Acts.noFreeRides, Acts.engineTrouble, Acts.theGreatTrainHorror]
-    ScenarioSpecific key v | key == nowArrivingKey -> do
+    ScenarioSpecific key v | key == nowArrivingKey -> scope "interludes" do
       for_ (maybeResult v) \arrival -> do
         doom <- getDoomCount
         let interlude = interludeFor arrival (doom <= 6)
-        scope "interludes" $ scope interlude.interludeKey do
-          storyWithChooseOneM (setTitle "title" >> p "body") do
-            labeled (optionLabel interlude.interludeOption) $ doStep 1 msg
+        canAfford <- case interlude.interludeOption of
+          TestOption {} -> pure True
+          IconTax _ n ts -> do
+            cards <- iconTaxCandidates
+            reduction <- countTraits ts
+            pure $ sum (map (iconCount . snd) cards) >= n - reduction
+          AssetTax _ n ts -> do
+            assets <- selectCount $ DiscardableAsset <> NonWeaknessAsset <> AssetControlledBy Anyone
+            reduction <- countTraits ts
+            pure $ assets >= n - reduction
+
+        storyWithChooseOneM (setTitle "title" >> scope interlude.interludeKey (p.green "body")) do
+          scope interlude.interludeKey do
+            labeledValidate' canAfford (optionLabel interlude.interludeOption) $ doStep 1 msg
             labeled interlude.interludeSkipLabel $ daysBehind interlude.interludeSkipResources
       pure s
     DoStep 1 (ScenarioSpecific key v) | key == nowArrivingKey -> do
@@ -254,7 +299,7 @@ instance RunMessage AllPointsWest where
             lead <- getLead
             setScenarioMetaKey interludeFailureKey failResources
             investigators <- select UneliminatedInvestigator
-            chooseOneM lead $ targets investigators (`forInvestigator` msg)
+            chooseOrRunOneM lead $ targets investigators (`forInvestigator` msg)
           IconTax _ owed traits -> do
             reduction <- countTraits traits
             push $ ScenarioSpecific iconTaxKey $ toJSON $ max 0 (owed - 2 * reduction)
@@ -299,9 +344,8 @@ instance RunMessage AllPointsWest where
           toDiscardBy lead ScenarioSource aid
           push $ ScenarioSpecific assetTaxKey $ toJSON (owed - 1)
       pure s
-    FailedSkillTest _ _ _ (isTarget ScenarioTarget -> True) _ _ -> do
-      owed <- getScenarioMetaKeyDefault interludeFailureKey (0 :: Int)
-      daysBehind owed
+    FailedThisSkillTest _ ScenarioSource -> do
+      daysBehind =<< getScenarioMetaKeyDefault interludeFailureKey 0
       pure s
     ScenarioResolution r -> scope "resolutions" do
       case r of

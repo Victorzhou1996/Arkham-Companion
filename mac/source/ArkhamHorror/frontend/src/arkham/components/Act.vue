@@ -1,7 +1,10 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { ComputedRef, computed, ref, watch } from 'vue'
+import { BookOpenIcon } from '@heroicons/vue/24/outline'
 import { Dropdown } from 'floating-vue'
 import { useCardStore } from '@/stores/cards'
+import { useDbCardStore } from '@/stores/dbCards'
 import { type Game } from '@/arkham/types/Game'
 import { type Card, cardImage, asCardCode, toCardContents } from '@/arkham/types/Card'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
@@ -25,6 +28,8 @@ import * as Arkham from '@/arkham/types/Act'
 import { useEventStore } from '@/arkham/stores/event'
 import { actContribution, actSpend } from '@/arkham/types/EpicEvent'
 import { useCardFlip } from '@/arkham/composables/useCardFlip'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
+const tabletop = useTabletopLabels()
 
 const props = defineProps<{
   act: Arkham.Act
@@ -175,6 +180,8 @@ const cardStage = (code: string): number | null => cardDefFor(code)?.stage ?? nu
 // a title are variant printings of that act, each of which is played in turn,
 // so those get a pip each.
 const cardTitle = (code: string): string => cardDefFor(code)?.name.title ?? code
+const sceneNames = useDbCardStore()
+const sceneTitle = computed(() => sceneNames.getCardName(cardTitle(props.act.id), 'act'))
 
 // The face a completed act/agenda was resolved on, so the popover can offer the
 // side that only ever flashed past on advance.
@@ -441,7 +448,10 @@ const chooseFromStoryCollection = (choice: number) => {
 </script>
 
 <template>
-  <div class="act-container">
+  <div class="act-container" :data-tabletop-label="tabletop.act">
+      <MobileCard>
+    <button type="button" data-mobile-direct class="edge-scene-name" :aria-label="`${tabletop.act}：${sceneTitle}`">{{ tabletop.act }} · {{ sceneTitle }}</button>
+    <h3 class="tabletop-card-heading"><BookOpenIcon aria-hidden="true" />{{ tabletop.act }}</h3>
     <div class="act-row">
       <div
         class="card-container"
@@ -599,10 +609,12 @@ const chooseFromStoryCollection = (choice: number) => {
         @choose="$emit('choose', $event)"
       />
     </div>
+      </MobileCard>
   </div>
 </template>
 
 <style scoped>
+.edge-scene-name { display: none; }
 .act-container :deep(.card) {
   flex: 0;
   width: var(--card-width);

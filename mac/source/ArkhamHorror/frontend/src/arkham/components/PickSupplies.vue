@@ -101,7 +101,8 @@ button {
 }
 
 .pick-supplies-container {
-  background: #DCD6D0;
+  background: var(--surface-panel);
+  color: var(--text);
   box-shadow: inset 0 0 170px rgba(0,0,0,0.5), 1px 1px 3px rgba(0,0,0,0.6);
   width: calc(100% - 20px);
   margin: 0 auto;
@@ -114,7 +115,8 @@ button {
 }
 
 .pick-supplies {
-  background: #DCD6D0;
+  background: var(--surface-panel);
+  color: var(--text);
   box-shadow: inset 0 0 170px rgba(0,0,0,0.5), 1px 1px 3px rgba(0,0,0,0.6);
   width: calc(100% - 20px);
   margin: 0 auto;
@@ -190,7 +192,8 @@ ul li {
   justify-content: flex-start;
   text-align: left;
   padding: 10px;
-  background: #DCD6D0;
+  background: var(--surface-panel);
+  color: var(--text);
   border-radius: 10px;
   box-shadow: inset 0 0 170px rgba(0, 0, 0, 0.5), 1px 1px 3px rgba(0, 0, 0, 0.6);
 
@@ -255,7 +258,7 @@ ul li {
 
     li::marker, :deep(li::marker) {
       font-family: "ArkhamSlim";
-      color: var(--spooky-green-dark);
+      color: #c7bc92;
       padding-left: 10px;
       margin-left: 10px;
     }

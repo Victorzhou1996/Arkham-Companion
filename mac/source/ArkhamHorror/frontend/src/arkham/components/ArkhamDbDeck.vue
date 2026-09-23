@@ -86,7 +86,8 @@ input {
   outline: 0;
   border: 1px solid #000;
   padding: 15px;
-  background: #F2F2F2;
+  background: var(--surface-input);
+    color: var(--text);
   width: 100%;
   margin-bottom: 10px;
 }

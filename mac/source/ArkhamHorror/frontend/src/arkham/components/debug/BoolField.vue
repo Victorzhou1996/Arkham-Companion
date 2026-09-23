@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* A yes/no field.
  *
  * Two named choices rather than a checkbox: a bare box leaves you reading the
@@ -18,7 +21,7 @@ const group = `bool-${Math.random().toString(36).slice(2, 9)}`
 
 <template>
   <div class="bool-field">
-    <span v-if="label" class="bool-caption">{{ label }}</span>
+    <span v-if="label" class="bool-caption">{{ ct(label) }}</span>
     <div class="bool-toggle">
       <span class="bool-thumb" :class="{ on: !!modelValue }" aria-hidden="true"></span>
       <label class="bool-option" :class="{ active: !modelValue }">
@@ -27,18 +30,14 @@ const group = `bool-${Math.random().toString(36).slice(2, 9)}`
           :name="group"
           :checked="!modelValue"
           @change="$emit('update:modelValue', false)"
-        />
-        false
-      </label>
+        />{{ ct("false") }}</label>
       <label class="bool-option" :class="{ active: !!modelValue }">
         <input
           type="radio"
           :name="group"
           :checked="!!modelValue"
           @change="$emit('update:modelValue', true)"
-        />
-        true
-      </label>
+        />{{ ct("true") }}</label>
     </div>
   </div>
 </template>
@@ -61,7 +60,7 @@ const group = `bool-${Math.random().toString(36).slice(2, 9)}`
 
 .bool-toggle {
   align-self: flex-start;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 999px;
   display: inline-flex;
@@ -70,7 +69,7 @@ const group = `bool-${Math.random().toString(36).slice(2, 9)}`
 }
 
 .bool-thumb {
-  background: #374151;
+  background: var(--surface-hover);
   border-radius: 999px;
   bottom: 2px;
   left: 2px;

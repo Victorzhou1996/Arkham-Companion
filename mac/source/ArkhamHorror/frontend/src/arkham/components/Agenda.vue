@@ -1,7 +1,9 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 import { TokenType } from '@/arkham/types/Token';
 import { ComputedRef, computed, ref, watch } from 'vue';
 import { useCardStore } from '@/stores/cards';
+import { useDbCardStore } from '@/stores/dbCards';
 import { useDebug } from '@/arkham/debug';
 import { useI18n } from 'vue-i18n';
 import { cardImg, imgsrc, groupBy } from '@/arkham/helpers';
@@ -17,9 +19,13 @@ import Treachery from '@/arkham/components/Treachery.vue';
 import Event from '@/arkham/components/Event.vue';
 import Enemy from '@/arkham/components/Enemy.vue';
 import Story from '@/arkham/components/Story.vue';
+import Investigator from '@/arkham/components/Investigator.vue';
 import StackIndicator from '@/arkham/components/StackIndicator.vue';
 import * as Arkham from '@/arkham/types/Agenda';
 import { useCardFlip } from '@/arkham/composables/useCardFlip';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
+import { EyeIcon } from '@heroicons/vue/24/outline';
+const tabletop = useTabletopLabels();
 
 const props = defineProps<{
   agenda: Arkham.Agenda
@@ -138,6 +144,8 @@ const cardStage = (code: string): number | null => cardDefFor(code)?.stage ?? nu
 // versions of agenda 1 into its deck and plays each in turn — so those get a
 // pip each.
 const cardTitle = (code: string): string => cardDefFor(code)?.name.title ?? code
+const sceneNames = useDbCardStore()
+const sceneTitle = computed(() => sceneNames.getCardName(cardTitle(props.agenda.id), 'agenda'))
 
 // The face a completed act/agenda was resolved on, so the popover can offer the
 // side that only ever flashed past on advance.
@@ -244,8 +252,13 @@ const nextToStories = computed(() => Object.values(props.game.stories).
   map((t) => t.id))
 
 const attachedEnemies = computed(() => Object.values(props.game.enemies).
-  filter((t) => t.placement.tag === "AttachedToAgenda").
+  filter((t) => t.placement.tag === "AttachedToAgenda" && t.placement.contents === id.value).
   map((t) => t.id))
+
+// Blood on the Line parks a defeated investigator's mini-card beneath the agenda
+// until the act advances.
+const investigatorsUnder = computed(() => Object.values(props.game.investigators).
+  filter((i) => i.placement.tag === "AttachedToAgenda" && i.placement.contents === id.value))
 
 const groupedTreacheries = computed(() => Object.entries(groupBy([...props.agenda.treacheries, ...nextToTreacheries.value], (t) => props.game.treacheries[t].cardCode)))
 
@@ -280,7 +293,10 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
 </script>
 
 <template>
-  <div class="agenda-container">
+  <div class="agenda-container" :data-tabletop-label="tabletop.agenda">
+      <MobileCard>
+    <button type="button" data-mobile-direct class="edge-scene-name" :aria-label="`${tabletop.agenda}：${sceneTitle}`">{{ tabletop.agenda }} · {{ sceneTitle }}</button>
+    <h3 class="tabletop-card-heading"><EyeIcon aria-hidden="true" />{{ tabletop.agenda }}</h3>
     <StackIndicator
       label="Agenda"
       :current="currentAgendaPosition"
@@ -319,6 +335,18 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
             >+</button>
           </template>
         </div>
+      </div>
+      <div v-if="investigatorsUnder.length > 0" class="agenda-investigators">
+        <Investigator
+          v-for="investigator in investigatorsUnder"
+          :key="investigator.id"
+          :game="game"
+          :choices="choices"
+          :playerId="playerId"
+          :portrait="true"
+          :investigator="investigator"
+          @choose="$emit('choose', $event)"
+        />
       </div>
       <img
         v-for="(card, idx) in cardsNextTo"
@@ -389,10 +417,12 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
       <button v-if="cardsUnder.length > 0 && canViewUnder" class="view-cards-under-button" @click="showCardsUnderAgenda">{{viewUnderLabel}}</button>
       <button v-else-if="cardsUnder.length > 0" class="view-cards-under-button" disabled>{{viewUnderLabel}}</button>
     </div>
+      </MobileCard>
   </div>
 </template>
 
 <style scoped>
+.edge-scene-name { display: none; }
 .card {
   width: var(--card-width);
   box-shadow: 1px 1px 6px rgba(0, 0, 0, 0.45);
@@ -432,6 +462,21 @@ const wards = computed(() => props.agenda.tokens[TokenType.Ward])
   display: flex;
   align-items: center;
   height: var(--card-width);
+}
+
+/* The minis tuck under the card's bottom edge; .agenda-card is positioned and
+   z-indexed above them, so they read as sitting beneath the agenda. */
+.agenda-investigators {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin-top: calc(var(--card-width) * -0.15);
+  padding-left: 10px;
+
+  &:deep(.portrait) {
+    width: calc(var(--card-width) * 0.4);
+    box-shadow: 1px 1px 6px rgb(0 0 0 / 45%);
+  }
 }
 
 .agenda--can-progress {

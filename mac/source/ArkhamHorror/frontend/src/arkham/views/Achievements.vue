@@ -109,7 +109,7 @@ const earnedDate = (row: Achievement): string | null => {
 </script>
 
 <template>
-  <div class="achievements-page">
+  <div class="achievements-page site-workspace site-achievements">
     <div class="achievements-column">
       <div class="page-header">
         <h1>{{ t('achievements.pageTitle') }}</h1>
@@ -384,8 +384,7 @@ h2 {
 .entry:not(.earned) .entry-name,
 .entry:not(.earned) .entry-text,
 .entry:not(.earned) .checklist-item:not(.checked) {
-  opacity: 0.55;
-  filter: grayscale(60%);
+  opacity: 1;
 }
 
 .entry.earned {
@@ -417,7 +416,7 @@ h2 {
 }
 
 .entry-text {
-  color: rgba(255, 255, 255, 0.6);
+  color: #c9d4c5;
   font-size: 0.85rem;
   line-height: 1.45;
 }

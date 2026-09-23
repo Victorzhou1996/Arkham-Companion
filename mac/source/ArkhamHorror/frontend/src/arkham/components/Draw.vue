@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
+import { playerDeckChoice } from '@/arkham/playerDeckChoice'
 import { useDebug } from '@/arkham/debug'
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
 import * as ArkhamCard from '@/arkham/types/Card';
@@ -15,6 +17,10 @@ import Treachery from '@/arkham/components/Treachery.vue';
 import CardsUnderIndicator from '@/arkham/components/CardsUnderIndicator.vue';
 import { useCardStore } from '@/stores/cards';
 import * as DebugMove from '@/arkham/debugCardMove';
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels';
+import DeckCount from '@/arkham/components/DeckCount.vue';
+import TabletopPileHeading from '@/arkham/components/TabletopPileHeading.vue';
+const tabletop = useTabletopLabels();
 
 const { t } = useI18n();
 
@@ -40,12 +46,16 @@ const topOfDeckRevealed = computed(() =>
   props.investigator.modifiers?.some((m) => m.type.tag === "OtherModifier" && m.type.contents === "TopCardOfDeckIsRevealed")
 )
 
+// Only expose the top card once it is revealed -- a facedown deck must not leak
+// its customizations into the DOM for the hover overlay to read.
+const topOfDeckCard = computed(() =>
+  topOfDeckRevealed.value ? props.investigator.deck[0] ?? null : null
+)
+
 const topOfDeck = computed(() => {
-  const topCard = props.investigator.deck[0]
-  if  (topOfDeckRevealed.value && topCard) {
-    return cardImage(topCard.cardCode)
-  }
-  return imgsrc("backs/back_player.jpg")
+  const topCard = topOfDeckCard.value
+  if (!topCard) return imgsrc("backs/back_player.jpg")
+  return cardImage(topCard.cardCode, topCard.mutated ? `_${topCard.mutated}` : '')
 })
 
 const playTopOfDeckAction = computed(() => {
@@ -95,17 +105,7 @@ const topOfDeckAbilities = computed<AbilityMessage[]>(() => {
 })
 
 const drawCardsAction = computed(() => {
-  if(props.playerId !== props.investigator.playerId) {
-    return -1
-  }
-  return choices
-    .value
-    .findIndex((c) => {
-      if (c.tag === "ComponentLabel") {
-        return (c.component.tag == "InvestigatorDeckComponent")
-      }
-      return false
-    });
+  return playerDeckChoice(choices.value, props.playerId, props.investigator.playerId)
 })
 
 function isDiscardChoice(c: Message) {
@@ -268,7 +268,7 @@ watch(choices, async (newChoices) => {
 </script>
 
 <template>
-  <div class="discard"
+  <div class="discard" :data-tabletop-label="`${tabletop.discard} ${discards.length}`"
     :class="{ 'discard--drop-target': discardDraggedOver && discardAccepts === true, 'discard--drop-refused': discardDraggedOver && discardAccepts === false }"
     @drop="onDropDiscard($event)"
     @dragover.prevent="onDragOverDiscard($event)"
@@ -276,6 +276,7 @@ watch(choices, async (newChoices) => {
     @dragend="discardDraggedOver = false"
     @dragenter.prevent
   >
+    <TabletopPileHeading :label="tabletop.discard" :count="discards.length" discard />
     <Card v-if="topOfDiscard" :game="game" :card="topOfDiscard" :playerId="playerId" :allowAbilityButtons="false" :allowInteractions="false" />
     <CardsUnderIndicator
       v-if="discards.length > 0"
@@ -290,9 +291,12 @@ watch(choices, async (newChoices) => {
       :fullWidth="true"
       @choose="emit('choose', $event)"
     />
+    <span v-if="discards.length === 0" class="tabletop-discard-empty" aria-hidden="true"></span>
     <button v-if="debug.active && discards.length > 0" class="view-discard-button" @click="debug.send(game.id, {tag: 'ShuffleDiscardBackIn', contents: investigatorId})">{{ $t('draw.shuffleBackIn') }}</button>
   </div>
-  <div class="deck-container">
+  <div class="deck-container" :data-tabletop-label="`${tabletop.deck} ${investigator.deckSize}`">
+      <MobileCard>
+    <TabletopPileHeading :label="tabletop.deck" :count="investigator.deckSize" />
     <div
       class="top-of-deck"
       :class="{ 'top-of-deck--drop-target': deckDropIndicator && !deckDropIndicator.rejected, 'top-of-deck--drop-refused': deckDropIndicator?.rejected }"
@@ -316,10 +320,12 @@ watch(choices, async (newChoices) => {
         :class="{ 'deck--can-draw': drawCardsAction !== -1, 'card': topOfDeckRevealed }"
         class="deck"
         :src="topOfDeck"
+        :data-customizations="topOfDeckCard ? JSON.stringify(topOfDeckCard.customizations) : undefined"
+        :data-chained="topOfDeckCard?.chained || undefined"
         width="150px"
         @click="emit('choose', drawCardsAction)"
       />
-      <span class="deck-size">{{investigator.deckSize}}</span>
+      <DeckCount :count="investigator.deckSize" />
       <div
         v-if="deckDropIndicator && deckDropPosition"
         class="deck-drop-indicator"
@@ -342,6 +348,7 @@ watch(choices, async (newChoices) => {
       <button v-if="canSelectDraw" @click="debug.send(game.id, {tag: 'SearchMessage', contents: {tag: 'Search_', contents: ['Looking', investigatorId, {tag: 'GameSource', contents: []}, { tag: 'InvestigatorTarget', contents: investigatorId }, [[{tag: 'FromDeck', contents: []}, 'ShuffleBackIn']], {tag: 'BasicCardMatch', contents: {tag: 'AnyCard', contents: []}}, { tag: 'DrawFound', contents: [investigatorId, 1]}]}})">{{ $t('draw.selectDraw') }}</button>
       <button @click="debug.send(game.id, {tag: 'ShuffleDeck', contents: {tag: 'InvestigatorDeck', contents: investigatorId}})">{{ $t('draw.shuffle') }}</button>
     </template>
+      </MobileCard>
   </div>
 </template>
 

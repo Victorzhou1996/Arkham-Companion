@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
+import DrawCardFlight from '@/arkham/components/DrawCardFlight.vue'
+import type { DrawOrigin } from '@/arkham/drawTransition'
 import { computed, inject, onMounted, Ref, ref, watch } from 'vue'
 import { CardContents, type Card } from '@/arkham/types/Card'
 import type { Game } from '@/arkham/types/Game'
@@ -6,7 +9,7 @@ import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Messa
 import { MessageType } from '@/arkham/types/Message'
 import { imgsrc } from '@/arkham/helpers'
 import { cardImage } from '@/arkham/cardImages'
-import AbilityButton from '@/arkham/components/AbilityButton.vue'
+import CardAbilityControls from '@/arkham/components/CardAbilityControls.vue'
 import AbilityTriggerModeToggle from '@/arkham/components/AbilityTriggerModeToggle.vue'
 import {
   supportsHandPlayTriggerMode,
@@ -14,6 +17,7 @@ import {
 } from '@/arkham/abilityTriggerModeEligibility'
 import * as ArkhamGame from '@/arkham/types/Game'
 import { IsMobile } from '@/arkham/isMobile'
+import { useMobileBoard } from '@/arkham/mobile/context'
 import { useDbCardStore } from '@/stores/dbCards'
 import AbilitiesMenu from '@/arkham/components/AbilitiesMenu.vue'
 import { useDebug } from '@/arkham/debug'
@@ -25,6 +29,7 @@ export interface Props {
   playerId: string
   ownerId: string
   mobileHandOpen?: boolean
+  drawOrigin?: DrawOrigin
 }
 
 const props = defineProps<Props>()
@@ -36,6 +41,8 @@ onMounted(() => {
 })
 
 const { isMobile } = IsMobile()
+const mobileBoard = useMobileBoard()
+const touchAbilities = computed(() => isMobile.value || !!mobileBoard?.touchEnabled.value)
 const cardFrame = ref<HTMLElement | null>(null)
 const showAbilities = ref(false)
 
@@ -148,7 +155,7 @@ function handleCardClick() {
   if (cardAction.value !== -1) emit('choose', cardAction.value)
 }
 
-const emit = defineEmits<{ choose: [value: number] }>()
+const emit = defineEmits<{ choose: [value: number]; 'draw-arrived': [] }>()
 
 const cardBack = computed(() => {
   return imgsrc('backs/back_player.jpg')
@@ -303,12 +310,16 @@ function oilPaintEffect(canvas, radius, intensity) {
   <div
     class="card-container"
     :data-index="id"
+    :data-draw-arrival="drawOrigin ? '' : undefined"
     v-if="solo || showOtherPlayersHands || investigatorId == ownerId || revealed"
   >
+    <DrawCardFlight :origin="drawOrigin" @arrived="emit('draw-arrived')">
+    <MobileCard>
     <img
       ref="cardFrame"
       :class="classObject"
       class="card in-hand"
+      :data-draw-card-id="id"
       :src="image"
       :data-card-code="cardContents.cardCode"
       :data-customizations="JSON.stringify(cardContents.customizations)"
@@ -329,15 +340,8 @@ function oilPaintEffect(canvas, radius, intensity) {
       <font-awesome-icon icon="bug" />
     </button>
 
-    <AbilityButton
-      v-if="!isMobile"
-      v-for="ability in abilities"
-      :key="ability.index"
-      :ability="ability.contents"
-      :data-image="image"
-      :game="game"
-      @click="$emit('choose', ability.index)"
-    />
+    <CardAbilityControls v-if="!touchAbilities" :game="game" :abilities="abilities"
+      :frame="cardFrame" :image="image" @choose="emit('choose', $event)" />
     <AbilityTriggerModeToggle
       v-if="ownedByCurrentPlayer"
       :game="game"
@@ -350,7 +354,7 @@ function oilPaintEffect(canvas, radius, intensity) {
     />
 
     <AbilitiesMenu
-      v-if="isMobile && abilities.length > 0"
+      v-if="touchAbilities && abilities.length > 0"
       v-model="showAbilities"
       :game="game"
       :abilities="abilities"
@@ -359,6 +363,8 @@ function oilPaintEffect(canvas, radius, intensity) {
       position="top"
       @choose="$emit('choose', $event)"
     />
+      </MobileCard>
+    </DrawCardFlight>
   </div>
   <div class="card-container" v-else>
     <img class="card in-hand" :src="cardBack" />

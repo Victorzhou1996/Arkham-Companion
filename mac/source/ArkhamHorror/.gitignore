@@ -48,7 +48,9 @@ frontend/public/img/arkham/ita/
 frontend/public/img/arkham/ko/
 frontend/public/img/arkham/zh/
 frontend/public/img/arkham/boxes/
-frontend/public/img/arkham/portraits/
+# Bundle investigator portraits so fresh builds do not require the upstream CDN.
+frontend/public/img/arkham/portraits/*
+!frontend/public/img/arkham/portraits/*.jpg
 frontend/public/img/arkham/tarot/
 frontend/public/img/arkham/encounter-sets/
 frontend/public/img/arkham/mini-cards/
@@ -100,3 +102,8 @@ build-artifacts/
 # Local homebrew working data (guide transcriptions, codegen maps); the
 # checked-in guide is docs/homebrew.md
 docs/homebrew/
+
+# Generated from the immutable legacy bundle during frontend prebuild.
+frontend/public/legacy-ui-20260826.3/
+frontend/public/legacy-ui-20260918.1/
+frontend/public/legacy-ui-20260918.2/

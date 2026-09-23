@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import MobileCard from '@/arkham/mobile/MobileCard.vue'
 
 import { computed, ref, onBeforeUnmount, nextTick } from 'vue'
 import * as ArkhamGame from '@/arkham/types/Game'
@@ -170,6 +171,7 @@ async function clicked() {
 
 <template>
   <div class="concealed-card" ref="frame">
+    <MobileCard>
     <img
       v-if="!card.flipped && card.known"
       :src="concealedImage"
@@ -199,6 +201,7 @@ async function clicked() {
       <button @click="debugging = true">{{ $t('concealedCard.debug') }}</button>
     </template>
     <DebugConcealedCard v-if="debugging" :game="game" :card="card" :playerId="playerId" @close="debugging = false" @choose="$emit('choose', $event)"/>
+    </MobileCard>
   </div>
 </template>
 

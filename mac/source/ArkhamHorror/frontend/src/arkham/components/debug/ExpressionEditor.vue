@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* Building an expression from "Arkham.Custom.Expr" without writing its JSON.
  *
  * An expression is one source -- a value, a property, something about the test
@@ -260,7 +263,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
 
 <template>
   <div class="expr">
-    <span v-if="label" class="expr-label">{{ label }}</span>
+    <span v-if="label" class="expr-label">{{ ct(label) }}</span>
 
     <div class="row">
       <select
@@ -268,7 +271,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
         :value="currentSource.key"
         @change="pickSource(($event.target as HTMLSelectElement).value)"
       >
-        <option v-for="o in SOURCES" :key="o.key" :value="o.key">{{ o.label }}</option>
+        <option v-for="o in SOURCES" :key="o.key" :value="o.key">{{ ct(o.label) }}</option>
       </select>
 
       <template v-if="currentSource.shape === 'literal'">
@@ -276,7 +279,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
           v-if="!isBindingText"
           class="grow"
           :value="literalText"
-          :placeholder="expect === 'Int' ? 'a number' : 'a value'"
+          :placeholder="ct(expect === 'Int' ? 'a number' : 'a value')"
           @input="setLiteral(($event.target as HTMLInputElement).value)"
           @keydown.stop
         />
@@ -292,13 +295,11 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
       </template>
 
       <template v-else-if="currentSource.shape === 'prop'">
-        <label>
-          Of what
-          <select
+        <label>{{ ct("Of what") }}<select
             :value="source?.kind ?? 'card'"
             @change="patch({ kind: ($event.target as HTMLSelectElement).value })"
           >
-            <option v-for="k in KINDS" :key="k" :value="k">{{ k }}</option>
+            <option v-for="k in KINDS" :key="k" :value="k">{{ ct(k) }}</option>
           </select>
         </label>
         <PropertyField
@@ -309,9 +310,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
           of="a card"
           @update:modelValue="patch({ get: $event })"
         />
-        <label v-else>
-          Field
-          <input
+        <label v-else>{{ ct("Field") }}<input
             :value="source?.get"
             placeholder="EnemyHealth"
             @input="patch({ get: ($event.target as HTMLInputElement).value })"
@@ -332,10 +331,8 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
 
 
       <template v-else-if="currentSource.shape === 'filter'">
-        <label>
-          Which
-          <select :value="predicateKey" @change="setPredicate(($event.target as HTMLSelectElement).value)">
-            <option v-for="p in PREDICATES" :key="p.key" :value="p.key">{{ p.label }}</option>
+        <label>{{ ct("Which") }}<select :value="predicateKey" @change="setPredicate(($event.target as HTMLSelectElement).value)">
+            <option v-for="p in PREDICATES" :key="p.key" :value="p.key">{{ ct(p.label) }}</option>
           </select>
         </label>
       </template>
@@ -346,21 +343,21 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
          controls sharing a row with the field above. -->
     <div v-if="currentSource.shape === 'query'" class="query-block">
       <div class="phrase">
-        <span class="phrase-label">search</span>
+        <span class="phrase-label">{{ ct("search") }}</span>
         <select
           :value="source?.query?.kind ?? 'enemy'"
           @change="patch({ query: { kind: ($event.target as HTMLSelectElement).value, matcher: null } })"
         >
           <option v-for="(_, kind) in queryKinds ?? {}" :key="kind" :value="kind">
-            {{ QUERY_NOUNS[kind] ?? kind }}
+            {{ ct(QUERY_NOUNS[kind] ?? kind) }}
           </option>
         </select>
-        <span class="phrase-label">get</span>
+        <span class="phrase-label">{{ ct("get") }}</span>
         <select
           :value="source?.mode ?? 'all'"
           @change="patch({ mode: ($event.target as HTMLSelectElement).value })"
         >
-          <option v-for="m in QUERY_MODES" :key="m.key" :value="m.key">{{ m.label }}</option>
+          <option v-for="m in QUERY_MODES" :key="m.key" :value="m.key">{{ ct(m.label) }}</option>
         </select>
         <code class="stage-type" :class="{ unsure: !pipelineTypes[0] }">
           {{ pipelineTypes[0] ?? '?' }}
@@ -368,7 +365,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
       </div>
       <ValueEditor
         :type="(queryKinds ?? {})[source?.query?.kind ?? 'enemy'] ?? 'EnemyMatcher'"
-        label="that match"
+        :label="ct('that match')"
         :bindings="bindings"
         :modelValue="source?.query?.matcher"
         @update:modelValue="patch({ query: { ...(source?.query ?? { kind: 'enemy' }), matcher: $event } })"
@@ -379,14 +376,14 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
       <ExpressionEditor
         :modelValue="predicateOperand"
         :bindings="bindings"
-        label="compared with"
+        :label="ct('compared with')"
         @update:modelValue="setPredicateOperand"
       />
       <ExpressionEditor
         :modelValue="source?.of"
         :bindings="bindings"
         expect="[any]"
-        label="out of"
+        :label="ct('out of')"
         @update:modelValue="patch({ of: $event })"
       />
     </div>
@@ -395,7 +392,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
       <ExpressionEditor
         :modelValue="source?.of"
         :bindings="bindings"
-        label="of"
+        :label="ct('of')"
         @update:modelValue="patch({ of: $event })"
       />
     </div>
@@ -410,7 +407,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
         />
         <button type="button" class="remove" @click="removeNary(i)">×</button>
       </div>
-      <button type="button" class="add" @click="addNary">+ Value</button>
+      <button type="button" class="add" @click="addNary">{{ ct("+ Value") }}</button>
     </div>
 
     <!-- What can be done to whatever the source is, in the order it happens. -->
@@ -444,7 +441,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
             @change="setStage(at, ($event.target as HTMLSelectElement).value)"
           >
             <option v-for="option in stageOptions(at)" :key="option.name" :value="option.name">
-              {{ option.label }}
+              {{ ct(option.label) }}
             </option>
           </select>
           <PropertyField
@@ -460,7 +457,7 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
             :value="stagePredicateKey(at)"
             @change="setStagePredicate(at, ($event.target as HTMLSelectElement).value)"
           >
-            <option v-for="p in PREDICATES" :key="p.key" :value="p.key">{{ p.label }}</option>
+            <option v-for="p in PREDICATES" :key="p.key" :value="p.key">{{ ct(p.label) }}</option>
           </select>
           <!-- What this link hands to the next one. Said here rather than only at
                the foot of the chain, so a transform that narrowed the type to
@@ -471,31 +468,28 @@ const propsFor = computed(() => (source.value?.kind === 'card' ? CARD_PROPS : nu
           <button
             type="button"
             class="pipe-remove"
-            title="Remove this transform"
-            aria-label="Remove this transform"
+            :title="ct('Remove this transform')"
+            :aria-label="ct('Remove this transform')"
             @click="removeStage(at)"
           >
             ×
           </button>
         </div>
         <p v-if="!stageFits(at)" class="pipe-error">
-          <code>{{ pipelineTypes[at] }}</code> is not something “{{ stageLabel(at) }}” can be
-          asked for.
-        </p>
+          <code>{{ pipelineTypes[at] }}</code>{{ ct("is not something “") }}{{ ct(stageLabel(at)) }}{{ ct("” can be asked for.") }}</p>
 
         <div v-if="keyAt(at) === 'filter'" class="pipe-operand">
           <ExpressionEditor
             :modelValue="stagePredicateOperand(at)"
             :bindings="bindings"
-            label="compared with"
+            :label="ct('compared with')"
             @update:modelValue="setStagePredicateOperand(at, $event)"
           />
         </div>
       </div>
 
       <button v-if="canAddStage" type="button" class="add-transform" @click="addStage">
-        <span class="add-glyph" aria-hidden="true">+</span> transform
-      </button>
+        <span class="add-glyph" aria-hidden="true">+</span>{{ ct("transform") }}</button>
     </div>
   </div>
 </template>
@@ -576,7 +570,7 @@ input.unknown {
 
 input,
 select {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -590,7 +584,7 @@ select {
 select {
   -webkit-appearance: none;
   appearance: none;
-  background: #111827 var(--select-caret) no-repeat right 0.6rem center;
+  background: var(--surface-input) var(--select-caret) no-repeat right 0.6rem center;
   background-size: var(--select-caret-size);
   padding: 0.3rem 1.6rem 0.3rem 0.4rem;
 }
@@ -768,7 +762,7 @@ select {
 .add-transform {
   align-items: center;
   align-self: flex-start;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #d1d5db;

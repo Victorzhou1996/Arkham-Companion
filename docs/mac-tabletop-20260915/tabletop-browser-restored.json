@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "modes": [
+    "standard",
+    "full",
+    "light",
+    "hardcore",
+    "expert"
+  ],
+  "transitions": [
+    "ChooseDeck",
+    "ChooseAmounts",
+    "ContinueCampaign",
+    "Read",
+    "ContinueCampaign",
+    "Read",
+    "ChooseOne",
+    "Read",
+    "ChooseOne"
+  ],
+  "views": [
+    {
+      "width": 1440,
+      "state": {
+        "text": 279,
+        "width": 1440,
+        "viewport": 1440,
+        "classes": "tabletop-game"
+      },
+      "images": 32,
+      "errors": [],
+      "layoutRequests": []
+    },
+    {
+      "width": 390,
+      "state": {
+        "text": 142,
+        "width": 390,
+        "viewport": 390,
+        "classes": "mobile-game touch-game"
+      },
+      "images": 13,
+      "errors": [],
+      "layoutRequests": []
+    }
+  ],
+  "scope": "Isolated packaged native runtime, bounded core opening, real rendered UI; not complete campaign playthrough."
+}

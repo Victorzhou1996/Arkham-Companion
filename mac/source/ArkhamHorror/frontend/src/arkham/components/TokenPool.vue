@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, ref, nextTick, onUnmounted } from 'vue'
+import { computed, ref, nextTick, onUnmounted, inject } from 'vue'
+import { useMobileBoard, mobileCardKey } from '@/arkham/mobile/context'
 import PoolItem from '@/arkham/components/PoolItem.vue'
 import { type Token, type Tokens } from '@/arkham/types/Token'
 
@@ -70,6 +71,7 @@ const TOKEN_CONFIG: Partial<Record<Token, { type: string; tooltip?: string }>> =
 
 const props = withDefaults(defineProps<{
   tokens?: Tokens
+  row?: boolean
   order?: readonly Token[]
   overrides?: Partial<Record<Token, TokenPoolOverride>>
   extraItems?: readonly TokenPoolItem[]
@@ -117,10 +119,12 @@ const items = computed(() => [
 // overlapping stack and fan them out into an auto-orienting shape on hover —
 // mirroring the sealed-chaos-token popover.
 const CLUMP_THRESHOLD = 2
-const clumped = computed(() => items.value.length > CLUMP_THRESHOLD)
+const mobileBoard = useMobileBoard()
+const mobileCard = inject(mobileCardKey, null)
+const clumped = computed(() => !props.row && items.value.length > CLUMP_THRESHOLD && !(mobileBoard?.touchEnabled.value && mobileCard?.preview.value))
 // Keep exactly-two-token pools side by side (the parent .pool wraps, which can
 // stack them vertically on narrow asset cards).
-const pairRow = computed(() => !clumped.value && items.value.length === 2)
+const pairRow = computed(() => props.row || (!clumped.value && items.value.length === 2))
 const expanded = ref(false)
 
 type ClumpLayout = {
@@ -249,6 +253,7 @@ function detachPointerTracking() {
 }
 
 function onEnter() {
+  if (mobileBoard?.touchEnabled.value) return
   if (!clumped.value || expanded.value) return
   const el = anchorEl.value
   if (el) {

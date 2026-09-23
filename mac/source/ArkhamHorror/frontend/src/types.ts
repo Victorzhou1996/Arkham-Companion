@@ -3,6 +3,7 @@ export interface User {
   email: string
   beta: boolean
   dev: boolean
+  phaseTransitionNotifications?: boolean
   admin: boolean
 }
 

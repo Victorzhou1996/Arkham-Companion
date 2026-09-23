@@ -24,7 +24,8 @@ export const useUserStore = defineStore("user", () => {
   async function authenticate(credentials: Credentials) {
     const authentication = await api.post<Authentication>('authenticate', credentials)
     token.value = authentication.data.token
-    setCurrentUser()
+    await setCurrentUser()
+    if (!currentUser.value) throw new Error('Could not restore the signed-in user')
   }
 
   async function register(registration: Registration) {
@@ -53,7 +54,7 @@ export const useUserStore = defineStore("user", () => {
       localStorage.setItem('arkham-token', token.value);
       api.defaults.headers.common.Authorization = `Token ${token.value}`;
       try {
-        const whoami = await api.get<User>('whoami')
+        const whoami = await api.get<User>('whoami', { timeout: 15000 })
         currentUser.value = whoami.data
         isAdmin.value = whoami.data.admin
       } catch (_err) {

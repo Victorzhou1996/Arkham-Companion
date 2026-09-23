@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Base.Api.Handler.Registration where
 
 import Arkham.Decklist
@@ -7,6 +9,8 @@ import Data.Aeson.KeyMap qualified as KeyMap
 import Data.ByteString.Lazy qualified as BL
 import Data.Map.Strict qualified as Map
 import Data.Text.Encoding qualified as TE
+import Data.FileEmbed (embedFile)
+import Database.Persist.Sql (Single, SqlBackend, rawSql)
 import Entity.Arkham.Deck
 import Import
 import Types
@@ -26,6 +30,7 @@ registrationToUser Registration {..} = do
           registrationUsername
           registrationEmail
           (TE.decodeUtf8 digest)
+          False
           False
           False
           False
@@ -54,7 +59,24 @@ starterDecks userId = map toDeck starterDecklists
       }
 
 starterDecklists :: [ArkhamDBDecklist]
-starterDecklists = [trishStarterDeck, markStarterDeck]
+starterDecklists = [trishStarterDeck, markStarterDeck] <> communityStarterDecklists
+
+communityStarterDecklists :: [ArkhamDBDecklist]
+communityStarterDecklists =
+  either (error . toText) id $ Aeson.eitherDecodeStrict' $(embedFile "data/community-starter-decks.json")
+
+postApiV1ArkhamStarterDecksR :: Handler Value
+postApiV1ArkhamStarterDecksR = do
+  userId <- getRequestUserId
+  added <- runDB do
+    -- Serialize additions per account so retries and multiple tabs cannot duplicate presets.
+    _ <- rawSql "SELECT id FROM users WHERE id = ? FOR UPDATE" [toPersistValue userId] :: ReaderT SqlBackend Handler [Single Int64]
+    existing <- selectList [ArkhamDeckUserId ==. userId] []
+    let known = map (decklist_id . arkhamDeckList . entityVal) existing
+        missing = filter (\deck -> decklist_id (arkhamDeckList deck) `notElem` known) (starterDecks userId)
+    insertMany_ missing
+    pure $ length missing
+  pure $ object ["added" .= added]
 
 trishStarterDeck :: ArkhamDBDecklist
 trishStarterDeck =

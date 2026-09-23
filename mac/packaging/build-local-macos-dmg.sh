@@ -2,9 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-RUNTIME_DIR="${RUNTIME_DIR:-$ROOT_DIR/ArkhamHorror-macos-arm64}"
+RUNTIME_DIR="${RUNTIME_DIR:-$ROOT_DIR/release/ArkhamHorror-macos-arm64}"
 BACKEND_BIN="${BACKEND_BIN:-$RUNTIME_DIR/bin/arkham-api}"
-CARDS_DIR="${CARDS_DIR:-$ROOT_DIR/cards}"
+CARDS_DIR="${CARDS_DIR:-$ROOT_DIR/../shared/cards}"
 RELEASE_DATE="${RELEASE_DATE:-$(date +%Y%m%d)}"
 APP_VERSION="${APP_VERSION:-1.0.0}"
 RELEASE_NAME="${RELEASE_NAME:-Arkham-Horror-Local-App-macOS-arm64-${RELEASE_DATE}}"

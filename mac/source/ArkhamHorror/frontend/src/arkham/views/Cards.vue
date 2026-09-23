@@ -12,12 +12,15 @@ import sets from '@/arkham/data/sets.json'
 import cycles from '@/arkham/data/cycles.json'
 import { shallowRef } from 'vue';
 import { useDbCardStore, ArkhamDBCard } from '@/stores/dbCards'
+import { storeToRefs } from 'pinia'
 import { isDevBuild } from '@/arkham/displayRules'
 import { homebrewCampaigns } from '@/arkham/homebrewData'
+import { useSettings } from '@/stores/settings'
+import { byPrintedNumber, hasLibraryCards, libraryCards, librarySets, loadLibrary } from '@/arkham/customCardLibrary'
 import { imgsrc, isTypingTarget } from '@/arkham/helpers'
 import { cardGroupKey, groupCards } from '@/arkham/cardDetails'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 enum View {
   Image = "IMAGE",
@@ -25,8 +28,27 @@ enum View {
 }
 
 const CHAPTER_2_CYCLES = new Set([12, 13, 61])
+
+/* The third chapter: cards that aren't printed cards. Two groups of them --
+ * the homebrew campaigns this build ships, and the cards you built yourself --
+ * each a cycle of its own, neither with a cycle number to take. The chapter is
+ * still ?chapter=-1, as it was when homebrew was the only thing in it. */
+const EXTRAS_CHAPTER = -1
 const HOMEBREW_CYCLE = -1
+const CUSTOM_CYCLE = -2
+const HOMEBREW_SET_PREFIX = 'homebrew-'
+const CUSTOM_SET_PREFIX = 'custom-'
+// A group is filtered by its own name ('homebrew', 'custom'); one set within it
+// by that name plus its id.
+const isExtraSetFilter = (set: string | null) =>
+  set === 'homebrew' ||
+  set === 'custom' ||
+  (set?.startsWith(HOMEBREW_SET_PREFIX) ?? false) ||
+  (set?.startsWith(CUSTOM_SET_PREFIX) ?? false)
+
 const dev = isDevBuild()
+const { customCardsEnabled } = storeToRefs(useSettings())
+if (customCardsEnabled.value) loadLibrary()
 
 const SET_FONT_CHARS: Record<string, string> = {
   // CHAPTER 1
@@ -103,12 +125,20 @@ const queryText = route.query.q ? route.query.q.toString() : "e:core"
 const allCards = shallowRef<Arkham.CardDef[] | null>(null)
 const query = ref<string>(queryText)
 const view = ref(route.query.view? toView(route.query.view) : View.List)
-const activeChapter = ref<number>(route.query.chapter ? parseInt(route.query.chapter.toString()) : 1)
+const routeChapter = route.query.chapter ? parseInt(route.query.chapter.toString()) : 1
+const activeChapter = ref<number>(
+  routeChapter === EXTRAS_CHAPTER && !dev && !customCardsEnabled.value ? 1 : routeChapter,
+)
 
 // Pressing `f` flips every card currently shown in image view. CardImage picks
 // this up via inject and mirrors it into its own flipped state.
 const flipAll = ref(false)
 provide('cardFlipAll', flipAll)
+
+/* Each printing as it was printed: the Core Set's own art under Core, the
+ * revised art under Revised Core. The art preference in settings is about what
+ * you play with, and says nothing about what a set contains. */
+provide('cardIgnoreArtVariants', true)
 
 const onKeydown = (event: KeyboardEvent) => {
   if (event.key !== 'f' && event.key !== 'F') return
@@ -131,7 +161,7 @@ const cardPoolMode = computed<CardPoolMode>(() => {
 const store = useDbCardStore()
 
 const CACHE_KEY_PREFIX = 'arkham_cards_cache_'
-const CACHE_VERSION = 'v3'
+const CACHE_VERSION = 'v5'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 let cachedAllCards: Arkham.CardDef[] | null = null
@@ -147,6 +177,46 @@ const sortCards = (cards: Arkham.CardDef[]) => [...cards].sort((a, b) => {
 const setlessEncounterCards = new Set(['13119'])
 
 const isCampaignCard = (card: Arkham.CardDef) => card.encounterSet != null || setlessEncounterCards.has(card.art)
+
+/* The Revised Core Set reprints the original's encounter cards under numbers
+ * 500 higher. The engine defines each of them once, under the original number,
+ * so the browser makes the revised printing out of them -- otherwise the
+ * revised set's campaign half reads as 79 cards that were never implemented.
+ *
+ * Only the number moves. Which picture each one shows is settled where every
+ * other art is (`reprintedArt`): the few that were redrawn have art of their
+ * own, and the rest are the original's. */
+const REVISED_CORE_OFFSET = 500
+
+const revisedCoreArt = (art: string) =>
+  art.replace(/^\d+/, (digits) => String(parseInt(digits) + REVISED_CORE_OFFSET).padStart(5, '0'))
+
+const revisedCoreCode = (code: string) => `c${revisedCoreArt(code.replace(/^c/, ''))}`
+
+const coreSet = (sets as { code: string; min: number; max: number }[]).find((s) => s.code === 'core')
+
+const revisedCorePrintings = (cards: Arkham.CardDef[]): Arkham.CardDef[] => {
+  if (!coreSet) return []
+
+  return cards
+    .filter((card) => {
+      if (!isCampaignCard(card)) return false
+      const number = parseInt(card.art)
+      return number >= coreSet.min && number <= coreSet.max
+    })
+    .map((card) => ({
+      ...card,
+      cardCode: revisedCoreCode(card.cardCode),
+      art: revisedCoreArt(card.art),
+      otherSide: card.otherSide ? revisedCoreCode(card.otherSide) : card.otherSide,
+      meta: { ...card.meta, revisedFrom: card.art },
+    }))
+}
+
+/* ArkhamDB never numbered these reprints, so one looks itself up under the
+ * number it was made from -- otherwise it would carry no encounter set to
+ * filter by and no translated name. */
+const dbArt = (card: Arkham.CardDef): string => card.meta?.revisedFrom ?? card.art
 
 const cardInPool = (card: Arkham.CardDef, cardPool: CardPoolMode) => {
   if (cardPool === 'both') return true
@@ -183,7 +253,7 @@ const localizeCards = (cards: Arkham.CardDef[]) => {
   if (language === 'en') return cards
 
   for (const card of cards) {
-    const match: ArkhamDBCard | null = store.getDbCard(card.art)
+    const match: ArkhamDBCard | null = store.getDbCard(dbArt(card))
     if (!match) continue
 
     card.name.title = match.name
@@ -213,7 +283,11 @@ const fetchData = async () => {
 
   const officialCards = await fetchCards('both')
   const homebrewCards = dev ? await fetchHomebrewCards() : []
-  const sorted = sortCards([...officialCards, ...homebrewCards])
+  const sorted = sortCards([
+    ...officialCards,
+    ...revisedCorePrintings(officialCards),
+    ...homebrewCards,
+  ])
   setCachedCards(sorted)
   allCards.value = localizeCards(sorted)
 }
@@ -233,23 +307,21 @@ interface CardSet {
   name: string
   min: number
   max: number
-  playerCards: number
+  playerCards?: number
+  encounterDuplicates?: number
   code: string
   cycle: number
-  encounterDuplicates?: number
+  // A homebrew campaign's cards, or a set from your own card library, rather
+  // than a printed set.
   homebrew?: boolean
+  custom?: boolean
   // Show every card code in [min, max] in image view, greying out the ones the
   // engine hasn't implemented yet. For sets still being built out.
   previewUnimplemented?: boolean
   // Unused code numbers within [min, max] that don't correspond to a real card,
-  // so they aren't counted toward the set total.
+  // so no placeholder is drawn for them.
   missing?: string[]
 }
-
-// Total card count for an encounter set: every code in [min, max], plus any
-// duplicate-back cards, minus the unused (missing) numbers in that range.
-const encounterSetTotal = (set: CardSet) =>
-  set.max - set.min + 1 + (set.encounterDuplicates ?? 0) - (set.missing?.length ?? 0)
 
 interface CardCycle {
   name: string
@@ -277,8 +349,7 @@ const homebrewSets: CardSet[] = dev
         name: campaign.name,
         min: 0,
         max: 0,
-        playerCards: 0,
-        code: `homebrew-${id}`,
+        code: `${HOMEBREW_SET_PREFIX}${id}`,
         cycle: HOMEBREW_CYCLE,
         homebrew: true,
       }
@@ -286,6 +357,63 @@ const homebrewSets: CardSet[] = dev
   : []
 const allCycles: CardCycle[] = dev ? [...cycles, homebrewCycle] : cycles
 const allSets: CardSet[] = dev ? [...(sets as CardSet[]), ...homebrewSets] : (sets as CardSet[])
+
+const customCycle: CardCycle = { name: 'Custom', cycle: CUSTOM_CYCLE, code: 'custom' }
+
+/* Your own cards, grouped the way the library groups them: one nav entry per
+ * set that has something in it. They are kept out of `allSets` because nothing
+ * about a printed set applies to them -- no code range, no expected total, and
+ * they come and go while the page is open. */
+const customCardEntries = computed(() => {
+  if (!customCardsEnabled.value) return []
+  const setOrder = new Map(librarySets().map((set, index) => [set.id, index]))
+  return libraryCards().sort(
+    (a, b) => (setOrder.get(a.setId) ?? 0) - (setOrder.get(b.setId) ?? 0) || byPrintedNumber(a, b),
+  )
+})
+
+const customCards = computed(() => customCardEntries.value.map((entry) => entry.def))
+
+const customSetCode = (setId: string) => `${CUSTOM_SET_PREFIX}${setId.toLowerCase()}`
+
+// The set filter is read out of the query string lowercased, so the codes it is
+// compared against are lowercased when they are made.
+const customSetCodeByCard = computed(() => {
+  const map = new Map<string, string>()
+  for (const entry of customCardEntries.value) map.set(entry.def.cardCode, customSetCode(entry.setId))
+  return map
+})
+
+const customSets = computed<CardSet[]>(() => {
+  const populated = new Set(customCardEntries.value.map((entry) => entry.setId))
+  return librarySets()
+    .filter((set) => populated.has(set.id))
+    .map((set) => ({
+      name: set.name,
+      min: 0,
+      max: 0,
+      code: customSetCode(set.id),
+      cycle: CUSTOM_CYCLE,
+      custom: true,
+    }))
+})
+
+const showCustomCards = computed(() => customCardsEnabled.value && hasLibraryCards.value)
+
+/* What the third chapter lists: a group heading per cycle with its sets under
+ * it, the same shape the printed chapters use. */
+const extraGroups = computed(() => {
+  const groups: { cycle: CardCycle; sets: CardSet[] }[] = []
+  if (homebrewSets.length > 0) groups.push({ cycle: homebrewCycle, sets: homebrewSets })
+  if (showCustomCards.value) groups.push({ cycle: customCycle, sets: customSets.value })
+  return groups
+})
+
+const showExtrasChapter = computed(() => extraGroups.value.length > 0)
+
+// Named for what is in it. A build with homebrew leads with that; a player who
+// only has cards of their own sees the chapter called what it holds for them.
+const extrasLabel = computed(() => (homebrewSets.length > 0 ? homebrewCycle.name : customCycle.name))
 
 const setsByCycle = allSets.reduce<Map<number, CardSet[]>>((acc, set) => {
   const cycleSets = acc.get(set.cycle)
@@ -304,7 +432,7 @@ const findCardSetByArt = (art: string) => {
 
   const homebrewMatch = art.match(/^:([^:]+):/)
   if (homebrewMatch) {
-    const set = homebrewSets.find((s) => s.code === `homebrew-${homebrewMatch[1]}`)
+    const set = homebrewSets.find((s) => s.code === `${HOMEBREW_SET_PREFIX}${homebrewMatch[1]}`)
     cardSetCache.set(art, set)
     return set
   }
@@ -356,8 +484,13 @@ watch(() => view.value, (newView) => {
 
 watch(() => activeChapter.value, (newChapter) => {
   router.push({ name: 'Cards', query: { ...route.query, chapter: newChapter === 1 ? undefined : String(newChapter) }})
-  if (newChapter === HOMEBREW_CYCLE) {
-    query.value = filterString({ ...filter.value, cycle: null, set: 'homebrew' })
+  if (newChapter === EXTRAS_CHAPTER) {
+    query.value = filterString({ ...filter.value, cycle: null, set: extraGroups.value[0]?.cycle.code ?? null })
+    setFilter()
+  } else if (isExtraSetFilter(filter.value.set)) {
+    // Leaving the chapter with one of its sets still selected would show an
+    // empty chapter; land on the set the page opens with instead.
+    query.value = filterString({ ...filter.value, cycle: null, set: 'core' })
     setFilter()
   }
 })
@@ -368,23 +501,26 @@ watch(() => allCards.value, (cards) => {
 
 const chapter1Cycles = computed(() => allCycles.filter((c) => !CHAPTER_2_CYCLES.has(c.cycle) && c.cycle !== HOMEBREW_CYCLE))
 const chapter2Cycles = computed(() => allCycles.filter((c) => CHAPTER_2_CYCLES.has(c.cycle)))
-const homebrewCycles = computed(() => allCycles.filter((c) => c.cycle === HOMEBREW_CYCLE))
-const displayedCycles = computed(() => {
-  if (activeChapter.value === HOMEBREW_CYCLE) return homebrewCycles.value
-  return activeChapter.value === 2 ? chapter2Cycles.value : chapter1Cycles.value
+const displayedCycles = computed(() => activeChapter.value === 2 ? chapter2Cycles.value : chapter1Cycles.value)
+
+// Everything the browser can show: the printed cards, plus your own.
+const browsableCards = computed(() => {
+  const official = allCards.value ?? []
+  return customCards.value.length > 0 ? [...official, ...customCards.value] : official
 })
 
 const cardSearchIndex = computed(() => {
   const index = new Map<string, CardSearchIndex>()
 
-  for (const card of allCards.value ?? []) {
-    const set = findCardSetByArt(card.art)
-    const match: ArkhamDBCard | null = store.getDbCard(card.art)
+  for (const card of browsableCards.value) {
+    const customCode = customSetCodeByCard.value.get(card.cardCode)
+    const set = customCode ? undefined : findCardSetByArt(card.art)
+    const match: ArkhamDBCard | null = customCode ? null : store.getDbCard(dbArt(card))
 
     index.set(card.cardCode, {
       set,
-      setCode: set?.code,
-      cycle: set?.cycle,
+      setCode: customCode ?? set?.code,
+      cycle: customCode ? CUSTOM_CYCLE : set?.cycle,
       nameLower: searchText(
         cardName(card),
         match?.name,
@@ -412,55 +548,29 @@ const cardSearchIndex = computed(() => {
 const cardCounts = computed(() => {
   const bySet = new Map<string, number>()
   const byCycle = new Map<number, number>()
-  const index = cardSearchIndex.value
-
   for (const card of allCards.value ?? []) {
     if (!cardInPool(card, cardPoolMode.value)) continue
-    const meta = index.get(card.cardCode)
+    const meta = cardSearchIndex.value.get(card.cardCode)
     if (meta?.setCode) bySet.set(meta.setCode, (bySet.get(meta.setCode) ?? 0) + 1)
-    if (meta?.cycle) byCycle.set(meta.cycle, (byCycle.get(meta.cycle) ?? 0) + 1)
+    if (meta?.cycle != null) byCycle.set(meta.cycle, (byCycle.get(meta.cycle) ?? 0) + 1)
   }
-
   return { bySet, byCycle }
 })
 
-const cycleCount = (cycle: CardCycle) => cardCounts.value.byCycle.get(cycle.cycle) ?? 0
-
 const expectedCardCount = (set: CardSet) => {
-  if (set.homebrew) return setCount(set)
-
-  const playerCards = set.playerCards
-  const encounterCards = Math.max(encounterSetTotal(set) - playerCards, 0)
+  if (set.homebrew || set.custom) return cardCounts.value.bySet.get(set.code) ?? 0
+  const total = set.max - set.min + 1 + (set.encounterDuplicates ?? 0) - (set.missing?.length ?? 0)
+  const playerCards = set.playerCards ?? 0
   if (cardPoolMode.value === 'player') return playerCards
-  if (cardPoolMode.value === 'campaign') return encounterCards
-  return playerCards + encounterCards
+  if (cardPoolMode.value === 'campaign') return Math.max(total - playerCards, 0)
+  return total
 }
-
-const cycleCountText = (cycle: CardCycle) => {
-  if (!allCards.value) return 0
-  const implementedCount = cycleCount(cycle)
-  const cycleSets = setsByCycle.get(cycle.cycle) ?? []
-  const total = cycleSets.reduce((acc, set) => acc + expectedCardCount(set), 0)
-
-  if (implementedCount == total) {
-    return ""
-  }
-
-  return ` (${implementedCount}/${total})`
-}
-
-const setCount = (set: CardSet) => cardCounts.value.bySet.get(set.code) ?? 0
-
-const setCountText = (set: CardSet) => {
-  const implementedCount = setCount(set)
-  const total = expectedCardCount(set)
-
-  if (implementedCount == total) {
-    return ""
-  }
-
-  return ` (${implementedCount}/${total})`
-}
+const countText = (actual: number, total: number) => actual === total ? '' : ` (${actual}/${total})`
+const setCountText = (set: CardSet) => countText(cardCounts.value.bySet.get(set.code) ?? 0, expectedCardCount(set))
+const cycleCountText = (cycle: CardCycle) => countText(
+  cardCounts.value.byCycle.get(cycle.cycle) ?? 0,
+  (setsByCycle.get(cycle.cycle) ?? []).reduce((total, set) => total + expectedCardCount(set), 0),
+)
 
 const filteredCardsIgnoringPool = computed(() => {
   if (!allCards.value) return []
@@ -474,7 +584,7 @@ const filteredCardsIgnoringPool = computed(() => {
   const codeText = textLower.map((t) => `c${t}`)
   const index = cardSearchIndex.value
 
-  return allCards.value.filter((c) => {
+  return browsableCards.value.filter((c) => {
     if (c.cardCode === "cx05184") return false
 
     const meta = index.get(c.cardCode)
@@ -483,6 +593,8 @@ const filteredCardsIgnoringPool = computed(() => {
     if (cycle && meta.cycle !== cycle) return false
     if (set === 'homebrew') {
       if (meta.cycle !== HOMEBREW_CYCLE) return false
+    } else if (set === 'custom') {
+      if (meta.cycle !== CUSTOM_CYCLE) return false
     } else if (set && meta.setCode !== set) return false
 
     if (classSet && !meta.classSymbolsLower.some((cs) => classSet.has(cs))) return false
@@ -616,6 +728,8 @@ const setFilter = () => {
   if (matchCycle) {
     queryString = queryString.replace(/y:-?\d+/, '')
     const parsedCycle = parseInt(matchCycle[1])
+    // The extra chapters are filtered by set, never by cycle; an old link that
+    // names one of their cycles is ignored rather than matching nothing.
     if (parsedCycle > 0) cycle = parsedCycle
   }
 
@@ -655,12 +769,8 @@ const filterString = (f: Filter): string => {
     result += ` p:${f.level}`
   }
 
-  if (f.cycle && f.cycle !== HOMEBREW_CYCLE) {
+  if (f.cycle) {
     result += ` y:${f.cycle}`
-  }
-
-  if (f.cycle === HOMEBREW_CYCLE) {
-    result += ' e:homebrew'
   }
 
   if (f.set) {
@@ -683,6 +793,13 @@ const filterString = (f: Filter): string => {
 }
 
 setFilter()
+
+// Opening straight onto the third chapter (a bookmark, a reload) with a printed
+// set in the query would show that set under it.
+if (activeChapter.value === EXTRAS_CHAPTER && !isExtraSetFilter(filter.value.set)) {
+  query.value = filterString({ ...filter.value, cycle: null, set: extraGroups.value[0]?.cycle.code ?? null })
+  setFilter()
+}
 
 const cardName = (card: Arkham.CardDef) => {
   const subtitle = card.name.subtitle === null ? "" : `: ${card.name.subtitle}`
@@ -720,7 +837,7 @@ const cycleIconCode = (cycle: CardCycle): string => {
 }
 
 function homebrewSetImagePath(code: string) {
-  const homebrewId = code.replace(/^homebrew-/, '')
+  const homebrewId = code.replace(new RegExp(`^${HOMEBREW_SET_PREFIX}`), '')
   return imgsrc(`homebrew/${homebrewId}/sets/${homebrewId}.png`)
 }
 
@@ -735,16 +852,18 @@ function setIconSrc(set: CardSet) {
 }
 
 function cycleIconSrc(cycle: CardCycle) {
-  if (cycle.cycle === HOMEBREW_CYCLE) {
-    const set = cycleSets(cycle)[0]
-    return set ? homebrewSetImagePath(set.code) : ''
-  }
   const code = cycleIconCode(cycle)
   return code ? setIconPath(code) : ''
 }
 
 const setCycle = (cycle: CardCycle) => {
   query.value = filterString({...filter.value, set: null, cycle: cycle.cycle})
+  setFilter()
+  showSidebar.value = false
+}
+
+const setExtraGroup = (cycle: CardCycle) => {
+  query.value = filterString({ ...filter.value, cycle: null, set: cycle.code })
   setFilter()
   showSidebar.value = false
 }
@@ -798,7 +917,7 @@ const stepCard = (delta: number) => {
 </script>
 
 <template>
-  <div class="container">
+  <div class="container site-workspace site-cards">
     <div class="sidebar-overlay" :class="{ visible: showSidebar }" @click="showSidebar = false"></div>
     <div class="sidebar" :class="{ open: showSidebar, collapsed: sidebarCollapsed }">
       <button
@@ -814,29 +933,37 @@ const stepCard = (delta: number) => {
       <div class="sidebar-content">
       <button class="sidebar-close" @click="showSidebar = false"><font-awesome-icon icon="times" /></button>
       <SegmentedToggle class="sidebar-card-pool card-pool-toggle" :model-value="cardPoolMode" :options="cardPoolOptions" :label="$t('cardsView.cardPool')" @update:model-value="setCardPoolMode" />
-      <div :class="['chapter-tabs segmented', dev ? 'segmented-3' : 'segmented-2']" role="radiogroup" aria-label="Card chapter">
+      <div :class="['chapter-tabs segmented', showExtrasChapter ? 'segmented-3' : 'segmented-2']" role="radiogroup" aria-label="Card chapter">
         <input type="radio" :checked="activeChapter === 1" id="chapter-1" @change="activeChapter = 1" />
         <label for="chapter-1">{{ t('cardsView.chapter1') }}</label>
         <input type="radio" :checked="activeChapter === 2" id="chapter-2" @change="activeChapter = 2" />
         <label for="chapter-2">{{ t('cardsView.chapter2') }}</label>
-        <template v-if="dev">
-          <input type="radio" :checked="activeChapter === HOMEBREW_CYCLE" id="chapter-homebrew" @change="activeChapter = HOMEBREW_CYCLE" />
-          <label for="chapter-homebrew">Homebrew</label>
+        <template v-if="showExtrasChapter">
+          <input type="radio" :checked="activeChapter === EXTRAS_CHAPTER" id="chapter-extras" @change="activeChapter = EXTRAS_CHAPTER" />
+          <label for="chapter-extras">{{ extrasLabel }}</label>
         </template>
       </div>
       <nav class="cycles">
-        <ol v-if="activeChapter === HOMEBREW_CYCLE">
-          <li v-for="set in homebrewSets" :key="set.code">
-            <div :class="['nav-row', 'nav-row--cycle', { active: filter.set === set.code }]">
-              <span
-                class="set-icon set-icon--homebrew"
-                :style="{ '--set-icon-url': `url(${setIconSrc(set)})` }"
-                role="img"
-                :aria-label="set.name"
-              ></span>
-              <a href="#" @click.prevent="setSet(set)">{{set.name}}</a>
-              <span class="count">{{setCountText(set)}}</span>
+        <ol v-if="activeChapter === EXTRAS_CHAPTER && showExtrasChapter">
+          <li v-for="group in extraGroups" :key="group.cycle.code">
+            <div :class="['nav-row', 'nav-row--cycle', { active: filter.set === group.cycle.code }]">
+              <font-awesome-icon class="set-icon-glyph" :icon="group.cycle.code === 'custom' ? 'flask' : 'wrench'" />
+              <a href="#" @click.prevent="setExtraGroup(group.cycle)">{{ group.cycle.name }}</a>
             </div>
+            <ol class="set-list">
+              <li v-for="set in group.sets" :key="set.code">
+                <div :class="['nav-row', 'nav-row--sub', { active: filter.set === set.code }]">
+                  <span
+                    v-if="set.homebrew"
+                    class="set-icon set-icon--homebrew"
+                    :style="{ '--set-icon-url': `url(${setIconSrc(set)})` }"
+                    role="img"
+                    :aria-label="set.name"
+                  ></span>
+                  <a href="#" @click.prevent="setSet(set)">{{set.name}}</a>
+                </div>
+              </li>
+            </ol>
           </li>
         </ol>
         <ol v-else>
@@ -890,8 +1017,8 @@ const stepCard = (delta: number) => {
           <font-awesome-icon icon="book" />
         </button>
         <form @submit.prevent="setFilter">
-          <input v-model="query" :placeholder="$t('cardsView.searchCards')" />
-          <button type="submit"><font-awesome-icon icon="search" /></button>
+          <input v-model="query" name="card-search" :aria-label="$t('cardsView.searchCards')" :placeholder="$t('cardsView.searchCards')" />
+          <button type="submit" :aria-label="$t('cardsView.searchCards')"><font-awesome-icon icon="search" /></button>
         </form>
         <div class="view-controls">
           <button @click.prevent="view = View.List" :class="{ active: view == View.List }" :title="$t('cardsView.listView')"><font-awesome-icon icon="list" /></button>
@@ -899,6 +1026,7 @@ const stepCard = (delta: number) => {
         </div>
         <SegmentedToggle class="desktop-card-pool card-pool-toggle" :model-value="cardPoolMode" :options="cardPoolOptions" :label="$t('cardsView.cardPool')" @update:model-value="setCardPoolMode" />
       </header>
+      <p class="card-results-count" role="status">{{ locale.startsWith('zh') ? `找到 ${cards.length} 张卡牌` : `${cards.length} cards found` }}</p>
       <CardImageView
         v-if="view == View.Image"
         :cards="imageViewCards"
@@ -1158,7 +1286,6 @@ const stepCard = (delta: number) => {
 }
 
 .chapter-tabs {
-  --segmented-items: 2;
   margin: 12px 12px 8px;
   flex-shrink: 0;
 }
@@ -1215,17 +1342,9 @@ const stepCard = (delta: number) => {
 
     a,
     .set-icon,
-    .set-icon-font,
-    .count {
+    .set-icon-font {
       color: var(--spooky-green);
     }
-  }
-
-  .count {
-    flex-shrink: 0;
-    font-size: 0.72rem;
-    color: var(--button);
-    white-space: nowrap;
   }
 }
 
@@ -1278,6 +1397,14 @@ const stepCard = (delta: number) => {
   height: 18px;
   margin-left: -1px;
   color: #fff;
+}
+
+/* A group heading with no set icon of its own. */
+.set-icon-glyph {
+  width: 16px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  color: #ccc;
 }
 
 .nav-row--sub {
@@ -1426,7 +1553,7 @@ header {
   transform: translateX(calc(100% + var(--segmented-gap)));
 }
 
-.segmented:has(#chapter-homebrew:checked)::before {
+.segmented:has(#chapter-extras:checked)::before {
   transform: translateX(calc((100% + var(--segmented-gap)) * 2));
 }
 
@@ -1436,7 +1563,11 @@ header {
   grid-template-columns: repeat(2, 1fr);
 }
 
-.segmented-3 { grid-template-columns: repeat(3, 1fr); }
+.segmented-3 {
+  --segmented-items: 3;
+  --segmented-gap-total: 4px;
+  grid-template-columns: repeat(3, 1fr);
+}
 
 .segmented input[type='radio'] {
   display: none;

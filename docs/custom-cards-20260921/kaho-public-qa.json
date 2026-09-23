@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "route": "/api/v1/arkham/public-stats",
+      "status": 200,
+      "bytes": 47
+    },
+    {
+      "route": "/build/",
+      "status": 200,
+      "bytes": 2944
+    },
+    {
+      "route": "/img/arkham/zh/cards/09099.avif",
+      "status": 200,
+      "bytes": 78047
+    },
+    {
+      "route": "/img/arkham/zh/cards/05188-5.avif",
+      "status": 200,
+      "bytes": 208901
+    },
+    {
+      "versionArtifact": "/assets/Home-B4j4fIcX.js",
+      "version": "2026.09.21-custom-cards-archive"
+    },
+    {
+      "width": 1440,
+      "rendered": "Sign-in page; authenticated home not tested on production",
+      "errors": [],
+      "dimensions": {
+        "inner": 1440,
+        "content": 1440
+      }
+    },
+    {
+      "width": 390,
+      "rendered": "Sign-in page; authenticated home not tested on production",
+      "errors": [],
+      "dimensions": {
+        "inner": 390,
+        "content": 390
+      }
+    }
+  ],
+  "scope": "Anonymous public pages and image routing; no production player writes"
+}

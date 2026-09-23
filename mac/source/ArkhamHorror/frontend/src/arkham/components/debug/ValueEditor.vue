@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* One node of the ability editor: renders a value of a named Haskell type.
  *
  * A sum type becomes a searchable constructor picker plus an editor per field,
@@ -10,6 +13,7 @@
  * generic encoding (Actions, Trait, CardCode). Those come through as raw fields;
  * the encoding here is the generic one. */
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { vFocus } from '@/arkham/components/debug/vFocus'
 import { onClickOutside, useEventListener } from '@vueuse/core'
 import {
@@ -37,6 +41,8 @@ const props = defineProps<{
   optional?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: any] }>()
+const { t } = useI18n()
+const capabilityText = (key: string) => t(`customCardSets.builder.capabilities.${key}`)
 
 const shape = computed(() => shapeOf(props.type))
 const search = ref('')
@@ -100,6 +106,7 @@ function clearAll() {
  * use to an EnemyMatcher, and offering it there is how you get a card that
  * silently does nothing. */
 const resolveAlias = (type: string) => typeSchema(type)?.alias ?? type
+const isInvestigatorMatcher = computed(() => resolveAlias(props.type) === 'InvestigatorMatcher')
 
 const applicable = computed(() =>
   inScope.value.filter((b) => bindingFits(b, props.type, resolveAlias)),
@@ -111,8 +118,8 @@ const matchingBindings = computed(() => {
   return applicable.value.filter(
     (b) =>
       b.name.toLowerCase().includes(search) ||
-      (b.detail ?? '').toLowerCase().includes(search) ||
-      b.origin.toLowerCase().includes(search),
+      ct(b.detail).toLowerCase().includes(search) ||
+      ct(b.origin).toLowerCase().includes(search),
   )
 })
 
@@ -142,8 +149,8 @@ const current = computed(() =>
  * — "game ends", "victory display". Match on the squashed form so spacing and
  * punctuation never matter, and require every word rather than the whole
  * phrase so word order does not either. */
-const humanize = (name: string) => name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ')
-const squash = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '')
+const humanize = (name: string) => ct(name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' '))
+const squash = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
 
 /* A type that another type can always be lifted into through one constructor.
  *
@@ -163,8 +170,131 @@ const BRIDGES: Record<string, { from: string; wrap: string }> = {
  * hard, they are just tedious, and typing them out again is where a wrong
  * matcher creeps in. Chosen from a measurement of what the definitions actually
  * repeat rather than from taste. */
+const nullary = (tag: string) => ({ tag, contents: [] })
+const investigatorMatches = (...contents: any[]) => ({ tag: 'InvestigatorMatches', contents })
+/* Kept as a short builder name below: a capability itself has no `You` scope.
+ * That scope belongs to the Criterion helper, not InvestigatorMatcher. */
+const youCan = (...contents: any[]) =>
+  contents.length === 1 ? contents[0] : investigatorMatches(...contents)
+const without = (modifier: string) => ({
+  tag: 'InvestigatorWithoutModifier',
+  contents: nullary(modifier),
+})
+
+/* The specializations of `Arkham.Capability.can`. Healing uses this card as
+ * its source; the rest need no argument. They are stored as the ordinary
+ * matcher they expand to, so this is editor shorthand rather than a second JSON
+ * language the engine would have to understand. */
+const CAPABILITIES = [
+  { name: 'can.search.deck', value: youCan(nullary('InvestigatorCanSearchDeck')) },
+  { name: 'can.manipulate.deck', value: youCan(without('CannotManipulateDeck')) },
+  { name: 'can.shuffle.deck', value: youCan(without('CannotManipulateDeck')) },
+  {
+    name: 'can.draw.cards',
+    value: youCan(
+      without('CannotDrawCards'),
+      without('CannotDrawCardsFromPlayerCardEffects'),
+      without('CannotManipulateDeck'),
+    ),
+  },
+  {
+    name: 'can.gain.resources',
+    value: youCan(
+      without('CannotGainResources'),
+      without('CannotGainResourcesFromPlayerCardEffects'),
+    ),
+  },
+  { name: 'can.gain.xp', value: youCan(nullary('InvestigatorCanGainXp')) },
+  { name: 'can.gain.clues', value: youCan(nullary('Anyone')) },
+  {
+    name: 'can.spend.resources',
+    value: youCan({
+      tag: 'InvestigatorWithSpendableResources',
+      contents: { tag: 'GreaterThan', contents: { tag: 'Static', contents: 0 } },
+    }),
+  },
+  {
+    name: 'can.spend.clues',
+    value: youCan(
+      { tag: 'InvestigatorWithClues', contents: { tag: 'GreaterThanOrEqualTo', contents: { tag: 'Static', contents: 1 } } },
+      without('CannotSpendClues'),
+    ),
+  },
+  {
+    name: 'can.have.cards.leaveDiscard',
+    value: youCan(without('CardsCannotLeaveYourDiscardPile')),
+  },
+  { name: 'can.have.assets.ready', value: youCan(without('ControlledAssetsCannotReady')) },
+  {
+    name: 'can.affect.otherPlayers',
+    value: youCan(without('CannotAffectOtherPlayersWithPlayerEffectsExceptDamage')),
+  },
+  { name: 'can.move', value: youCan(without('CannotMove')) },
+  { name: 'can.deal.damage', value: youCan(without('CannotDealDamage')) },
+  {
+    name: 'can.target.encounterDeck',
+    value: youCan({ tag: 'InvestigatorCanTarget', contents: nullary('EncounterDeckTarget') }),
+  },
+  { name: 'can.reveal.cards', value: youCan(without('CannotRevealCards')) },
+  {
+    name: 'can.heal.damage',
+    value: youCan({ tag: 'HealableInvestigator', contents: ['$source', 'DamageType', nullary('Anyone')] }),
+  },
+  {
+    name: 'can.heal.horror',
+    value: youCan({ tag: 'HealableInvestigator', contents: ['$source', 'HorrorType', nullary('Anyone')] }),
+  },
+  {
+    name: 'can.heal.any',
+    value: youCan({
+      tag: 'AnyInvestigator',
+      contents: [
+        { tag: 'HealableInvestigator', contents: ['$source', 'HorrorType', nullary('Anyone')] },
+        { tag: 'HealableInvestigator', contents: ['$source', 'DamageType', nullary('Anyone')] },
+      ],
+    }),
+  },
+  {
+    name: 'can.heal.trauma',
+    value: youCan({
+      tag: 'AnyInvestigator',
+      contents: [nullary('InvestigatorWithPhysicalTrauma'), nullary('InvestigatorWithMentalTrauma')],
+    }),
+  },
+]
+
+/* Null means "infer the initial mode from the stored matcher". Once the user
+ * presses either side, keep that explicit choice; otherwise a recognized
+ * capability matcher would immediately force the control back to Capability
+ * when Matcher was pressed. */
+const capabilityInput = ref<boolean | null>(null)
+const canonical = (value: any): any => {
+  if (Array.isArray(value)) return value.map(canonical)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]))
+  }
+  return value
+}
+const sameValue = (a: any, b: any) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
+const selectedCapability = computed(() =>
+  CAPABILITIES.find((capability) => sameValue(capability.value, props.modelValue)),
+)
+const asCapability = computed(
+  () =>
+    isInvestigatorMatcher.value &&
+    (capabilityInput.value === null ? !!selectedCapability.value : capabilityInput.value),
+)
+
+function setCapability(name: string) {
+  const capability = CAPABILITIES.find((candidate) => candidate.name === name)
+  emit(
+    'update:modelValue',
+    capability ? JSON.parse(JSON.stringify(capability.value)) : null,
+  )
+}
+
 const PRESETS: Record<string, { label: string; value: any }[]> = {
-  InvestigatorMatcher: [{ label: 'you', value: { tag: 'You', contents: [] } }],
+  InvestigatorMatcher: [{ label: 'you', value: nullary('You') }],
   LocationMatcher: [
     {
       label: 'your location',
@@ -211,7 +341,7 @@ const constructors = computed(() => {
   const words = search.value.trim().split(/\s+/).map(squash).filter(Boolean)
   if (!words.length) return all
   return all.filter((c) => {
-    const haystack = squash(c.name)
+    const haystack = squash(`${c.name} ${humanize(c.name)}`)
     return words.every((word) => haystack.includes(word))
   })
 })
@@ -255,6 +385,56 @@ function setField(key: string, value: any) {
 }
 
 const fieldKey = (field: { name: string | null }, index: number) => field.name ?? String(index)
+
+/* `youExist` is a Criterion helper: it is InvestigatorExists with You added to
+ * that criterion's matcher. Keep the scope at this level while the nested
+ * InvestigatorMatcher editor works only on the matcher/capability itself. */
+const isInvestigatorExistsCriterion = computed(
+  () => shape.value.kind === 'sum' && current.value?.con.name === 'InvestigatorExists',
+)
+const investigatorCriterionKey = computed(() => {
+  const field = current.value?.con.fields[0]
+  return field ? fieldKey(field, 0) : '0'
+})
+const investigatorCriterionMatcher = computed(
+  () => current.value?.values[investigatorCriterionKey.value] ?? null,
+)
+
+function matcherWithoutYou(value: any) {
+  if (value?.tag === 'You') return null
+  if (value?.tag !== 'InvestigatorMatches' || !Array.isArray(value.contents)) return value
+  const rest = value.contents.filter((matcher: any) => matcher?.tag !== 'You')
+  if (rest.length === value.contents.length) return value
+  if (rest.length === 0) return null
+  return rest.length === 1 ? rest[0] : investigatorMatches(...rest)
+}
+
+const isYouExists = computed(
+  () => !sameValue(investigatorCriterionMatcher.value, matcherWithoutYou(investigatorCriterionMatcher.value)),
+)
+
+function withYou(value: any) {
+  if (!value) return nullary('You')
+  if (value.tag === 'You') return value
+  if (value.tag === 'InvestigatorMatches' && Array.isArray(value.contents)) {
+    return investigatorMatches(nullary('You'), ...value.contents)
+  }
+  return investigatorMatches(nullary('You'), value)
+}
+
+function setInvestigatorExistsScope(you: boolean) {
+  const matcher = matcherWithoutYou(investigatorCriterionMatcher.value)
+  setField(investigatorCriterionKey.value, you ? withYou(matcher) : matcher)
+}
+
+function editorFieldValue(field: { name: string | null }, index: number) {
+  const value = current.value?.values[fieldKey(field, index)]
+  return isInvestigatorExistsCriterion.value ? matcherWithoutYou(value) : value
+}
+
+function setEditorField(field: { name: string | null }, index: number, value: any) {
+  setField(fieldKey(field, index), isInvestigatorExistsCriterion.value && isYouExists.value ? withYou(value) : value)
+}
 
 // --- list ---
 
@@ -329,7 +509,7 @@ const asComparison = computed(
 
 <template>
   <div class="value-editor">
-    <label v-if="label" class="value-label">{{ label }}</label>
+    <label v-if="label" class="value-label">{{ ct(label) }}</label>
 
     <!-- The picker takes over even when a binding is already set, so clicking
          the value swaps it rather than making you clear it first. -->
@@ -342,7 +522,7 @@ const asComparison = computed(
           v-if="boundTo?.anchor"
           type="button"
           class="jump-segment"
-          :title="`Bound by ${boundTo.origin} — click to show`"
+          :title="ct('Bound by {origin} — click to show', { origin: ct(boundTo.origin) })"
           @click="jumpToBinding(boundTo.anchor)"
         >
           ↗
@@ -350,7 +530,7 @@ const asComparison = computed(
         <button
           type="button"
           class="binding-name"
-          :title="`${boundTo ? `${boundTo.detail ?? ''} · ${boundTo.origin} — ` : ''}click to choose another`"
+          :title="`${boundTo ? `${ct(boundTo.detail)} · ${ct(boundTo.origin)} — ` : ''}${ct('click to choose another')}`"
           @click="bindingInput = true"
         >
           <span class="binding-ident">{{ binding }}</span>
@@ -359,7 +539,7 @@ const asComparison = computed(
         <button
           type="button"
           class="clear-segment"
-          title="Take the binding off and go back to a value"
+          :title="ct('Take the binding off and go back to a value')"
           @click="clear"
         >
           ×
@@ -368,10 +548,8 @@ const asComparison = computed(
       <span
         v-if="inScope.length && !boundTo"
         class="from unknown"
-        title="Nothing in scope binds this name"
-      >
-        not bound
-      </span>
+        :title="ct('Nothing in scope binds this name')"
+      >{{ ct("not bound") }}</span>
     </div>
 
     <div v-else ref="bindingEl" class="field-row">
@@ -379,7 +557,7 @@ const asComparison = computed(
         <input
           v-model="bindingSearch"
           type="search"
-          :placeholder="`Search the ${applicable.length} bindings that fit ${type}`"
+          :placeholder="ct('Search the {count} bindings that fit {type}', { count: applicable.length, type })"
           v-focus
           @keydown.enter.prevent="setBinding(bindingSearch)"
           @keydown.esc="bindingInput = false"
@@ -389,30 +567,50 @@ const asComparison = computed(
           <li v-for="bound in matchingBindings" :key="bound.name">
             <button type="button" class="binding-option" @click="setBinding(bound.name)">
               <code class="option-name">${{ bound.name }}</code>
-              <span v-if="bound.detail" class="option-detail">{{ bound.detail }}</span>
-              <span class="option-origin">{{ bound.origin }}</span>
+              <span v-if="bound.detail" class="option-detail">{{ ct(bound.detail) }}</span>
+              <span class="option-origin">{{ ct(bound.origin) }}</span>
             </button>
             <button
               v-if="bound.anchor"
               type="button"
               class="option-jump"
-              title="Show where this was bound"
+              :title="ct('Show where this was bound')"
               @click.stop="jumpToBinding(bound.anchor)"
             >
               ↗
             </button>
           </li>
-          <li v-if="!matchingBindings.length" class="muted">
-            Nothing in scope matches — press enter to use what you typed anyway.
-          </li>
+          <li v-if="!matchingBindings.length" class="muted">{{ ct("Nothing in scope matches — press enter to use what you typed anyway.") }}</li>
         </ul>
       </div>
 
       <div v-else class="field-body" :class="{ 'with-toggle': applicable.length }">
 
+    <div v-if="isInvestigatorMatcher" class="capability-toggle">
+      <button type="button" :class="{ active: !asCapability }" @click="capabilityInput = false">
+        {{ t('customCardSets.builder.matcher') }}
+      </button>
+      <button type="button" :class="{ active: asCapability }" @click="capabilityInput = true">
+        {{ t('customCardSets.builder.capability') }}
+      </button>
+    </div>
+
+    <!-- Capability is an InvestigatorMatcher shorthand, with no implicit scope. -->
+    <div v-if="asCapability" class="picked-row capability-picker">
+      <select
+        :value="selectedCapability?.name ?? ''"
+        @change="setCapability(($event.target as HTMLSelectElement).value)"
+      >
+        <option value="" disabled>{{ t('customCardSets.builder.chooseCapability') }}</option>
+        <option v-for="capability in CAPABILITIES" :key="capability.name" :value="capability.name">
+          {{ capabilityText(capability.name) }}
+        </option>
+      </select>
+    </div>
+
     <!-- "at least 2", rather than a comparison wrapping a Static wrapping a 2. -->
     <ValueMatcherField
-      v-if="asComparison"
+      v-else-if="asComparison"
       :modelValue="modelValue"
       :bindings="inScope"
       @update:modelValue="emit('update:modelValue', $event)"
@@ -423,18 +621,16 @@ const asComparison = computed(
       <input
         type="number"
         :value="staticValue ?? ''"
-        placeholder="a number"
+        :placeholder="ct('a number')"
         @input="setStatic(($event.target as HTMLInputElement).value)"
         @keydown.stop
       />
       <button
         type="button"
         class="link"
-        title="Per player, by player count, X, or star"
+        :title="ct('Per player, by player count, X, or star')"
         @click="gameValueAdvanced = true"
-      >
-        per player…
-      </button>
+      >{{ ct("per player…") }}</button>
       <BindingToggle
         :open="bindingInput"
         :count="applicable.length"
@@ -448,7 +644,7 @@ const asComparison = computed(
         <div class="picked-row">
           <button type="button" class="picked" @click="open ? closePicker() : (open = true)">
             <span class="picked-label">
-              {{ current ? humanize(current.con.name) : `Choose ${shape.schema.name}…` }}
+              {{ current ? humanize(current.con.name) : ct('Choose {type}…', { type: ct(shape.schema.name) }) }}
             </span>
             <!-- It opens a menu, so it says so; the binding segment sits to the
                  right of this, past the field's divider. -->
@@ -465,15 +661,15 @@ const asComparison = computed(
           <input
             v-model="search"
             type="search"
-            :placeholder="`Search ${shape.schema.constructors.length} options`"
+            :placeholder="ct('Search {count} options', { count: shape.schema.constructors.length })"
             v-focus
             @keydown.stop
           />
           <ul>
             <li v-for="preset in search.trim() ? [] : presets" :key="preset.label" class="preset">
               <button type="button" @click="usePreset(preset.value)">
-                {{ preset.label }}
-                <small>a whole value, ready made</small>
+                {{ ct(preset.label) }}
+                <small>{{ ct("a whole value, ready made") }}</small>
               </button>
             </li>
             <li v-for="con in constructors" :key="con.name">
@@ -484,7 +680,7 @@ const asComparison = computed(
                     · {{ con.fields.map((f) => f.type).join(', ') }}</template>
                   <!-- Says where it came from, so the wrapping it gets is not a
                        surprise when the field is read back. -->
-                  <template v-if="isBridged(con)"> · via {{ bridge?.wrap }}</template>
+                  <template v-if="isBridged(con)">{{ ct("· via") }}{{ bridge?.wrap }}</template>
                 </small>
               </button>
             </li>
@@ -493,14 +689,22 @@ const asComparison = computed(
       </div>
 
       <div v-if="current && current.con.fields.length" class="fields">
+        <div v-if="isInvestigatorExistsCriterion" class="criterion-scope">
+          <button type="button" :class="{ active: !isYouExists }" @click="setInvestigatorExistsScope(false)">
+            {{ t('customCardSets.builder.investigatorExists') }}
+          </button>
+          <button type="button" :class="{ active: isYouExists }" @click="setInvestigatorExistsScope(true)">
+            {{ t('customCardSets.builder.youExist') }}
+          </button>
+        </div>
         <ValueEditor
           v-for="(field, index) in current.con.fields"
           :key="fieldKey(field, index)"
           :type="field.type"
           :label="field.name ?? field.type"
           :bindings="bindings"
-          :modelValue="current.values[fieldKey(field, index)]"
-          @update:modelValue="setField(fieldKey(field, index), $event)"
+          :modelValue="editorFieldValue(field, index)"
+          @update:modelValue="setEditorField(field, index, $event)"
         />
       </div>
     </template>
@@ -516,7 +720,7 @@ const asComparison = computed(
           />
           <button type="button" class="remove" @click="removeItem(index)">×</button>
         </div>
-        <button type="button" class="add" @click="addItem">+ Add</button>
+        <button type="button" class="add" @click="addItem">{{ ct("+ Add") }}</button>
       </div>
     </template>
 
@@ -614,7 +818,7 @@ const asComparison = computed(
 
       <!-- Outside the field, because it removes the field's value rather than
            editing it. -->
-      <button v-if="showClear" type="button" class="clear-value" title="Clear" @click="clearAll">
+      <button v-if="showClear" type="button" class="clear-value" :title="ct('Clear')" @click="clearAll">
         ×
       </button>
     </div>
@@ -622,6 +826,58 @@ const asComparison = computed(
 </template>
 
 <style scoped lang="scss">
+.capability-toggle,
+.criterion-scope {
+  align-items: center;
+  display: inline-flex;
+  margin-bottom: 0.35rem;
+
+  button {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 1.2;
+    min-height: 1.75rem;
+    background: var(--surface-input);
+    border: 1px solid #4b5563;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.45rem;
+
+    &:first-child {
+      border-radius: 4px 0 0 4px;
+    }
+
+    &:last-child {
+      border-radius: 0 4px 4px 0;
+    }
+
+    &.active {
+      background: #0f766e;
+      color: white;
+    }
+  }
+}
+
+.criterion-scope {
+  margin-bottom: 0.55rem;
+}
+
+.capability-picker {
+  align-items: center;
+  display: flex;
+  min-height: 2rem;
+
+  select {
+    align-self: center;
+    color: #eee;
+    flex: 1;
+    min-height: 2rem;
+    min-width: 0;
+  }
+}
+
 /* The binding toggle sits inside the field's own box, at its right edge, rather
  * than beside or under it: it is part of the control, and turns the field into
  * the picker in place until something is chosen. The body reserves room for it
@@ -662,7 +918,7 @@ const asComparison = computed(
 .field-body > .picked-row,
 .field-body > .picker > .picked-row {
   align-items: stretch;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   overflow: hidden;
@@ -698,7 +954,7 @@ const asComparison = computed(
   position: relative;
 
   input {
-    background: #0b1220;
+    background: var(--surface-input);
     border: 1px solid #14b8a6;
     border-radius: 4px;
     color: #eee;
@@ -715,7 +971,7 @@ const asComparison = computed(
  * nested field would otherwise push everything below it down the page, which
  * moves the very field you were aiming at. */
 .binding-menu {
-  background: #0b1220;
+  background: var(--surface-input);
   border: 1px solid #374151;
   border-radius: 5px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
@@ -984,7 +1240,7 @@ const asComparison = computed(
 
 .picked {
   align-items: center;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -1020,7 +1276,7 @@ const asComparison = computed(
   top: 100%;
   left: 0;
   right: 0;
-  background: #0f1422;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 4px;
   max-height: 260px;
@@ -1109,7 +1365,7 @@ const asComparison = computed(
 }
 
 input {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;

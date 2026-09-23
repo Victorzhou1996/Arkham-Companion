@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* Laying custom cards over a deck: put a custom investigator in front of it,
  * add cards from your library, take cards out.
  *
@@ -164,37 +167,34 @@ defineExpose({ isEmpty })
 
 <template>
   <div class="overlay-editor">
-    <p v-if="!libraryLoaded" class="muted">Loading your library…</p>
+    <p v-if="!libraryLoaded" class="muted">{{ ct("Loading your library…") }}</p>
 
-    <p v-else-if="!library.length" class="muted">
-      Your custom card library is empty. Build a card first and it will be offered here.
-    </p>
+    <p v-else-if="!library.length" class="muted">{{ ct("Your custom card library is empty. Build a card first and it will be offered here.") }}</p>
 
     <template v-else>
-      <label v-if="investigators.length" class="field">
-        <span class="field-label">Investigator</span>
+      <div v-if="investigators.length" class="field">
+        <span class="field-label">{{ ct("Investigator") }}</span>
         <select
           :value="overlay.investigator ?? ''"
           @change="setInvestigator(($event.target as HTMLSelectElement).value || null)"
         >
-          <option value="">Keep the deck's own</option>
+          <option value="">{{ ct("No replacement — keep the deck's own") }}</option>
           <option v-for="card in investigators" :key="card.def.cardCode" :value="card.def.cardCode">
             {{ card.def.name.title }}
           </option>
         </select>
-      </label>
-      <p v-if="overlay.investigator" class="hint">
-        Their signature cards replace the ones the deck's investigator brought.
-      </p>
+        <button v-if="!isEmpty" type="button" class="clear" @click="emit('update:modelValue', null)">{{ ct("Clear overlay") }}</button>
+      </div>
+      <p v-if="overlay.investigator" class="hint">{{ ct("Their signature cards replace the ones the deck's investigator brought.") }}</p>
 
       <section v-if="playerCards.length">
         <header class="section-head">
-          <h4>Add cards<span v-if="addedTotal" class="count">+{{ addedTotal }}</span></h4>
-          <input v-model="addSearch" class="search" type="search" placeholder="Search…" @keydown.stop />
+          <h4>{{ ct("Add cards") }}<span v-if="addedTotal" class="count">+{{ addedTotal }}</span></h4>
+          <input v-model="addSearch" class="search" type="search" :placeholder="ct('Search…')" @keydown.stop />
         </header>
         <ul class="rows">
           <template v-for="[set, cards] in addableGroups" :key="set">
-            <li v-if="addableGroups.length > 1 || set !== 'Ungrouped'" class="group">{{ set }}</li>
+            <li v-if="addableGroups.length > 1 || set !== 'Ungrouped'" class="group">{{ set === 'Ungrouped' ? ct(set) : set }}</li>
             <li
               v-for="card in cards"
               :key="card.def.cardCode"
@@ -206,25 +206,25 @@ defineExpose({ isEmpty })
                 <button
                   type="button"
                   :disabled="addedCount(card.def.cardCode) === 0"
-                  title="Add one fewer"
+                  :title="ct('Add one fewer')"
                   @click="setAdded(card.def.cardCode, addedCount(card.def.cardCode) - 1)"
                 >−</button>
                 <button
                   type="button"
-                  title="Add one"
+                  :title="ct('Add one')"
                   @click="setAdded(card.def.cardCode, addedCount(card.def.cardCode) + 1)"
                 >+</button>
               </span>
             </li>
           </template>
         </ul>
-        <p v-if="!addable.length" class="muted">No card matches that.</p>
+        <p v-if="!addable.length" class="muted">{{ ct("No card matches that.") }}</p>
       </section>
 
       <section v-if="Object.keys(props.slots).length">
         <header class="section-head">
-          <h4>Take cards out<span v-if="removedTotal" class="count">−{{ removedTotal }}</span></h4>
-          <input v-model="deckSearch" class="search" type="search" placeholder="Search…" @keydown.stop />
+          <h4>{{ ct("Take cards out") }}<span v-if="removedTotal" class="count">−{{ removedTotal }}</span></h4>
+          <input v-model="deckSearch" class="search" type="search" :placeholder="ct('Search…')" @keydown.stop />
         </header>
         <ul class="rows">
           <li
@@ -238,24 +238,27 @@ defineExpose({ isEmpty })
               <button
                 type="button"
                 :disabled="removedCount(card.cardCode) >= card.count"
-                title="Take one out"
+                :title="ct('Take one out')"
                 @click="setRemoved(card.cardCode, removedCount(card.cardCode) + 1, card.count)"
               >−</button>
               <button
                 type="button"
                 :disabled="removedCount(card.cardCode) === 0"
-                title="Put one back"
+                :title="ct('Put one back')"
                 @click="setRemoved(card.cardCode, removedCount(card.cardCode) - 1, card.count)"
               >+</button>
             </span>
           </li>
         </ul>
-        <p v-if="!deckCards.length" class="muted">No card matches that.</p>
+        <p v-if="!deckCards.length" class="muted">{{ ct("No card matches that.") }}</p>
       </section>
 
-      <button v-if="!isEmpty" type="button" class="clear" @click="emit('update:modelValue', null)">
-        Clear overlay
-      </button>
+      <button
+        v-if="!investigators.length && !isEmpty"
+        type="button"
+        class="clear"
+        @click="emit('update:modelValue', null)"
+      >{{ ct("Clear overlay") }}</button>
     </template>
   </div>
 </template>
@@ -267,13 +270,15 @@ defineExpose({ isEmpty })
   display: flex;
   flex-direction: column;
   font-size: 0.85rem;
-  gap: 0.75rem;
+  gap: 0.9rem;
+  min-width: 0;
 }
 
 .field {
-  display: flex;
   align-items: center;
-  gap: 0.5rem;
+  display: flex;
+  gap: 0.65rem;
+  min-width: 0;
 
   select {
     -webkit-appearance: none;
@@ -284,7 +289,14 @@ defineExpose({ isEmpty })
     border-radius: 4px;
     color: inherit;
     font-size: 0.85rem;
-    padding: 0.25rem 1.4rem 0.25rem 0.4rem;
+    min-width: 0;
+    padding: 0.35rem 1.6rem 0.35rem 0.55rem;
+  }
+
+  @media (max-width: 30rem) {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.3rem;
   }
 }
 
@@ -303,8 +315,8 @@ defineExpose({ isEmpty })
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   gap: 0.6rem;
-  margin-bottom: 0.35rem;
-  padding-bottom: 0.25rem;
+  margin-bottom: 0.45rem;
+  padding-bottom: 0.4rem;
 }
 
 .count {
@@ -421,7 +433,9 @@ defineExpose({ isEmpty })
 
 .clear {
   align-self: flex-start;
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.28);
+  margin-top: 0;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 4px;
   color: inherit;

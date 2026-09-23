@@ -1,0 +1,368 @@
+/* Independent phone presentation. No unqualified desktop component overrides. */
+.mobile-chrome { display: contents; }
+.mobile-scenario-nav { display: none; }
+body:has(#game.mobile-game) { --mobile-action: #ff784f; overflow: hidden; background: #09251c; }
+body:has(#game.mobile-game) #app > header,
+body:has(#game.mobile-game) #app > footer { display: none; }
+body:has(#game.mobile-game) .router-container { padding: 0; margin: 0; }
+#game.mobile-game {
+  --card-width: 92px; --card-height: 128px; --mobile-drawer: 302px;
+  --select: var(--mobile-action, #ff784f); --button: #315b47; --neutral: #8aa795;
+  --neutral-dark: #173a2b; --neutral-extra-dark: #0c261d;
+  position: fixed; inset: var(--mobile-top, 0px) 0 auto;
+  width: 100%; height: var(--mobile-vh, 100dvh); min-height: 0;
+  display: flex; flex-direction: column; overflow: hidden; color: #ece9d9;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: #102c21 url('/img/arkham/tabletop-felt-20260914-v2.png') center / cover;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+#game.mobile-game *, .mobile-card-preview * { box-sizing: border-box; }
+#game.mobile-game button { touch-action: manipulation; }
+#game.mobile-game input, #game.mobile-game select { font-size: 16px; }
+#game.mobile-game .mobile-game-header { display: flex; flex-direction: row; flex: 0 0 56px; min-height: 56px; height: 56px; align-items: center; gap: 6px; padding: 4px 10px; background: #0a201bea; border-bottom: 1px solid #8b795945; }
+.mobile-game-header button, .mobile-home { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; border-radius: 10px; background: #254638; color: #ddd3ac; font-size: 13px; }
+.mobile-home { background: none; font-size: 25px; text-decoration: none; min-width: 30px; }
+.mobile-game-title { display: grid; gap: 5px; flex: 1; min-width: 0; }
+.mobile-game-title > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-game-header .mobile-undo { flex: 0 0 44px; gap: 0; padding: 3px; align-content: center; }
+.mobile-undo > span { font-size: 20px; line-height: 20px; }
+.mobile-undo > small { font-size: 10px; line-height: 14px; }
+.mobile-undo:disabled { opacity: .55; }
+.mobile-game-title strong { font-family: Georgia, serif; font-size: 13px; letter-spacing: .09em; font-weight: 500; color: #e1d3ab; }
+.mobile-game-title span { font-size: 11px; color: #a4bbae; white-space: nowrap; }
+.mobile-game-title i { font-style: normal; color: #6d8678; margin: 0 3px; }
+#game.mobile-game .tabletop-tools { flex: 0 0 auto; position: relative; z-index: 70; background: #10291f; }
+#game.mobile-game .game-bar { display: none; }
+#game.mobile-game.mobile-tools-open .game-bar { display: flex; position: absolute; top: 0; left: 6px; right: 6px; flex-wrap: wrap; max-height: min(65dvh, 460px); overflow: auto; gap: 5px; padding: 10px; background: #123528f5; box-shadow: 0 14px 40px #0009; border: 1px solid #8f7b43; border-radius: 0 0 14px 14px; }
+#game.mobile-game .game-bar button { min-height: 44px; font-size: 13px; color: #e1d3ab; }
+#game.mobile-game .game-bar svg { width: 18px; height: 18px; }
+#game.mobile-game .status-bar { margin: 0; padding: 0 8px; min-height: 30px; background: transparent; }
+#game.mobile-game .status-bar > button { display: none; }
+#game.mobile-game .status-bar .narration-button { min-width: 44px; min-height: 36px; padding: 6px; }
+#game.mobile-game .status-bar .audio-menu-label { display: none; }
+#game.mobile-game .response-status-bar { padding: 4px 0; gap: 4px; font-size: 11px; flex-wrap: nowrap; overflow-x: auto; }
+#game.mobile-game .response-status-bar > * { white-space: nowrap; flex-shrink: 0; }
+#game.mobile-game .mobile-response-status { max-width: none; width: 100%; flex: 0 0 30px; padding: 3px 10px; background: #102a20d9; }
+#game.mobile-game .mobile-response-status .response-status__item { font-size: 10px; border-radius: 5px; padding: 3px 6px; }
+#game.mobile-game .game-main { display: flex; position: relative; flex: 1; min-width: 0; min-height: 0; width: 100%; height: auto; margin: 0; padding: 0; overflow: hidden; }
+#game.mobile-game #scenario { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; }
+#game.mobile-game .scenario-body { display: grid; flex: 1; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--mobile-scenario-height, 105px) minmax(0, 1fr) var(--mobile-player-height, var(--mobile-drawer)); min-height: 0; width: 100%; overflow: hidden; gap: 0; background: transparent; }
+#game.mobile-game .scenario-cards { grid-row: 1; grid-column: 1; display: flex; flex-direction: row; align-items: center; gap: 10px; height: 105px; min-height: 0; max-height: none; width: 100%; min-width: 0; padding: 8px 10px; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid #ad935148; background: #0f2d22b8; --card-width: 53px; --card-height: 74px; }
+#game.mobile-game .scenario-cards-content { display: contents; }
+#game.mobile-game .scenario-cards-content > * { flex-shrink: 0; }
+#game.mobile-game .scenario-cards .scenario-decks { display: flex; flex-direction: row; flex: 0 0 auto; gap: 10px; width: auto; }
+#game.mobile-game .scenario-cards .agenda-container, #game.mobile-game .scenario-cards .act-container { width: auto; margin: 0; padding: 0; }
+#game.mobile-game .scenario-cards .agenda-container > .mobile-card, #game.mobile-game .scenario-cards .act-container > .mobile-card { display: flex; align-items: center; gap: 4px; }
+#game.mobile-game .scenario-cards .card--sideways { height: 53px; width: auto; max-width: none; }
+#game.mobile-game .scenario-cards .scenario-guide { margin: 0; width: auto; }
+#game.mobile-game .scenario-cards .scenario-balance-placeholder, #game.mobile-game .scenario-cards .scenario-reference-slot:empty { display: none; }
+#game.mobile-game .scenario-pile-row { display: flex; flex-direction: row; gap: 6px; }
+#game.mobile-game .mobile-encounter-slot { display: contents; }
+#game.mobile-game .scenario-encounter-decks { display: flex; gap: 6px; padding: 0; margin: 0; align-items: flex-start; }
+#game.mobile-game .scenario-encounter-decks .encounter-discard-placeholder { display: none; }
+#game.mobile-game .scenario-cards .card { max-height: 74px; }
+#game.mobile-game .scenario-cards .pool { font-size: 12px; }
+#game.mobile-game .tabletop-pile-heading { font-size: 9px; }
+#game.mobile-game .scenario-zone-heading { display: none; }
+#game.mobile-game .scenario-body > .rain-host { grid-row: 2; grid-column: 1; min-height: 0; }
+#game.mobile-game .location-cards-container { grid-row: 2; grid-column: 1; position: relative; display: grid; grid-template-rows: 24px minmax(0, 1fr) auto 24px; width: 100%; height: 100%; min-height: 0; margin: 0; padding: 0; overflow: hidden; border: 0; background: radial-gradient(ellipse at center, #2d503144, #071a1390); }
+#game.mobile-game .location-cards-scroller { grid-row: 2; grid-column: 1; min-height: 0; height: 100%; width: 100%; overflow: auto; padding: 12px 10px; touch-action: none; overscroll-behavior: contain; }
+#game.mobile-game .location-cards { --card-width: 74px; --card-height: 103px; }
+#game.mobile-game .location-cards-container .zoom-control { grid-row: 3; grid-column: 1; position: static; inset: auto; transform: none; justify-self: center; z-index: auto; display: flex; gap: 3px; margin: 4px; padding: 2px; background: #092318e8; border: 1px solid #8e7a4555; border-radius: 10px; }
+#game.mobile-game .mobile-map-fold-row { position: static; grid-column: 1; display: flex; align-items: center; justify-content: center; min-height: 24px; height: 24px; background: #0b241bb8; border-block: 1px solid #a38a4538; }
+#game.mobile-game .mobile-map-fold-row--top { grid-row: 1; justify-content: flex-start; padding-left: 6px; }
+#game.mobile-game .mobile-map-fold-row--bottom { grid-row: 4; justify-content: flex-end; padding-right: 6px; }
+#game.mobile-game .mobile-map-fold { display: flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; min-height: 24px; height: 24px; padding: 0; background: transparent; border: 0; color: #c4b581; border-radius: 5px; }
+#game.mobile-game .mobile-fold-triangle { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid currentColor; }
+#game.mobile-game .mobile-fold-triangle--up { transform: rotate(180deg); }
+#game.mobile-game .mobile-map-fold:focus-visible { outline: 1px solid #d3bb74; outline-offset: -2px; }
+#game.mobile-game.mobile-top-collapsed { --mobile-scenario-height: 0px; --mobile-scenario-width: 0px; --mobile-header-height: 0px; }
+#game.mobile-game.mobile-bottom-collapsed { --mobile-player-height: 0px; --mobile-player-width: 0px; }
+#game.mobile-game.mobile-top-collapsed :is(.mobile-game-header, .mobile-response-status, .tabletop-tools, .scenario-cards) { display: none; }
+#game.mobile-game.mobile-bottom-collapsed #player-zone { display: none; }
+#game.mobile-game .zoom-btn { width: 44px; height: 40px; min-width: 44px; border-radius: 7px; font-size: 18px; color: #ded2ac; }
+#game.mobile-game .zoom-slider, #game.mobile-game .zoom-control .zoom-btn:has(.tabletop-reset-label) { display: none; }
+#game.mobile-game .zoom-btn__icon { width: 18px; height: 18px; }
+#game.mobile-game .location-cards-container--fullscreen { position: fixed; inset: var(--mobile-header-height, 56px) 0 0; height: calc(var(--mobile-vh, 100dvh) - var(--mobile-header-height, 56px)); z-index: 90; background-color: #123528; }
+#game.mobile-game #player-zone { grid-row: 3; grid-column: 1; width: 100%; min-width: 0; min-height: 0; height: 100%; padding: 0; display: block; border-top: 1px solid #c3a45477; background: #0e261eee; overflow: hidden; }
+#game.mobile-game .player-info { display: flex; flex-direction: column; height: 100%; min-height: 0; width: 100%; }
+#game.mobile-game .tabs-row { display: block; flex: 0 0 43px; min-width: 0; overflow-x: auto; background: #183c2d; }
+#game.mobile-game .tabs__header { display: flex; flex-wrap: nowrap; width: max-content; min-width: 100%; height: 43px; margin: 0; padding: 0; gap: 0; list-style: none; }
+#game.mobile-game .tabs__header li { display: flex; align-items: center; flex: 1; min-width: 120px; padding: 0 0 0 10px; gap: 4px; height: 43px; border: 0; border-bottom: 2px solid transparent; color: #a6baab; font-size: 12px; background: transparent; }
+#game.mobile-game .tabs__header li.active { background: #315743; color: #f1e9ce; border-bottom-color: #c6aa63; }
+#game.mobile-game .tabs__header li.tab--selected { background: #315743; color: #f1e9ce; border-bottom-color: #c6aa63; }
+#game.mobile-game .tabs__header li > span { max-width: 128px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#game.mobile-game .switch-investigators { width: 44px; min-width: 44px; height: 43px; padding: 10px; background: transparent; color: #e0d7b7; border: 0; }
+#game.mobile-game .player-info > .tab { position: relative; flex: 1; min-width: 0; min-height: 0; padding: 0; }
+#game.mobile-game .player-cards { display: grid; grid-template-rows: 44px minmax(0, 1fr) 46px; grid-template-columns: minmax(0, 1fr); height: 100%; min-width: 0; margin: 0; padding: 0; overflow: hidden; }
+#game.mobile-game .mobile-player-status { grid-row: 1; grid-column: 1; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-bottom: 1px solid #87a48422; }
+#game.mobile-game .mobile-player-status button { min-height: 40px; min-width: 48px; margin-left: auto; padding: 4px 8px; background: #42633a; border: 1px solid #a9925355; border-radius: 8px; color: #f2e5bf; font-size: 12px; }
+#game.mobile-game .mobile-player-status button:disabled { opacity: .35; }
+#game.mobile-game .mobile-player-status > span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+#game.mobile-game .mobile-player-status i { color: #8fab98; font-style: normal; font-size: 10px; }
+#game.mobile-game .mobile-player-status b { font-size: 13px; font-weight: 600; color: #e6d7a8; }
+#game.mobile-game .mobile-player-status .mobile-health b { color: #dd8c75; }
+#game.mobile-game .mobile-player-status .mobile-horror b { color: #a7acdf; }
+#game.mobile-game .mobile-player-nav { grid-row: 3; grid-column: 1; position: static; inset: auto; height: 46px; display: flex; background: #0b211bee; border-top: 1px solid #76885a55; z-index: auto; }
+#game.mobile-game .mobile-player-nav button { flex: 1; min-width: 0; height: 46px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 3px; border: 0; color: #9bb3a4; background: transparent; font-size: 12px; }
+#game.mobile-game .mobile-player-nav button[aria-pressed=true] { color: #f1d89b; background: #234532; box-shadow: inset 0 2px #c4a763; }
+#game.mobile-game .mobile-player-nav b { display: inline-grid; place-items: center; font-size: 10px; min-width: 17px; height: 17px; border-radius: 6px; background: #3e5245; }
+#game.mobile-game .mobile-player-nav button { position: relative; }
+.mobile-action-dot { position: absolute; right: 6px; top: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--mobile-action, #ff784f); box-shadow: 0 0 0 1px #fff3df; }
+#game.mobile-game .in-play-toggle, #game.mobile-game #totals, #game.mobile-game .phases { display: none; }
+#game.mobile-game .in-play-row, #game.mobile-game .in-play, #game.mobile-game .player { display: contents; }
+#game.mobile-game .tabletop-threats, #game.mobile-game .tabletop-equipment, #game.mobile-game .hand-area, #game.mobile-game .investigator-and-deck { display: none; }
+#game.mobile-game[data-mobile-zone=hand] .hand-area,
+#game.mobile-game[data-mobile-zone=threats] .tabletop-threats,
+#game.mobile-game[data-mobile-zone=equipment] .tabletop-equipment,
+#game.mobile-game[data-mobile-zone=investigator] .investigator-and-deck { display: block; min-height: 0; height: 100%; width: 100%; padding: 6px 10px; overflow: auto; }
+#game.mobile-game .player-cards .hand-area,
+#game.mobile-game .player-cards .tabletop-threats,
+#game.mobile-game .player-cards .tabletop-equipment,
+#game.mobile-game .player-cards .investigator-and-deck { grid-row: 2; grid-column: 1; height: auto; position: relative; inset: auto; margin: 0; transform: none; align-self: stretch; }
+#game.mobile-game .tabletop-zone-title { display: flex; align-items: center; gap: 6px; font-size: 10px; line-height: 14px; font-weight: 400; height: 16px; margin: 0 0 5px; color: #9db8a6; }
+#game.mobile-game .tabletop-zone-title svg { width: 12px; height: 12px; }
+#game.mobile-game .tabletop-zone-title span { margin-left: auto; }
+#game.mobile-game .tabletop-zone-title::after { content: '长按查看'; color: #738e7b; font-size: 9px; font-weight: 400; margin-left: 6px; }
+#game.mobile-game .adaptive-hand { display: block; width: 100%; height: auto; overflow-x: auto; overflow-y: hidden; padding: 2px 1px 7px; }
+#game.mobile-game .adaptive-hand-row, #game.mobile-game .equipment-fit-row > section { display: flex; width: max(100%, var(--hand-content-width, 0px)); min-width: 100%; height: auto; min-height: var(--card-height); align-items: flex-start; flex-wrap: nowrap; gap: 0; padding: 0; margin: 0; }
+#game.mobile-game .adaptive-hand-row > * { flex: 0 0 auto; margin: 0; width: var(--card-width); position: relative; transform: none !important; }
+#game.mobile-game .adaptive-hand-row > * + * { margin-left: calc(var(--hand-step, 98px) - var(--card-width)); }
+#game.mobile-game .adaptive-hand-row > *:last-child { margin-right: 3px; }
+#game.mobile-game .hand-area { scrollbar-width: none; }
+#game.mobile-game .hand-area::-webkit-scrollbar { display: none; }
+#game.mobile-game .hand-area .adaptive-hand-row { min-height: var(--card-height); }
+#game.mobile-game .hand-area .adaptive-hand { padding: 1px 1px 3px; }
+#game.mobile-game .hand-area img.card { margin: 0; }
+#game.mobile-game .hand-size { display: none; }
+#game.mobile-game .equipment-fit, #game.mobile-game .equipment-fit-track, #game.mobile-game .equipment-fit-row { display: contents; }
+#game.mobile-game .tabletop-equipment .equipment-fit-row { display: flex; flex-flow: row nowrap; width: max-content; gap: 10px; align-items: flex-start; }
+#game.mobile-game .tabletop-equipment .equipment-fit-row > * { flex-shrink: 0; }
+#game.mobile-game .equipment-fit-row > section { gap: 8px; }
+#game.mobile-game .equipment-fit-row > section > * { flex-shrink: 0; }
+#game.mobile-game .tabletop-equipment .slot { display: none; }
+#game.mobile-game .inert-stack { display: none; }
+#game.mobile-game .tabletop-empty-threat { display: grid; height: 110px; place-content: center; color: #789783; }
+#game.mobile-game .tabletop-empty-threat::after { content: '威胁区暂时没有卡牌'; font-size: 12px; }
+#game.mobile-game .tabletop-empty-threat > * { display: none; }
+#game.mobile-game .investigator-and-deck { --card-width: 78px; --card-height: 109px; }
+#game.mobile-game[data-mobile-zone=investigator] .investigator-and-deck { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 8px; scrollbar-width: thin; scrollbar-color: #628777 #10291f; }
+#game.mobile-game .investigator-and-deck::-webkit-scrollbar { height: 5px; }
+#game.mobile-game .investigator-and-deck::-webkit-scrollbar-thumb { background: #628777; border-radius: 3px; }
+#game.mobile-game .mobile-hunch-slot { display: contents; }
+#game.mobile-game .investigator-and-deck .hunch-deck { flex: 0 0 78px; width: 78px; }
+#game.mobile-game .investigator-and-deck .hunch-deck img { width: 78px; max-width: 100%; height: auto; }
+#game.mobile-game .investigator-and-deck .player-container { flex: 0 0 190px; width: 190px; }
+#game.mobile-game .investigator-and-deck .player-area { display: flex; align-items: flex-start; gap: 6px; }
+#game.mobile-game .investigator-and-deck .player-card { flex: 0 0 120px; width: 120px; display: flex; flex-direction: column; }
+#game.mobile-game .investigator-and-deck .player-area > div:not(.player-card) { flex: 1; min-width: 0; }
+#game.mobile-game .investigator-and-deck .investigator-image { width: 100%; align-self: auto; }
+#game.mobile-game .investigator-and-deck .investigator-image > img.card { display: block; width: 100%; height: auto; min-height: 0; max-height: none; aspect-ratio: auto; object-fit: contain; }
+#game.mobile-game .investigator-and-deck .stats { display: flex; flex-direction: row; font-size: 11px; width: 100%; }
+#game.mobile-game .investigator-and-deck .stats > div { flex: 1; padding-inline: 3px; border-radius: 2px; }
+#game.mobile-game .investigator-and-deck .action-container { display: flex; align-items: center; height: 16px; font-size: 12px; }
+#game.mobile-game .investigator-and-deck .resources { display: flex; flex-wrap: wrap; gap: 6px; }
+#game.mobile-game .investigator-and-deck .resources .poolItem { max-width: 24px; }
+#game.mobile-game .investigator-and-deck .button-group button { min-height: 44px; width: 100%; min-width: 0; max-width: 100%; padding-inline: 3px; white-space: normal; overflow-wrap: anywhere; font-size: 10px; }
+#game.mobile-game .investigator-and-deck .button-group button[data-mobile-direct] { min-height: 44px; }
+#game.mobile-game .investigator-and-deck .deck-container, #game.mobile-game .investigator-and-deck .discard { width: 78px; flex: 0 0 78px; margin: 0; }
+#game.mobile-game .investigator-and-deck .top-of-deck { width: 78px; }
+#game.mobile-game .investigator-and-deck .view-discard-button.cards-under-indicator { width: 78px; max-width: 78px; }
+#game.mobile-game .investigator-and-deck .deck-container img.deck,
+#game.mobile-game .investigator-and-deck .discard img.card { width: 78px; max-width: 78px; height: auto; min-height: 0; max-height: none; object-fit: contain; }
+#game.mobile-game .tabletop-undo { display: none; }
+#game.mobile-game .sidebar { position: absolute; inset: 0; width: 100%; max-width: none; z-index: 100; background: #102b23fa; padding: 50px 12px 12px; overflow: auto; }
+#game.mobile-game .tabletop-log-close { display: block; position: absolute; top: 6px; right: 8px; width: 44px; height: 40px; border-radius: 8px; background: #2f513e; color: #f5e7c5; }
+/* Touch preview: the real component is teleported, not a stale clone of actions. */
+.mobile-card { position: relative; -webkit-touch-callout: none; user-select: none; }
+.mobile-card img { -webkit-user-drag: none; -webkit-touch-callout: none; }
+.mobile-card-preview { -webkit-touch-callout: none; user-select: none; }
+.mobile-card-preview img { -webkit-user-drag: none; -webkit-touch-callout: none; }
+.mobile-card-inline, .mobile-card-content, .mobile-card-slot { display: contents; }
+.mobile-card--open { min-width: var(--card-width); min-height: var(--card-height); border: 1px dashed #cdb47388; border-radius: 7px; }
+#game.touch-game .mobile-ability-anchor { position: absolute; bottom: 2px; right: 2px; z-index: 16; height: 36px; min-width: 44px; padding: 4px; border: 1px solid #baa568; border-radius: 6px; font-size: 10px; background: #163827ee; color: #f7db92; }
+.mobile-card-preview .mobile-preview-abilities { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; min-width: var(--card-width); }
+.mobile-card-preview .mobile-preview-abilities .button { min-height: 44px; }
+.mobile-preview-backdrop { position: fixed; inset: var(--mobile-top, 0px) 0 auto; height: var(--mobile-vh, 100dvh); z-index: 1000; display: flex; align-items: center; justify-content: center; background: #020e0cd9; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+.mobile-card-preview { --card-width: min(66vw, 265px); --card-height: calc(var(--card-width) * 1.4); --button: #426647; --select: #d2b35a; --neutral-extra-dark: #132b22; width: min(100%, 470px); max-height: 100%; overflow: auto; overscroll-behavior: contain; color: #efe7d0; background: #143627; border: 1px solid #9f884e; border-radius: 18px; box-shadow: 0 20px 80px #000a; }
+.mobile-preview-heading { position: sticky; top: 0; z-index: 15000; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; background: #102d23; border-bottom: 1px solid #8b7c4f; font-size: 14px; }
+.mobile-preview-heading small { display: block; color: #98b5a2; font-size: 11px; margin-top: 3px; }
+.mobile-preview-heading button { min-height: 44px; min-width: 62px; border: 0; border-radius: 9px; background: #36513d; color: #e3d5b0; }
+.mobile-preview-narration { display: flex; gap: 8px; padding: 8px 12px 0; }
+.mobile-preview-narration button { min-height: 44px; flex: 1; border: 1px solid #54745b; border-radius: 8px; color: #ded5b9; background: #244a35; }
+.mobile-card-preview .mobile-preview-heading { flex-direction: row; width: 100%; }
+.mobile-preview-content { padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.mobile-preview-content > *, .mobile-preview-content .card-frame, .mobile-preview-content .asset, .mobile-preview-content .enemy { max-width: 100%; }
+.mobile-preview-content img.card { width: var(--card-width); height: auto; max-width: 100%; min-width: 0; transform: none !important; object-fit: contain; }
+.mobile-preview-content img.card--sideways { width: min(82vw, 360px); height: auto; }
+.mobile-preview-content .exhausted, .mobile-preview-content .asset--exhausted, .mobile-preview-content .enemy--exhausted { transform: none !important; }
+.mobile-preview-content button { min-width: 44px; min-height: 44px; font-size: 15px; touch-action: manipulation; }
+.mobile-preview-content .ability-trigger-modes { position: static !important; display: flex; flex-wrap: wrap; margin: 8px 0; gap: 6px; }
+.mobile-preview-content .ability-trigger-mode { width: auto; height: auto; max-width: 100%; padding: 8px 12px; white-space: normal; line-height: 1.4; }
+.mobile-preview-content .ability-trigger-mode::after { content: attr(aria-label); margin-left: 5px; font-size: 12px; }
+.mobile-card-preview .mobile-preview-content .ability-trigger-modes { width: 100%; min-width: var(--card-width); }
+.mobile-card-preview .mobile-preview-content .ability-trigger-mode { flex: 1; width: auto; min-width: 100%; height: auto; padding: 10px; line-height: 1.4; text-align: left; }
+.mobile-preview-content .button-group, .mobile-preview-content .buttons { display: flex; flex-direction: column; gap: 6px; }
+.mobile-preview-content .button-label:empty::after { content: '发动能力'; }
+.mobile-preview-content .button-label:empty { display: inline-flex; }
+.mobile-preview-content .fast-ability-button .button-label:empty::after { content: '发动快速能力'; }
+.mobile-preview-content .reaction-ability-button .button-label:empty::after { content: '发动反应能力'; }
+.mobile-preview-content .player-area { display: flex; flex-direction: column; gap: 10px; }
+.mobile-preview-content .player-card, .mobile-preview-content .investigator-image { width: auto; }
+.mobile-preview-content .resources { width: 100%; display: flex; gap: 10px; }
+.mobile-card-preview .mobile-preview-content .sealed-chaos-tokens { width: 100%; height: auto; display: flex; flex-wrap: wrap; gap: 8px; }
+.mobile-card-preview .mobile-preview-content .sealed-token { position: static; transform: none; width: 44px; height: 44px; }
+.mobile-card-preview .mobile-preview-content .sealed-chaos-token-bg { display: none; }
+/* Override legacy narrow-portrait investigator rules in the teleported preview
+   too; investigator fronts are landscape artwork, not tall player cards. */
+.mobile-card-preview .mobile-preview-content .player-card { width: 100%; flex-direction: column; }
+.mobile-card-preview .mobile-preview-content .stats { display: flex; flex-direction: row; width: 100%; }
+.mobile-card-preview .mobile-preview-content .investigator-image { width: 100%; }
+.mobile-card-preview .mobile-preview-content .investigator-image > img.card { width: 100%; height: auto; min-height: 0; max-height: none; aspect-ratio: auto; object-fit: contain; }
+#game.mobile-game .mobile-player-nav button.mobile-zone-action { color: #fff3df; }
+#game.mobile-game .mobile-zone-action { color: #fff3df; }
+#game.mobile-game .mobile-player-status:has(.mobile-perspective-note) { position: relative; padding-bottom: 13px; }
+#game.mobile-game .mobile-perspective-note { position: absolute; bottom: 1px; left: 10px; font-size: 9px; line-height: 11px; color: #e2c879; }
+body:has(#game.mobile-game) .draggable--minimized:has([data-game-actionable=true]) > header { outline: 3px solid var(--mobile-action); outline-offset: -3px; }
+#game.mobile-game .mobile-card[data-mobile-has-action=true] { border-radius: 8px; }
+/* A token/key action stays identifiable even in reduced-motion mode. */
+#game.mobile-game :is(.health--can-interact, .sanity--can-interact, .key--can-interact, .clue--can-take, .can-interact, .blocked--selectable) {
+  outline: 3px solid var(--mobile-action); outline-offset: -3px;
+}
+/* Stack contents live in a closed popover. Mark the visible entrance itself,
+   not just the cards that will only be mounted after opening it. */
+#game.mobile-game .cards-under-indicator[data-game-actionable=true] {
+  height: auto; min-height: 28px; flex-wrap: wrap; padding: 2px 4px;
+  outline: 3px solid var(--mobile-action); outline-offset: -3px;
+  background: #562c22; color: #fff3df;
+}
+/* Orange-red means actionable; ordinary selections remain gold. */
+#game.mobile-game .mobile-ability-anchor { border: 2px solid var(--mobile-action); color: #fff3df; background: #562c22; }
+body:has(#game.mobile-game) .mobile-card-preview { --select: var(--mobile-action); }
+#game.mobile-game .location-cards-container { --hidden-location-action-glow: #ff784f; --hidden-location-action-soft: #ff784f77; }
+body:has(#game.touch-game) .v-popper--theme-tooltip { display: none; }
+body:has(#game.touch-game) .draggable { max-width: calc(100vw - 20px); max-height: calc(100dvh - 24px); }
+body:has(#game.touch-game) .draggable .content { max-height: calc(100dvh - 90px); overflow: auto; }
+body:has(#game.touch-game) .draggable button { min-height: 44px; min-width: 44px; }
+body:has(#game.touch-game) .mobile-nested-dialog { z-index: 1100 !important; }
+.mobile-card-preview .mobile-inline-config { position: static; width: 100%; max-width: none; max-height: none; }
+/* Keep legacy paint-heavy availability animation disabled, including tokens
+   and teleported previews. The separate transform-only frame below is bounded. */
+body:has(#game.mobile-game) :is(.mobile-zone-action, .tab--has-actions, .mobile-card[data-mobile-has-action=true], .location-cards-container--hidden-action)::after,
+body:has(#game.mobile-game) .draggable--minimized:has([data-game-actionable=true]) > header,
+body:has(#game.mobile-game) :is(.resource--can-take, .resource--can-spend, .health--can-interact, .sanity--can-interact) > img,
+body:has(#game.mobile-game) :is(.mobile-zone-action, .tab--has-actions, .mobile-card[data-mobile-has-action=true], .card-frame-inner:has(> img.location--can-interact),
+  [data-game-actionable=true], [class*="--can-interact"], [class*="--can-progress"], .deck--can-draw, .token--can-draw,
+  .resource--can-take, .resource--can-spend, .clue--can-take, .clue--can-spend, .can-interact, .blocked--selectable, .mobile-ability-anchor):not(.card--flipping, .card--flipping-diagonal) { animation: none !important; }
+#game.mobile-game .mobile-zone-action { position: relative; animation: none; }
+/* Animate only a pointer-transparent rounded frame, never the card/content.
+   A small outward pulse keeps the frame aligned with the full card; each
+   card's stacking context still lets later cards cover its frame.
+   No animated blur/shadow/layout properties or permanent will-change layers. */
+#game.mobile-game :is(.mobile-zone-action, .mobile-card[data-mobile-has-action=true]:not(.mobile-card--open):not(:has(.card-frame-inner)), .tabs__header > li.tab--has-actions) { position: relative; border-radius: 8px; }
+#game.mobile-game :is(.mobile-zone-action, .mobile-card[data-mobile-has-action=true]:not(.mobile-card--open):not(:has(.card-frame-inner)), .tabs__header > li.tab--has-actions, .card-frame-inner:not(.blocked--selectable):has(> img.location--can-interact))::after {
+  content: ''; position: absolute; inset: 3px; z-index: 5;
+  border: 4px solid var(--mobile-action); border-radius: 10px;
+  box-sizing: border-box; pointer-events: none; background: none;
+  /* The leader badge also owns ::after; do not inherit its 25px box/margins. */
+  width: auto; height: auto; margin: 0; min-width: 0; min-height: 0;
+  transform: scale(1); transform-origin: center; animation: none;
+}
+/* Paint the whole card AND its full-sized hint in one stacking context. Later
+   cards cover both together, even when those cards have no hint themselves.
+   Do not squeeze the frame to --hand-step: that draws a false right edge in
+   the visible strip instead of letting the next card occlude the real edge. */
+#game.mobile-game .adaptive-hand .adaptive-hand-row > * { isolation: isolate; }
+@keyframes mobile-action-frame-scale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  body:has(#game.mobile-game) #game.mobile-game :is(.mobile-zone-action, .mobile-card[data-mobile-has-action=true]:not(.mobile-card--open):not(:has(.card-frame-inner)), .tabs__header > li.tab--has-actions, .card-frame-inner:not(.blocked--selectable):has(> img.location--can-interact))::after {
+    animation: mobile-action-frame-scale 1.6s ease-in-out 3 !important;
+  }
+}
+#game.mobile-game .objective-ring::before, #game.mobile-game .objective-ring::after { animation: none; }
+#game.mobile-game .objective-ring::after { filter: none; opacity: .4; }
+#game.mobile-game .highlighted { animation: none; }
+#game.mobile-game.mobile-page-hidden *, #game.mobile-game.mobile-page-hidden *::before, #game.mobile-game.mobile-page-hidden *::after { animation-play-state: paused !important; }
+#game.mobile-game .zoom-control, #game.mobile-game .game-bar { backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* Exactly one availability frame: its owner has no second outline/keyline,
+   and covered card/token actions do not draw a nested legacy border. Preserve
+   dimensions, focus indication, source/target highlights and preview controls. */
+#game.mobile-game :is(.mobile-zone-action, .mobile-card[data-mobile-has-action=true], .tabs__header > li.tab--has-actions, .card-frame-inner:not(.blocked--selectable):has(> img.location--can-interact)) {
+  outline: none; box-shadow: none !important;
+}
+#game.mobile-game .mobile-zone-action { border-color: transparent !important; }
+#game.mobile-game .card-frame-inner.blocked--selectable { outline: none; }
+#game.mobile-game .mobile-card[data-mobile-has-action=true]:not(.mobile-card--open) :is(
+  img.card[class*="--can-interact"], img.card[class*="--can-progress"],
+  .asset--can-interact > img.card, .deck--can-draw, .token--can-draw,
+  .health--can-interact, .sanity--can-interact, .resource--can-take, .resource--can-spend,
+  .clue--can-take, .clue--can-spend, .key--can-interact, .cards-under-indicator[data-game-actionable=true]
+):not(.source-highlight, .ability-target, .card--highlighted),
+#game.mobile-game .card-frame-inner > img.location--can-interact:not(.source-highlight) {
+  outline: none !important; box-shadow: none !important; border-color: transparent !important;
+}
+#game.mobile-game .mobile-card[data-mobile-has-action=true]:not(.mobile-card--open) :is(.health--can-interact, .sanity--can-interact, .resource--can-take, .resource--can-spend) > img { filter: none; }
+#game.mobile-game .mobile-zone-action:focus-visible { outline: 2px dashed #fff3df; outline-offset: -6px; }
+@media (min-width: 700px) and (max-height: 600px) {
+  #game.mobile-game { --mobile-drawer: 195px; --card-width: 72px; --card-height: 101px; }
+  #game.mobile-game .mobile-game-header { flex-basis: 48px; min-height: 48px; height: 48px; padding-block: 2px; }
+  #game.mobile-game .mobile-game-title { display: flex; align-items: center; gap: 12px; }
+  #game.mobile-game .mobile-response-status { flex-basis: 26px; padding-block: 1px; }
+  #game.mobile-game .scenario-body { grid-template-columns: var(--mobile-scenario-width, 132px) minmax(160px, 1fr) minmax(0px, var(--mobile-player-width, clamp(300px, 37vw, 370px))); grid-template-rows: minmax(0, 1fr); }
+  #game.mobile-game .scenario-cards { grid-column: 1; grid-row: 1; height: 100%; flex-direction: column; align-items: center; overflow-y: auto; overflow-x: hidden; padding: 6px 4px; gap: 8px; }
+  #game.mobile-game .scenario-cards .scenario-decks { display: flex !important; flex-direction: column; align-items: center; gap: 8px; }
+  #game.mobile-game .scenario-cards :is(.agenda-container, .act-container, .act-row, .agenda-main, .agenda-card, .card-container) { height: auto; min-height: 0; max-height: none; }
+  #game.mobile-game .scenario-cards :is(.agenda-container, .act-container) > .mobile-card { flex-direction: column; max-width: 108px; }
+  #game.mobile-game .scenario-cards :is(.agenda-container, .act-container) .mobile-card-slot { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; max-width: 108px; }
+  #game.mobile-game .scenario-cards .card--sideways { height: auto; width: 88px; max-width: 88px; }
+  #game.mobile-game .scenario-pile-row, #game.mobile-game .scenario-encounter-decks { flex-wrap: wrap; justify-content: center; max-width: 108px; }
+  #game.mobile-game .scenario-cards .scenario-guide { max-width: 108px; }
+  #game.mobile-game .location-cards-container, #game.mobile-game .scenario-body > .rain-host { grid-column: 2; grid-row: 1; }
+  #game.mobile-game #player-zone { grid-column: 3; grid-row: 1; }
+  #game.mobile-game .tabs__header { width: 100%; }
+  #game.mobile-game .tabs__header li { min-width: 0; flex: 1 0 88px; padding-left: 4px; gap: 1px; font-size: 10px; }
+  #game.mobile-game .tabs__header li > span { min-width: 0; flex: 1; }
+  #game.mobile-game .switch-investigators { flex: 0 0 44px; min-width: 44px; width: 44px; padding: 10px; }
+  #game.mobile-game .mobile-player-status { gap: 6px; padding-inline: 6px; }
+  #game.mobile-game .mobile-player-status > span { gap: 2px; }
+  #game.mobile-game .mobile-player-status button { min-width: 44px; padding-inline: 4px; }
+  #game.mobile-game .mobile-player-nav button { font-size: 10px; gap: 2px; }
+  #game.mobile-game .tabletop-zone-title::after { content: none; }
+  #game.mobile-game .location-cards-container .zoom-control { gap: 0; margin: 2px; padding: 0; }
+  #game.mobile-game .zoom-btn { min-width: 44px; width: 44px; height: 40px; }
+  .mobile-card-preview { --card-width: min(34vh, 200px); --card-height: calc(var(--card-width) * 1.4); }
+}
+
+/* Landscape uses a side toolbar; no permanent game header above the map. */
+@media (min-width: 700px) and (max-height: 600px) {
+  #game.mobile-game.touch-game { display: grid; grid-template-columns: 66px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  #game.mobile-game .mobile-chrome { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; overflow-x: hidden; background: #0c241d; border-right: 1px solid #8b795945; }
+  #game.mobile-game .mobile-game-header { flex: 0 0 auto; display: flex; flex-direction: column; height: auto; min-height: 0; padding: 3px; gap: 3px; border: 0; }
+  #game.mobile-game .mobile-game-header > button { width: 56px; flex: 0 0 44px; }
+  #game.mobile-game .mobile-game-title { display: block; flex: 0 0 auto; text-align: center; padding: 2px; }
+  #game.mobile-game .mobile-game-title strong { display: none; }
+  #game.mobile-game .mobile-game-title span { display: block; font-size: 9px; white-space: normal; line-height: 14px; }
+  #game.mobile-game .mobile-response-status { width: 100%; flex: 0 0 auto; padding: 3px; }
+  #game.mobile-game .mobile-response-status .response-status-bar { flex-wrap: wrap; }
+  #game.mobile-game .mobile-response-status .response-status__item { max-width: 59px; overflow: hidden; text-overflow: ellipsis; font-size: 9px; }
+  #game.mobile-game .game-main { grid-column: 2; grid-row: 1; height: 100%; }
+  #game.mobile-game .tabletop-tools { position: absolute; top: 0; left: 66px; right: 0; }
+  #game.mobile-game.mobile-tools-open .game-bar { top: 0; max-width: 480px; }
+  #game.mobile-game.mobile-top-collapsed { grid-template-columns: 0px minmax(0, 1fr); }
+  #game.mobile-game.mobile-top-collapsed .mobile-chrome { display: none; }
+  #game.mobile-game .scenario-cards { align-items: stretch; justify-content: flex-start; position: relative; }
+  #game.mobile-game .mobile-scenario-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; position: sticky; top: -6px; z-index: 10; flex-shrink: 0; background: #102b21; padding-block: 3px; }
+  #game.mobile-game .mobile-scenario-nav button { position: relative; min-height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 2px; font-size: 11px; color: #aec6b5; background: #183a2c; border: 1px solid #54725c; border-radius: 5px; }
+  #game.mobile-game .mobile-scenario-nav button[aria-pressed=true] { background: #355941; color: #f1dfad; border-color: #c6aa63; }
+  #game.mobile-game .scenario-cards[data-mobile-scenario-zone=scene] [data-mobile-scenario-group]:not([data-mobile-scenario-group=scene]),
+  #game.mobile-game .scenario-cards[data-mobile-scenario-zone=encounter] [data-mobile-scenario-group]:not([data-mobile-scenario-group=encounter]),
+  #game.mobile-game .scenario-cards[data-mobile-scenario-zone=reference] [data-mobile-scenario-group]:not([data-mobile-scenario-group=reference]),
+  #game.mobile-game .scenario-cards[data-mobile-scenario-zone=other] [data-mobile-scenario-group]:not([data-mobile-scenario-group=other]) { display: none !important; }
+  #game.mobile-game .scenario-cards .scenario-decks { width: 100%; }
+  #game.mobile-game .scenario-cards :is(.scenario-guide,.scenario-encounter-decks,.scenario-pile-row) { align-self: center; }
+  #game.mobile-game .scenario-cards .tabletop-card-heading { display: block; height: auto; width: 100%; font-size: 10px; text-align: center; margin: 3px 0; }
+  #game.mobile-game .scenario-cards .tabletop-card-heading svg { width: 12px; height: 12px; }
+}

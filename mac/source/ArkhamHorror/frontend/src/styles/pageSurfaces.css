@@ -1,0 +1,132 @@
+/* Page palettes are independent of the game board and of UI-version selection.
+   A future background picker can set data-page-theme on html without recoloring
+   text separately. Nested panels and controls always own a complete color pair. */
+#app .site-workspace {
+  --page-bg: #314940;
+  --page-text: #ebe7d6;
+  --page-title: #f4efdf;
+  --page-muted: #d1d7c5;
+  --page-link: #e1e3be;
+  --page-line: #718777;
+  --page-panel: #3c5449;
+  --page-raised: #435d4f;
+  --page-danger: #ffb3a9;
+  --page-icon-filter: invert(1);
+  --page-texture: linear-gradient(#314940f5, #314940f5), url('/img/archive-paper-20260921.jpg');
+  --control-bg: #2b4037;
+  --control-selected: #486453;
+  --control-text: #f1f3e7;
+  --control-muted: #ccd8c7;
+  --panel-bg: #3c5449;
+  --panel-text: #ebe7d6;
+  --panel-title: #f4efdf;
+  --panel-muted: #d1d7c5;
+}
+html[data-page-theme='paper'] #app .site-workspace {
+  --page-bg: #cdcec9;
+  --page-text: #35443e;
+  --page-title: #20382e;
+  --page-muted: #465b4c;
+  --page-link: #285b46;
+  --page-line: #929681;
+  --page-panel: #eeece3;
+  --page-raised: #d5dccf;
+  --page-danger: #8c302a;
+  --page-icon-filter: none;
+  --page-texture: linear-gradient(#cccec999, #cccec999), url('/img/archive-paper-20260921.jpg');
+}
+#app .site-workspace {
+  --text: var(--page-text);
+  --title: var(--page-title);
+  --background-light: var(--page-muted);
+  --site-muted: var(--page-muted);
+  --surface-link: var(--page-link);
+  --box-border: var(--page-line);
+  color: var(--text);
+  background-color: var(--page-bg);
+  background-image: var(--page-texture);
+  background-size: auto, 640px 640px;
+}
+#app .site-workspace .site-workspace { background: transparent; }
+#app .site-workspace :is(h1, h2, h3, .card-title, .page-title) { color: var(--title); }
+#app .site-workspace a { color: var(--surface-link); }
+#app .site-workspace :is(.chapter-select, .scenario-select) { border-color: var(--page-line); }
+#app .site-workspace :is(.chapter-select label, .requires-investigator, .designer-credit, .chapter-title) { color: var(--page-muted); text-shadow: none; }
+#app .site-workspace .chapter-select input:checked + label { color: var(--title); border-color: var(--page-muted); }
+#app .site-workspace :is(.chapter-select label, .mode-toggle label, .scenario-select label) { font-size: 13px; letter-spacing: 0; min-height: 36px; }
+
+/* Panels keep a complete color pair even with a light page preference. */
+#app .site-workspace :is(.box, .card:not(img):not(.no-overlay), .new-deck-panel, .deck-main, .campaign-section, .bug-card, .admin-panel, .sidebar, .results > header, .configuration-summary, .card-details-surface, .library, .builder, .import-review, .set-cards > li, .set-filter) {
+  --text: var(--panel-text);
+  --title: var(--panel-title);
+  --background-light: var(--panel-muted);
+  --surface-link: #c9d7a5;
+  --spooky-green: #c9d7a5;
+  color: var(--text);
+  background: var(--panel-bg);
+}
+#app .site-workspace :is(.segmented, .segmented-toggle, .scenario-select, .wizard-progress > *, .undo-mode-option, button:not(.campaign-box-placeholder)) {
+  --text: var(--control-text);
+  --title: var(--control-text);
+  --background-light: var(--control-muted);
+  color: var(--control-text);
+  background-color: var(--control-bg);
+}
+#app .site-workspace :is(input:not([type=checkbox]):not([type=radio]):not([type=image]):not([type=range]), select, textarea) { background-color: var(--control-bg); color: var(--control-text); border-color: var(--page-line); }
+#app #new-campaign .wizard-progress > * { background: var(--control-bg); color: var(--control-text); }
+#app .site-workspace :is(.decklist, .deck-item, .card-results-count) { background: var(--panel-bg); color: var(--panel-text); }
+#app .site-workspace :is(.segmented, .scenario-select) label { color: var(--control-muted); opacity: 1; }
+#app .site-workspace :is(.segmented, .scenario-select) input:checked + label { color: var(--control-text); background-color: var(--control-selected); }
+#app .site-workspace :is(.segmented, .scenario-select) input:disabled + label { color: var(--control-muted); opacity: .75; }
+#app .site-workspace .segmented-toggle label { color: var(--control-muted); }
+#app .site-workspace .segmented-toggle label:has(input:checked) { color: var(--control-text); background: var(--control-selected); }
+#app .site-workspace .segmented-toggle label.disabled { color: var(--control-muted); opacity: .75; }
+#app .site-workspace .segmented-toggle label span { color: inherit; }
+#app .site-workspace .bool-option { color: var(--control-muted); }
+#app .site-workspace .bool-option:has(input:checked) { color: var(--control-text); }
+#app .site-cards th { color: var(--panel-muted); background: var(--panel-bg); }
+#app .site-workspace .undo-mode-option :is(strong, span, .undo-mode-name, .undo-mode-desc) { color: var(--control-text); }
+#app .site-workspace :is(.card-title, .mini-campaign-desc, .recommended-desc, .as-if-at-desc, .uab-desc, .achievements-desc) { color: var(--text); opacity: 1; }
+#app .site-workspace :is(.creation-error, .error, .status-error) { color: var(--page-danger); background: var(--page-panel); }
+#app .site-workspace :is(.beta-warning, .alpha-warning, .dev-warning, .homebrew-warning, .site-notice, .notice, .status-message) { color: var(--page-text); background: var(--page-panel); }
+#app .site-workspace input::placeholder { color: #bfceba; opacity: 1; }
+#app .site-workspace .uab-beta-pill { color: #fff; background: #795800; }
+#app .site-workspace :is(.empty-state, .muted) { color: var(--background-light); }
+/* Use secondary ink instead of fading text: opacity compounds inside panels. */
+#app .site-workspace :is(.muted, .hint, .value-label, .loading, .in-set, .group-count, .group-head h3) { opacity: 1; color: var(--background-light); }
+#app .site-workspace .preset-pill { color: var(--panel-text); background: var(--panel-bg); }
+#app .site-workspace .preset-pill.chapter2 { color: #e1e3be; }
+#app .site-bugs .admin-panel p { color: var(--panel-muted); }
+#app .site-bugs .bugs-header { color: var(--page-text); background: var(--page-bg); }
+#app .site-bugs .bugs-header p { color: var(--page-muted); }
+#app .site-workspace .experimental { color: var(--page-danger); background: var(--page-panel); }
+#app .site-workspace :is(button, a, input, select, textarea, summary, [tabindex='0']):focus-visible { outline: 2px solid var(--page-muted); outline-offset: 3px; }
+
+/* Light save sheets remain distinct from the gray-green page in either UI. */
+#app .tabletop-lobby .home :is(.game, .box, .load-game-panel) {
+  --page-panel: #eeece3;
+  --page-raised: #d5dccf;
+  --page-text: #35443e;
+  --page-title: #20382e;
+  --page-muted: #465b4c;
+  --page-line: #929681;
+  --page-danger: #8c302a;
+  --page-icon-filter: none;
+  --text: var(--page-text);
+  --title: var(--page-title);
+  --background-light: var(--page-muted);
+  background: var(--page-panel); color: var(--page-text); border-color: var(--page-line);
+}
+#app .tabletop-lobby .home .game:hover { background: var(--page-panel); }
+#app .tabletop-lobby .home .game :is(a, h2, h3) { color: var(--page-title); }
+#app .tabletop-lobby .home .game a:not(.game-delete a):hover { color: var(--page-title); text-decoration: underline; }
+#app .tabletop-lobby .home .game :is(.solo, .scenario-details, .game-details, .game-scenario, .game-player-count, .game-difficulty) { color: var(--page-muted); }
+#app .tabletop-lobby .home .game :is(.current-subdetails, .other-subdetails, .other-investigators, .game-subdetails) { background: var(--page-panel); }
+#app .tabletop-lobby .home .game :is(.game-subdetails h2, .game-difficulty) { background: var(--page-raised); color: var(--page-title); }
+#app .tabletop-lobby .home .game :is(.campaign-icon, .scenario-icon) { filter: var(--page-icon-filter); }
+#app .tabletop-lobby .home .game .game-delete a { color: var(--page-danger); }
+#app .tabletop-lobby :is(.home .main-header h2, .home-support h2, .home-support-donation, .finished-games summary) { color: var(--page-title); }
+#app .tabletop-lobby .home-support p { color: var(--page-muted); }
+#app .tabletop-lobby .home .archive-hero { --text: #21382f; --title: #152e27; }
+#app .tabletop-lobby .home .archive-primary { color: #f4f1df; background: #23483d; }
+#app .tabletop-lobby .home .archive-secondary { color: #263b31; background: #eee8d9; }

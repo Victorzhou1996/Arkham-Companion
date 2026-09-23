@@ -1,10 +1,13 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* The card builder's form: everything that makes up a custom card's def.
  *
  * It owns its own state and exposes `loadCard`, `reset` and `buildCustomCard`,
  * so the page can drive it for both new cards and edits without threading the
  * whole form through props. */
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import * as Api from '@/arkham/api'
 import {
   PLAYER_CARD_TYPES,
@@ -162,6 +165,17 @@ const form = reactive(blankForm())
 const dragging = ref<string | null>(null)
 const uploading = ref<string | null>(null)
 const error = ref<string | null>(null)
+/* Display the processed local blob immediately after a drop. In development,
+ * Vite can briefly return/cache a 404 for a newly written public image; using
+ * the uploaded URL directly then leaves a broken image until a refresh. */
+const artPreviews = reactive<Record<string, string>>({})
+
+function clearArtPreviews() {
+  for (const url of Object.values(artPreviews)) URL.revokeObjectURL(url)
+  for (const slot of Object.keys(artPreviews)) delete artPreviews[slot]
+}
+
+onUnmounted(clearArtPreviews)
 
 /* An investigator carries four images; everything else just its face. The extra
  * ones ride in meta so the card model stays one def plus one piece of art. */
@@ -577,10 +591,19 @@ async function takeImage(slot: string, file: File | undefined) {
   if (!file || !file.type.startsWith('image/')) return
   error.value = null
   uploading.value = slot
+  let preview: string | null = null
+  const previousPreview = artPreviews[slot]
   try {
-    form.artUploaded[slot] = await Api.uploadCustomCardArt(await readImage(file))
+    const image = await readImage(file)
+    preview = URL.createObjectURL(image)
+    artPreviews[slot] = preview
+    form.artUploaded[slot] = await Api.uploadCustomCardArt(image)
     form.artUrls[slot] = ''
+    if (previousPreview) URL.revokeObjectURL(previousPreview)
   } catch (e: any) {
+    if (preview) URL.revokeObjectURL(preview)
+    if (previousPreview) artPreviews[slot] = previousPreview
+    else delete artPreviews[slot]
     console.error(e)
     error.value = e?.response?.data?.message ?? e?.message ?? 'Could not upload that image.'
   } finally {
@@ -598,6 +621,8 @@ async function onFile(slot: string, event: Event) {
 }
 
 function clearArt(slot: string) {
+  if (artPreviews[slot]) URL.revokeObjectURL(artPreviews[slot])
+  delete artPreviews[slot]
   form.artUploaded[slot] = null
   form.artUrls[slot] = ''
 }
@@ -606,7 +631,7 @@ function clearArt(slot: string) {
  * the def so an empty slot still reads as what it is. A slot that names a
  * printed card is shown as that card's image, so what you get is what you see. */
 const slotPreview = (slot: string) => {
-  const value = artFor(slot)
+  const value = artPreviews[slot] || artFor(slot)
   if (!value) return slot === 'art' ? renderCardPlaceholder(previewDef.value as any) : null
   const reference = cardArtReference(value)
   if (!reference) return value
@@ -636,6 +661,7 @@ const isPerPlayer = (v: any) => v?.tag === 'PerPlayer'
 
 async function loadCard(card: CustomCard) {
   await loadTraits()
+  clearArtPreviews()
   const def: Record<string, any> = card.def as any
   const meta = def.meta ?? {}
 
@@ -723,6 +749,7 @@ async function loadCard(card: CustomCard) {
 }
 
 function reset() {
+  clearArtPreviews()
   Object.assign(form, blankForm())
   loadedCode.value = null
   error.value = null
@@ -744,7 +771,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
   <div class="custom-card-body">
     <div class="custom-card-preview">
       <div v-for="slot in ART_SLOTS" :key="slot.key" class="art-slot">
-        <span v-if="ART_SLOTS.length > 1" class="slot-label">{{ slot.label }}</span>
+        <span v-if="ART_SLOTS.length > 1" class="slot-label">{{ ct(slot.label) }}</span>
         <div
           class="art-dropzone"
           :class="[slot.shape, { dragging: dragging === slot.key, uploading: uploading === slot.key }]"
@@ -754,29 +781,25 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
         >
           <img v-if="slotPreview(slot.key)" :src="slotPreview(slot.key)!" alt="" />
           <div v-else class="art-empty"></div>
-          <span class="art-hint">{{ uploading === slot.key ? 'Uploading…' : 'Drop an image' }}</span>
+          <span class="art-hint">{{ ct(uploading === slot.key ? 'Uploading…' : 'Drop an image') }}</span>
         </div>
-        <label class="file-pick">
-          Choose an image
-          <input type="file" accept="image/*" @change="onFile(slot.key, $event)" />
+        <label class="file-pick">{{ ct("Choose an image") }}<input type="file" accept="image/*" @change="onFile(slot.key, $event)" />
         </label>
-        <label>
-          …or a URL, or a card code to reuse that card's art
-          <input
+        <label>{{ ct("…or a URL, or a card code to reuse that card's art") }}<input
             v-model="form.artUrls[slot.key]"
             type="text"
-            placeholder="https://… or 01004"
+            :placeholder="ct('https://… or 01004')"
             @keydown.stop
           />
         </label>
-        <button v-if="artFor(slot.key)" type="button" class="link" @click="clearArt(slot.key)">Clear</button>
+        <button v-if="artFor(slot.key)" type="button" class="link" @click="clearArt(slot.key)">{{ ct("Clear") }}</button>
       </div>
-      <p v-if="error" class="custom-card-error">{{ error }}</p>
+      <p v-if="error" class="custom-card-error">{{ ct(error) }}</p>
     </div>
 
         <div class="custom-card-form">
           <div v-if="!form.cardType" class="type-picker">
-            <p class="type-prompt">What kind of card is this?</p>
+            <p class="type-prompt">{{ ct("What kind of card is this?") }}</p>
             <div class="type-grid">
               <button
                 v-for="t in CARD_TYPES"
@@ -784,73 +807,57 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
                 type="button"
                 @click="chooseType(t.value)"
               >
-                {{ t.label }}
+                {{ ct(t.label) }}
               </button>
             </div>
           </div>
 
           <template v-else>
           <div class="chosen-type">
-            <strong>{{ CARD_TYPES.find((t) => t.value === form.cardType)?.label }}</strong>
-            <button type="button" class="link" @click="form.cardType = ''">Change type</button>
+            <strong>{{ ct(CARD_TYPES.find((t) => t.value === form.cardType)?.label) }}</strong>
+            <button type="button" class="link" @click="form.cardType = ''">{{ ct("Change type") }}</button>
           </div>
 
           <div class="row">
-            <label>
-              Title
-              <input v-model="form.title" type="text" autofocus @keydown.stop />
+            <label>{{ ct("Title") }}<input v-model="form.title" type="text" autofocus @keydown.stop />
             </label>
-            <label>
-              Subtitle
-              <input v-model="form.subtitle" type="text" @keydown.stop />
+            <label>{{ ct("Subtitle") }}<input v-model="form.subtitle" type="text" @keydown.stop />
             </label>
           </div>
 
           <div class="row">
-            <label v-if="canBeWeakness">
-              Weakness
-              <select v-model="form.weaknessKind">
-                <option v-if="weaknessOptional" value="">Not a weakness</option>
-                <option value="Weakness">Weakness</option>
-                <option value="BasicWeakness">Basic weakness</option>
+            <label v-if="canBeWeakness">{{ ct("Weakness") }}<select v-model="form.weaknessKind">
+                <option v-if="weaknessOptional" value="">{{ ct("Not a weakness") }}</option>
+                <option value="Weakness">{{ ct("Weakness") }}</option>
+                <option value="BasicWeakness">{{ ct("Basic weakness") }}</option>
               </select>
             </label>
-            <label v-if="hasClass">
-              Class
-              <select v-model="form.classSymbol">
-                <option v-for="c in CLASSES" :key="c" :value="c">{{ c }}</option>
+            <label v-if="hasClass">{{ ct("Class") }}<select v-model="form.classSymbol">
+                <option v-for="c in CLASSES" :key="c" :value="c">{{ ct(c) }}</option>
               </select>
             </label>
           </div>
 
           <div class="row">
-            <label v-if="hasCost">
-              Cost
-              <input v-model="form.cost" type="number" @keydown.stop />
+            <label v-if="hasCost">{{ ct("Cost") }}<input v-model="form.cost" type="number" @keydown.stop />
             </label>
-            <label v-if="hasLevel">
-              Level
-              <input v-model="form.level" type="number" @keydown.stop />
+            <label v-if="hasLevel">{{ ct("Level") }}<input v-model="form.level" type="number" @keydown.stop />
             </label>
-            <label v-if="!isInvestigator">
-              Victory
-              <input v-model="form.victory" type="number" @keydown.stop />
+            <label v-if="!isInvestigator">{{ ct("Victory") }}<input v-model="form.victory" type="number" @keydown.stop />
             </label>
             <BoolField
-              label="Unique"
+              :label="ct('Unique')"
               v-model="form.unique"
             />
             <BoolField
               v-if="isPlayerCard"
-              label="Permanent"
+              :label="ct('Permanent')"
               v-model="form.permanent"
             />
           </div>
 
           <div v-if="!isInvestigator && signatureOwner" class="row">
-            <label>
-              Signature of
-              <router-link
+            <label>{{ ct("Signature of") }}<router-link
                 class="owner-pill"
                 :to="{ name: 'CardBuilder', query: { card: signatureOwner.def.cardCode } }"
               >
@@ -858,21 +865,14 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
               </router-link>
             </label>
           </div>
-          <p v-if="!isInvestigator && signatureOwner" class="hint">
-            Only they can take it, and their id is bound as <code>$investigator</code> for this
-            card's abilities. The link lives on their signatures, so add or remove it there.
-          </p>
+          <p v-if="!isInvestigator && signatureOwner" class="hint">{{ ct("Only they can take it, and their id is bound as") }}<code>$investigator</code>{{ ct("for this card's abilities. The link lives on their signatures, so add or remove it there.") }}</p>
 
           <div class="row">
-            <label>
-              Card number
-              <input v-model="form.cardNumber" type="text" placeholder="1" @keydown.stop />
+            <label>{{ ct("Card number") }}<input v-model="form.cardNumber" type="text" placeholder="1" @keydown.stop />
             </label>
           </div>
 
-          <label>
-            Traits
-            <input v-model="form.traits" type="text" placeholder="Monster. Elite. Ancient One." @keydown.stop />
+          <label>{{ ct("Traits") }}<input v-model="form.traits" type="text" :placeholder="ct('Monster. Elite. Ancient One.')" @keydown.stop />
           </label>
           <p v-if="parsedTraits.length" class="trait-preview">
             <span
@@ -880,14 +880,14 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
               :key="trait.name"
               class="trait"
               :class="{ custom: trait.custom }"
-              :title="trait.custom ? 'Not a known trait — added as a custom trait' : trait.name"
+              :title="trait.custom ? ct('Not a known trait — added as a custom trait') : trait.name"
             >{{ trait.raw }}.</span>
           </p>
 
           <fieldset v-if="hasSkillIcons">
-            <legend>Skill icons</legend>
+            <legend>{{ ct("Skill icons") }}</legend>
             <div class="icon-steppers">
-              <div v-for="icon in ICONS" :key="icon.value" class="icon-stepper" :title="icon.label">
+              <div v-for="icon in ICONS" :key="icon.value" class="icon-stepper" :title="ct(icon.label)">
                 <button type="button" :disabled="!iconCount(icon.value)" @click="removeIcon(icon.value)">−</button>
                 <span :class="icon.icon" />
                 <span class="icon-count">{{ iconCount(icon.value) }}</span>
@@ -897,7 +897,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
           </fieldset>
 
           <fieldset v-if="!isInvestigator">
-            <legend>Keywords</legend>
+            <legend>{{ ct("Keywords") }}</legend>
             <div class="chips">
               <button
                 v-for="keyword in KEYWORDS"
@@ -907,15 +907,15 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
                 :class="{ on: form.keywords.includes(keyword) }"
                 @click="toggle(form.keywords, keyword)"
               >
-                {{ keyword }}
+                {{ ct(keyword) }}
               </button>
             </div>
           </fieldset>
 
           <fieldset v-if="isInvestigator">
-            <legend>Investigator</legend>
+            <legend>{{ ct("Investigator") }}</legend>
             <div class="icon-steppers">
-              <div v-for="stat in STATS" :key="stat.key" class="icon-stepper" :title="stat.label">
+              <div v-for="stat in STATS" :key="stat.key" class="icon-stepper" :title="ct(stat.label)">
                 <button type="button" :disabled="statValue(stat.key) <= 0" @click="stepStat(stat.key, -1)">−</button>
                 <span :class="stat.icon" />
                 <span class="icon-count">{{ statValue(stat.key) }}</span>
@@ -923,13 +923,13 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
               </div>
             </div>
             <div class="row">
-              <label>Health<input v-model="form.investigatorHealth" type="number" @keydown.stop /></label>
-              <label>Sanity<input v-model="form.investigatorSanity" type="number" @keydown.stop /></label>
+              <label>{{ ct("Health") }}<input v-model="form.investigatorHealth" type="number" @keydown.stop /></label>
+              <label>{{ ct("Sanity") }}<input v-model="form.investigatorSanity" type="number" @keydown.stop /></label>
             </div>
           </fieldset>
 
           <fieldset v-if="form.cardType === 'EventType' || form.cardType === 'EncounterEventType'">
-            <legend>Actions</legend>
+            <legend>{{ ct("Actions") }}</legend>
             <div class="chips">
               <button
                 v-for="action in ACTIONS"
@@ -939,10 +939,10 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
                 :class="{ on: form.actions.includes(action) }"
                 @click="toggle(form.actions, action)"
               >
-                {{ action }}
+                {{ ct(action) }}
               </button>
             </div>
-            <p class="hint">What happens when it is played:</p>
+            <p class="hint">{{ ct("What happens when it is played:") }}</p>
             <StepsEditor
               :queryKinds="QUERY_KINDS"
               :bindings="cardBindings(form.cardType)"
@@ -953,10 +953,8 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
           </fieldset>
 
           <fieldset v-if="isInvestigator">
-            <legend>Signature cards</legend>
-            <p v-if="!signatureChoices.length" class="hint">
-              Build the cards first and they will be listed here to pick from.
-            </p>
+            <legend>{{ ct("Signature cards") }}</legend>
+            <p v-if="!signatureChoices.length" class="hint">{{ ct("Build the cards first and they will be listed here to pick from.") }}</p>
             <template v-else>
               <div class="chips">
                 <span v-for="code in form.signatures" :key="code" class="chip card-chip">
@@ -969,7 +967,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
                 v-if="addingSignature"
                 @change="addSignature(($event.target as HTMLSelectElement).value)"
               >
-                <option value="">Choose a card…</option>
+                <option value="">{{ ct("Choose a card…") }}</option>
                 <option
                   v-for="card in signatureChoices.filter((c) => !isSignature(c.def.cardCode))"
                   :key="card.def.cardCode"
@@ -982,54 +980,53 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
           </fieldset>
 
           <fieldset v-if="isEnemy">
-            <legend>Enemy — leave a stat blank for a dash</legend>
+            <legend>{{ ct("Enemy — leave a stat blank for a dash") }}</legend>
             <div class="row">
-              <label>Fight<input v-model="form.fight" type="number" placeholder="—" @keydown.stop /></label>
-              <label>Health<input v-model="form.health" type="number" placeholder="—" @keydown.stop /></label>
-              <label>Evade<input v-model="form.evade" type="number" placeholder="—" @keydown.stop /></label>
+              <label>{{ ct("Fight") }}<input v-model="form.fight" type="number" placeholder="—" @keydown.stop /></label>
+              <label>{{ ct("Health") }}<input v-model="form.health" type="number" placeholder="—" @keydown.stop /></label>
+              <label>{{ ct("Evade") }}<input v-model="form.evade" type="number" placeholder="—" @keydown.stop /></label>
             </div>
             <div class="row">
-              <label>Damage<input v-model="form.damage" type="number" placeholder="—" @keydown.stop /></label>
-              <label>Horror<input v-model="form.horror" type="number" placeholder="—" @keydown.stop /></label>
+              <label>{{ ct("Damage") }}<input v-model="form.damage" type="number" placeholder="—" @keydown.stop /></label>
+              <label>{{ ct("Horror") }}<input v-model="form.horror" type="number" placeholder="—" @keydown.stop /></label>
               <BoolField
-                label="Health per investigator"
+                :label="ct('Health per investigator')"
                 v-model="form.healthPerPlayer"
               />
             </div>
             <ValueEditor
               type="PreyMatcher"
               :bindings="defBindings()"
-              label="Prey (defaults to anyone)"
+              :label="ct('Prey (defaults to anyone)')"
               :modelValue="form.prey"
               @update:modelValue="form.prey = $event"
             />
             <ValueEditor
               type="SpawnAt"
               :bindings="defBindings()"
-              label="Spawn (defaults to the usual rules)"
+              :label="ct('Spawn (defaults to the usual rules)')"
               :modelValue="form.spawnAt"
               @update:modelValue="form.spawnAt = $event"
             />
             <p v-if="signatureOwner" class="hint">
-              <code>$investigator</code> is their id, so "Prey — them only" is
-              <code>OnlyPrey</code> of <code>InvestigatorWithId</code> <code>$investigator</code>.
+              <code>$investigator</code>{{ ct("is their id, so \"Prey — them only\" is") }}<code>OnlyPrey</code>{{ ct("of") }}<code>InvestigatorWithId</code> <code>$investigator</code>.
             </p>
           </fieldset>
 
           <fieldset v-if="isLocation">
-            <legend>Location</legend>
+            <legend>{{ ct("Location") }}</legend>
             <div class="row">
-              <label>Shroud<input v-model="form.shroud" type="number" @keydown.stop /></label>
-              <label>Clues<input v-model="form.clues" type="number" @keydown.stop /></label>
+              <label>{{ ct("Shroud") }}<input v-model="form.shroud" type="number" @keydown.stop /></label>
+              <label>{{ ct("Clues") }}<input v-model="form.clues" type="number" @keydown.stop /></label>
               <BoolField
-                label="Clues per investigator"
+                :label="ct('Clues per investigator')"
                 v-model="form.cluesPerPlayer"
               />
             </div>
           </fieldset>
 
           <fieldset v-if="isAsset">
-            <legend>Asset</legend>
+            <legend>{{ ct("Asset") }}</legend>
             <div class="chips">
               <button
                 v-for="slot in SLOTS"
@@ -1039,39 +1036,32 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
                 :class="{ on: form.slots.includes(slot) }"
                 @click="toggle(form.slots, slot)"
               >
-                {{ slot.replace('Slot', '') }}
+                {{ ct(slot.replace('Slot', '')) }}
               </button>
             </div>
             <div class="row">
-              <label>Health<input v-model="form.assetHealth" type="number" placeholder="—" @keydown.stop /></label>
-              <label>Sanity<input v-model="form.assetSanity" type="number" placeholder="—" @keydown.stop /></label>
+              <label>{{ ct("Health") }}<input v-model="form.assetHealth" type="number" placeholder="—" @keydown.stop /></label>
+              <label>{{ ct("Sanity") }}<input v-model="form.assetSanity" type="number" placeholder="—" @keydown.stop /></label>
             </div>
             <div class="row">
-              <label>
-                Uses
-                <select v-model="form.useType">
-                  <option value="">None</option>
-                  <option v-for="u in USE_TYPES" :key="u" :value="u">{{ u }}</option>
+              <label>{{ ct("Uses") }}<select v-model="form.useType">
+                  <option value="">{{ ct("None") }}</option>
+                  <option v-for="u in USE_TYPES" :key="u" :value="u">{{ ct(u) }}</option>
                 </select>
               </label>
-              <label v-if="form.useType">
-                Amount
-                <input v-model="form.useCount" type="number" @keydown.stop />
+              <label v-if="form.useType">{{ ct("Amount") }}<input v-model="form.useCount" type="number" @keydown.stop />
               </label>
             </div>
           </fieldset>
 
           <!-- An investigator is never played, so none of this applies to one. -->
           <fieldset v-if="!isInvestigator">
-            <legend>Playing it</legend>
-            <p class="hint">
-              What the card makes you do beyond paying its cost, checked and taken as part of
-              playing it — spend an action, add curse tokens, shuffle bonded cards into your deck.
-            </p>
+            <legend>{{ ct("Playing it") }}</legend>
+            <p class="hint">{{ ct("What the card makes you do beyond paying its cost, checked and taken as part of playing it — spend an action, add curse tokens, shuffle bonded cards into your deck.") }}</p>
             <ValueEditor
               optional
               type="Cost"
-              label="Additional cost (optional)"
+              :label="ct('Additional cost (optional)')"
               :bindings="defBindings()"
               :modelValue="form.additionalCost"
               @update:modelValue="form.additionalCost = $event"
@@ -1079,23 +1069,18 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
 
             <ValueEditor
               type="[DeckRestriction]"
-              label="Deck restrictions (optional)"
+              :label="ct('Deck restrictions (optional)')"
               :bindings="defBindings()"
               :modelValue="form.deckRestrictions"
               @update:modelValue="form.deckRestrictions = $event ?? []"
             />
 
-            <p class="hint">
-              Bonded cards start outside the deck and come with this one. A cost that searches
-              your bonded cards is what puts them in.
-            </p>
+            <p class="hint">{{ ct("Bonded cards start outside the deck and come with this one. A cost that searches your bonded cards is what puts them in.") }}</p>
             <div v-for="(b, at) in form.bonded" :key="at" class="row">
-              <label>
-                How many
-                <input v-model="b.count" type="number" min="1" @keydown.stop />
+              <label>{{ ct("How many") }}<input v-model="b.count" type="number" min="1" @keydown.stop />
               </label>
               <div class="grow">
-                <CardCodeField v-model="b.cardCode" placeholder="Which card" />
+                <CardCodeField v-model="b.cardCode" :placeholder="ct('Which card')" />
               </div>
               <button type="button" class="chip-remove" @click="form.bonded.splice(at, 1)">×</button>
             </div>
@@ -1103,13 +1088,11 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
               type="button"
               class="add"
               @click="form.bonded.push({ count: '1', cardCode: '' })"
-            >
-              + Bonded card
-            </button>
+            >{{ ct("+ Bonded card") }}</button>
           </fieldset>
 
           <fieldset>
-            <legend>Abilities</legend>
+            <legend>{{ ct("Abilities") }}</legend>
             <AbilityEditor
               section="abilities"
               :cardType="form.cardType"
@@ -1134,11 +1117,8 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
           <!-- A listener is the card reacting to an engine message, not an
                ability, so it gets a box of its own. -->
           <fieldset>
-            <legend>Listens for</legend>
-            <p class="hint">
-              Engine messages this card reacts to directly, for effects that no ability window
-              covers.
-            </p>
+            <legend>{{ ct("Listens for") }}</legend>
+            <p class="hint">{{ ct("Engine messages this card reacts to directly, for effects that no ability window covers.") }}</p>
             <AbilityEditor
               section="listeners"
               :cardType="form.cardType"
@@ -1149,7 +1129,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
           </fieldset>
 
           <details>
-            <summary>Raw CardDef JSON (merged over the form)</summary>
+            <summary>{{ ct("Raw CardDef JSON (merged over the form)") }}</summary>
             <textarea
               v-model="form.rawJson"
               rows="6"
@@ -1175,7 +1155,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
 }
 
 .custom-card-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   color: #eee;
@@ -1258,7 +1238,7 @@ defineExpose({ loadCard, reset, buildCustomCard, cardType: computed(() => form.c
   img {
     width: 100%;
     border-radius: 8px;
-    background: #111827;
+    background: var(--surface-input);
     display: block;
   }
 
@@ -1324,7 +1304,7 @@ label {
 input,
 select,
 textarea {
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   color: #eee;
@@ -1338,7 +1318,7 @@ textarea {
 select {
   -webkit-appearance: none;
   appearance: none;
-  background: #111827 var(--select-caret) no-repeat right 0.6rem center;
+  background: var(--surface-input) var(--select-caret) no-repeat right 0.6rem center;
   background-size: var(--select-caret-size);
   padding: 0.4rem 1.6rem 0.4rem 0.5rem;
 }
@@ -1394,7 +1374,7 @@ select {
 }
 
 .art-empty {
-  background: #111827;
+  background: var(--surface-input);
   border-radius: 8px;
   width: 100%;
 }
@@ -1595,7 +1575,7 @@ fieldset {
   img {
     width: 100%;
     border-radius: 6px;
-    background: #111827;
+    background: var(--surface-input);
   }
 
   small {

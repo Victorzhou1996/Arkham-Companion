@@ -1,0 +1,91 @@
+/* Availability stays owned by game components. Orange-red means actionable;
+   selected tabs and ordinary decorative borders keep their gold/class color. */
+body:has(#game.tabletop-game) { --tabletop-action: #ff784f; }
+@keyframes tabletop-action-breathe {
+  0%, 100% {
+    box-shadow: var(--card-shadow, 0 0 transparent),
+      0 0 0 2px color-mix(in srgb, var(--tabletop-action) 75%, transparent),
+      0 0 3px 0 color-mix(in srgb, var(--tabletop-action) 25%, transparent);
+  }
+  50% {
+    box-shadow: var(--card-shadow, 0 0 transparent),
+      0 0 0 3px var(--tabletop-action),
+      0 0 8px 1px color-mix(in srgb, var(--tabletop-action) 55%, transparent);
+  }
+}
+
+@keyframes tabletop-token-breathe {
+  0%, 100% {
+    filter: drop-shadow(1px 0 0 var(--tabletop-action)) drop-shadow(-1px 0 0 var(--tabletop-action))
+      drop-shadow(0 1px 0 var(--tabletop-action)) drop-shadow(0 -1px 0 var(--tabletop-action));
+  }
+  50% {
+    filter: drop-shadow(1px 0 0 var(--tabletop-action)) drop-shadow(-1px 0 0 var(--tabletop-action))
+      drop-shadow(0 1px 0 var(--tabletop-action)) drop-shadow(0 -1px 0 var(--tabletop-action))
+      drop-shadow(0 0 5px color-mix(in srgb, var(--tabletop-action) 75%, transparent));
+  }
+}
+
+/* With reduced motion the steady orange-red borders remain. Avoid the
+   parent location-cell, which is a routing marker, not a clickable card. Put
+   the location glow on its frame so overflow:hidden does not swallow it. */
+  body:has(#game.tabletop-game) :is(
+    .card--can-interact, .act--can-progress, .act--can-interact,
+    .agenda--can-progress, .enemy--can-interact, .event--can-interact,
+    .investigator--can-interact, .investigator--can-interact--portrait,
+    .story--can-interact, .skill--can-interact, .treachery--can-interact,
+    .scarletKey--can-interact, .concealed-card--can-interact,
+    .key--can-interact, .deck--can-draw, .token--can-draw,
+    .clue--can-take, .clue--can-spend, .can-interact,
+    .asset--can-interact:not(.asset--pending) > img.card,
+    .card-frame-inner:has(> img.location--can-interact:not(.source-highlight)),
+    .card-frame-inner.blocked--selectable
+  ):not(:disabled, [aria-disabled="true"], .source-highlight, .ability-target,
+    .card--highlighted, .card--flipping, .card--flipping-diagonal) {
+    outline: 4px solid var(--tabletop-action);
+    outline-offset: -4px;
+    border-radius: 10px !important; /* Override square scenario-card presentation. */
+    --action-pulse: tabletop-action-breathe;
+  }
+
+  body:has(#game.tabletop-game) :is(
+    .resource--can-take, .resource--can-spend, .health--can-interact, .sanity--can-interact
+  ):not([aria-disabled="true"]) > img {
+    outline: 4px solid var(--tabletop-action);
+    outline-offset: -4px;
+    border-radius: 10px !important;
+    --action-pulse: tabletop-token-breathe;
+  }
+/* Bounded shadow/filter animation, then a permanent bright border at idle.
+   Use the exact action selectors again through the assigned local variable;
+   do not apply animation to descendants via inherited --action-pulse. */
+@media (prefers-reduced-motion: no-preference) {
+  body:has(#game.tabletop-game) :is(.card--can-interact, .act--can-progress, .act--can-interact,
+    .agenda--can-progress, .enemy--can-interact, .event--can-interact,
+    .investigator--can-interact, .investigator--can-interact--portrait,
+    .story--can-interact, .skill--can-interact, .treachery--can-interact,
+    .scarletKey--can-interact, .concealed-card--can-interact, .key--can-interact,
+    .deck--can-draw, .token--can-draw, .clue--can-take, .clue--can-spend, .can-interact,
+    .asset--can-interact:not(.asset--pending) > img.card,
+    .card-frame-inner:has(> img.location--can-interact:not(.source-highlight)), .card-frame-inner.blocked--selectable
+  ):not(:disabled, [aria-disabled="true"], .source-highlight, .ability-target, .card--highlighted, .card--flipping, .card--flipping-diagonal),
+  body:has(#game.tabletop-game) :is(.resource--can-take, .resource--can-spend, .health--can-interact, .sanity--can-interact):not([aria-disabled="true"]) > img {
+    animation: var(--action-pulse) 2.6s steps(12) 3;
+  }
+}
+
+#game.tabletop-game .location-cards-container { --hidden-location-action-glow: #ff784f; --hidden-location-action-soft: #ff784f40; }
+/* Investigator miniatures stay circular in both idle and actionable states. */
+body:has(#game.tabletop-game) #game.tabletop-game .location-investigator-column .portrait { border-radius: 50% !important; }
+#game.tabletop-game .objective-ring::before, #game.tabletop-game .objective-ring::after { animation: none; }
+#game.tabletop-game .objective-ring::after { filter: none; opacity: .4; }
+#game.tabletop-game.mobile-page-hidden *, #game.tabletop-game.mobile-page-hidden *::before, #game.tabletop-game.mobile-page-hidden *::after { animation-play-state: paused !important; }
+#game.tabletop-game #player-zone .tabs__header > li.tab--has-actions { animation: none; box-shadow: none; border-radius: 10px; }
+#game.tabletop-game #player-zone .tabs__header > li.tab--has-actions::after { content: ''; position: absolute; inset: 1px; border: 4px solid #ff784f; border-radius: 10px; pointer-events: none; }
+@keyframes tabletop-tab-breathe { from { opacity: .3; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  #game.tabletop-game #player-zone .tabs__header > li.tab--has-actions::after { animation: tabletop-tab-breathe 2.6s ease-in-out infinite alternate; }
+}
+
+/* Existing focus outlines remain. The colored border never vanishes at the
+   dim end of the cycle, and flipping/source highlights keep their styles. */

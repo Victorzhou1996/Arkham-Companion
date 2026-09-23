@@ -6,7 +6,12 @@ import Arkham.Investigator.Cards
 import Arkham.Name
 import Arkham.Prelude
 import Data.Aeson.Types (typeMismatch)
+import Data.Aeson qualified as Aeson
+import Data.Aeson.KeyMap qualified as KeyMap
+import Data.ByteString.Lazy qualified as BL
+import Data.Text.Encoding qualified as TE
 import GHC.Records
+import Control.Monad.Fail (fail)
 
 data ArkhamDBDecklist = ArkhamDBDecklist
   { slots :: Map CardCode Int
@@ -64,7 +69,13 @@ instance FromJSON ArkhamDBDecklist where
           (error "missing investigator")
           toTitle
           (lookup (coerce investigator_code) allInvestigatorCards)
-    meta <- o .:? "meta"
+    rawMeta <- o .:? "meta"
+    notes <- o .:? "description_md"
+    meta <- case notes of
+      Nothing -> pure rawMeta
+      Just description -> do
+        values <- maybe (pure mempty) (either fail pure . Aeson.eitherDecodeStrict' . TE.encodeUtf8) rawMeta
+        pure $ Just $ TE.decodeUtf8 $ BL.toStrict $ Aeson.encode $ KeyMap.insert "arkham_horror_description_md" (String description) values
     taboo_id <- o .:? "taboo_id"
     url <- o .:? "url"
     decklist_id <- o .:? "id" >>= traverse parseDecklistId

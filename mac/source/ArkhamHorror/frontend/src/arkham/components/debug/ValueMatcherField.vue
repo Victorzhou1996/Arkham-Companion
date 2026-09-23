@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* A test against a number: "at least 2", "between 1 and 3", "any value".
  *
  * Stored as a comparison wrapping a `GameValue`, which in practice is always
@@ -116,17 +119,17 @@ const removeBranch = (at: number) =>
       <select
         class="op"
         :value="tag"
-        :title="label"
+        :title="ct(label)"
         @change="setTag(($event.target as HTMLSelectElement).value)"
       >
-        <option v-for="o in OPTIONS" :key="o.tag" :value="o.tag">{{ o.label }}</option>
+        <option v-for="o in OPTIONS" :key="o.tag" :value="o.tag">{{ ct(o.label) }}</option>
       </select>
 
       <template v-if="tag !== 'AnyValue' && tag !== 'GameValueOneOf'">
         <span class="rule" aria-hidden="true"></span>
 
         <template v-for="(_, at) in tag === 'Between' ? 2 : 1" :key="at">
-          <span v-if="at > 0" class="joiner">and</span>
+          <span v-if="at > 0" class="joiner">{{ ct("and") }}</span>
           <BindingField
             v-if="showBinding(at)"
             class="grow"
@@ -140,7 +143,7 @@ const removeBranch = (at: number) =>
             v-else
             type="number"
             :value="operands[at] ?? ''"
-            placeholder="a number"
+            :placeholder="ct('a number')"
             @input="setAmount(at, ($event.target as HTMLInputElement).value)"
             @keydown.stop
           />
@@ -164,11 +167,11 @@ const removeBranch = (at: number) =>
           :bindings="bindings"
           @update:modelValue="setBranch(at, $event)"
         />
-        <button type="button" class="remove" title="Remove this one" @click="removeBranch(at)">
+        <button type="button" class="remove" :title="ct('Remove this one')" @click="removeBranch(at)">
           ×
         </button>
       </div>
-      <button type="button" class="add" @click="addBranch">+ Add</button>
+      <button type="button" class="add" @click="addBranch">{{ ct("+ Add") }}</button>
     </div>
   </div>
 </template>
@@ -186,7 +189,7 @@ const removeBranch = (at: number) =>
  * that happen to touch. */
 .matcher {
   align-items: stretch;
-  background: #111827;
+  background: var(--surface-input);
   border: 1px solid #4b5563;
   border-radius: 4px;
   display: flex;
@@ -242,7 +245,7 @@ const removeBranch = (at: number) =>
 // Divides the test from what it tests against.
 .rule {
   align-self: center;
-  background: #374151;
+  background: var(--surface-hover);
   flex: none;
   height: 1.1rem;
   width: 1px;

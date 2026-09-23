@@ -56,7 +56,7 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <form v-if="health" @submit.prevent="authenticate">
+  <form v-if="health" class="tabletop-login" @submit.prevent="authenticate">
     <header><i class="secret"></i></header>
     <div class="error" v-if="signInError">{{signInError}}</div>
     <section>

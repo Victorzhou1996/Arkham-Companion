@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, onUnmounted, Ref } from 'vue'
+import { ref, computed, nextTick, onUnmounted, Ref } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter, useRoute } from 'vue-router'
 import {
@@ -22,6 +22,17 @@ import ImportGame from '@/arkham/components/ImportGame.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import { storeToRefs } from 'pinia'
 import { APP_VERSION } from '@/version'
+import { gameSummary } from '@/arkham/gameSummary'
+import { loadLocaleMessages } from '@/locales/messages'
+import { useI18n } from 'vue-i18n'
+import { onClickOutside } from '@vueuse/core'
+const { locale, t, te, setLocaleMessage } = useI18n()
+const zh = computed(() => locale.value.toLowerCase().startsWith('zh'))
+const chineseLocale = computed(() => zh.value ? locale.value : 'zh')
+if (!zh.value) {
+  void loadLocaleMessages('zh').then(result => setLocaleMessage(result.locale, result.messages))
+    .catch(error => console.warn('Could not load Chinese chapter titles', error))
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -75,6 +86,14 @@ const dismissedNotifications = JSON.parse(localStorage.getItem('dismissedNotific
 
 const activeGames = computed(() => games.value.filter((g) => g.gameState.tag !== 'IsOver'))
 const finishedGames = computed(() => games.value.filter((g) => g.gameState.tag === 'IsOver'))
+const gamesLoading = ref(true)
+const gamesLoadError = ref(false)
+let lastOpenedGame = ''
+try { lastOpenedGame = localStorage.getItem('arkham-last-opened-game') ?? '' } catch { /* preferences are optional */ }
+const continueGame = computed(() => activeGames.value.find(g => g.id === lastOpenedGame) ?? activeGames.value[0])
+const continueTitle = computed(() => continueGame.value
+  ? gameSummary(continueGame.value, key => te(key, chineseLocale.value) ? t(key, {}, { locale: chineseLocale.value }) : undefined)
+  : null)
 
 function writeHomeCache() {
   try {
@@ -100,8 +119,10 @@ fetchGames()
     writeHomeCache()
   })
   .catch((error) => {
+    gamesLoadError.value = true
     console.warn('Could not refresh saved games', error)
   })
+  .finally(() => { gamesLoading.value = false })
 
 // Epic Multiplayer events surface as a single entry each, inline with regular
 // games (group games are hidden from fetchGames by the backend). A user who is
@@ -160,6 +181,10 @@ const newGame = ref(route.path === "/new-game" || false)
 const showImportGame = ref(false)
 const importGameRef = ref<any>(null)
 const supportQrSrc = `${import.meta.env.BASE_URL}wechat_qr.png`
+const supportQrRef = ref<HTMLElement | null>(null)
+const showSupportQr = ref(false)
+onClickOutside(supportQrRef, () => { showSupportQr.value = false })
+const harborSrc = `${import.meta.env.BASE_URL}img/archive-harbor-20260921.png`
 const importGameSelected = computed(() => !!importGameRef.value?.selectedFile)
 const importGameCanSubmit = computed(() => importGameRef.value?.canSubmit ?? false)
 const importGameLoading = computed(() => importGameRef.value?.loading ?? false)
@@ -187,8 +212,12 @@ const toggleNewGame = () => {
   })
 }
 
-const toggleImportGame = () => {
+const toggleImportGame = async () => {
   showImportGame.value = !showImportGame.value
+  if (showImportGame.value) {
+    await nextTick()
+    document.querySelector('.load-game-panel')?.scrollIntoView({ block: 'nearest' })
+  }
 }
 
 const dismissNotification = (notification: AppNotification) => {
@@ -212,7 +241,7 @@ const isSupportNotification = (notification: AppNotification) => {
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container tabletop-lobby site-workspace">
     <NewGame v-if="currentUser && newGame" @close="toggleNewGame">
       <template #cancel>
         <button @click="toggleNewGame" class="cancel-new-game-button">
@@ -222,33 +251,57 @@ const isSupportNotification = (notification: AppNotification) => {
     </NewGame>
 
     <div v-if="!newGame" class="home page-content">
+      <aside class="home-support" aria-labelledby="support-title">
+        <div class="home-support-copy">
+          <h2 id="support-title">{{ $t('home.supportTitle') }}</h2>
+          <p>{{ zh ? '感谢支持服务器的运行与维护。' : 'Thank you for helping keep the server running.' }}</p>
+          <dl v-if="publicStats" class="server-stats" :aria-label="$t('home.serverStats')">
+            <div><dt>{{ $t('home.totalPlayers') }}</dt><dd>{{ publicStats.players.toLocaleString() }}</dd></div>
+            <div><dt>{{ $t('home.totalGames') }}</dt><dd>{{ publicStats.games.toLocaleString() }}</dd></div>
+            <div><dt>{{ $t('home.totalSaveSteps') }}</dt><dd>{{ publicStats.saveSteps.toLocaleString() }}</dd></div>
+          </dl>
+        </div>
+        <div class="home-support-donation">
+          <span>{{ zh ? '打赏作者' : 'Tip the author' }}</span>
+          <div ref="supportQrRef" class="home-support-qr-wrap"
+            @mouseenter="showSupportQr = true" @mouseleave="showSupportQr = false"
+            @focusout="showSupportQr = false" @keydown.esc.stop.prevent="showSupportQr = false">
+            <button class="home-support-qr" type="button" aria-controls="home-support-preview"
+              :aria-expanded="showSupportQr" :aria-label="zh ? '打赏作者：放大二维码' : 'Tip the author: enlarge QR code'"
+              @focus="showSupportQr = true" @click="showSupportQr = true">
+              <img :src="supportQrSrc" :alt="$t('home.supportAlt')" width="96" height="96" />
+            </button>
+            <div v-if="showSupportQr" id="home-support-preview" class="home-support-preview">
+              <img :src="supportQrSrc" :alt="$t('home.supportAlt')" width="360" height="360" />
+              <p>{{ $t('home.supportBody') }}</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <section class="archive-hero" :aria-label="zh ? '调查档案' : 'Investigation archive'">
+        <img class="archive-hero-art" :src="harborSrc" alt="" fetchpriority="high" />
+        <div class="archive-hero-copy">
+          <p class="archive-eyebrow">{{ continueGame ? (zh ? '最近游玩' : 'RECENTLY PLAYED') : (zh ? '诡镇奇谈 · 档案馆' : 'ARKHAM HORROR · ARCHIVES') }}</p>
+          <h1 :class="{ 'archive-game-title': continueTitle }" lang="zh-CN">{{ continueTitle?.zh ?? (zh ? '诡镇奇谈' : 'Arkham Horror') }}</h1>
+          <h2 lang="en">{{ continueTitle?.en ?? (zh ? '一段新的调查' : 'A new investigation') }}</h2>
+          <p class="archive-lede">{{ zh ? '打开档案，召集调查员。沿着灯火留下的方向，继续未完的故事。' : 'Open the archives. Gather your investigators. Follow the lamplight into the next chapter.' }}</p>
+          <div class="archive-actions">
+            <RouterLink v-if="currentUser && continueGame" class="archive-primary" :to="`/games/${continueGame.id}`">{{ zh ? '继续' : 'Continue' }}</RouterLink>
+            <button v-else-if="currentUser" class="archive-primary" type="button" @click="toggleNewGame">{{ $t('newGame') }}</button>
+            <RouterLink v-else class="archive-primary" to="/sign-in">{{ $t('logIn') }}</RouterLink>
+            <button v-if="currentUser" class="archive-secondary" type="button" @click="toggleImportGame">{{ $t('home.loadGame') }}</button>
+          </div>
+        </div>
+      </section>
       <div class="notification" v-for="notification in notifications" :key="notification.id">
         <p v-html="notification.body"></p>
         <a @click.prevent="dismissNotification(notification)" href="#">{{ $t('home.dismiss') }}</a>
       </div>
 
       <div class="home-layout">
-        <aside class="support-card" aria-labelledby="support-title">
-          <h3 id="support-title">{{ $t('home.supportTitle') }}</h3>
-          <img :src="supportQrSrc" :alt="$t('home.supportAlt')" />
-          <dl v-if="publicStats" class="server-stats" :aria-label="$t('home.serverStats')">
-            <div>
-              <dt>{{ $t('home.totalPlayers') }}</dt>
-              <dd>{{ publicStats.players.toLocaleString() }}</dd>
-            </div>
-            <div>
-              <dt>{{ $t('home.totalGames') }}</dt>
-              <dd>{{ publicStats.games.toLocaleString() }}</dd>
-            </div>
-            <div>
-              <dt>{{ $t('home.totalSaveSteps') }}</dt>
-              <dd>{{ publicStats.saveSteps.toLocaleString() }}</dd>
-            </div>
-          </dl>
-          <p>{{ $t('home.supportBody') }}</p>
-        </aside>
-
         <div class="container">
+          <div v-if="currentUser && gamesLoadError" class="site-notice" role="status">{{ zh ? '暂时无法刷新游戏列表，现有缓存仍可查看。请稍后刷新重试。' : 'Could not refresh games. Cached entries are still available; please retry shortly.' }}</div>
+          <div v-if="gamesLoading && !games.length" class="site-notice" role="status">{{ zh ? '正在读取游戏列表…' : 'Loading games…' }}</div>
           <section>
             <header class="main-header">
               <h2>{{ $t('activeGames') }}</h2>
@@ -298,17 +351,15 @@ const isSupportNotification = (notification: AppNotification) => {
             />
           </section>
 
-          <section>
-            <header>
-              <h2 v-if="finishedGames.length > 0">{{ $t('finishedGames') }}</h2>
-            </header>
+          <details v-if="finishedGames.length" class="finished-games">
+            <summary>{{ $t('finishedGames') }} <span>{{ finishedGames.length }}</span></summary>
             <GameRow
               v-for="game in finishedGames"
               :key="game.id"
               :game="game"
               :deleteGame="() => deleteGameEvent(game)"
             />
-          </section>
+          </details>
         </div>
       </div>
     </div>
@@ -360,20 +411,17 @@ h2 {
 }
 
 .server-stats {
-  border-bottom: 1px solid var(--box-border);
   color: var(--text);
-  display: grid;
-  font-size: 0.78em;
-  gap: 4px;
-  margin: 0 0 10px;
-  opacity: 0.78;
-  padding: 0 2px 10px;
-  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 6px 18px;
+  margin: 10px 0 0;
 
   div {
     align-items: baseline;
     display: flex;
-    justify-content: space-between;
+    gap: 6px;
   }
 
   dt,
@@ -412,43 +460,6 @@ h2 {
 
 .container {
   min-width: 0;
-}
-
-.support-card {
-  background: var(--box-background);
-  border: 1px solid var(--box-border);
-  border-radius: 6px;
-  color: var(--title);
-  padding: 12px;
-  position: sticky;
-  top: 12px;
-  width: 248px;
-
-  h3 {
-    font-family: teutonic, sans-serif;
-    font-size: 1.1em;
-    margin: 0 0 8px;
-    text-transform: uppercase;
-  }
-
-  img {
-    background: white;
-    border-radius: 4px;
-    display: block;
-    margin-bottom: 10px;
-    max-width: 100%;
-    width: 222px;
-  }
-
-  p {
-    color: var(--text);
-    font-size: 0.9em;
-    line-height: 1.45;
-  }
-
-  @media (max-width: 1100px) {
-    display: none;
-  }
 }
 
 @media (max-width: 1100px) {

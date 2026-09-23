@@ -41,6 +41,7 @@
         / ApiV1ArkhamDecksR GET POST
         !/fetch ApiV1ArkhamDecksFetchR POST
         !/validate ApiV1ArkhamDecksValidateR POST
+        !/starters ApiV1ArkhamStarterDecksR POST
         /#ArkhamDeckId ApiV1ArkhamDeckP:
           / ApiV1ArkhamDeckR GET PUT DELETE
           /sync ApiV1ArkhamSyncDeckR POST

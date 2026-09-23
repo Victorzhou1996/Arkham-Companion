@@ -2,7 +2,7 @@
   "codex": {
     "drRosaMarquez": {
       "body": "<h3>@:theFeastOfHemlockVale.theThingInTheDepths.codex.drRosaMarquez.title </h3><p>“看看这个。”马尔克斯博士站在一根条纹图案的树干前，招呼你过去。“这不可能，五种不同的物种融合在一起，我想不到有任何嫁接技术能办到这种事。”她用拐杖敲击着树干，俯下身拉出一束五颜六色的根须，看起来像天使面。“但它们很坚韧，根须几乎像是菌类的菌丝体，只是更加粗壮，它们牢牢固定在树上，使它不至于沉没。”</p><p class='basic right'>选择在场上的任意一个地点。如果是_沼泽_地点，将其上的所有沉洞移除。如果是_沉没_地点，将其翻面，保留其上的所有标记和附属。</p>",
-      "title": "{'{'}codex{'}'} Codex Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
+      "title": "{'{'}codex{'}'} 圣典 Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
     },
     "judithPark": {
       "grudge": "<h3>@:theFeastOfHemlockVale.theThingInTheDepths.codex.judithPark.title </h3><p>***如果茱蒂丝分享了一段恩怨：***</p><p>“趴下！”茱蒂丝大叫，你在这位娇小的女性举起来福枪时迅速蹲下，她举枪、瞄准，然后射击你片刻前站的位置。一声尖啸传来，紧跟着的是巨大的水花声。茱蒂丝带着得意的笑容将你扶起来：“你最好帮我杀了那只池底的怪物，就在今天。”</p><p class='basic right'>选择在场上的一个非精英敌人。击败该敌人。 控制茱蒂丝．朴。</p>",
@@ -11,7 +11,7 @@
     },
     "riverHawthorne": {
       "controlled": "<h3>@:theFeastOfHemlockVale.theThingInTheDepths.codex.riverHawthorne.title </h3><p>_如果你控制了芮福．霍桑，并且位于蔓越莓沼泽地点： （参见第28页的地点放置图）:_</p><p>“谢谢你，虽然我自己也能搞定，但还是感谢你的好意。”芮福边说边收集起一束蔓越莓花。“谁会要蔓越莓的花啊，只有瑞秋主母吧，我敢说她都把她不喜欢的人派来这里，然后他们就会‘消失’。我受够继续拍那只老狐狸的马屁了，等我把这座岛从阿特伍德家手中抢回来，第一个就要她走人。”</p><p class='basic right'>提升芮福．霍桑的友好度。每位调查员取得1点奖励经验值。 将芮福．霍桑从游戏中移除。</p>",
-      "title": "{'{'}codex{'}'} Codex 5: 芮福．霍桑",
+      "title": "{'{'}codex{'}'} 圣典 5: 芮福．霍桑",
       "uncontrolled": "<h3>@:theFeastOfHemlockVale.theThingInTheDepths.codex.riverHawthorne.title </h3><p>**如果你没有控制芮福．霍桑：**</p><p>“我恨透这个沼泽了，我敢说所有在谷地失踪的人都被丢到这个鬼地方了。这里这么危险，瑞秋主母还是叫我来这，我多希望自己现在在纽约啊。”芮福手上挂着提篮，与过大的防水连身衣显得格格不入。“摘一些蔓越莓来给我，快点！”</p><p class='basic right'>请记住“芮福‘请求’帮助。” 控制芮福．霍桑。 你可以在蔓越莓沼泽地点再次触发此圣典 （参见第28页的地点放置图）.</p>"
     },
     "xp": {
@@ -25,21 +25,21 @@
     "day2": "如果目前是_第二日_：, 跳至 _引言4_.",
     "day3": "如果目前是_第三日_：, 跳至 _引言7_.",
     "intro1": "<p>_引言1_: 你们走在前往艾湾的路上，一条分岔路急遽转向，指引通往东方沼泽的方向。这里的地貌茂盛的令人难以置信，几乎像是热带雨林的景观，树干上有虹彩般的图样，树木如静默的守卫般伫立在黑色镜面般的平静池塘旁。马尔克斯博士跟茱蒂丝在后车斗互相挖苦，偶尔挥手赶走叮人的蚊虫，一开始她们的谈话还是以善意居多，但气氛逐渐变得紧张。你询问朱蒂丝有没有什么有趣的狩猎故事，试图打破这个紧绷的状态。</p>",
-    "intro2": "<p>_引言2_: 茱蒂丝毫不迟疑地说：“看到这个疤吗？这是在一场酒吧斗殴里弄的，一个富家子弟用碎玻璃瓶割伤我，只是场友善的争执，你懂得。他的家族就来自这一区，容我再强调一次，他们非常有钱，而且担心这种丑闻会传出去，所以他们给了我一个工作，换取我守口如瓶。”</p><p>马尔克斯博士有点烦躁地说：“我不知道自己想从保镳那听到什么样的故事，但绝对不是这种。”一股刺鼻的微风拂过沼泽，打断了谈话，空气中带着一丝死物的甜腻味。卡车停了下来，茱蒂丝翻了个白眼，穿上一套老旧的防水连身衣，将来福枪扛在肩上，走进沼泽之中。</p><p>“信不信由你，我是看在钱的份上才来的。”她说。</p><ul><li>提升茱蒂丝．朴的友好度。每位调查员取得1点奖励经验值。</li></ul><p class='basic right'>进入 _Setup_.</p>",
-    "intro3": "<p>_引言3_: 这位年轻女性紧绷着的表情放松了下来，“东方沼泽里有某种巨型生物，一只跟杀人鲸差不多大小的顶级掠食者，牙齿跟剃刀一样利，眼睛的数量多的不自然，全身散发腐烂海草的味道。”你提出这听起来像是她的亲身经历，她点了点头：“牠欠我一次，我跟牠有笔帐要算，看到这个了吗？”她指着自己脸上的一道狰狞的疤痕说，“那玩意儿差点弄瞎我的眼睛，我打算以眼还眼。”马尔克斯博士看起来有点不知所措：“我猜妳觉得一个学者会接受任何天方夜谭，但如果妳期望我会相信妳的话 — ”一股刺鼻的微风拂过沼泽，打断了茱蒂丝的反驳，空气中带着一丝死物的甜腻味。卡车停了下来，茱蒂丝用头巾摀住口鼻，穿上一套老旧的防水连身衣，将来福枪扛在肩上，走进沼泽之中。</p><p>“也许当你亲眼看到后，妳会有不同想法。”她说。</p><ul><li>在茱蒂丝．朴的笔记中，记录下 <i>茱蒂丝分享了一段恩怨</i>.</li></ul><p class='basic right'>进入 _Setup_.</p>",
+    "intro2": "<p>_引言2_: 茱蒂丝毫不迟疑地说：“看到这个疤吗？这是在一场酒吧斗殴里弄的，一个富家子弟用碎玻璃瓶割伤我，只是场友善的争执，你懂得。他的家族就来自这一区，容我再强调一次，他们非常有钱，而且担心这种丑闻会传出去，所以他们给了我一个工作，换取我守口如瓶。”</p><p>马尔克斯博士有点烦躁地说：“我不知道自己想从保镳那听到什么样的故事，但绝对不是这种。”一股刺鼻的微风拂过沼泽，打断了谈话，空气中带着一丝死物的甜腻味。卡车停了下来，茱蒂丝翻了个白眼，穿上一套老旧的防水连身衣，将来福枪扛在肩上，走进沼泽之中。</p><p>“信不信由你，我是看在钱的份上才来的。”她说。</p><ul><li>提升茱蒂丝．朴的友好度。每位调查员取得1点奖励经验值。</li></ul><p class=\"basic right\">进入 _冒险设置_.</p>",
+    "intro3": "<p>_引言3_: 这位年轻女性紧绷着的表情放松了下来，“东方沼泽里有某种巨型生物，一只跟杀人鲸差不多大小的顶级掠食者，牙齿跟剃刀一样利，眼睛的数量多的不自然，全身散发腐烂海草的味道。”你提出这听起来像是她的亲身经历，她点了点头：“牠欠我一次，我跟牠有笔帐要算，看到这个了吗？”她指着自己脸上的一道狰狞的疤痕说，“那玩意儿差点弄瞎我的眼睛，我打算以眼还眼。”马尔克斯博士看起来有点不知所措：“我猜妳觉得一个学者会接受任何天方夜谭，但如果妳期望我会相信妳的话 — ”一股刺鼻的微风拂过沼泽，打断了茱蒂丝的反驳，空气中带着一丝死物的甜腻味。卡车停了下来，茱蒂丝用头巾摀住口鼻，穿上一套老旧的防水连身衣，将来福枪扛在肩上，走进沼泽之中。</p><p>“也许当你亲眼看到后，妳会有不同想法。”她说。</p><ul><li>在茱蒂丝．朴的笔记中，记录下 <i>茱蒂丝分享了一段恩怨</i>.</li></ul><p class=\"basic right\">进入 _冒险设置_.</p>",
     "intro4": "<p>我真的不懂为什么大家都喜欢看《地心冒险》，中空的地球？听起来太疯狂了。”西奥的闲聊声伴随着大雨打在车厢上的声音。沼泽的地貌茂盛的令人难以置信，几乎像是热带雨林的景观，树干上有虹彩般的图样，树木如静默的守卫般伫立在黑色镜面般的平静池塘旁。卡车突然停下，陷入一漥烂泥中，轮子不断发出空转的声音。西奥说：“我好像需要一点帮助。”</p><p class='basic'>调查员必须决定*(选择一项)*：</p><ul><li>*“用力推！”* 进入 _引言5_.</li><li>*“提高引擎转速。”* 跳至 _引言6_.</li></ul>",
-    "intro5": "<p>经过一番挣扎，你们设法将车轮推出了坑洞，指引西奥通过满是坑洞的崎岖河岸。几袋补给品从车斗掉出来，西奥不在意的挥挥手说：“我回程的时候再捡吧，我得去艾湾处理一些家务事。”西奥将你们放在沼泽边缘，冰冷的雨雾笼罩你们。</p><ul><li>每位调查员在下一场冒险开始时减少2资源。</li></ul><p class='basic right'>进入 _Setup_.</p>",
-    "intro6": "<p>西奥在车后用肩膀顶着卡车，你则大力踩下油门，车子向前猛冲，前轮却再度落入另一个坑洞中。西奥在你身边跳上车，恼怒的喘着气说：“我想你们可能得走过去，已经不远了。”</p><ul><li>每位调查员在下一场冒险开始时减少1次行动。</li></ul><p class='basic right'>进入 _Setup_.</p>",
-    "intro7": "<p>_引言7_: 通往东方沼泽的路上布满积水的坑洞，映射着天空中明亮多彩的光芒。随着道路越来越崎岖，西奥停下了卡车说到：“抱歉，我也不想这样，但这台老伙计没办法通过那些泥巴。”你们下了车，向他道别，然后步行穿越泥泞的道路，路边的树木被染上艳丽的色彩，光芒从树干上的裂缝倾泄而出。</p>",
-    "intro8": "<p>_引言8_: 明亮的月光将夜晚变得如白天一般，照亮卡车旁荒凉的地貌，像是在童话故事中。一股刺鼻的微风拂过沼泽，空气中带着一丝死物的甜腻味，你们停在岸边，抬头望着月亮逐渐被云给遮盖。月光映照出一棵孤立瘦长的树木，它的轮廓直入天际，像是朝天空伸出双手一般。你们将补给品从卡车上卸下，但一转头那棵瘦高的树木就消失了，只在黑暗中留下一片涟漪。</p>",
+    "intro5": "<p>经过一番挣扎，你们设法将车轮推出了坑洞，指引西奥通过满是坑洞的崎岖河岸。几袋补给品从车斗掉出来，西奥不在意的挥挥手说：“我回程的时候再捡吧，我得去艾湾处理一些家务事。”西奥将你们放在沼泽边缘，冰冷的雨雾笼罩你们。</p><ul><li>每位调查员在下一场冒险开始时减少2资源。</li></ul><p class=\"basic right\">进入 _冒险设置_.</p>",
+    "intro6": "<p>西奥在车后用肩膀顶着卡车，你则大力踩下油门，车子向前猛冲，前轮却再度落入另一个坑洞中。西奥在你身边跳上车，恼怒的喘着气说：“我想你们可能得走过去，已经不远了。”</p><ul><li>每位调查员在下一场冒险开始时减少1次行动。</li></ul><p class=\"basic right\">进入 _冒险设置_.</p>",
+    "intro7": "<p>_引言7_: 通往东方沼泽的路上布满积水的坑洞，映射着天空中明亮多彩的光芒。随着道路越来越崎岖，西奥停下了卡车说到：“抱歉，我也不想这样，但这台老伙计没办法通过那些泥巴。”你们下了车，向他道别，然后步行穿越泥泞的道路，路边的树木被染上艳丽的色彩，光芒从树干上的裂缝倾泄而出。</p><p class=\"basic right\">进入_冒险设置_。</p>",
+    "intro8": "<p>_引言8_: 明亮的月光将夜晚变得如白天一般，照亮卡车旁荒凉的地貌，像是在童话故事中。一股刺鼻的微风拂过沼泽，空气中带着一丝死物的甜腻味，你们停在岸边，抬头望着月亮逐渐被云给遮盖。月光映照出一棵孤立瘦长的树木，它的轮廓直入天际，像是朝天空伸出双手一般。你们将补给品从卡车上卸下，但一转头那棵瘦高的树木就消失了，只在黑暗中留下一片涟漪。</p><p class=\"basic right\">进入_冒险设置_。</p>",
     "judithHigh": "如果茱蒂丝．朴的友好度不低于1, 进入 _引言2_.",
     "judithLow": "否则，进入 _序言 3_.",
     "label": {
       "push": "*“用力推！”*",
       "rev": "*“提高引擎转速。”*"
     },
-    "nightSkip": "如果目前是 _第一夜_ or _第二夜_, 跳至 _引言8_. 否则： </blockquote>",
-    "title": "Scenario: 池底之物",
+    "nightSkip": "如果目前是 _第一夜_ 或 _第二夜_, 跳至 _引言8_. 否则： </blockquote>",
+    "title": "冒险: 池底之物",
     "xp": {
       "bonus": "奖励经验值"
     }
@@ -73,7 +73,7 @@
       "title": "结局 4"
     },
     "resolution5": {
-      "body": "<p>“1926年6月，米斯卡塔尼克大学实地调查。成员：马尔克斯、马斯格雷夫，及其他人员。调查区域：东方沼泽。发现数种尺寸异常的花卉，能够控制宿主的寄生品种。生态系统过度丰富且复杂，存在极具攻击性的水生生物，比起森林，更像是热带丛林，完全不同于一般定义的沼泽。我们必须争取更多资金，返回进行调查。”</p><ul><li>每位调查员取得经验值，数量等于胜利区所有卡牌的胜利X数值之和。**每位调查员现在可以花费剧本日志中，“未花费的经验值”下所记录的经验值。**</li><li>在剧本日志中“已调查区域”的区域，将*东方沼泽*打勾。</li></ul>",
+      "body": "<p>“1926年6月，米斯卡塔尼克大学实地调查。成员：马尔克斯、马斯格雷夫，及其他人员。调查区域：东方沼泽。发现数种尺寸异常的花卉，能够控制宿主的寄生品种。生态系统过度丰富且复杂，存在极具攻击性的水生生物，比起森林，更像是热带丛林，完全不同于一般定义的沼泽。我们必须争取更多资金，返回进行调查。”</p><ul><li>每位调查员取得经验值，数量等于胜利区所有卡牌的胜利X数值之和（{xp}）。**每位调查员现在可以花费剧本日志中，“未花费的经验值”下所记录的经验值。**</li><li>在剧本日志中“已调查区域”的区域，将*东方沼泽*打勾。</li></ul>",
       "title": "结局5"
     },
     "xp": {
@@ -84,16 +84,16 @@
   "setup": {
     "currentDayMarker": "检查剧本日志，确认目前的日期与时刻。将时刻卡牌以对应的(_白日{'{'}day{'}'}_)或(_黑夜{'{'}night{'}'}_)面放置入场。",
     "currentDaySet": "此外，检查剧本日志，确认目前的日期，并收齐对应的*首日*、*次日*或*终日*遭遇组。这些遭遇组以以下符号表示：<section class='encounter-sets'><img src='{setImgPath}/the-first-day.png' /><img src='{setImgPath}/the-second-day.png' /><img src='{setImgPath}/the-final-day.png' /></section>",
-    "doomDay2": "如果目前是_第二日_： or _第二夜_，在密谋上放置1个毁灭标记。",
+    "doomDay2": "如果目前是_第二日_： 或 _第二夜_，在密谋上放置1个毁灭标记。",
     "doomDay3": "如果目前是_第三日_：，在密谋上放置2个毁灭标记。",
-    "gatherSets": "Gather all cards from the following 遭遇组中的所有地点: *池底之物*, *Blight*, *The Forest*, and *Mutations*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/the-thing-in-the-depths.png' /><img src='{setImgPath}/blight.png' /><img src='{setImgPath}/the-forest.png' /><img src='{setImgPath}/mutations.png' /></section>",
-    "locations": "收齐 10 double-sided locations and shuffle them. Remove one of these 遭遇组剩余的其他地点从游戏中移除 at random. 将 remaining 9 locations into play in a 3×3 grid with their _Bog_ side facing up.",
-    "removeResidents": "Remove each other card in the *Residents* 遭遇组中的其他卡牌从游戏中移除。",
-    "residents": "如果目前是 (_白日{'{'}day{'}'}_), gather each 剧情支持 from the *Residents* 遭遇组中收齐所有剧情支持。 这个遭遇组以以下符号表示:<section class='encounter-sets'><img src='{setImgPath}/residents.png' /></section>",
+    "gatherSets": "找出下列遭遇组的所有卡牌：*池底之物*、*枯萎*、*森林*和*变异*。这些遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/the-thing-in-the-depths.png\"/><img src=\"{setImgPath}/blight.png\"/><img src=\"{setImgPath}/the-forest.png\"/><img src=\"{setImgPath}/mutations.png\"/></section>",
+    "locations": "找出10张双面地点并洗混。随机将其中1张移出游戏。将剩余9张地点以_沼泽_面朝上，按3×3方阵放置入场。",
+    "removeResidents": "将*居民*遭遇组中的其他每张卡牌移出游戏。",
+    "residents": "如果当前为_白日{'{'}day{'}'}_，找出*居民*遭遇组中的每张剧情支援。该遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/residents.png\"/></section>",
     "residentsDay1": "将茱蒂丝．朴放到北岸地点。将萝莎．马尔克斯博士放置入场，置于任意调查员的控制之下。本场冒险期间，她不占用盟友槽位。",
-    "residentsDay2Or3": "如果目前是_第二日_或_第三日_：, place 芮福．霍桑 at the 北岸 location.",
+    "residentsDay2Or3": "如果当前为_第二日_或_第三日_，将芮福．霍桑放置到北岸地点。",
     "setAsideEnemies": "将下列卡牌放在一旁，置于场外：池底之物敌人、拟鳄龟杂生\n物敌人、所有5张缠握触须敌人。",
-    "shuffleLocations": "See Location Adjacency below.",
+    "shuffleLocations": "参见下方的“地点相邻”。",
     "startingLocation": "每位调查员从“起始地点”开始游戏。"
   },
   "sinkingLocations": {
@@ -108,21 +108,21 @@
   ],
   "tokens": {
     "easyStandard": {
-      "cultist": "-1. You may remove 1 sinkhole from the nearest Bog location.",
-      "elderThing": "-4. If you fail, search the encounter deck and discard pile for a Grasping Tendril enemy and draw it, ignoring its surge keyword.",
-      "skull": "-X. X is half the number of Sunken locations in play (向上取整).",
-      "tablet": "-3. If you fail, place 1 damage on the nearest Bog location, as a sinkhole."
+      "cultist": "-1。你可以从最近的沼泽地点移除1个陷坑。",
+      "elderThing": "-4。若你失败，在遭遇牌库和遭遇弃牌堆中搜寻1个攫取触须敌人并抽取它，忽略其涌动关键词。",
+      "skull": "-X。X为场上沉没地点数量的一半（向上取整）。",
+      "tablet": "-3。若你失败，在最近的沼泽地点上放置1点伤害，作为陷坑。"
     },
     "hardExpert": {
-      "cultist": "-3. If you succeed, you may remove 1 sinkhole from the nearest Bog location.",
-      "elderThing": "-5. 查找 encounter deck and discard pile for a Grasping Tendril enemy and draw it, ignoring its surge keyword.",
-      "skull": "-X. X is the number of Sunken locations in play (向上取整).",
-      "tablet": "-5. Place 1 damage on the nearest Bog location, as a sinkhole."
+      "cultist": "-3。若你成功，你可以从最近的沼泽地点移除1个陷坑。",
+      "elderThing": "-5。在遭遇牌库和遭遇弃牌堆中搜寻1个攫取触须敌人并抽取它，忽略其涌动关键词。",
+      "skull": "-X。X为场上沉没地点的数量。",
+      "tablet": "-5。在最近的沼泽地点上放置1点伤害，作为陷坑。"
     }
   },
   "ui": {
     "cranberryBog": "蔓越莓\n沼泽",
     "northShore": "北岸",
-    "startingLocation": "Starting Location"
+    "startingLocation": "起始地点"
   }
 }

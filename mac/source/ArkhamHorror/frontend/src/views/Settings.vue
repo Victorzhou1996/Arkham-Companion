@@ -8,8 +8,8 @@ import SettingsForm from '@/components/SettingsForm.vue'
 const store = useUserStore()
 const { currentUser } = storeToRefs(store)
 
-const updateReleaseChannels = async (beta: boolean, dev: boolean) => {
-  await api.put<User>('settings', { beta, dev })
+const updateReleaseChannels = async (beta: boolean, dev: boolean, phaseTransitionNotifications: boolean) => {
+  await api.put<User>('settings', { beta, dev, phaseTransitionNotifications })
   await store.setCurrentUser()
 }
 </script>

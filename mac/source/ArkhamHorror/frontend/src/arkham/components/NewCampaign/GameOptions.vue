@@ -657,7 +657,7 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
         </div>
       </div>
       <div class="card rules-card">
-        <button type="button" class="rules-toggle" @click="rulesExpanded = !rulesExpanded">
+        <button type="button" class="rules-toggle" :aria-expanded="rulesExpanded" aria-controls="advanced-rules-body" @click="rulesExpanded = !rulesExpanded">
           <span class="card-title" style="margin-bottom: 0">{{
             $t('create.advancedRulesConfiguration') ?? 'Advanced Rules Configuration'
           }}</span>
@@ -673,7 +673,7 @@ function setOptEnabled(o: RecommendedToggle, enabled: boolean) {
           </span>
         </button>
         <transition name="slide">
-          <div v-if="rulesExpanded" class="rules-body subcard">
+          <div v-if="rulesExpanded" id="advanced-rules-body" class="rules-body subcard">
             <div class="card-title small">{{ $t('create.rulesPresets') ?? 'Presets' }}</div>
             <div class="preset-options">
               <button

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import {
   computed,
+  inject,
   markRaw,
   nextTick,
   onMounted,
@@ -13,6 +14,19 @@ import {
 import { useToast } from 'vue-toastification'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { tabletopUndoKey } from '@/arkham/tabletopControls'
+import { appendedLogCount } from '@/arkham/logPresentation'
+import { automaticTriggerSkip, authorizedAutomaticSeat } from '@/arkham/triggerModeChoices'
+import { undoShortcut, allowsUndoInput } from '@/arkham/undoShortcut'
+import TabletopLayoutControls from '@/arkham/components/TabletopLayoutControls.vue'
+import EdgeTabletopControls from '@/arkham/components/EdgeTabletopControls.vue'
+import '@/styles/edgeTabletop.css'
+import { deviceInfoKey, provideMobileBoard } from '@/arkham/mobile/context'
+import { phonePresentation, readDeviceInfo } from '@/arkham/mobile/devicePresentation'
+import MobileGameHeader from '@/arkham/mobile/MobileGameHeader.vue'
+import { useMobileActionHints } from '@/arkham/mobile/useMobileActionHints'
+import '@/styles/mobileGame.css'
+import { useTabletopLabels } from '@/arkham/composables/useTabletopLabels'
 import confetti from '@/effects/confetti'
 import { useWebSocket, useResizeObserver } from '@vueuse/core'
 import { MenuItem } from '@headlessui/vue'
@@ -20,6 +34,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,
   ArrowUturnLeftIcon,
+  ArrowsRightLeftIcon,
   BackwardIcon,
   BeakerIcon,
   BoltIcon,
@@ -77,6 +92,7 @@ import { buildGameIndexes, gameIndexesKey } from '@/arkham/composables/useGameIn
 import { Card, asCardCode, cardDecoder, toCardContents } from '@/arkham/types/Card'
 import { customCardDef, isCustomCardCode } from '@/arkham/customCards'
 import * as Message from '@/arkham/types/Message'
+import type { Phase } from '@/arkham/types/Phase'
 import { type Question } from '@/arkham/types/Question'
 import type { Source } from '@/arkham/types/Source'
 import { TarotCard, tarotCardDecoder, tarotCardImage } from '@/arkham/types/TarotCard'
@@ -98,11 +114,14 @@ import StandaloneScenario from '@/arkham/components/StandaloneScenario.vue'
 import AchievementToast from '@/arkham/components/AchievementToast.vue'
 import ResponseStatusBar from '@/arkham/components/ResponseStatusBar.vue'
 import NarrationMenu from '@/arkham/components/NarrationMenu.vue'
+import { setMusicScenario } from '@/arkham/bgm'
 import { clearCurrentNarration, stopNarration } from '@/arkham/narration'
 import StoryQuestion from '@/arkham/components/StoryQuestion.vue'
 import Draggable from '@/components/Draggable.vue'
 import Menu from '@/components/Menu.vue'
 import Prompt from '@/components/Prompt.vue'
+import GameLoadStatus from '@/arkham/components/GameLoadStatus.vue'
+import { createGameLoader, type GameLoadFailure } from '@/arkham/gameLoadState'
 
 interface GameCard {
   title: string
@@ -124,6 +143,7 @@ type ServerResult =
   | { tag: 'GameCard'; contents: string }
   | { tag: 'GameCardOnly'; contents: string }
   | { tag: 'GameUpdate'; contents: string }
+  | { tag: 'PhaseChanged'; contents: Phase }
   | { tag: 'GameShowDiscard'; contents: string }
   | { tag: 'GameShowUnder'; contents: string }
   | { tag: 'GameUI'; contents: string }
@@ -238,6 +258,11 @@ const hasEventBar = computed(() => !!organizerEventId.value || !!playerEventId.v
 // and it defaults to 0 for ordinary, non-event games — no layout shift for them.
 const epicBarRef = ref<HTMLElement | null>(null)
 const epicBarHeight = ref(0)
+const tabletopToolsRef = ref<HTMLElement | null>(null)
+const tabletopToolsHeight = ref(0)
+useResizeObserver(tabletopToolsRef, () => {
+  tabletopToolsHeight.value = tabletopToolsRef.value?.offsetHeight ?? 0
+})
 useResizeObserver(epicBarRef, () => {
   epicBarHeight.value = epicBarRef.value?.offsetHeight ?? 0
 })
@@ -264,6 +289,11 @@ interface PlayabilityInfo {
 }
 
 const game = shallowRef<Arkham.Game | null>(null)
+watch(() => [game.value?.id, game.value?.scenario?.id, game.value?.phase, game.value?.gameState.tag], () => {
+  const current = game.value
+  setMusicScenario(current?.id ?? null, current?.phase === 'CampaignPhase' || current?.gameState.tag === 'IsOver' ? null : current?.scenario?.id ?? null)
+})
+onUnmounted(() => setMusicScenario(null, null))
 let stopDeckSaveNotifications: (() => void) | null = null
 let applyingSavedDeck = false
 const onlineMode = import.meta.env.VITE_ONLINE_MODE === 'true'
@@ -272,6 +302,7 @@ const archiveChecking = ref(onlineMode)
 const archiving = ref(false)
 const isExpertMode = computed(() => game.value?.settings.settingsUndoMode === 'expert')
 const canUseDebug = computed(() => !isExpertMode.value)
+const tabletop = useTabletopLabels()
 const canUseUndo = computed(
   () => !isExpertMode.value && (!onlineMode || (!archiveChecking.value && !archived.value)),
 )
@@ -393,18 +424,42 @@ const isCthulhuDeckReveal = computed(() => {
 const showTheSilenceModal = ref(false)
 const playabilityInfo = ref<PlayabilityInfo | null>(null)
 const gameLog = shallowRef<readonly string[]>(Object.freeze([]))
+const unreadLogCount = ref(0)
 const playerId = ref<string | null>(null)
+// Authentication seat is distinct from the freely selectable viewing perspective.
+const authenticatedSeat = ref<string | null>(null)
 const ready = ref(false)
+watch(ready, loaded => {
+  if (loaded) { try { localStorage.setItem('arkham-last-opened-game', props.gameId) } catch { /* optional browsing preference */ } }
+})
+const loadFailure = ref<GameLoadFailure | null>(null)
 const resultQueue = ref<any>([])
 const showLog = ref(false)
 const showShortcuts = ref(false)
+const mobileSidebarQuery = '(max-width: 800px), (pointer: coarse) and (max-height: 600px) and (max-width: 1000px)'
+const presentationDevice = inject(deviceInfoKey, ref(readDeviceInfo()))
 const isMobileViewport = () =>
-  typeof window !== 'undefined' && window.matchMedia('(max-width: 800px)').matches
+  typeof window !== 'undefined' && phonePresentation(window.innerWidth, window.innerHeight, presentationDevice.value)
 const showSidebar = ref(
   isMobileViewport()
     ? false
-    : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'true'),
+    : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'false'),
 )
+const sidebarViewport = window.matchMedia(mobileSidebarQuery)
+const onSidebarViewportChange = (event: MediaQueryListEvent) => {
+  showSidebar.value = isMobileViewport() ? false : JSON.parse(getGameLocalStorageItem(props.gameId, 'showSidebar') ?? 'false')
+}
+watch(showSidebar, value => { if (!isMobileViewport()) setGameLocalStorageItem(props.gameId, 'showSidebar', JSON.stringify(value)) })
+let logBaselineReady = false
+let lastObservedLog: readonly string[] = []
+watch([gameLog, ready, showSidebar], ([entries, loaded, visible]) => {
+  if (!loaded) { logBaselineReady = false; unreadLogCount.value = 0 }
+  else if (visible || !logBaselineReady) unreadLogCount.value = 0
+  else if (entries.length < lastObservedLog.length || lastObservedLog.some((entry, index) => entries[index] !== entry)) unreadLogCount.value = 0
+  else unreadLogCount.value += appendedLogCount(lastObservedLog, entries)
+  lastObservedLog = entries
+  logBaselineReady = loaded
+}, { flush: 'sync' })
 const socketError = ref(false)
 const error = ref<string | null>(null)
 const solo = ref(false)
@@ -445,6 +500,56 @@ const storyAnswerPending = ref(false)
 const oldQuestion = ref<Record<string, Question> | null>(null)
 const skipAllPending = ref<Set<string>>(new Set())
 const { t } = useI18n()
+const phaseNotification = ref<Phase | null>(null)
+const phaseNotificationQueue = ref<Phase[]>([])
+const standardPhases: Phase[] = ['MythosPhase', 'InvestigationPhase', 'EnemyPhase', 'UpkeepPhase']
+const phaseNotificationPlaying = ref(false)
+const phaseNotificationColor = computed(() => ({
+  MythosPhase: '#7b4b91',
+  InvestigationPhase: '#a87532',
+  EnemyPhase: '#9f2929',
+  UpkeepPhase: '#315b70',
+  CampaignPhase: '#5b5b5b',
+}[phaseNotification.value ?? 'CampaignPhase']))
+
+function showPhaseNotification(phase: Phase) {
+  if (!userStore.currentUser?.phaseTransitionNotifications) return
+
+  const target = game.value?.phase
+  const phases = phase === 'EnemyPhase'
+    ? ['EnemyPhase', 'UpkeepPhase', 'MythosPhase'] as Phase[]
+    : standardPhases.includes(phase) && target && standardPhases.includes(target) && target !== phase
+    ? (() => {
+        const cycle = [...standardPhases, ...standardPhases]
+        const start = cycle.indexOf(phase)
+        const end = cycle.indexOf(target, start + 1)
+        return end >= 0 ? cycle.slice(start, end + 1) : [phase]
+      })()
+    : [phase]
+
+  for (const nextPhase of phases) {
+    if (phaseNotification.value === nextPhase || phaseNotificationQueue.value.includes(nextPhase)) continue
+    phaseNotificationQueue.value.push(nextPhase)
+  }
+  if (!uiLock.value) void drainPhaseNotificationQueue()
+}
+
+const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
+
+async function drainPhaseNotificationQueue() {
+  if (phaseNotificationPlaying.value) return
+  phaseNotificationPlaying.value = true
+  try {
+    while (phaseNotificationQueue.value.length > 0) {
+      phaseNotification.value = phaseNotificationQueue.value.shift() ?? null
+      await wait(1300)
+      phaseNotification.value = null
+      await nextTick()
+    }
+  } finally {
+    phaseNotificationPlaying.value = false
+  }
+}
 
 const format = (str: string) => {
   return handleEmbeddedI18n(str, t)
@@ -600,6 +705,8 @@ watch(
   },
 )
 
+// Run on entry too: an ongoing game stays false before and after loading,
+// so a change-only watcher would leave online undo checking forever.
 watch(gameOver, async (ended) => {
   if (!onlineMode) return
   if (!ended || props.spectate) {
@@ -615,7 +722,7 @@ watch(gameOver, async (ended) => {
   } finally {
     archiveChecking.value = false
   }
-})
+}, { immediate: true })
 
 async function exportAndArchive() {
   if (!window.confirm(t('archiveConfirm'))) return
@@ -688,6 +795,18 @@ const isActualScenarioView = computed(() => {
     && activeQuestionTag !== 'ContinueCampaign'
 })
 
+const mobileBoard = provideMobileBoard(isActualScenarioView, presentationDevice)
+const mobileGameRoot = ref<HTMLElement | null>(null)
+useMobileActionHints(mobileGameRoot, mobileBoard)
+const mobileEnabled = mobileBoard.enabled
+const touchEnabled = mobileBoard.touchEnabled
+const tabletEnabled = mobileBoard.tablet
+const mobileZone = mobileBoard.zone
+const mobileTools = mobileBoard.tools
+const mobileTopCollapsed = mobileBoard.topCollapsed
+const mobileBottomCollapsed = mobileBoard.bottomCollapsed
+const mobileViewport = mobileBoard.viewport
+const mobilePreview = mobileBoard.preview
 const realityAcidLightOverride = ref<boolean | null>(null)
 const realityAcidLightMetaActive = computed(() => {
   const scenario = game.value?.scenario
@@ -878,6 +997,29 @@ const websocketUrl = computed(() => {
   return buildWebsocketUrl(`/api/v1/arkham/games/${props.gameId}${spectatePrefix}`, userStore.token)
 })
 
+const initialGameLoad = createGameLoader<Awaited<ReturnType<typeof fetchGame>>>({
+  loading() { ready.value = false; loadFailure.value = null },
+  loaded({ game: newGame, playerId: newPlayerId, multiplayerMode, eventId }) {
+    if (!newPlayerId) { loadFailure.value = 'forbidden'; return }
+    authenticatedSeat.value = newPlayerId
+    ;(window as Window & { g?: Arkham.Game }).g = newGame
+    game.value = newGame
+    solo.value = multiplayerMode === 'Solo'
+    gamePayloadEventId.value = eventId
+    updateGameLog(newGame.log)
+    playerId.value = newPlayerId
+    ready.value = true
+  },
+  failed(reason) {
+    loadFailure.value = reason
+    if (reason === 'signedOut') userStore.logout()
+  },
+})
+
+function reloadInitialGame() {
+  return initialGameLoad.load(() => fetchGame(props.gameId, props.spectate))
+}
+
 watch(
   // Also react to `spectate`: the same Game.vue instance is reused when an
   // organizer toggles between the Spectate (organizer) and Game (play-my-seat)
@@ -888,19 +1030,7 @@ watch(
     const [newId] = newVals
     if (!newId) return
     if (oldVals && newId === oldVals[0] && newVals[1] === oldVals[1]) return
-    await fetchGame(props.gameId, props.spectate).then(
-      async ({ game: newGame, playerId: newPlayerId, multiplayerMode, eventId }) => {
-        ;(window as Window & { g?: Arkham.Game }).g = newGame
-        game.value = newGame
-        solo.value = multiplayerMode === 'Solo'
-        // Engage the Epic event this game belongs to even when the URL lacks
-        // ?event (e.g. entered via the join / take-a-seat path).
-        gamePayloadEventId.value = eventId
-        updateGameLog(newGame.log)
-        playerId.value = newPlayerId
-        ready.value = true
-      },
-    )
+    await reloadInitialGame()
   },
   { immediate: true },
 )
@@ -1130,6 +1260,25 @@ const { send, close } = useWebSocket(websocketUrl, {
   onMessage,
 })
 
+// Already-queued optional windows may survive a saved mode change. No polling;
+// one attempt per exact server question/version, never auto-end a turn.
+const automaticSkipAttempts = new Set<string>()
+watch([game, ready, processing, uiLock, authenticatedSeat, solo], () => {
+  const g = game.value
+  if (!g || !ready.value || processing.value || uiLock.value || props.spectate || skipAllInProgress.value) return
+  for (const [pid,q] of Object.entries(g.question)) {
+    if (!authorizedAutomaticSeat(solo.value,authenticatedSeat.value,pid)) continue
+    const index = automaticTriggerSkip(g,q,ArkhamGame.rawChoices(g,pid))
+    if (index < 0) continue
+    const key = JSON.stringify([g.id,g.scenarioSteps,pid,q])
+    if (automaticSkipAttempts.has(key)) continue
+    automaticSkipAttempts.add(key)
+    if (automaticSkipAttempts.size > 32) automaticSkipAttempts.delete(automaticSkipAttempts.values().next().value!)
+    sendSkipFor(pid,index)
+    break
+  }
+}, {flush: 'post'})
+
 /*
  * A GameUpdate is the only message carrying new board state, and it reaches us
  * over a different path than the log lines do: the server broadcasts log lines
@@ -1352,6 +1501,9 @@ const handleResult = (result: ServerResult) => {
       if (eid) void eventStore.load(eid).catch((e) => console.error(e))
       return
     }
+    case 'PhaseChanged':
+      showPhaseNotification(result.contents as Phase)
+      return
     case 'GameUpdate':
       // Flush the latest state onto the board even while a revelation/modal holds
       // the UI lock, so the table behind it reflects the current situation instead
@@ -1365,13 +1517,15 @@ const handleResult = (result: ServerResult) => {
 
 watch(uiLock, async () => {
   if (uiLock.value) return
-  // drain result queue
+  // Drain queued revelation/effect results first. Phase notifications start only
+  // after the last blocking result has finished, so they cannot race the overlay.
   for (;;) {
     const r = qPop()
     if (!r) break
     handleResult(r)
     if (uiLock.value) break
   }
+  if (!uiLock.value) void drainPhaseNotificationQueue()
 })
 
 const confirmingUndoScenario = ref(false)
@@ -1494,7 +1648,10 @@ const feedKonami = (rawKey: string): boolean => {
 // Keyboard Shortcuts
 const handleKeyPress = (event: KeyboardEvent) => {
   if (filingBug.value) return
-  if (isTypingTarget(event.target)) return
+  if (event.isComposing || event.repeat || mobilePreview.value) return
+  const undoKey = undoShortcut(event)
+  const nonTextUndoControl = undoKey && event.target instanceof HTMLInputElement && allowsUndoInput(event.target.type)
+  if (isTypingTarget(event.target) && !nonTextUndoControl) return
   if (event.ctrlKey) return
   if (event.metaKey) return
   if (event.altKey) return
@@ -1539,13 +1696,18 @@ const handleKeyPress = (event: KeyboardEvent) => {
     clearUndoChord()
   }
 
-  if (event.key === 'u') {
+  if (undoKey === 'undo') {
+    event.preventDefault()
     if (canUseUndo.value) undo()
     return
   }
 
-  if (event.key === 'U') {
-    if (canUseUndo.value) armUndoChord()
+  if (undoKey === 'chord') {
+    event.preventDefault()
+    if (canUseUndo.value) {
+      armUndoChord()
+      toast.info('分级撤回：再按 A / T / P / R / S；再按 U 撤回一步。', { timeout: UNDO_CHORD_TIMEOUT_MS })
+    }
     return
   }
 
@@ -1705,6 +1867,7 @@ async function runUndo(call: (gameId: string) => Promise<void>) {
   } catch (e) {
     processing.value = false
     if (game.value && oldQuestion) setGameQuestion(oldQuestion)
+    toast.error('撤回失败，请检查连接或稍后重试。若当前没有历史步骤，则无法继续撤回。')
     console.log(e)
   } finally {
     undoLock.value = false
@@ -1714,6 +1877,7 @@ async function runUndo(call: (gameId: string) => Promise<void>) {
 async function undo() {
   await runUndo((gameId) => undoChoice(gameId, debug.active))
 }
+provide(tabletopUndoKey, { enabled: canUseUndo, locked: undoLock, run: undo })
 
 async function undoScenario() {
   confirmingUndoScenario.value = false
@@ -1791,6 +1955,7 @@ function isStoryQuestion(question: Question | null | undefined): boolean {
 async function choose(idx: number) {
   if (processing.value) return
   if (idx !== -1 && game.value && !props.spectate) {
+    mobileBoard.preview.value?.close()
     oldQuestion.value = game.value.question
     const questionVersion = game.value.scenarioSteps
     if (!shouldPreserveFocusedChaosWindow() && !shouldPreserveFocusedCardChoice()) {
@@ -1951,6 +2116,8 @@ function updateFocusLight() {
 }
 
 function scheduleFocusLightUpdate() {
+  // Phone has no cursor spotlight; avoid scanning the whole document for it.
+  if (mobileEnabled.value || document.hidden) return
   if (focusLightAnimationFrame !== null) return
   focusLightAnimationFrame = requestAnimationFrame(() => {
     focusLightAnimationFrame = null
@@ -1978,6 +2145,7 @@ const onPlayabilityResult = (result: any) => {
 emitter.on('playabilityResult', onPlayabilityResult)
 
 onMounted(() => {
+  sidebarViewport.addEventListener('change', onSidebarViewportChange)
   flashlightX.value = window.innerWidth / 2
   flashlightY.value = window.innerHeight / 2
   ;(window as any).sendDebug = async (msg: any) => {
@@ -2002,6 +2170,8 @@ onMounted(() => {
 
 onBeforeRouteLeave(() => close())
 onUnmounted(() => {
+  initialGameLoad.cancel()
+  sidebarViewport.removeEventListener('change', onSidebarViewportChange)
   disposed = true
   stopNarration()
   clearCurrentNarration()
@@ -2032,7 +2202,8 @@ onUnmounted(() => {
       </section>
     </div>
   </div>
-  <div id="game" v-else-if="ready && game && playerId" :style="{ '--epic-bar-height': epicBarHeight + 'px' }">
+  <div id="game" ref="mobileGameRoot" v-else-if="ready && game && playerId" :inert="touchEnabled && !!mobilePreview" :class="{ 'tabletop-game': isActualScenarioView && !mobileEnabled, 'edge-tabletop': isActualScenarioView && !mobileEnabled, 'mobile-game': mobileEnabled, 'touch-game': touchEnabled, 'tablet-game': isActualScenarioView && tabletEnabled, 'mobile-tools-open': mobileTools, 'mobile-top-collapsed': mobileEnabled && mobileTopCollapsed, 'mobile-bottom-collapsed': mobileEnabled && mobileBottomCollapsed }" :data-mobile-zone="mobileEnabled ? mobileZone : undefined" :style="{ '--epic-bar-height': epicBarHeight + 'px', '--tabletop-tools-height': tabletopToolsHeight + 'px', ...(touchEnabled ? mobileViewport : {}) }">
+    <MobileGameHeader v-if="mobileEnabled" :game="game" :unread-log-count="unreadLogCount" @log="toggleSidebar" />
     <dialog v-if="error" class="error-dialog">
       <h2>{{ $t('error') }}</h2>
       <p class="error-message">{{ error }}</p>
@@ -2044,6 +2215,17 @@ onUnmounted(() => {
         <button @click="error = null">{{ $t('close') }}</button>
       </div>
     </dialog>
+    <Transition name="phase-notification">
+      <div
+        v-if="phaseNotification"
+        class="phase-notification"
+        :style="{ '--phase-color': phaseNotificationColor }"
+        role="status"
+        aria-live="polite"
+      >
+        <span :key="phaseNotification" class="phase-notification__name">{{ $t(`phaseTransition.${phaseNotification}`) }}</span>
+      </div>
+    </Transition>
     <div v-if="showProcessing" class="processing">
       <LottieAnimation
         :animation-data="processingJSON"
@@ -2210,6 +2392,7 @@ onUnmounted(() => {
       <!-- frontend/src/locales/en/gameBoard/base.json -->
       <p>{{ $t('outOfSyncHint') }}</p>
     </div>
+    <div ref="tabletopToolsRef" class="tabletop-tools">
     <div class="game-bar">
       <div class="game-bar-item">
         <div>
@@ -2334,6 +2517,12 @@ onUnmounted(() => {
           </template>
         </Menu>
       </div>
+      <div v-if="!canUseDebug">
+        <!-- Diagnostic export is read-only; expert games still hide all debug mutations. -->
+        <button @click="debugExport('basic')">
+          <DocumentArrowDownIcon aria-hidden="true" /> {{ $t('gameBar.debugExport') }}
+        </button>
+      </div>
       <div>
         <button @click="filingBug = true">
           <ExclamationTriangleIcon aria-hidden="true" /> {{ $t('fileBug') }}
@@ -2348,13 +2537,14 @@ onUnmounted(() => {
         </div>
       </template>
       <div class="right">
-        <ResponseStatusBar v-if="isActualScenarioView" :game="game" />
+        <ResponseStatusBar v-if="isActualScenarioView && !mobileEnabled" :game="game" :playerId="playerId" :processing="processing" />
         <button
           v-if="canUseUndo"
           class="touch-undo"
+          :class="{ 'touch-undo--tablet': tabletEnabled }"
           type="button"
           :title="$t('gameBar.undo')"
-          :aria-label="$t('gameBar.undo')"
+          aria-label="撤回一步"
           :disabled="undoLock"
           @click="undo"
         >
@@ -2362,9 +2552,11 @@ onUnmounted(() => {
         </button>
         <button v-if="isActualScenarioView" @click="toggleSidebar">
           <ArrowsRightLeftIcon aria-hidden="true" /> {{ $t('gameBar.toggleSidebar') }}
+          <span v-if="unreadLogCount" class="log-unread-count">({{ unreadLogCount }})</span>
         </button>
         <NarrationMenu />
       </div>
+    </div>
     </div>
     <div v-if="hasEventBar" ref="epicBarRef" class="epic-bar-slot">
       <OrganizerBar
@@ -2410,6 +2602,8 @@ onUnmounted(() => {
         </template>
       </CampaignLog>
       <div v-else class="game-main">
+        <TabletopLayoutControls v-if="isActualScenarioView && !mobileEnabled" edge :unread-log-count="unreadLogCount" v-model:show-log="showSidebar" />
+        <EdgeTabletopControls v-if="isActualScenarioView && !mobileEnabled" :root="mobileGameRoot" :game="game" v-model:show-log="showSidebar" />
         <div v-if="showTheSilenceModal" class="the-silence-modal-backdrop">
           <div
             class="the-silence-modal"
@@ -2527,6 +2721,7 @@ onUnmounted(() => {
         />
         <Campaign
           v-else-if="game.campaign"
+          :key="mobileEnabled ? 'mobile-campaign' : 'desktop-campaign'"
           :game="game"
           :gameLog="gameLog"
           :playerId="playerId"
@@ -2547,6 +2742,7 @@ onUnmounted(() => {
         />
         <StandaloneScenario
           v-else-if="game.scenario && !gameOver"
+          :key="mobileEnabled ? 'mobile-scenario' : 'desktop-scenario'"
           :game="game"
           :playerId="playerId"
           :realityAcidLightDevoured="realityAcidLightDevoured"
@@ -2568,6 +2764,7 @@ onUnmounted(() => {
           :class="{ 'sidebar--empty-log': gameLog.length === 0 }"
           v-if="showSidebar && isActualScenarioView"
         >
+          <button class="tabletop-log-close" type="button" :aria-label="tabletop.closeLog" @click="toggleSidebar">×</button>
           <GameLog :game="game" :gameLog="gameLog" @undo="undo" />
         </div>
         <div class="game-over" v-if="gameOver">
@@ -2605,6 +2802,7 @@ onUnmounted(() => {
       :no="() => (confirmingUndoScenario = false)"
     />
   </div>
+  <GameLoadStatus v-else :failure="loadFailure" :next-url="route.fullPath" @retry="reloadInitialGame" />
 </template>
 
 <style lang="scss" scoped>
@@ -2860,7 +3058,8 @@ onUnmounted(() => {
 
   p {
     padding: 10px;
-    background: #fff;
+    background: var(--surface-panel);
+    color: #e5e7d3;
     border-radius: 4px;
   }
 }
@@ -2871,7 +3070,7 @@ onUnmounted(() => {
   max-width: 300px;
   display: flex;
   flex-direction: column;
-  background: #d0d9dc;
+  background: var(--box-background);
 
   @media (max-width: 800px) {
     position: fixed;
@@ -2887,7 +3086,7 @@ onUnmounted(() => {
   }
 
   @media (prefers-color-scheme: dark) {
-    background: #1c1c1c;
+    background: var(--box-background);
   }
 }
 
@@ -2927,7 +3126,7 @@ onUnmounted(() => {
 }
 
 #invite {
-  background-color: #15192c;
+  background-color: var(--box-background);
   color: white;
   width: 800px;
   margin: 0 auto;
@@ -3659,7 +3858,7 @@ header {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .touch-undo {
+  .touch-undo:not(.touch-undo--tablet) {
     display: none !important;
   }
 }
@@ -4035,7 +4234,7 @@ dialog {
 }
 
 .debug-playability-modal {
-  background: #1a1a2e;
+  background: var(--box-background);
   border: 1px solid var(--button-highlight);
   border-radius: 8px;
   padding: 1.5rem;
@@ -4053,6 +4252,52 @@ dialog {
     margin-top: 1rem;
   }
 }
+
+.phase-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: clamp(4.5rem, 9vw, 7rem);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--phase-color) 54%, rgba(8, 11, 13, 0.88));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
+  animation: phase-notification-bloom 1.2s ease-out both;
+}
+
+.phase-notification__name {
+  color: rgba(242, 232, 207, 0.94);
+  font-family: Teutonic, serif;
+  font-size: clamp(1.8rem, 4vw, 3.8rem);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 0 35px color-mix(in srgb, var(--phase-color) 80%, transparent), 0 5px 26px rgba(0, 0, 0, 0.8);
+  animation: phase-notification-title 1.2s ease-out both;
+}
+
+@keyframes phase-notification-bloom {
+  0% { opacity: 0; }
+  14%, 78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes phase-notification-title {
+  0% { opacity: 0; transform: translateX(-110%); filter: blur(8px); }
+  22% { opacity: 1; transform: translateX(0); filter: blur(0); }
+  72% { opacity: 1; transform: translateX(0); filter: blur(0); }
+  100% { opacity: 0; transform: translateX(110%); filter: blur(8px); }
+}
+
+.phase-notification-enter-active,
+.phase-notification-leave-active { transition: opacity 0.35s ease; }
+.phase-notification-enter-from,
+.phase-notification-leave-to { opacity: 0; }
 
 .debug-playability-content {
   display: flex;

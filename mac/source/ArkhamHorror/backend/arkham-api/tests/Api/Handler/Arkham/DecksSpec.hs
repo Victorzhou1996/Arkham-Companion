@@ -43,8 +43,9 @@ spec = describe "campaign deck metadata" do
     decklistTrauma completed `shouldBe` Just (2, 1)
     Decks.campaignMetaText "arkham_horror_campaign_status" completed `shouldBe` Just "completed"
 
-  it "bundles two valid starter decks with notes for new accounts" do
-    length Registration.starterDecklists `shouldBe` 2
+  it "bundles the original two and five community starter decks with notes" do
+    length Registration.starterDecklists `shouldBe` 7
+    length Registration.communityStarterDecklists `shouldBe` 5
     for_ Registration.starterDecklists \decklist -> do
       let codes = Map.keys (slots decklist) <> Map.keys (sideSlots decklist)
           notes = do
@@ -60,10 +61,23 @@ spec = describe "campaign deck metadata" do
       Aeson.Error err -> expectationFailure err
       Aeson.Success userId -> do
         let decks = Registration.starterDecks userId
-        length decks `shouldBe` 2
+        length decks `shouldBe` 7
         for_ decks \deck -> do
           arkhamDeckOverlay deck `shouldSatisfy` isNothing
           arkhamDeckLastUsedAt deck `shouldBe` Nothing
+
+  it "preserves complete imported notes and existing customization metadata" do
+    let input = Aeson.object
+          [ "slots" Aeson..= Map.singleton ("01016" :: Text) (1 :: Int)
+          , "investigator_code" Aeson..= ("01001" :: Text)
+          , "meta" Aeson..= ("{\"cus_09022\":\"0|1\"}" :: Text)
+          , "description_md" Aeson..= ("完整笔记\n\n[卡牌](/card/01016)" :: Text)
+          ]
+    case Aeson.fromJSON input of
+      Aeson.Error err -> expectationFailure err
+      Aeson.Success deck -> do
+        Decks.campaignMetaText "arkham_horror_description_md" deck `shouldBe` Just "完整笔记\n\n[卡牌](/card/01016)"
+        Decks.campaignMetaText "cus_09022" deck `shouldBe` Just "0|1"
 
 gameId :: ArkhamGameId
 gameId = ArkhamGameKey nil
