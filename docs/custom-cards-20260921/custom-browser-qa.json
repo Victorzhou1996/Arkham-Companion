@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "scope": "Real API, isolated restored database, production frontend, current and legacy interfaces.",
+  "results": [
+    {
+      "mode": "current",
+      "width": 1440,
+      "created": true,
+      "exported": true,
+      "imported": true,
+      "realCustomArt": true,
+      "abilityClicked": true,
+      "debugAddToHand": true
+    },
+    {
+      "mode": "legacy",
+      "width": 1440,
+      "created": true,
+      "exported": true,
+      "imported": true,
+      "realCustomArt": true,
+      "abilityClicked": true,
+      "debugAddToHand": true
+    },
+    {
+      "mode": "current",
+      "width": 390,
+      "created": true,
+      "exported": true,
+      "imported": true,
+      "realCustomArt": true,
+      "abilityClicked": true,
+      "debugAddToHand": true
+    },
+    {
+      "mode": "legacy",
+      "width": 390,
+      "created": true,
+      "exported": true,
+      "imported": true,
+      "realCustomArt": true,
+      "abilityClicked": true,
+      "debugAddToHand": true
+    }
+  ]
+}

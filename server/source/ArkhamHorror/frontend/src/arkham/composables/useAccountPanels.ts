@@ -16,6 +16,10 @@ export function useAccountPanels() {
     // Capture credentials: an old in-flight save can never target the next account.
     const endpoint = `${import.meta.env.VITE_API_HOST || ''}/api/v1/account/tabletop-layout`
     const request = async (patch?: PanelPatch, keepalive = false) => {
+      // This Mac package has no account-layout service; keep its account cache local.
+      if (import.meta.env.VITE_LOCAL_LAYOUT_ONLY === 'true') {
+        return JSON.parse(localStorage.getItem(key) || '{}').panels || {}
+      }
       const response = await fetch(endpoint, {
         method: patch ? 'PUT' : 'GET', keepalive, cache: 'no-store',
         headers: { Authorization: `Token ${token}`, 'Content-Type': 'application/json' },

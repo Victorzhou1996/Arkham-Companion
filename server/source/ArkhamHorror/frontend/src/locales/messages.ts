@@ -8,6 +8,7 @@ const localeLoaders = {
   ko: () => import('@/locales/ko'),
   es: () => import('@/locales/es'),
   zh: () => import('@/locales/zh'),
+  'zh-cn': () => import('@/locales/zh-cn'),
   de: () => import('@/locales/de'),
 } satisfies Record<UiLocale, () => Promise<unknown>>
 
@@ -54,5 +55,25 @@ function normalizeIconPlaceholders<T>(value: T): T {
 export async function loadLocaleMessages(locale: string) {
   const normalizedLocale = normalizeLocale(locale)
   const messages = await localeLoaders[normalizedLocale]()
+  if (normalizedLocale === 'zh' || normalizedLocale === 'zh-cn') {
+    const official = await localeLoaders['zh-cn']()
+    const community = await localeLoaders.zh()
+    // Keep reviewed community wording; upstream supplies previously missing keys.
+    return { locale: normalizedLocale, messages: normalizeIconPlaceholders(mergeChineseMessages(official.default, community.default)) }
+  }
   return { locale: normalizedLocale, messages: normalizeIconPlaceholders(messages.default) }
+}
+
+export function mergeChineseMessages(base: any, reviewed: any): any {
+  if (typeof base === 'string' && typeof reviewed === 'string') {
+    // Older community bundles also contain untranslated English placeholders.
+    const hasChinese = (text: string) => /\p{Script=Han}/u.test(text)
+    if (hasChinese(base) && !hasChinese(reviewed) && /[a-z]{2}/i.test(reviewed) && !reviewed.startsWith('@:')) return base
+    return reviewed
+  }
+  if (Array.isArray(base) && Array.isArray(reviewed)) return base.map((value, i) => i < reviewed.length ? mergeChineseMessages(value, reviewed[i]) : value).concat(reviewed.slice(base.length))
+  if (!base || !reviewed || typeof base !== 'object' || typeof reviewed !== 'object' || Array.isArray(base) || Array.isArray(reviewed)) return reviewed
+  const result = { ...base }
+  for (const [key, value] of Object.entries(reviewed)) result[key] = mergeChineseMessages(base[key], value)
+  return result
 }

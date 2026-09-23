@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* The field a property is chosen in.
  *
  * The same control as a binding -- a chip that opens a searchable list -- in
@@ -49,7 +52,7 @@ function choose(name: string) {
       <input
         v-model="search"
         type="search"
-        :placeholder="`Search the ${entries.length} properties of ${of}`"
+        :placeholder="ct('Search the {count} properties of {type}', { count: entries.length, type: ct(of) })"
         v-focus
         @keydown.esc="open = false"
         @keydown.stop
@@ -61,7 +64,7 @@ function choose(name: string) {
             <span class="option-detail">{{ entry.type }}</span>
           </button>
         </li>
-        <li v-if="!matching.length" class="muted">Nothing matches.</li>
+        <li v-if="!matching.length" class="muted">{{ ct("Nothing matches.") }}</li>
       </ul>
     </div>
 
@@ -71,7 +74,7 @@ function choose(name: string) {
           <button
             type="button"
             class="binding-name"
-            :title="chosen ? `${chosen.name} :: ${chosen.type} — click to choose another` : 'Choose a property'"
+            :title="chosen ? `${ct(chosen.name)} :: ${chosen.type} — ${ct('click to choose another')}` : ct('Choose a property')"
             @click="open = true"
           >
             {{ chosen ? `${chosen.name} :: ${chosen.type}` : (modelValue || 'Choose a property…') }}

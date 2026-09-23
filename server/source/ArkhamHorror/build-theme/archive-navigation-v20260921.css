@@ -1,0 +1,35 @@
+/* The embedded Build application shares the game's navigation treatment. */
+[class*="_arkham-masthead_"] {
+  height: 58px;
+  background: #102c27 url('/img/arkham/tabletop-felt-20260914-v2.png') center / 640px;
+  border-bottom: 1px solid #8b8061;
+  box-shadow: 0 2px 9px #0003;
+  padding-inline: 16px;
+}
+[class*="_arkham-home-link_"], [class*="_arkham-nav-link_"] {
+  color: #e2e6dc;
+  padding-inline: 11px;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+[class*="_arkham-home-link_"] {
+  font-family: Georgia, 'Songti SC', 'STSong', serif;
+  font-size: 20px;
+}
+[class*="_arkham-nav-link_"]:hover, [class*="_arkham-home-link_"]:hover { color: #fff; background: #26423a; }
+[class*="_arkham-nav-link_"][class*="_active_"] { color: #f0dca6; }
+[class*="_arkham-nav-link_"][class*="_active_"]::after { background: #bca76e; }
+[class*="_arkham-user-button_"] {
+  color: #e2e6dc;
+  height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #8e9a8c;
+  border-radius: 3px;
+  max-width: 180px;
+}
+[class*="_arkham-user-button_"] span { overflow: hidden; text-overflow: ellipsis; }
+[class*="_arkham-right_"] { padding-inline: 6px; }
+@media (max-width: 700px) {
+  [class*="_arkham-masthead_"] { height: 54px; padding-inline: 4px; }
+  [class*="_arkham-user-button_"] { max-width: 105px; font-size: 12px; padding: 7px; }
+}

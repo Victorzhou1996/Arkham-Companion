@@ -13,6 +13,7 @@ import type { InvestigatorClass } from '@/arkham/helpers'
 import { storeToRefs } from 'pinia'
 import { useSettings } from '@/stores/settings'
 import { loadLibrary } from '@/arkham/customCardLibrary'
+import api from '@/api'
 
 const { t } = useI18n()
 
@@ -24,6 +25,20 @@ const allDecks = ref<Arkham.Deck[]>([])
 const deleteId = ref<string | null>(null)
 const toast = useToast()
 const showNewDeck = ref(false)
+const addingStarters = ref(false)
+async function addStarters() {
+  if (addingStarters.value) return
+  addingStarters.value = true
+  try {
+    const { data } = await api.post<{ added: number }>('arkham/decks/starters')
+    await loadDecks()
+    toast.success(data.added ? `已添加 ${data.added} 套新人卡组` : '新人卡组已齐全')
+  } catch {
+    toast.error('添加失败，请重试。已有卡组不会被覆盖。')
+  } finally {
+    addingStarters.value = false
+  }
+}
 const searchText = ref('')
 const sortBy = ref<Arkham.DeckSort>('name')
 const filterClasses = ref<InvestigatorClass[]>([])
@@ -117,6 +132,7 @@ async function sync(deck: Arkham.Deck) {
     <div id="decks">
       <header class="decks-header">
         <h2>{{ $t('decks') }}</h2>
+        <button type="button" :disabled="addingStarters" @click="addStarters"><font-awesome-icon icon="plus" /> {{ addingStarters ? '正在添加' : '添加新人卡组' }}</button>
         <PrimaryButton :label="showNewDeck ? t('cancel') : t('deckList.newDeck')" :danger="showNewDeck" @click="showNewDeck = !showNewDeck" />
       </header>
 

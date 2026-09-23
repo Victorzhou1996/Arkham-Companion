@@ -8,6 +8,7 @@
 import * as JsonDecoder from 'ts.data.json'
 import { reactive } from 'vue'
 import { cardDefDecoder, type CardDef } from '@/arkham/types/CardDef'
+import { customCardText } from '@/arkham/customCardText'
 
 export type CustomCard = {
   def: CardDef
@@ -218,6 +219,11 @@ const escapeXml = (t: string) =>
 
 // Wrap on whole words so a long title does not run off the card.
 function wrap(text: string, perLine: number): string[] {
+  if (/\p{Script=Han}/u.test(text)) {
+    const characters = Array.from(text)
+    const width = Math.min(perLine, 11)
+    return Array.from({ length: Math.min(4, Math.ceil(characters.length / width)) }, (_, i) => characters.slice(i * width, (i + 1) * width).join(''))
+  }
   const lines: string[] = []
   let line = ''
   for (const word of text.split(/\s+/)) {
@@ -235,10 +241,11 @@ function wrap(text: string, perLine: number): string[] {
 /* A card with no art still has to be readable at the table, so draw one from
  * the def: title, type, and traits on a plain frame. */
 export function renderCardPlaceholder(def: CardDef | undefined): string {
-  const title = def ? def.name.title : 'Custom Card'
+  const locale = imageLocale()
+  const title = def ? def.name.title : customCardText('Custom Card', locale)
   const subtitle = def?.name.subtitle ?? null
   const traits = def?.cardTraits ?? []
-  const kind = def?.cardType?.replace(/Type$/, '') ?? 'Card'
+  const kind = customCardText(def?.cardType?.replace(/Type$/, '') ?? 'Card', locale)
 
   const titleLines = wrap(title, 16)
   const titleSvg = titleLines
@@ -284,6 +291,7 @@ export function isMissingCustomCard(code: string): boolean {
 /* Drawn in place of a card whose definition is gone: legible as broken at a
  * glance, and carrying the code so it can be looked up or rebuilt. */
 export function renderMissingCard(code: string): string {
+  const ct = (text: string) => customCardText(text, imageLocale())
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 419">
     <style>
       text { font-family: Georgia, 'Times New Roman', serif; text-anchor: middle; fill: #fca5a5 }
@@ -298,10 +306,14 @@ export function renderMissingCard(code: string): string {
       <circle cx="150" cy="150" r="42"/>
       <path d="M150 130 v26 M150 168 v3"/>
     </g>
-    <text x="150" y="240" class="t">Card definition</text>
-    <text x="150" y="266" class="t">missing</text>
-    <text x="150" y="300" class="s">This card does nothing until it is restored</text>
+    <text x="150" y="240" class="t">${ct('Card definition')}</text>
+    <text x="150" y="266" class="t">${ct('missing')}</text>
+    <text x="150" y="300" class="s">${ct('This card does nothing until it is restored')}</text>
     <text x="150" y="376" class="c">${escapeXml(code)}</text>
   </svg>`
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
+function imageLocale(): string {
+  try { return localStorage.getItem('language') ?? 'en' } catch { return 'en' }
 }

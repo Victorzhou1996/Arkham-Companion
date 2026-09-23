@@ -39,11 +39,11 @@ test('production automatic handler guards spectator/UI lock/processing and dedup
  for(const guard of ['processing.value','uiLock.value','props.spectate','authenticatedSeat.value','automaticSkipAttempts.has','g.scenarioSteps'])assert.ok(block.includes(guard),guard)
  assert.doesNotMatch(block,/setInterval|setTimeout|fetchGame/)
 })
-test('empty equipment slots match card size and rounded thin border; control columns have no scrollbar',()=>{
+test('empty equipment slots match cards and investigator controls stay in one column',()=>{
  const s=read('styles/edgeTabletop.css')
  assert.match(s,/\.slot \{ background: transparent; width: var\(--card-width\); height: calc\(var\(--card-width\) \* 1.4\)/)
  assert.match(s,/border: 1px solid #9a9577; border-radius: 7px/)
- assert.match(s,/grid-template-rows: repeat\(3,28px\)/)
+ assert.match(s,/\.player-buttons \.button-group \{ display: flex; flex-direction: column; flex-wrap: nowrap/)
  assert.doesNotMatch(s,/\.player-buttons \{[^}]*overflow-y: auto/)
  assert.match(s,/scenario::before[^}]*bottom: var\(--edge-bottom\)/)
 })

@@ -12,7 +12,7 @@ import { useDebug } from '@/arkham/debug'
 import { ForwardIcon, PaperClipIcon } from '@heroicons/vue/20/solid'
 import type { Game } from '@/arkham/types/Game'
 import { imgsrc } from '@/arkham/helpers'
-import { cardArt, cardImage, portraitImage, sourceCardCode } from '@/arkham/cardImages'
+import { cardArt, cardImage, customInvestigatorUsesCardPortrait, portraitImage, sourceCardCode } from '@/arkham/cardImages'
 import * as Arkham from '@/arkham/types/Investigator'
 import type { AbilityLabel, AbilityMessage, Message } from '@/arkham/types/Message'
 import { MessageType } from '@/arkham/types/Message'
@@ -25,7 +25,6 @@ import { useMenu } from '@/composable/menu';
 import { useI18n } from 'vue-i18n';
 import useEmitter from '@/composable/useEmitter';
 import Resources from '@/arkham/components/Resources.vue';
-import PoolItem from '@/arkham/components/PoolItem.vue';
 import ActionCount from '@/arkham/components/ActionCount.vue';
 import ActionExtras from '@/arkham/components/ActionExtras.vue';
 import { tabletopUndoKey } from '@/arkham/tabletopControls';
@@ -212,6 +211,18 @@ const investigatorPortraitImage = computed(() => {
   return portraitImage(props.investigator.cardCode, suffix)
 })
 
+const investigatorPortraitUsesCardArt = computed(() => {
+  if (props.investigator.form.tag !== 'RegularForm') return false
+  const suffix = props.investigator.endedTurn ? 'b' : ''
+  return customInvestigatorUsesCardPortrait(props.investigator.cardCode, suffix)
+})
+
+const investigatorCardPortraitStyle = computed(() => ({
+  // A CSS crop cannot flip like an image element. Keep the recognisable face;
+  // the ended-turn class supplies the visual back-side cue instead.
+  backgroundImage: `url(${JSON.stringify(portraitImage(props.investigator.cardCode))})`,
+}))
+
 const miniCardDevoured = computed(() => {
   const devouredMiniCards = props.game.scenario?.meta?.devouredMiniCards
   return Array.isArray(devouredMiniCards) && devouredMiniCards.includes(id.value)
@@ -243,11 +254,6 @@ const emitter = useEmitter()
 const cardsUnderneath = computed(() => props.investigator.cardsUnderneath)
 const cardsUnderneathLabel = computed(() => t('investigator.underneathCards', {count: cardsUnderneath.value.length}))
 const devoured = computed(() => props.investigator.devoured)
-const controlColumns = computed(() => Math.max(1, Math.ceil((
-  2 + abilities.value.length + Number(Boolean(tabletopUndo?.enabled.value))
-  + Number(Boolean(devoured.value?.length)) + Number(cardsUnderneath.value.length > 0)
-  + Number(debug.active) + Number(debug.active && (props.investigator.modifiers ?? []).length > 0)
-) / 3)))
 
 onMounted(() => {
   emitter.on('showUnder', (id: string) => {
@@ -487,6 +493,19 @@ const spadeInjury = computed(() => {
       {{ replacementMiniCardInitials }}
       <img class="portrait--blob-overlay" :src="imgsrc('extra/the-blob-that-ate-everything/blob-overlay.png')" alt="" aria-hidden="true" />
     </div>
+    <div
+      v-else-if="investigatorPortraitUsesCardArt"
+      class="portrait portrait--card-art"
+      :class="[portraitClasses, { 'portrait--ended-turn': investigator.endedTurn }]"
+      :style="investigatorCardPortraitStyle"
+      :draggable="debug.active"
+      @click="clicked"
+      @dragstart="startDrag($event)"
+      @dragstop="endDrag"
+      @drop="onDrop($event)"
+      @dragover.prevent="dragover($event)"
+      @dragenter.prevent
+    ></div>
     <img
       v-else
       :src="investigatorPortraitImage"
@@ -502,20 +521,10 @@ const spadeInjury = computed(() => {
     />
   </div>
   <div v-else class="player-container">
-    <div v-if="!isMobile" class="edge-personal-totals" aria-label="全局标记">
-      <PoolItem type="doom" :amount="game.totalDoom" tooltip="Total Doom / 总毁灭" />
-      <PoolItem type="clue" :amount="game.totalClues" tooltip="Total Spendable Clues / 总可花费线索" />
-    </div>
       <MobileCard>
     <div class="player-area">
       <div class="player-card">
-        <div class="stats">
-          <div class="willpower willpower-icon">{{willpower}}</div>
-          <div class="intellect intellect-icon">{{intellect}}</div>
-          <div class="combat combat-icon">{{combat}}</div>
-          <div class="agility agility-icon">{{agility}}</div>
-        </div>
-        <div class="investigator-image">
+        <div v-if="!isMobile" class="investigator-status">
             <span v-if="!isMobile" class="action-container">
               <i class="spade" v-if="spadeInjury"></i>
               <i class="heart" v-if="heartInjury"></i>
@@ -542,6 +551,15 @@ const spadeInjury = computed(() => {
                 </svg>
               </span>
             </span>
+          <Resources :game="game" :investigator="investigator" :choices="choices" :playerId="playerId" inline-tokens @choose="$emit('choose', $event)" />
+        </div>
+        <div class="stats">
+          <div class="willpower willpower-icon">{{willpower}}</div>
+          <div class="intellect intellect-icon">{{intellect}}</div>
+          <div class="combat combat-icon">{{combat}}</div>
+          <div class="agility agility-icon">{{agility}}</div>
+        </div>
+        <div class="investigator-image">
           <img
             :class="{ 'investigator--can-interact': investigatorAction !== -1 }"
             class="card card--sideways"
@@ -576,8 +594,8 @@ const spadeInjury = computed(() => {
           />
         </div>
       </div>
-      <div>
-        <div class="player-buttons" :style="{'--control-columns': controlColumns}" :class="{'player-buttons--multi': controlColumns > 1}">
+      <div class="player-controls">
+        <div class="player-buttons">
           <div class="button-group" :class="{ 'button-group--skip-all-pending': isCurrentPlayersInvestigator && skipAllInProgress }">
             <button v-if="!isMobile && tabletopUndo?.enabled.value" class="tabletop-undo" :disabled="tabletopUndo.locked.value" @click="tabletopUndo.run()">↶ {{ $t('gameBar.undo') }}</button>
             <template v-if="debug.active">
@@ -650,14 +668,6 @@ const spadeInjury = computed(() => {
         />
       </div>
     </div>
-    <Resources
-      v-if="!isMobile"
-      :game="game"
-      :investigator="investigator"
-      :choices="choices"
-      :playerId="playerId"
-      @choose="$emit('choose', $event)"
-    />
 
     <Draggable v-if="doShowBonded">
       <template #handle><header><h2>{{$t('gameBar.bonded')}}</h2></header></template>
@@ -673,7 +683,6 @@ const spadeInjury = computed(() => {
 </template>
 
 <style scoped>
-.edge-personal-totals { display: none; }
 i.action {
   font-family: 'Arkham';
   font-style: normal;
@@ -857,6 +866,21 @@ i.action {
 .portrait {
   border-radius: 3px;
   width: calc(var(--card-width) * 0.6);
+}
+
+/* A portrait-less custom investigator uses its landscape card without
+ * distorting it: keep the mini's portrait proportions and crop from the left. */
+.portrait--card-art {
+  aspect-ratio: 121 / 186;
+  background-position: 15% bottom;
+  background-repeat: no-repeat;
+  /* Oversize and bottom-align the card so the mini cuts off the title area at
+   * the top rather than squeezing the whole landscape face into view. */
+  background-size: auto 125%;
+}
+
+.portrait--ended-turn {
+  filter: grayscale(1);
 }
 
 .portrait--replacement-marker {

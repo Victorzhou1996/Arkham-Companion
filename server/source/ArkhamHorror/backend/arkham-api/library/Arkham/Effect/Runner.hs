@@ -10,6 +10,7 @@ import Arkham.EffectMetadata as X
 import Arkham.Helpers.Message as X
 import Arkham.Helpers.Query as X
 import Arkham.Helpers.SkillTest as X
+import Arkham.Helpers.Source (getSourceController)
 import Arkham.Id as X
 import Arkham.Source as X
 import Arkham.Target as X
@@ -68,6 +69,8 @@ instance RunMessage EffectAttrs where
       a <$ push (DisableEffect effectId)
     EndTurn iid | isEndOfWindow a (EffectTurnWindow iid) -> do
       a <$ push (DisableEffect effectId)
+    EndRound | isEndOfWindow a EffectUntilEndOfNextRoundWindow -> do
+      pure $ advanceEffectWindow EffectUntilEndOfNextRoundWindow EffectRoundWindow a
     EndRound | isEndOfWindow a EffectRoundWindow -> do
       a <$ push (DisableEffect effectId)
     EndRound -> do
@@ -94,6 +97,13 @@ instance RunMessage EffectAttrs where
     FinishedEvent _ | isEndOfWindow a EffectEventWindow -> do
       a <$ push (DisableEffect effectId)
     BeginAction | isEndOfWindow a EffectNextActionWindow -> do
+      active <- getActiveInvestigatorId
+      controller <- getSourceController a.source
+      pure
+        $ if maybe True (== active) controller
+          then advanceEffectWindow EffectNextActionWindow EffectActionWindow a
+          else a
+    FinishAction | isEndOfWindow a EffectActionWindow -> do
       a <$ push (DisableEffect effectId)
     ReplaceAct {} | isEndOfWindow a EffectActWindow -> do
       a <$ push (DisableEffect effectId)

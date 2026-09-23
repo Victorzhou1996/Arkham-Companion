@@ -1,0 +1,1 @@
+import{d as e,l as t,n}from"./src.DEN_3V-D.js";var r=e();function i(){let[e]=t(),i=e.get(`id`),a=e.get(`url`);return!i&&!a?(0,r.jsx)(n,{to:`/`}):(0,r.jsx)(n,{to:`settings?tab=fan-made-content&${i?`install_id=${encodeURIComponent(i)}`:`install_url=${encodeURIComponent(a)}`}`})}export{i as default};

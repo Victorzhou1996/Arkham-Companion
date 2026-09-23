@@ -162,7 +162,7 @@ async function unlist(set: Api.PublishedCardSet) {
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="page-container site-workspace">
     <section class="marketplace">
       <header class="head">
         <div class="titles">

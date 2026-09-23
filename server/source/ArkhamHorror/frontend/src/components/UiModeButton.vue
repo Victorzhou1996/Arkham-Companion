@@ -1,11 +1,26 @@
 <script setup lang="ts">
-function legacy() {
-  const url = new URL(window.location.href)
-  url.pathname = '/legacy-ui-20260826.3/'
-  url.searchParams.set('ui', 'legacy')
-  try { localStorage.setItem('arkham-ui-version', 'legacy') } catch { /* explicit URL still works */ }
-  window.location.assign(url.href)
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { isLegacyEditor } from '@/legacy/editorMode'
+const { locale } = useI18n()
+const current = isLegacyEditor() ? 'legacy' : 'current'
+const selected = ref(current)
+function apply() {
+  const change = (window as unknown as { arkhamSwitchUi?: (mode: string) => void }).arkhamSwitchUi
+  if (selected.value !== current) change?.(selected.value)
 }
 </script>
-<template><button type="button" class="ui-mode-switch" title="刷新并切换到 2026-08-26.3 原始 UI，保留当前游戏地址" @click="legacy">原始 UI</button></template>
-<style scoped>.ui-mode-switch { padding: 2px 6px; min-height: 0; height: 22px; box-sizing: border-box; border: 1px solid #8f855f; border-radius: 4px; background: #17362a; color: #ecdfba; font: 11px/16px sans-serif; white-space: nowrap; cursor: pointer; }.ui-mode-switch:focus-visible { outline: 2px solid #efd397; outline-offset: 2px; }</style>
+<template>
+  <section class="box column">
+    <h3>{{ locale.startsWith('zh') ? '游戏界面' : 'Game interface' }}</h3>
+    <div class="ui-mode-options">
+      <label><input v-model="selected" type="radio" name="ui-mode" value="legacy" />{{ locale.startsWith('zh') ? '传统 UI' : 'Classic UI' }}</label>
+      <label><input v-model="selected" type="radio" name="ui-mode" value="current" />{{ locale.startsWith('zh') ? '新版 UI' : 'Current UI' }}</label>
+      <button type="button" :disabled="selected === current" @click="apply">{{ locale.startsWith('zh') ? '应用并重新加载' : 'Apply and reload' }}</button>
+    </div>
+  </section>
+</template>
+<style scoped>
+.ui-mode-options { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+.ui-mode-options label { display: inline-flex; align-items: center; gap: 6px; }
+</style>

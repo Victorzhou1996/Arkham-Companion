@@ -513,6 +513,7 @@ ALTER TABLE ONLY public.password_resets
 
 SET search_path = public, pg_catalog;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS dev boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phase_transition_notifications boolean NOT NULL DEFAULT false;
 
 BEGIN;
 
@@ -890,5 +891,18 @@ CREATE INDEX IF NOT EXISTS idx_arkham_decks_user_last_used
   ON arkham_decks (user_id, last_used_at DESC);
 
 INSERT INTO public.arkham_schema_migrations (name) VALUES ('add_last_used_at_to_decks') ON CONFLICT DO NOTHING;
+COMMIT;
+\endif
+
+SELECT NOT EXISTS (SELECT 1 FROM public.arkham_schema_migrations WHERE name = 'add_phase_transition_notifications_to_users') AS apply_native_upgrade \gset
+\if :apply_native_upgrade
+-- Deploy arkham-horror-backend:add_phase_transition_notifications_to_users to pg
+-- requires: users
+
+BEGIN;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phase_transition_notifications BOOLEAN NOT NULL DEFAULT FALSE;
+
+INSERT INTO public.arkham_schema_migrations (name) VALUES ('add_phase_transition_notifications_to_users') ON CONFLICT DO NOTHING;
 COMMIT;
 \endif

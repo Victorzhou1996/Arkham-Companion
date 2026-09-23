@@ -3,17 +3,18 @@ import { getGameLocalStorageItem, setGameLocalStorageItem } from '@/arkham/local
 import { parseLocationOffsets, type LocationOffsets } from '@/arkham/locationLayout'
 import { clampGroupOffset, type Point, type Box } from '@/arkham/mapCardGroups'
 
-type Group = 'auxiliary' | 'encounter'
+type Group = 'auxiliary' | 'encounter' | 'totals'
 const storageKey = 'visual-map-card-groups'
 
 export function useMapCardGroups(gameId: () => string, enabled: Ref<boolean>, unlocked: Ref<boolean>) {
   const auxiliary = ref<HTMLElement | null>(null)
   const encounter = ref<HTMLElement | null>(null)
+  const totals = ref<HTMLElement | null>(null)
   const offsets = ref<LocationOffsets>({})
   const dragging = ref<Group | null>(null)
   const editable = computed(() => enabled.value && unlocked.value)
   const moved = computed(() => enabled.value && Object.values(offsets.value).some(p => p.x !== 0 || p.y !== 0))
-  const roots = { auxiliary, encounter }
+  const roots = { auxiliary, encounter, totals }
   let active: { id: Group; element: HTMLElement; pointer: number; start: Point; base: Box; area: Box; original: Point; final: Point; moved: boolean } | null = null
   let observer: ResizeObserver | undefined
 
@@ -92,7 +93,7 @@ export function useMapCardGroups(gameId: () => string, enabled: Ref<boolean>, un
     if (!enabled.value || active) return
     const next = { ...offsets.value }
     let changed = false
-    for (const id of ['auxiliary', 'encounter'] as const) {
+    for (const id of ['auxiliary', 'encounter', 'totals'] as const) {
       const element = roots[id].value, p = next[id]
       if (!element || !p) continue
       const area = areaFor(element), r = element.getBoundingClientRect()
@@ -117,7 +118,7 @@ export function useMapCardGroups(gameId: () => string, enabled: Ref<boolean>, un
     catch { offsets.value = {} }
     void nextTick(observe)
   }, { immediate: true })
-  watch([auxiliary, encounter], () => void nextTick(observe), { flush: 'post' })
+  watch([auxiliary, encounter, totals], () => void nextTick(observe), { flush: 'post' })
   watch(editable, () => { if (!editable.value) cancel() })
   onBeforeUnmount(() => { cancel(); observer?.disconnect() })
   function reset() {
@@ -126,5 +127,5 @@ export function useMapCardGroups(gameId: () => string, enabled: Ref<boolean>, un
     offsets.value = {}
     save()
   }
-  return { auxiliary, encounter, editable, dragging, moved, style, start, suppress, reset }
+  return { auxiliary, encounter, totals, editable, dragging, moved, style, start, suppress, reset }
 }

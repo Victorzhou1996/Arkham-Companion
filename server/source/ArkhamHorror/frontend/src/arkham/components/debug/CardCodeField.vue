@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* Choosing a card where a card code is wanted.
  *
  * A code is not something anyone can recall -- a custom card's is a minted uuid
@@ -115,7 +118,7 @@ function choose(code: string) {
       <input
         v-model="search"
         type="search"
-        placeholder="Search your cards and the card pool by name or code"
+        :placeholder="ct('Search your cards and the card pool by name or code')"
         v-focus
         @keydown.enter.prevent="choose(search.trim())"
         @keydown.esc="open = false"
@@ -135,9 +138,7 @@ function choose(code: string) {
             <span class="option-origin">{{ card.custom ? 'yours' : '' }}</span>
           </button>
         </li>
-        <li v-if="!matching.length" class="muted">
-          Nothing matches — press enter to use what you typed as a code.
-        </li>
+        <li v-if="!matching.length" class="muted">{{ ct("Nothing matches — press enter to use what you typed as a code.") }}</li>
       </ul>
     </div>
 
@@ -159,9 +160,7 @@ function choose(code: string) {
           </button>
         </div>
       </div>
-      <span v-if="modelValue && !chosen" class="from unknown" title="No card in your library or the pool has this code">
-        not a card we know
-      </span>
+      <span v-if="modelValue && !chosen" class="from unknown" :title="ct('No card in your library or the pool has this code')">{{ ct("not a card we know") }}</span>
     </div>
   </div>
 </template>
