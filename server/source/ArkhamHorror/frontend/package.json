@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "serve": "vite serve",
-    "prebuild": "node ./scripts/slim-cards.cjs",
+    "prebuild": "node ./scripts/slim-cards.cjs && node ./scripts/prepare-legacy-ui.cjs",
     "build": "vite build",
     "postbuild": "node ./scripts/precompress.cjs",
     "precompress": "node ./scripts/precompress.cjs",

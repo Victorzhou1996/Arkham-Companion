@@ -206,7 +206,6 @@ uncannyGrowth =
           , Keyword.Bonded 1 "10060"
           , Keyword.Bonded 1 "10061"
           ]
-    , cdLevel = Nothing
     }
 
 controlVariable :: CardDef
@@ -618,6 +617,12 @@ dawnStar1 =
   (event "10131" "Dawn Star" 1 Neutral)
     { cdSkills = [#wild]
     , cdCardTraits = setFromList [Ritual, Blessed]
-    , cdFastWindow = Just $ RevealChaosTokensDuringSkillTest #after Anyone SkillTestAtYourLocation #curse
+    , cdFastWindow =
+        Just
+          $ RevealChaosTokensDuringSkillTest
+            #after
+            Anyone
+            (SkillTestAtYourLocation <> SkillTestOfInvestigator (affectsOthers Anyone))
+            #curse
     , cdLevel = Just 1
     }

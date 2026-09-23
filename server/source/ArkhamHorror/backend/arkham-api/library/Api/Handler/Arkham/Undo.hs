@@ -217,6 +217,7 @@ putApiV1ArkhamGameUndoR gameId = do
         player <- get404 @_ @_ @ArkhamPlayer $ coerce $ gameActivePlayerId game.currentData
         pure player.userId
       _ -> pure userId'
+  oldPhase <- runDB $ gamePhase . arkhamGameCurrentData <$> get404 gameId
   result <- runDB (stepBack isDebug userId gameId)
   case result of
     Left err -> do
@@ -226,6 +227,8 @@ putApiV1ArkhamGameUndoR gameId = do
       publishToRoom gameId
         $ GameUpdate
         $ PublicGame gameId arkhamGameName [] arkhamGameCurrentData
+      when (oldPhase /= gamePhase arkhamGameCurrentData) $
+        publishToRoom gameId $ PhaseChanged (gamePhase arkhamGameCurrentData)
       -- Epic Multiplayer: if this undo reverted shared-counter deltas (a
       -- commutative counter like countermeasures / blob health), propagate the
       -- restored shared state across the WHOLE event POST-COMMIT (outside the game
@@ -268,6 +271,7 @@ multiStepUndoHandler runStepBack gameId = do
   userId <- getRequestUserId
   x <- liftIO getRandom
   now <- liftIO getCurrentTime
+  oldPhase <- runDB $ gamePhase . arkhamGameCurrentData <$> get404 gameId
   eResult <- runDB do
     runExceptT do
       (agame, mPropagate) <- ExceptT $ runStepBack userId gameId
@@ -305,6 +309,8 @@ multiStepUndoHandler runStepBack gameId = do
       publishToRoom gameId
         $ GameUpdate
         $ PublicGame gameId arkhamGameName gameLog arkhamGameCurrentData
+      when (oldPhase /= gamePhase arkhamGameCurrentData) $
+        publishToRoom gameId $ PhaseChanged (gamePhase arkhamGameCurrentData)
       -- Epic Multiplayer: propagate the restored shared state across the event
       -- post-commit (outside the game lock, so other groups' locks are safe to
       -- take), mirroring single-step undo. The origin already reflects the revert

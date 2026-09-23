@@ -94,6 +94,9 @@ export const useDbCardStore = defineStore('dbCards', {
       const data = await fetch(`${import.meta.env.BASE_URL}cards/cards_${lang}.json`).then(
         async (cardResponse) => {
           if (!cardResponse.ok) throw new Error(`Card names unavailable (${cardResponse.status})`)
+          if (!(cardResponse.headers.get('content-type') ?? '').includes('json')) {
+            throw new Error('Card names response is not JSON')
+          }
           return await cardResponse.json()
         },
       )

@@ -37,7 +37,9 @@ body:has(#game.mobile-game) .router-container { padding: 0; margin: 0; }
 #game.mobile-game .game-bar button { min-height: 44px; font-size: 13px; color: #e1d3ab; }
 #game.mobile-game .game-bar svg { width: 18px; height: 18px; }
 #game.mobile-game .status-bar { margin: 0; padding: 0 8px; min-height: 30px; background: transparent; }
-#game.mobile-game .status-bar > button, #game.mobile-game .status-bar .narration-menu { display: none; }
+#game.mobile-game .status-bar > button { display: none; }
+#game.mobile-game .status-bar .narration-button { min-width: 44px; min-height: 36px; padding: 6px; }
+#game.mobile-game .status-bar .audio-menu-label { display: none; }
 #game.mobile-game .response-status-bar { padding: 4px 0; gap: 4px; font-size: 11px; flex-wrap: nowrap; overflow-x: auto; }
 #game.mobile-game .response-status-bar > * { white-space: nowrap; flex-shrink: 0; }
 #game.mobile-game .mobile-response-status { max-width: none; width: 100%; flex: 0 0 30px; padding: 3px 10px; background: #102a20d9; }

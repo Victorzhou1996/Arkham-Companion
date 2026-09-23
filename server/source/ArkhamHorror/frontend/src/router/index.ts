@@ -4,6 +4,7 @@ import { authNavigation } from './authGuard'
 import { routeLoadFailed } from './loadState'
 import baseRoutes from '@/routes';
 import arkhamRoutes from '@/arkham/routes';
+import { isLegacyEditor, isLegacyGameRoute, legacyPageUrl } from '@/legacy/editorMode'
 
 const routes: Array<RouteRecordRaw> = [
   ...baseRoutes,
@@ -17,6 +18,10 @@ const router = createRouter({
 
 
 router.beforeEach(async to => {
+  if (isLegacyEditor() && isLegacyGameRoute(to.path)) {
+    window.location.assign(legacyPageUrl(to.fullPath))
+    return false
+  }
   routeLoadFailed.value = false
   const destination = await authNavigation(to, useUserStore())
   if (destination === true && to.meta.title) document.title = String(to.meta.title)

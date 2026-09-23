@@ -4,6 +4,8 @@ import FormattedEntry from '@/arkham/components/FormattedEntry.vue'
 import { MessageType, Message } from '@/arkham/types/Message';
 import { formatContent } from '@/arkham/helpers';
 import { handleEmbeddedI18n } from '@/arkham/i18n';
+import { translateChoiceText } from '@/arkham/choiceLocalization';
+import { useDbCardStore } from '@/stores/dbCards';
 import { formatCost } from '@/arkham/cost';
 import { useI18n } from 'vue-i18n';
 import type { Game } from '@/arkham/types/Game';
@@ -24,8 +26,10 @@ const connectionImage = (connection: string) => {
 }
 
 const { t } = useI18n()
+const dbCards = useDbCardStore()
 const label = function(body: string) {
-  return formatContent(handleEmbeddedI18n(body, t))
+  return formatContent(translateChoiceText(handleEmbeddedI18n(body, t), t,
+    (name, type) => dbCards.getCardName(name, type)))
 }
 
 const drownedCityTaskCards: Record<string, string> = {

@@ -9,7 +9,7 @@ const isSupportPage = computed(() => route.query.support !== undefined);
 
 </script>
 <template>
-  <div class="page-container">
+  <div class="page-container site-workspace">
     <div class="page-content column">
       <section class="column" :class="{ focus: isSupportPage }">
         <h2 class="title">{{ t('about.supportTitle') }}</h2>

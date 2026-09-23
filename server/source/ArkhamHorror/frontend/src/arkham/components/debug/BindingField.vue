@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
+
 /* The field a value uses when that value is a binding.
  *
  * The same control everywhere one is chosen: a light-blue chip carrying the
@@ -38,8 +41,8 @@ const matching = computed(() => {
   return props.applicable.filter(
     (b) =>
       b.name.toLowerCase().includes(needle) ||
-      (b.detail ?? '').toLowerCase().includes(needle) ||
-      b.origin.toLowerCase().includes(needle),
+      ct(b.detail).toLowerCase().includes(needle) ||
+      ct(b.origin).toLowerCase().includes(needle),
   )
 })
 
@@ -61,7 +64,7 @@ function choose(name: string) {
       <input
         v-model="search"
         type="search"
-        :placeholder="`Search the ${applicable.length} bindings that fit ${type}`"
+        :placeholder="ct('Search the {count} bindings that fit {type}', { count: applicable.length, type })"
         v-focus
         @keydown.enter.prevent="choose(search)"
         @keydown.esc="open = false"
@@ -71,22 +74,20 @@ function choose(name: string) {
         <li v-for="bound in matching" :key="bound.name">
           <button type="button" class="binding-option" @click="choose(bound.name)">
             <code class="option-name">${{ bound.name }}</code>
-            <span v-if="bound.detail" class="option-detail">{{ bound.detail }}</span>
-            <span class="option-origin">{{ bound.origin }}</span>
+            <span v-if="bound.detail" class="option-detail">{{ ct(bound.detail) }}</span>
+            <span class="option-origin">{{ ct(bound.origin) }}</span>
           </button>
           <button
             v-if="bound.anchor"
             type="button"
             class="option-jump"
-            title="Show where this was bound"
+            :title="ct('Show where this was bound')"
             @click.stop="jumpToBinding(bound.anchor)"
           >
             ↗
           </button>
         </li>
-        <li v-if="!matching.length" class="muted">
-          Nothing in scope matches — press enter to use what you typed anyway.
-        </li>
+        <li v-if="!matching.length" class="muted">{{ ct("Nothing in scope matches — press enter to use what you typed anyway.") }}</li>
       </ul>
     </div>
 
@@ -97,7 +98,7 @@ function choose(name: string) {
             v-if="boundTo?.anchor"
             type="button"
             class="jump-segment"
-            :title="`Bound by ${boundTo.origin} — click to show`"
+            :title="ct('Bound by {origin} — click to show', { origin: ct(boundTo.origin) })"
             @click="jumpToBinding(boundTo.anchor)"
           >
             ↗
@@ -107,12 +108,12 @@ function choose(name: string) {
             class="binding-name"
             :title="
               boundTo
-                ? `${boundTo.detail ?? ''} · ${boundTo.origin} — click to choose another`
-                : 'Choose a binding'
+                ? `${ct(boundTo.detail)} · ${ct(boundTo.origin)} — ${ct('click to choose another')}`
+                : ct('Choose a binding')
             "
             @click="open = true"
           >
-            <span class="binding-ident">{{ modelValue ?? 'Choose a binding…' }}</span>
+            <span class="binding-ident">{{ modelValue ?? ct('Choose a binding…') }}</span>
             <span v-if="boundTo?.type" class="binding-type">:: {{ boundTo.type }}</span>
           </button>
           <BindingToggle
@@ -124,9 +125,7 @@ function choose(name: string) {
           />
         </div>
       </div>
-      <span v-if="modelValue && !boundTo" class="from unknown" title="Nothing in scope binds this name">
-        not bound
-      </span>
+      <span v-if="modelValue && !boundTo" class="from unknown" :title="ct('Nothing in scope binds this name')">{{ ct("not bound") }}</span>
     </div>
   </div>
 </template>

@@ -70,3 +70,12 @@ test('tooltip aria collisions cannot orphan stack previews and closing hides own
  assert.match(read('arkham/components/CardOverlay.vue'),/arkham:scene-preview-change/)
  assert.match(read('styles/edgeTabletop.css'),/\.edge-scene-shelf:has\(\.edge-scene-raised\) \{ z-index: 70/)
 })
+test('scene ability menus remain in the drawer region with readable actions and dismissal', () => {
+ const menu = read('arkham/components/AbilitiesMenu.vue')
+ assert.match(menu, /data-edge-scene-abilities/)
+ assert.match(menu, /sceneAbilities.value \? 'top'/)
+ assert.match(menu, /\.abilities\.abilities--scene button \{\s+min-height: 44px;/)
+ assert.match(menu, /document.removeEventListener\('arkham:scene-drawer-dismiss', dismissSceneAbilities\)/)
+ assert.match(read('arkham/sceneDrawer.ts'), /\.abilities\[data-edge-scene-abilities="true"\]/)
+ assert.match(read('styles/edgeTabletop.css'), /\.edge-scene-shelf button\[data-game-actionable\] \{ min-height: 44px;/)
+})

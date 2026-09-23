@@ -575,18 +575,23 @@ getAlternateSkill st sType = do
   applyModifier _ a = a
 
 getModifiedSkillTestDifficulty :: (HasCallStack, HasGame m) => SkillTest -> m Int
-getModifiedSkillTestDifficulty s = do
-  -- difficulty can be on the investigator, see: @Despoiled@
-  let
-    forSkillTest = \case
-      Difficulty {} -> True
-      _ -> False
-  imods <- filter forSkillTest <$> getModifiers s.investigator
-  modifiers' <- (imods <>) <$> getModifiers (SkillTestTarget s.id)
-  baseDifficulty <- getBaseSkillTestDifficulty s
-  let preModifiedDifficulty = foldr applyPreModifier baseDifficulty modifiers' + s.difficultyIncrease
-  let doubledDifficulty = foldr applyDoubler preModifiedDifficulty modifiers'
-  max 0 <$> foldrM applyModifier doubledDifficulty modifiers'
+getModifiedSkillTestDifficulty s = case skillTestResult s of
+  -- RR "Automatic Failure/Success": the total difficulty of an automatically
+  -- successful test is 0. Zeroing the base in @Do PassSkillTest@ is not enough,
+  -- a SetDifficulty modifier (Unearth the Ancients, Sixth Sense) replaces it.
+  SucceededBy Automatic _ -> pure 0
+  _ -> do
+    -- difficulty can be on the investigator, see: @Despoiled@
+    let
+      forSkillTest = \case
+        Difficulty {} -> True
+        _ -> False
+    imods <- filter forSkillTest <$> getModifiers s.investigator
+    modifiers' <- (imods <>) <$> getModifiers (SkillTestTarget s.id)
+    baseDifficulty <- getBaseSkillTestDifficulty s
+    let preModifiedDifficulty = foldr applyPreModifier baseDifficulty modifiers' + s.difficultyIncrease
+    let doubledDifficulty = foldr applyDoubler preModifiedDifficulty modifiers'
+    max 0 <$> foldrM applyModifier doubledDifficulty modifiers'
  where
   applyModifier (Difficulty m) n = pure $ n + m
   applyModifier (CalculatedDifficulty calc) n = do
@@ -927,14 +932,18 @@ skillTestMatches iid source st mtchr = case Matcher.replaceYouMatcher iid mtchr 
         , Matcher.SkillTestOfInvestigator $ mapOneOf InvestigatorWithModifier $ AddSkillValue sType
             : map (AddSkillToOtherSkill sType) (skillTestSkillTypes st)
         ]
+  -- N.B. purely a location predicate. It used to also require
+  -- 'CannotAffectOtherPlayersWithPlayerEffectsExceptDamage' to be absent, which silenced cards
+  -- whose effect never touches the performing investigator: Self-Centered in Luke's threat area
+  -- hid Control Variable ("discover 1 clue at your location") on another investigator's test
+  -- (#5738). Cards that really do affect the performer carry
+  -- @SkillTestOfInvestigator (affectsOthers Anyone)@ alongside this.
   Matcher.SkillTestAtYourLocation -> do
-    canAffectOthers <- withoutModifier iid CannotAffectOtherPlayersWithPlayerEffectsExceptDamage
     mlid1 <- field InvestigatorLocation iid
     mlid2 <- field InvestigatorLocation st.investigator
-    case (mlid1, mlid2) of
-      (Just lid1, Just lid2) ->
-        pure $ lid1 == lid2 && (canAffectOthers || iid == st.investigator)
-      _ -> pure False
+    pure $ case (mlid1, mlid2) of
+      (Just lid1, Just lid2) -> lid1 == lid2
+      _ -> False
   Matcher.SkillTestAt locationMatcher -> targetMatches st.target (Matcher.TargetAtLocation locationMatcher)
   Matcher.SkillTestOfInvestigator whoMatcher -> st.investigator <=~> whoMatcher
   Matcher.SkillTestMatches ms -> allM (skillTestMatches iid source st) ms

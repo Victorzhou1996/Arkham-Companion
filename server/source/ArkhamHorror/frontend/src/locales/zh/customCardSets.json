@@ -1,0 +1,38 @@
+{
+  "title": "自定义卡牌集",
+  "builder": {
+    "matcher": "匹配条件", "capability": "可执行操作", "youExist": "你在场", "investigatorExists": "存在符合条件的调查员", "chooseCapability": "选择可执行操作…",
+    "capabilities": { "can": {
+      "search": { "deck": "搜索你的牌库" }, "manipulate": { "deck": "调整你的牌库" }, "shuffle": { "deck": "混洗你的牌库" }, "draw": { "cards": "抽取卡牌" },
+      "gain": { "resources": "获得资源", "xp": "获得经验", "clues": "获得线索" }, "spend": { "resources": "花费资源", "clues": "花费线索" },
+      "have": { "cards": { "leaveDiscard": "将卡牌移出你的弃牌堆" }, "assets": { "ready": "重置支援" } }, "affect": { "otherPlayers": "影响其他调查员" },
+      "move": "移动", "deal": { "damage": "造成伤害" }, "target": { "encounterDeck": "以遭遇牌库为目标" }, "reveal": { "cards": "揭示卡牌" },
+      "heal": { "damage": "治疗伤害", "horror": "治疗恐惧", "any": "治疗伤害或恐惧", "trauma": "治疗创伤" }
+    } }
+  },
+  "newSetName": "新卡牌集名称", "addSet": "创建卡牌集", "import": "导入", "importTooltip": "导入此处导出的卡牌集，或 arkham.build 的卡牌池文件",
+  "experimental": "实验性功能：可能导致游戏无法继续，也可能随时变更或移除。",
+  "loading": "加载中…", "emptyTitle": "暂无自定义卡牌集", "emptyLede": "可以导入已有的自定义卡牌集，也可以新建卡牌集，制作尚未收录的卡牌。",
+  "filterPlaceholder": "搜索卡牌集或卡牌名称…", "filterLabel": "筛选卡牌集和卡牌", "clearFilter": "清除筛选", "orderLabel": "卡牌集排序", "orderAlphabetical": "名称", "orderRecent": "最近更新",
+  "noMatches": "没有匹配“{query}”的卡牌集或卡牌。", "cardCount": "{n} 张卡牌", "renameSet": "重命名卡牌集", "exportSet": "导出 {name}", "deleteSet": "删除此卡牌集及其中的卡牌",
+  "noCardMatches": "没有符合筛选条件的卡牌。", "emptySet": "此卡牌集为空，打开后可以创建卡牌。", "backToSets": "全部卡牌集", "selectAll": "全选卡牌", "exportSelected": "导出已选的 {count} 张卡牌", "clearSelection": "取消选择",
+  "newCard": "新建卡牌", "emptySetPanel": "此卡牌集为空，创建的卡牌将保存在这里。", "exportCard": "导出此卡牌", "deleteCard": "删除此卡牌", "hideLibrary": "收起卡牌库", "showLibrary": "展开卡牌库",
+  "editingCard": "编辑卡牌", "inSet": "卡牌集：{name}", "saveChanges": "保存修改", "createCard": "创建卡牌",
+  "saveNote": "保存后，此卡牌的名称、特性、卡图和能力会立即更新到所有副本。敌人的攻击、生命与躲避数值在入场时复制，修改后仅对新入场的副本生效。",
+  "setCreateFailed": "创建卡牌集失败。", "setRenameFailed": "重命名卡牌集失败。", "confirmDeleteSet": "删除“{name}”及{what}？", "deleteSetCards": "其中的 {n} 张卡牌", "deleteSetEmpty": "其空白内容",
+  "setDeleted": "已删除“{name}”。", "setDeleteFailed": "删除卡牌集失败。", "needASet": "请先创建卡牌集，卡牌必须归属于一个卡牌集。", "saved": "已保存。", "saveFailed": "保存卡牌失败。如果填写了原始 JSON，请检查其格式。",
+  "confirmDeleteCard": "从你的卡牌库中删除“{name}”？", "fileHasNoCards": "此文件不包含卡牌。", "reviewTitle": "导入“{name}”", "reviewReplaceTitle": "替换“{name}”", "reviewFrom": "来自 {file}",
+  "reviewAdded": "新增 {n} 张", "reviewUpdated": "更新 {n} 张", "reviewDropped": "删除 {n} 张",
+  "reviewSignatureOrphans": "有 {n} 张专属卡牌关联的调查员不在文件中：仍保留专属限制，但对应调查员不会自动携带这些卡牌。",
+  "reviewRemoves": "“{name}”中有 {n} 张卡牌不在此文件内，将被删除。", "reviewSubscribed": "“{name}”当前订阅了已发布卡牌集，覆盖导入后将停止接收更新。",
+  "reviewShowAll": "显示全部 {count} 项", "reviewShowLess": "收起", "reviewConfirm": "导入", "reviewConfirmReplace": "替换", "reviewCancel": "取消",
+  "types": { "AssetType": "支援", "EventType": "事件", "SkillType": "技能", "PlayerTreacheryType": "弱点（诡计）", "PlayerEnemyType": "弱点（敌人）", "EnemyType": "敌人", "TreacheryType": "诡计", "EncounterAssetType": "支援（遭遇）", "LocationType": "地点", "StoryType": "故事", "InvestigatorType": "调查员", "ActType": "场景", "AgendaType": "密谋", "ScenarioType": "冒险" },
+  "imported": "已将 {count} 导入“{name}”。{minis}", "minisCut": "已从卡图裁切 {n} 张调查员小卡。", "importFailed": "无法读取此文件。",
+  "marketplace": "卡牌集广场", "marketplaceLede": "浏览其他玩家发布的卡牌集。导入后会订阅其更新，直到你自行修改为止。", "marketplaceEmpty": "暂无已发布的卡牌集。你可以发布自己的卡牌集。",
+  "publishTitle": "发布“{name}”", "publishNote": "更新说明（可选）", "publishConfirm": "发布", "publishCancel": "取消", "published": "已将“{name}”发布为 v{version}。", "publishFailed": "发布卡牌集失败。",
+  "unpublish": "下架", "confirmUnpublish": "下架“{name}”？其他玩家将无法再导入，已导入的副本也将停止更新。", "unpublished": "已下架“{name}”。", "unpublishFailed": "下架卡牌集失败。",
+  "subscribedBadge": "已订阅 · v{version}", "editingUnsubscribes": "修改此卡牌集后将停止接收更新。重新导入可以恢复为已发布的版本。", "updateTo": "更新至 v{version}", "updated": "已将“{name}”更新至 v{version}。", "updateFailed": "更新卡牌集失败。",
+  "importToCollection": "导入", "reimport": "重新导入", "imported_": "已将“{name}”导入你的卡牌集。", "subscribeFailed": "导入卡牌集失败。", "byAuthor": "作者：{author}", "versionCount": "v{version} · {count}", "yours": "我的作品", "marketplaceLoadFailed": "无法加载卡牌集广场。",
+  "mySets": "我的卡牌集", "marketplaceFilterPlaceholder": "搜索卡牌集、卡牌或作者…", "marketplaceOrderLabel": "广场排序", "orderNewest": "最新发布", "orderLiked": "最多赞", "byThisAuthor": "仅显示 {author}", "clearAuthor": "显示全部作者",
+  "like": "点赞", "unlike": "取消点赞", "likeFailed": "操作失败。", "marketplaceNoMatches": "没有匹配“{query}”的作品。", "viewSet": "查看全部 {count} 项 →", "backToMarketplace": "卡牌集广场", "publishedAt": "发布于 {date}", "setNotFound": "此卡牌集已不在广场中。", "viewAll": "查看全部 {count} 项", "setFilterPlaceholder": "按名称、类型或特性筛选…"
+}

@@ -9,9 +9,9 @@
       "title": "{'{'}codex{'}'} 圣典Φ：水晶园"
     },
     "drRosaMarquez": {
-      "act1": "<h3>@:theFeastOfHemlockVale.theSilentHeath.codex.drRosaMarquez.title </h3><p>_如果目前是 Act 1:_</p><p>马尔克斯博士将一片玻璃放在灯光下查看，那是一片从石化的树木上截下的横切面，裂纹般的细微图样遍布其上，教授小心的将样本包起来。“果园的状况跟一般自然石化不同，而是木头本身的结构完全改变了。这些横切面分属不同棵树木，每个都有自己的历史跟年轮，但全都被晶化了。”</p><p class='basic right'>抽取3张卡牌。任意一位调查员可以在不同场景期间再次触发此圣典。</p>",
+      "act1": "<h3>@:theFeastOfHemlockVale.theSilentHeath.codex.drRosaMarquez.title </h3><p>_如果当前为场景1：_</p><p>马尔克斯博士将一片玻璃放在灯光下查看，那是一片从石化的树木上截下的横切面，裂纹般的细微图样遍布其上，教授小心的将样本包起来。“果园的状况跟一般自然石化不同，而是木头本身的结构完全改变了。这些横切面分属不同棵树木，每个都有自己的历史跟年轮，但全都被晶化了。”</p><p class=\"basic right\">抽取3张卡牌。任意一位调查员可以在不同场景期间再次触发此圣典。</p>",
       "act2": "<h3>@:theFeastOfHemlockVale.theSilentHeath.codex.drRosaMarquez.title </h3><p>**如果目前是场景2**：</p><p>教授费力地拿起一块腐朽的下颚骨，它甚至跟她前臂差不多长。“这个生物看起来同时具有白蚁、大黄蜂跟其他昆虫的特征。这已经不是我的专业领域了，如果克里斯托弗博士看到这个一定会疯掉的。我还从这些坑道中找到其他有趣的东西，看看这个。”</p><p class='basic right'>选择一个场上的地点，揭示所选地点底下的所有卡牌，弃掉每张已揭示的诡计，并将剩余卡牌依照任意顺序放回。</p>",
-      "title": "{'{'}codex{'}'} Codex Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
+      "title": "{'{'}codex{'}'} 圣典 Θ: <right><fancy>萝莎．马尔克斯博士</fancy></right>"
     },
     "larvalTunnel": {
       "body": "<h3>@:theFeastOfHemlockVale.theSilentHeath.codex.larvalTunnel.title </h3><p>一股恶心的恶臭从坑道传来，坑道里爬满了肥大的白色幼虫。这些怪物般巨大的幼虫用牠们乳白色的眼睛空洞地从黑暗中盯着你们。看来这些昆虫把这条坑道当成幼虫的发育室，从地上四散的血腥腐败的遗体来看，成虫通常用当地的野生动物作为幼虫的养料，偶尔还有几个愚蠢到在牠们洞窟里闲晃的人类。</p><p class='basic right'>收齐1张放在一旁的晶化遗体以及遭遇牌库顶的2张卡牌，将其混洗后将这3张卡牌面朝下放在幼虫坑道的底下。</p>",
@@ -19,11 +19,11 @@
     },
     "leahAtwood": {
       "body": "<h3>@:theFeastOfHemlockVale.theSilentHeath.codex.leahAtwood.title </h3><p>“这里曾经是岛上唯一能种植作物的地方，事实上这里的作物生长速度真是不可思议。帕洛家族的产业遍及各方面：果园跟葡萄园，更别提采矿跟捕鲸业。就在20年前，差不多这个日子，出事了。你能相信我姊姊居然宣称这一切是天降的奇迹吗？”她嗤之以鼻地说完最后一句话。</p><p class='basic right'>在莉亚．阿特伍德的笔记中，记录下 <i>莉亚搜寻珍珠遗址</i>每位调查员获得1个线索(从供应堆拿取)。</p>",
-      "title": "{'{'}codex{'}'} Codex 2: 莉亚．阿特伍德"
+      "title": "{'{'}codex{'}'} 圣典 2: 莉亚．阿特伍德"
     },
     "motherRachel": {
       "body": "<h3>@:theFeastOfHemlockVale.theSilentHeath.codex.motherRachel.title </h3><p>“我们的道路不是由自己选择的。无论是单纯的人、睿智的人，又或是自作聪明的愚者都一样。一切早已注定，接受命运就是我们最好的回应。”修女长虔诚的跪倒在地，望向你们身后的庄园遗迹。“你们很快就会知晓自己的命运，谷地的人民们亦如是。”</p><p class='basic right'>提升瑞秋主母的友好度。每位调查员取得1点奖励经验值。</p>",
-      "title": "{'{'}codex{'}'} Codex 1: 瑞秋主母"
+      "title": "{'{'}codex{'}'} 圣典 1: 瑞秋主母"
     },
     "saltChamber": {
       "body": "<h3>@:theFeastOfHemlockVale.theSilentHeath.codex.saltChamber.title </h3><p>隧道旁一道狭窄的裂缝引领你们到了一个宽敞的洞窟，盐晶体从洞顶跟地板上生长而出，晶体上有蜘蛛网般细致的图纹。空气中弥漫带苦的咸味，还有令人反胃的麝香味。几具腐烂的尸体，其中有些属于人类，四散在地上，被盐覆盖。也许这里的生物利用这个洞穴当作天然的防腐室，某种储藏室之类的。</p><p class='basic right'>收齐1张放在一旁的晶化遗体以及遭遇牌库顶的2张卡牌，将其混洗后将这3张卡牌面朝下放在盐晶墓穴的底下。</p>",
@@ -39,7 +39,7 @@
     "day2": "如果目前是_第二日_：, 跳至 _引言2_.",
     "day3": "如果目前是_第三日_：, 跳至 _引言3_.",
     "intro1": {
-      "body": "<p>_引言1_: 你们从西奥的卡车上下来，与你们同行的还有莉亚．阿特伍德。你们看向赫姆拉克岛的最高点，狭窄的小径一路蜿蜒而上，没入一片被柔软白沙般的灰烬所覆盖的原野。黑色的岩石错落在山丘顶端，像一排参差不齐的牙齿，你们与这位谷地的厨师一起走上山坡时，周遭弥漫着渗人的寂静。莉亚开口说：“人们不再生活在这里是有原因的，小心一点，我不知道那些山洞里住着什么东西，也没兴趣知道。”就像是要回应他的话一般，一阵强风刮来，带起了一缕白色的烟尘。</p>",
+      "body": "<p>_引言1_: 你们从西奥的卡车上下来，与你们同行的还有莉亚．阿特伍德。你们看向赫姆拉克岛的最高点，狭窄的小径一路蜿蜒而上，没入一片被柔软白沙般的灰烬所覆盖的原野。黑色的岩石错落在山丘顶端，像一排参差不齐的牙齿，你们与这位谷地的厨师一起走上山坡时，周遭弥漫着渗人的寂静。莉亚开口说：“人们不再生活在这里是有原因的，小心一点，我不知道那些山洞里住着什么东西，也没兴趣知道。”就像是要回应他的话一般，一阵强风刮来，带起了一缕白色的烟尘。</p><p class=\"basic right\">跳至_引言5_。</p>",
       "title": "引言 1"
     },
     "intro2": {
@@ -47,19 +47,19 @@
       "title": "引言 2"
     },
     "intro3": {
-      "body": "<p>_引言3_: 你们从西奥的卡车上下来，看向赫姆拉克岛的最高点，狭窄的小径一路蜿蜒而上，没入一片被柔软白沙般的灰烬所覆盖的原野。黑色的岩石错落在山丘顶端，像一排参差不齐的牙齿，走上山坡时，周遭弥漫着渗人的寂静。你们看见有个穿长袍的身影站在凸出的岩石上，俯瞰着整个赫姆拉克岛。走近后，你们认出她是瑞秋主母，她对你们点头示意，仿佛在认可你们的存在，接着她以一个狂喜的姿态张开双臂，头顶的天空有数道奇异的彩光正闪闪发亮。</p>",
+      "body": "<p>_引言3_: 你们从西奥的卡车上下来，看向赫姆拉克岛的最高点，狭窄的小径一路蜿蜒而上，没入一片被柔软白沙般的灰烬所覆盖的原野。黑色的岩石错落在山丘顶端，像一排参差不齐的牙齿，走上山坡时，周遭弥漫着渗人的寂静。你们看见有个穿长袍的身影站在凸出的岩石上，俯瞰着整个赫姆拉克岛。走近后，你们认出她是瑞秋主母，她对你们点头示意，仿佛在认可你们的存在，接着她以一个狂喜的姿态张开双臂，头顶的天空有数道奇异的彩光正闪闪发亮。</p><p class=\"basic right\">跳至_引言5_。</p>",
       "title": "引言 3"
     },
     "intro4": {
-      "body": "<p>_引言4_: 你们从西奥的卡车上下来，看向赫姆拉克岛的最高点，狭窄的小径一路蜿蜒而上，没入一片被柔软白沙般的灰烬所覆盖的原野，在月光的照耀下变成一片明亮的银白世界。黑色的岩石错落在山丘顶端，像一排参差不齐的牙齿。走上山坡时，周遭的寂静让你们感到奇异的安抚感，头顶有数道鲜艳的彩光划过满天星斗的夜空。</p>",
+      "body": "<p>_引言4_: 你们从西奥的卡车上下来，看向赫姆拉克岛的最高点，狭窄的小径一路蜿蜒而上，没入一片被柔软白沙般的灰烬所覆盖的原野，在月光的照耀下变成一片明亮的银白世界。黑色的岩石错落在山丘顶端，像一排参差不齐的牙齿。走上山坡时，周遭的寂静让你们感到奇异的安抚感，头顶有数道鲜艳的彩光划过满天星斗的夜空。</p><p class=\"basic right\">进入_冒险设置_。</p>",
       "title": "引言 4"
     },
     "intro5": {
-      "body": "<p>_引言5_: 你们来到珍珠庄园，在破旧宅邸如血盆大口般黑暗的裂缝前停下脚步。宅邸北边的屋顶碎裂，显示这里曾经受到剧烈的冲击。从四散的碎片来看，有东西从建物内部炸了出来，力道堪比加农砲的砲弹。你们边探查废墟，边疑惑到底降临到帕洛一家头上的是多大的一场灾难。突然有道黑影从你们的视野边缘一闪而过，但回头时它早已消失了。</p>",
+      "body": "<p>_引言5_: 你们来到珍珠庄园，在破旧宅邸如血盆大口般黑暗的裂缝前停下脚步。宅邸北边的屋顶碎裂，显示这里曾经受到剧烈的冲击。从四散的碎片来看，有东西从建物内部炸了出来，力道堪比加农砲的砲弹。你们边探查废墟，边疑惑到底降临到帕洛一家头上的是多大的一场灾难。突然有道黑影从你们的视野边缘一闪而过，但回头时它早已消失了。</p><p class=\"basic right\">进入_冒险设置_。</p>",
       "title": "引言 5"
     },
-    "nightSkip": "如果目前是 _第一夜_ or _第二夜_, 跳至 _引言4_. 否则： </blockquote>",
-    "title": "Scenario: 静寂荒原"
+    "nightSkip": "如果目前是 _第一夜_ 或 _第二夜_, 跳至 _引言4_. 否则： </blockquote>",
+    "title": "冒险: 静寂荒原"
   },
   "resolutions": {
     "noResolution": {
@@ -90,36 +90,36 @@
     "crystalRemains": "将3张晶化遗体剧情支持面朝下混洗*(因此你将无法辨认它们)*，并将它们放在一旁，置于场外。",
     "currentDayMarker": "检查剧本日志，确认目前的日期与时刻。将时刻卡牌以对应的(_白日{'{'}day{'}'}_)或(_黑夜{'{'}night{'}'}_)面放置入场。",
     "currentDaySet": "此外，检查剧本日志，确认目前的日期，并收齐对应的*首日*、*次日*或*终日*遭遇组。这些遭遇组以以下符号表示：<section class='encounter-sets'><img src='{setImgPath}/the-first-day.png' /><img src='{setImgPath}/the-second-day.png' /><img src='{setImgPath}/the-final-day.png' /></section>",
-    "desolationV1": "如果目前是_第一日_： or _第一夜_, remove Agenda 2a: _Desolation (v.II)_ from the game.",
-    "desolationV2": "否则， remove Agenda 2a: _Desolation (v.I)_ from the game.",
-    "drRosaMarquez": "如果目前是_第二日_：, place 萝莎．马尔克斯博士 at the 水晶秘木 location.",
-    "gatherSets": "Gather all cards from the following 遭遇组中的所有地点: *静寂荒原*, *异彩使徒*, *Blight*, *石中骇物*, *Refractions*, *Transfiguration*, and *Striking Fear*. These sets are indicated by the following icons:<section class='encounter-sets'><img src='{setImgPath}/the-silent-heath.png' /><img src='{setImgPath}/agents-of-the-colour.png' /><img src='{setImgPath}/blight.png' /><img src='{setImgPath}/horrors-in-the-rock.png' /><img src='{setImgPath}/refractions.png' /><img src='{setImgPath}/transfiguration.png' /><img src='{setImgPath}/striking-fear.png' /></section>",
+    "desolationV1": "如果当前为_第一日_或_第一夜_，将密谋2a：_荒芜（版本II）_移出游戏。",
+    "desolationV2": "否则，将密谋2a：_荒芜（版本I）_移出游戏。",
+    "drRosaMarquez": "如果当前为_第二日_，将萝莎．马尔克斯博士放置到水晶秘木地点。",
+    "gatherSets": "找出下列遭遇组的所有卡牌：*静寂荒原*、*异彩使徒*、*枯萎*、*石中骇物*、*折射*、*变形*和*恐惧打击*。这些遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/the-silent-heath.png\"/><img src=\"{setImgPath}/agents-of-the-colour.png\"/><img src=\"{setImgPath}/blight.png\"/><img src=\"{setImgPath}/horrors-in-the-rock.png\"/><img src=\"{setImgPath}/refractions.png\"/><img src=\"{setImgPath}/transfiguration.png\"/><img src=\"{setImgPath}/striking-fear.png\"/></section>",
     "horrorsInTheRock": "从*石中骇物*遭遇组中随机选择3张地点，并将它们放在一旁，不要查看它们的揭示面。将*石中骇物*遭遇组剩余的其他地点从游戏中移除。",
-    "leahAtwood": "如果目前是_第一日_：, place 莉亚．阿特伍德 at the 珍珠庄园遗址 location.",
+    "leahAtwood": "如果当前为_第一日_，将莉亚．阿特伍德放置到珍珠庄园遗址地点。",
     "locations": "将下列地点放置入场：水晶密林、珍珠庄园遗址和灰烬坡。",
-    "motherRachel": "如果目前是_第三日_：, place 瑞秋主母 at the 灰烬坡 location.",
+    "motherRachel": "如果当前为_第三日_，将瑞秋主母放置到灰烬坡地点。",
     "removeResidents": "将*住民*遭遇组中的其他卡牌从游戏中移除。",
-    "residents": "如果目前是 (_白日{'{'}day{'}'}_), gather each 剧情支持 from the *Residents* 遭遇组中收齐所有剧情支持。 这个遭遇组以以下符号表示:<section class='encounter-sets'><img src='{setImgPath}/residents.png' /></section>",
+    "residents": "如果当前为_白日{'{'}day{'}'}_，找出*居民*遭遇组中的每张剧情支援。该遭遇组的图标为：<section class=\"encounter-sets\"><img src=\"{setImgPath}/residents.png\"/></section>",
     "setAside": "将下列卡牌放在一旁，置于场外：虫巢女王敌人，2张晶化寄生虫敌人，以及单面的盐晶墓穴、幼虫坑道、水晶园地点。",
     "startAt": "每位调查员从珍珠庄园遗址开始游戏。"
   },
   "tokens": {
     "easyStandard": {
-      "cultist": "-1. You may shuffle a non-_Elite_ enemy in the victory display into the encounter deck.",
-      "elderThing": "-2. If you are at a _Lair_ location, reveal another标记.",
-      "skull": "-X. X is half the number of _Insect_ enemies in play and in the victory display (向上取整).",
-      "tablet": "-3. If you fail, choose an _Insect_ enemy at your location. It engages you and makes an immediate attack."
+      "cultist": "-1。你可以将胜利区内1个非_精英_敌人洗混入遭遇牌库。",
+      "elderThing": "-2。若你位于_巢穴_地点，再抽取1个标记。",
+      "skull": "-X。X为场上及胜利区内_昆虫_敌人总数的一半（向上取整）。",
+      "tablet": "-3。若你失败，选择你地点上的1个_昆虫_敌人。它与你交战，并立即进行一次攻击。"
     },
     "hardExpert": {
-      "cultist": "-3. If you succeed, you may shuffle a non-_Elite_ enemy in the victory display into the encounter deck.",
-      "elderThing": "-4. If you are at a _Lair_ location, you automatically fail.",
-      "skull": "-X. X is the number of _Insect_ enemies in play and in the victory display.",
-      "tablet": "-5. Ready the nearest _Insect_ enemy. It moves and attacks as if it were the enemy phase."
+      "cultist": "-3。若你成功，你可以将胜利区内1个非_精英_敌人洗混入遭遇牌库。",
+      "elderThing": "-4。若你位于_巢穴_地点，你自动失败。",
+      "skull": "-X。X为场上及胜利区内_昆虫_敌人的总数。",
+      "tablet": "-5。重整最近的_昆虫_敌人。它如同处于敌人阶段一般移动和攻击。"
     }
   },
   "tooltips": {
     "pearlEstateRuins": {
-      "resign": "You leave the heath behind"
+      "resign": "你离开这片荒原"
     }
   }
 }

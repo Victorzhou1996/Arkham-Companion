@@ -43,13 +43,14 @@ test('regional non-Chinese locales use their base language', async () => {
   assert.equal(preferredLanguage(''), 'en')
 })
 
-test('Simplified Chinese reuses the existing Chinese UI messages', async () => {
+test('Simplified Chinese uses its own UI messages', async () => {
   const { uiLocaleFor } = await importTsModule(modulePath)
 
-  assert.equal(uiLocaleFor('zh-cn'), 'zh')
+  assert.equal(uiLocaleFor('zh-cn'), 'zh-cn')
   assert.equal(uiLocaleFor('zh'), 'zh')
   assert.equal(uiLocaleFor('de'), 'de')
   assert.equal(uiLocaleFor('unsupported'), 'en')
+  assert.equal(uiLocaleFor('pt'), 'en')
 })
 
 test('bootstrap initializes Vue I18n with the normalized UI locale', async () => {

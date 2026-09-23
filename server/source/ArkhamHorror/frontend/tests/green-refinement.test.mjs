@@ -19,12 +19,12 @@ test('draw animations never replay at initial entry, setup, another game / inves
  assert.deepEqual(drawnCardIds({...before,inSetup:true},after),[])
  assert.deepEqual(drawnCardIds(after,after),[])
 })
-test('green map has no tint or panel boxes and avatar diameter doubles',()=>{
+test('green map has no tint or panel boxes and uses reduced avatar diameter',()=>{
  const css=read('styles/edgeTabletop.css')
  assert.doesNotMatch(css,/#092343|background-blend-mode/)
  for(const name of ['scenario-cards','scenario-encounter-decks'])
    assert.match(css,new RegExp('\\.'+name+' \\{[^}]*background: transparent;[^}]*border: 0|\\.'+name+' \\{[^}]*border: 0;[^}]*background: transparent'))
- assert.match(css,/width: clamp\(44px,3.6vw,100px\); height: clamp\(44px,3.6vw,100px\)/)
+ assert.match(css,/width: clamp\(33px,2.7vw,75px\); height: clamp\(33px,2.7vw,75px\)/)
 })
 test('phase rail reserves player space; eyes align at bottom with rounded selection',()=>{
  const css=read('styles/edgeTabletop.css')

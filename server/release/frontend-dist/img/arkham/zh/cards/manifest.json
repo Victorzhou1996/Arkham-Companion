@@ -1,0 +1,2872 @@
+[
+  {
+    "id": "09766",
+    "CardID": 588604,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387688196/FE8468C5066E61AB3C228A48639F47D0226DFCF6/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09765",
+    "CardID": 588603,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387688196/FE8468C5066E61AB3C228A48639F47D0226DFCF6/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09764",
+    "CardID": 588602,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387688196/FE8468C5066E61AB3C228A48639F47D0226DFCF6/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09767",
+    "CardID": 588605,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387688196/FE8468C5066E61AB3C228A48639F47D0226DFCF6/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09762",
+    "CardID": 588600,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387688196/FE8468C5066E61AB3C228A48639F47D0226DFCF6/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09763",
+    "CardID": 588601,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387688196/FE8468C5066E61AB3C228A48639F47D0226DFCF6/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09659",
+    "CardID": 589621,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 21
+    }
+  },
+  {
+    "id": "09634",
+    "CardID": 589317,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 17
+    }
+  },
+  {
+    "id": "09768",
+    "CardID": 588800,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387695838/A0E52C47DA84223410CE29E7B2BA34DA6073076E/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09544",
+    "CardID": 588318,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 18
+    }
+  },
+  {
+    "id": "09680",
+    "CardID": 588721,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 21
+    }
+  },
+  {
+    "id": "09519",
+    "CardID": 266517,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 17
+    }
+  },
+  {
+    "id": "09565",
+    "CardID": 588614,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09590",
+    "CardID": 588018,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 18
+    }
+  },
+  {
+    "id": "09770",
+    "CardID": 588802,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387695838/A0E52C47DA84223410CE29E7B2BA34DA6073076E/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09769",
+    "CardID": 588801,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387695838/A0E52C47DA84223410CE29E7B2BA34DA6073076E/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09703",
+    "CardID": 589009,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09702",
+    "CardID": 589008,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09701",
+    "CardID": 589007,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09699",
+    "CardID": 589005,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09738",
+    "CardID": 591003,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09737",
+    "CardID": 591002,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09751",
+    "CardID": 588700,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883248458/83BB0A7E53E786B086FAEBCE9E721917BA9226A1/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09733",
+    "CardID": 266412,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09732",
+    "CardID": 266411,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09731",
+    "CardID": 266410,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09736",
+    "CardID": 591209,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09735",
+    "CardID": 591208,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09734",
+    "CardID": 591207,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09746",
+    "CardID": 588210,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09745",
+    "CardID": 588209,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09744",
+    "CardID": 588208,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09761",
+    "CardID": 590909,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09760",
+    "CardID": 590908,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09759",
+    "CardID": 590907,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09758",
+    "CardID": 590906,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09757",
+    "CardID": 590905,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09756",
+    "CardID": 590904,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09755",
+    "CardID": 590903,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09754",
+    "CardID": 590902,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09753",
+    "CardID": 590901,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09654b",
+    "CardID": 592419,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388051798/76225F57795BEA55DAAFC5BDD6FE20B03BE817E1/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 19
+    }
+  },
+  {
+    "id": "09584",
+    "CardID": 587700,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09625b",
+    "CardID": 592116,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387921536/56AB6918516FF87D12E1DB3D2F0078D96DB85F2D/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 16
+    }
+  },
+  {
+    "id": "09693",
+    "CardID": 592504,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883248458/83BB0A7E53E786B086FAEBCE9E721917BA9226A1/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09607",
+    "CardID": 591815,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914206416/EB345887410BD0F31B166FF7508A01590F924DBA/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09557",
+    "CardID": 591512,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914206909/C512EAC507739BE15BA2B07B062E8A1549477260/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09715",
+    "CardID": 588900,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883352408/B53F10B3FD157FE1C2EC62F495EFCCA52C2BABE6/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09714",
+    "CardID": 588820,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 20
+    }
+  },
+  {
+    "id": "09713",
+    "CardID": 588819,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 19
+    }
+  },
+  {
+    "id": "09712",
+    "CardID": 588818,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 18
+    }
+  },
+  {
+    "id": "09752",
+    "CardID": 590900,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387720015/F335750A9FA1E4FEEC82F0B6C362DFC2FB0C3767/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09710",
+    "CardID": 592816,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 16
+    }
+  },
+  {
+    "id": "09708",
+    "CardID": 592814,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09706",
+    "CardID": 592812,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09704",
+    "CardID": 592810,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09700",
+    "CardID": 589006,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09692",
+    "CardID": 592603,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883248458/83BB0A7E53E786B086FAEBCE9E721917BA9226A1/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09698",
+    "CardID": 589004,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09743",
+    "CardID": 589210,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09742",
+    "CardID": 589209,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09741",
+    "CardID": 589208,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09730",
+    "CardID": 588207,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09729",
+    "CardID": 588206,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09707",
+    "CardID": 592901,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093887518613/C88F386255EDFED0DBCEFCA241659E84A9AD9B67/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09711",
+    "CardID": 592903,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093887518613/C88F386255EDFED0DBCEFCA241659E84A9AD9B67/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09709",
+    "CardID": 592902,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093887518613/C88F386255EDFED0DBCEFCA241659E84A9AD9B67/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09705",
+    "CardID": 592900,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093887518613/C88F386255EDFED0DBCEFCA241659E84A9AD9B67/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09694",
+    "CardID": 588800,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09697",
+    "CardID": 589003,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09696",
+    "CardID": 589002,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09695",
+    "CardID": 589001,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883349482/B021ADF934609B915199D94A885BDDD6FD61FBDD/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09750b",
+    "CardID": 591108,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09750a",
+    "CardID": 591107,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09749b",
+    "CardID": 591106,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09749a",
+    "CardID": 591105,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09748b",
+    "CardID": 591104,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09748a",
+    "CardID": 591103,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09747c",
+    "CardID": 591102,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09747b",
+    "CardID": 591101,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09747a",
+    "CardID": 591100,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1988933244552634962/569EB4E4487A016FB5F0729FD2D9CE1372BEA25B/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09687",
+    "CardID": 589106,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09686",
+    "CardID": 589105,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09685",
+    "CardID": 589104,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09688",
+    "CardID": 591407,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09689",
+    "CardID": 591208,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09691",
+    "CardID": 588702,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883248458/83BB0A7E53E786B086FAEBCE9E721917BA9226A1/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09690",
+    "CardID": 588701,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883248458/83BB0A7E53E786B086FAEBCE9E721917BA9226A1/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09681",
+    "CardID": 591000,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09684",
+    "CardID": 589103,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09683",
+    "CardID": 589102,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09682",
+    "CardID": 589101,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883253785/512458DF4DC5B0F60A93FF0B1FBCB0373C165CBE/",
+    "grid": {
+      "w": 5,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09679",
+    "CardID": 591420,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 20
+    }
+  },
+  {
+    "id": "09667",
+    "CardID": 591707,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09663",
+    "CardID": 591003,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09662",
+    "CardID": 591002,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09661",
+    "CardID": 591001,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09675a",
+    "CardID": 591316,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 16
+    }
+  },
+  {
+    "id": "09675c",
+    "CardID": 591317,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 17
+    }
+  },
+  {
+    "id": "09673",
+    "CardID": 588713,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09672",
+    "CardID": 588712,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09671",
+    "CardID": 588711,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09676a",
+    "CardID": 591118,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 18
+    }
+  },
+  {
+    "id": "09676c",
+    "CardID": 591119,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 19
+    }
+  },
+  {
+    "id": "09660",
+    "CardID": 591600,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09669",
+    "CardID": 591909,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09670",
+    "CardID": 592010,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09668",
+    "CardID": 591808,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09666",
+    "CardID": 590906,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09665",
+    "CardID": 590905,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09664",
+    "CardID": 590904,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09720",
+    "CardID": 588506,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09677",
+    "CardID": 588600,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883142183/E19C7B2F81D50060EF88CF8DA80093880EBA515F/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09725",
+    "CardID": 266409,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09721",
+    "CardID": 588507,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09724",
+    "CardID": 266408,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09678",
+    "CardID": 588601,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883142183/E19C7B2F81D50060EF88CF8DA80093880EBA515F/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09674a",
+    "CardID": 591214,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09674c",
+    "CardID": 591215,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093883143515/90ED945CAC67945F969BB710BA6E58FF780F0CA3/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09648",
+    "CardID": 589613,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09658",
+    "CardID": 590202,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388054046/1C954C9B41A6815C9FB6A759B2BF0DC0B0762FEB/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09657",
+    "CardID": 590201,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388054046/1C954C9B41A6815C9FB6A759B2BF0DC0B0762FEB/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09656",
+    "CardID": 590200,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388054046/1C954C9B41A6815C9FB6A759B2BF0DC0B0762FEB/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09653",
+    "CardID": 589618,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 18
+    }
+  },
+  {
+    "id": "09642",
+    "CardID": 589607,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09655",
+    "CardID": 589620,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 20
+    }
+  },
+  {
+    "id": "09639",
+    "CardID": 589904,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09636",
+    "CardID": 589901,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09651",
+    "CardID": 590302,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093882983649/469352D9DB1DA1F9A645138C3A4B6230152D36E2/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09645",
+    "CardID": 589610,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09726b",
+    "CardID": 590400,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093882877608/6F29B2960E3B1A761FDC3E232B17CF63DB4FF994/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09727b",
+    "CardID": 590401,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093882877608/6F29B2960E3B1A761FDC3E232B17CF63DB4FF994/",
+    "grid": {
+      "w": 2,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09728",
+    "CardID": 589506,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09726a",
+    "CardID": 589504,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09727a",
+    "CardID": 589505,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09638",
+    "CardID": 589903,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09650",
+    "CardID": 589615,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09644",
+    "CardID": 590301,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093882983649/469352D9DB1DA1F9A645138C3A4B6230152D36E2/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09641",
+    "CardID": 589906,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09652",
+    "CardID": 590303,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093882983649/469352D9DB1DA1F9A645138C3A4B6230152D36E2/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09654a",
+    "CardID": 589619,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 19
+    }
+  },
+  {
+    "id": "09637",
+    "CardID": 589902,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09640",
+    "CardID": 589905,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09643",
+    "CardID": 590300,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1938266093882983649/469352D9DB1DA1F9A645138C3A4B6230152D36E2/",
+    "grid": {
+      "w": 3,
+      "h": 2,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09649",
+    "CardID": 589614,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09646",
+    "CardID": 589611,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09647",
+    "CardID": 589612,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09635",
+    "CardID": 589600,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328388050817/3846C805B13DCC2540225520E2AA269073A4DA7A/",
+    "grid": {
+      "w": 6,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09618",
+    "CardID": 589309,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09621",
+    "CardID": 589312,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09620",
+    "CardID": 589311,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09619",
+    "CardID": 589310,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09617",
+    "CardID": 589308,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09612",
+    "CardID": 589403,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09611",
+    "CardID": 589402,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09610",
+    "CardID": 589401,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09616",
+    "CardID": 589407,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09615",
+    "CardID": 589306,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09614",
+    "CardID": 589405,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09613",
+    "CardID": 589404,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09740",
+    "CardID": 587709,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09739",
+    "CardID": 587708,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09717",
+    "CardID": 266403,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09716c",
+    "CardID": 266402,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09716b",
+    "CardID": 266401,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09716a",
+    "CardID": 266400,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09633",
+    "CardID": 589207,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09632",
+    "CardID": 589206,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09631",
+    "CardID": 589205,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09630",
+    "CardID": 589204,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09629",
+    "CardID": 589203,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09628",
+    "CardID": 589202,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09627",
+    "CardID": 589201,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09626",
+    "CardID": 589200,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387919505/4340DE4D787C4C023EDF48DE66B67F00C4E298AD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09625a",
+    "CardID": 589316,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 16
+    }
+  },
+  {
+    "id": "09624",
+    "CardID": 589515,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387999210/3BD2DDD7E8634CA92C9DDB9721D88B7AAEC982E1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09623",
+    "CardID": 589514,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387999210/3BD2DDD7E8634CA92C9DDB9721D88B7AAEC982E1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09622",
+    "CardID": 589513,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387999210/3BD2DDD7E8634CA92C9DDB9721D88B7AAEC982E1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09609",
+    "CardID": 589300,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387920818/F2889E830C26E200A1B488461EDB92705A4778C1/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09591",
+    "CardID": 589200,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09599",
+    "CardID": 589108,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09596",
+    "CardID": 589105,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09595",
+    "CardID": 589104,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09601",
+    "CardID": 589110,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09605",
+    "CardID": 589114,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09603",
+    "CardID": 589112,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09604",
+    "CardID": 589113,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09606",
+    "CardID": 589115,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09723",
+    "CardID": 266407,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09722",
+    "CardID": 266406,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09608",
+    "CardID": 590001,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387859732/1712285E81AF47EE85C90B49203E484D209B326F/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09602",
+    "CardID": 589111,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09600",
+    "CardID": 589109,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09598",
+    "CardID": 589807,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09597",
+    "CardID": 589806,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09594",
+    "CardID": 589903,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09593",
+    "CardID": 589902,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09592",
+    "CardID": 589901,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914205890/D2A864D064359DEC4DC7AF4BE1DF5E4A6CB824E6/",
+    "grid": {
+      "w": 6,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09569",
+    "CardID": 588103,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09568",
+    "CardID": 588102,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09587",
+    "CardID": 587705,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09586c",
+    "CardID": 587704,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09588",
+    "CardID": 587706,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09589",
+    "CardID": 587707,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09586b",
+    "CardID": 587703,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09586a",
+    "CardID": 587702,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09576",
+    "CardID": 588010,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09574",
+    "CardID": 588008,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09566",
+    "CardID": 588000,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09567",
+    "CardID": 588101,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09573",
+    "CardID": 588007,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09575",
+    "CardID": 588009,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09570",
+    "CardID": 588104,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09572",
+    "CardID": 588006,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09585",
+    "CardID": 587701,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387340145/405FDA994D65D67DEAE0E41DAE90BA47394164CD/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09583",
+    "CardID": 588017,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 17
+    }
+  },
+  {
+    "id": "09582",
+    "CardID": 588016,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 16
+    }
+  },
+  {
+    "id": "09581",
+    "CardID": 588015,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09580",
+    "CardID": 588014,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09579",
+    "CardID": 588013,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09578",
+    "CardID": 588012,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09577",
+    "CardID": 588011,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09571",
+    "CardID": 588005,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387353300/77D33DFFCAD6C1DA6E93FDDACEDF5A113498AF2F/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09549",
+    "CardID": 588604,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09548",
+    "CardID": 591303,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09547",
+    "CardID": 591302,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09553",
+    "CardID": 588608,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09546",
+    "CardID": 591401,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09557a",
+    "CardID": 588612,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09554",
+    "CardID": 588609,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09552",
+    "CardID": 588607,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09556",
+    "CardID": 588611,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09555",
+    "CardID": 588610,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09551",
+    "CardID": 588606,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09550",
+    "CardID": 588605,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09545",
+    "CardID": 588600,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09718",
+    "CardID": 266404,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09561",
+    "CardID": 588503,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09559",
+    "CardID": 588501,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09719",
+    "CardID": 266405,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09560",
+    "CardID": 588502,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09558",
+    "CardID": 588500,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09562",
+    "CardID": 588813,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387564579/99D66664F38D4F2371FDF8999E7D52DA814EFEBF/",
+    "grid": {
+      "w": 4,
+      "h": 4,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09564",
+    "CardID": 588505,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09563",
+    "CardID": 588504,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387563160/276357A9E5877BDC886A7D92DE4D1DEBC4428BB3/",
+    "grid": {
+      "w": 3,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09543",
+    "CardID": 588205,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09539",
+    "CardID": 588201,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09542",
+    "CardID": 588204,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09536",
+    "CardID": 588316,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 16
+    }
+  },
+  {
+    "id": "09540",
+    "CardID": 588202,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09541",
+    "CardID": 588203,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09538",
+    "CardID": 588200,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387455831/D6086B61D4E449AB8A4C5C43D640A35AAD92DD71/",
+    "grid": {
+      "w": 4,
+      "h": 3,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09537",
+    "CardID": 588317,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 17
+    }
+  },
+  {
+    "id": "09525",
+    "CardID": 588405,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 5
+    }
+  },
+  {
+    "id": "09524",
+    "CardID": 588404,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09523",
+    "CardID": 588403,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09520",
+    "CardID": 588300,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09526",
+    "CardID": 588306,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09527",
+    "CardID": 588307,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09529",
+    "CardID": 588309,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09535",
+    "CardID": 588315,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09534",
+    "CardID": 588314,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09533",
+    "CardID": 588313,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09532",
+    "CardID": 588312,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09531",
+    "CardID": 588311,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09530",
+    "CardID": 588310,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09522",
+    "CardID": 588402,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09521",
+    "CardID": 588401,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09528",
+    "CardID": 588308,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/2021605474914207505/FA7473632ADB17221600DF0C95CD2E0A8CAC4F07/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09510",
+    "CardID": 588209,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387261054/9B9B076447584B47DCE2CBB5E08C278283FC9DD7/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 9
+    }
+  },
+  {
+    "id": "09505",
+    "CardID": 266604,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 4
+    }
+  },
+  {
+    "id": "09504",
+    "CardID": 266603,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 3
+    }
+  },
+  {
+    "id": "09503",
+    "CardID": 266602,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 2
+    }
+  },
+  {
+    "id": "09502",
+    "CardID": 266601,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 1
+    }
+  },
+  {
+    "id": "09518",
+    "CardID": 266413,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387188537/4CC41E1E791083C05B668EEFFB2AF7B6F62AA429/",
+    "grid": {
+      "w": 5,
+      "h": 3,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09517",
+    "CardID": 266516,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 16
+    }
+  },
+  {
+    "id": "09516",
+    "CardID": 266515,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 15
+    }
+  },
+  {
+    "id": "09515",
+    "CardID": 266514,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 14
+    }
+  },
+  {
+    "id": "09514",
+    "CardID": 266513,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 13
+    }
+  },
+  {
+    "id": "09513",
+    "CardID": 266512,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 12
+    }
+  },
+  {
+    "id": "09512",
+    "CardID": 266511,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 11
+    }
+  },
+  {
+    "id": "09511",
+    "CardID": 587710,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387261054/9B9B076447584B47DCE2CBB5E08C278283FC9DD7/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 10
+    }
+  },
+  {
+    "id": "09501",
+    "CardID": 266500,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 0
+    }
+  },
+  {
+    "id": "09509",
+    "CardID": 266608,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 8
+    }
+  },
+  {
+    "id": "09508",
+    "CardID": 266607,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 7
+    }
+  },
+  {
+    "id": "09507",
+    "CardID": 266606,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 6
+    }
+  },
+  {
+    "id": "09506",
+    "CardID": 266605,
+    "FaceURL": "https://steamusercontent-a.akamaihd.net/ugc/1941643328387190289/86CD512092A20B40F9E1F4AABAF8B66C8A6166D9/",
+    "grid": {
+      "w": 5,
+      "h": 4,
+      "idx": 5
+    }
+  }
+]

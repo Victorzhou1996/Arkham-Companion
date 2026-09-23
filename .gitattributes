@@ -1,5 +1,6 @@
 # Keep large binary artifacts and image libraries out of normal Git objects.
 *.avif filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
 *.app/** filter=lfs diff=lfs merge=lfs -text
 */bin/arkham-api filter=lfs diff=lfs merge=lfs -text
 mac/release/** filter=lfs diff=lfs merge=lfs -text
@@ -16,3 +17,7 @@ server/linux/self-hosted/*.sh text eol=lf
 # Precompressed release bytes must never undergo text newline conversion.
 *.gz binary
 *.br binary
+
+# Release/source manifests describe exact bytes, including the pinned classic UI.
+server/release/** -text
+server/source/ArkhamHorror/** -text

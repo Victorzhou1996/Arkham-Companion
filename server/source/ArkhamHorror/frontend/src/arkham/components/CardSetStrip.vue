@@ -5,7 +5,8 @@
  * or every card wrapped, which is what looking at the whole set wants. Shared so
  * a set looks the same in your own library and in the marketplace.
  */
-import { renderCardPlaceholder, type CustomCard } from '@/arkham/customCards'
+import { cardArtReference, renderCardPlaceholder, type CustomCard } from '@/arkham/customCards'
+import { cardImg } from '@/arkham/helpers'
 
 const props = defineProps<{
   cards: CustomCard[]
@@ -17,7 +18,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{ pick: [card: CustomCard] }>()
 
-const cardArt = (card: CustomCard) => card.art ?? renderCardPlaceholder(card.def)
+const cardArt = (card: CustomCard) => {
+  const reference = cardArtReference(card.art)
+  return reference ? cardImg(reference) : card.art ?? renderCardPlaceholder(card.def)
+}
 </script>
 
 <template>

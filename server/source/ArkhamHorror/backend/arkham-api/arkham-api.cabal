@@ -9,6 +9,7 @@ version:        0.0.0
 build-type:     Simple
 extra-source-files:
     digital-ocean.crt
+    data/community-starter-decks.json
 
 flag dev
   description: Turn on development settings, like auto-reload templates.
@@ -8515,6 +8516,7 @@ test-suite spec
       Arkham.Asset.Assets.SwitchbladeSpec
       Arkham.Asset.Assets.TheBlackCat5Spec
       Arkham.Asset.Assets.TheBlackFan3Spec
+      Arkham.Asset.Assets.TheBookOfWarSunTzusLegacySpec
       Arkham.Asset.Assets.TheGrapevineSpec
       Arkham.Asset.Assets.TheHierophantV3Spec
       Arkham.Asset.Assets.TheHungeringBlade1Spec
@@ -8687,6 +8689,7 @@ test-suite spec
       Arkham.Scenario.Scenarios.FateOfTheValeSpec
       Arkham.Scenario.Scenarios.HemlockValeStandaloneSpec
       Arkham.Scenario.Scenarios.TheThingInTheDepthsSpec
+      Arkham.Scenario.Scenarios.TheUnspeakableOathSpec
       Arkham.Scenario.SpecHelpers
       Arkham.Scenario.TheMidwinterGalaSpec
       Arkham.ScenarioDeckKeySpec

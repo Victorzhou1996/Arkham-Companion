@@ -9,6 +9,13 @@ export default [
     props: true,
   },
   {
+    path: '/card-builder/deck/:deckId',
+    name: 'CustomDeckOverlay',
+    component: () => import('@/arkham/views/Deck.vue'),
+    meta: { requiresAuth: true, title: 'Arkham Horror: Custom Deck' },
+    props: true,
+  },
+  {
     // Nested under the card builder's path, so the marketplace reads as part of
     // the same section rather than a separate corner of the app.
     path: '/card-builder/marketplace',

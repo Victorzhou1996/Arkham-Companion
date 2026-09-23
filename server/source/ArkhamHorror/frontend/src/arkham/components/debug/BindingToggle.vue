@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useCustomCardText } from '@/arkham/customCardText'
+const ct = useCustomCardText()
 /* The segment on the right of a field that swaps it for the binding picker.
  *
  * A child of the field's own row rather than something laid over it, so it can
@@ -20,7 +22,7 @@ defineEmits<{ toggle: [] }>()
     type="button"
     class="binding-toggle"
     :class="{ on: open, floating, chip }"
-    :title="open ? 'Back to the value' : `Use one of the ${count} bindings that fit ${type}`"
+    :title="open ? ct('Back to the value') : ct('Use one of the {count} bindings that fit {type}', { count, type })"
     @click="$emit('toggle')"
   >
     $

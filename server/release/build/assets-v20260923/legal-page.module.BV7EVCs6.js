@@ -1,0 +1,1 @@
+var e={"legal-page":`_legal-page_1sy5o_1`,meta:`_meta_1sy5o_6`};export{e as t};
