@@ -9,11 +9,27 @@ function run(url,saved=null,blocked=false,source=script){
  const document={documentElement:{dataset:{}},readyState:'complete',getElementById:()=>null,createElement:()=>({style:{}}),body:{appendChild(b){result.buttons.push(b)}}}
  vm.runInNewContext(source,{window,document,localStorage:storage,URL});return{result,window,document}
 }
-test('only settings can explicitly change the interface and fully reload',()=>{
+test('settings and games can explicitly switch both ways with a full reload',()=>{
  const game=run('https://example.test/?x=1#/games/fixture','current')
- game.window.arkhamSwitchUi('legacy');assert.equal(game.result.navigated,null);assert.equal(game.result.saved,'current')
+ game.window.arkhamSwitchUi('legacy');assert.equal(game.result.navigated,'https://example.test/legacy-ui-20260923.1/?x=1&ui=legacy#/games/fixture');assert.equal(game.result.saved,'legacy')
+ const classic=run(game.result.navigated,'legacy')
+ classic.window.arkhamSwitchUi('current');assert.equal(classic.result.navigated,'https://example.test/?x=1&ui=current#/games/fixture');assert.equal(classic.result.saved,'current')
  const {result,window}=run('https://example.test/?x=1#/settings','current')
  window.arkhamSwitchUi('legacy');assert.equal(result.navigated,'https://example.test/?x=1&ui=legacy#/settings');assert.equal(result.saved,'legacy')
+ const settings=run(result.navigated,'legacy')
+ settings.window.arkhamSwitchUi('current');assert.equal(settings.result.navigated,'https://example.test/?x=1&ui=current#/settings');assert.equal(settings.result.saved,'current')
+})
+test('invalid modes and unrelated routes cannot switch the interface',()=>{
+ for(const mode of ['legacy','current','invalid']) {
+  const other=run('https://example.test/#/decks','current');other.window.arkhamSwitchUi(mode);assert.equal(other.result.navigated,null);assert.equal(other.result.saved,'current')
+ }
+ const game=run('https://example.test/#/games/g','current');game.window.arkhamSwitchUi('invalid');assert.equal(game.result.navigated,null)
+})
+test('game switch preserves route and query even when preference storage is unavailable',()=>{
+ const game=run('https://example.test/?x=1&ui=current#/games/g?view=log',null,true)
+ game.window.arkhamSwitchUi('legacy');assert.equal(game.result.navigated,'https://example.test/legacy-ui-20260923.1/?x=1&ui=legacy#/games/g?view=log')
+ const classic=run(game.result.navigated,null,true)
+ classic.window.arkhamSwitchUi('current');assert.equal(classic.result.navigated,'https://example.test/?x=1&ui=current#/games/g?view=log')
 })
 test('saved choice beats stale links; blocked storage preserves mode in URL',()=>{
  const current=run('https://example.test/?ui=current#/games/g','legacy');assert.equal(current.result.navigated,'https://example.test/legacy-ui-20260923.1/?ui=legacy#/games/g');assert.equal(current.result.saved,'legacy')

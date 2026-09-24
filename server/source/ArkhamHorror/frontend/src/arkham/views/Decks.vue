@@ -132,7 +132,7 @@ async function sync(deck: Arkham.Deck) {
     <div id="decks">
       <header class="decks-header">
         <h2>{{ $t('decks') }}</h2>
-        <button type="button" :disabled="addingStarters" @click="addStarters"><font-awesome-icon icon="plus" /> {{ addingStarters ? '正在添加' : '添加新人卡组' }}</button>
+        <button class="starter-button" type="button" :disabled="addingStarters" @click="addStarters"><font-awesome-icon icon="plus" /> {{ addingStarters ? '正在添加' : '添加新人卡组' }}</button>
         <PrimaryButton :label="showNewDeck ? t('cancel') : t('deckList.newDeck')" :danger="showNewDeck" @click="showNewDeck = !showNewDeck" />
       </header>
 
@@ -172,9 +172,9 @@ async function sync(deck: Arkham.Deck) {
 
 <style scoped>
 #decks {
-  width: 70vw;
-  max-width: 98vw;
-  min-width: 60vw;
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
   margin: 0 auto;
   box-sizing: border-box;
   padding: 20px 20px 10px;
@@ -189,12 +189,13 @@ async function sync(deck: Arkham.Deck) {
 .decks-header {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 16px;
 
   h2 {
     flex: 1;
     color: var(--title);
-    font-size: 2em;
+    font-size: 28px;
     text-transform: uppercase;
     font-family: teutonic, sans-serif;
     margin: 0;
@@ -204,6 +205,25 @@ async function sync(deck: Arkham.Deck) {
     flex-wrap: wrap;
     gap: 8px;
   }
+}
+
+.decks-header :is(.starter-button, .primary-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--page-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.starter-button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 480px) {
+  .decks-header h2 { flex-basis: 100%; }
 }
 
 .new-deck-panel {

@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.23.3-investigator-alignment",
+  "version": "2026.09.24.1-ui-switch",
   "files": [
     {
       "path": "server/source/ArkhamHorror/.dir-locals.el",
@@ -44463,7 +44463,7 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/index.html",
-      "sha256": "0377c90a2858442e8beab196ce83c0f1c65cbca761ef848e7f88a068f114ab4e",
+      "sha256": "94d7bda4cd31c9bfd05ec1baa2c4139f59e86f168480294e210ae00f9c323abd",
       "size": 765
     },
     {
@@ -53403,478 +53403,478 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/About-DFYSRAOU.css",
-      "sha256": "06fc9310002a0170bc06cbbed28d7b9c34987da75993d434ec45c6c1944f92da",
-      "size": 219
+      "sha256": "fd56ffa88f0193fb82bc5393d626a13f90e2af6c736f9dbfb1c7a7fa1c2c30a5",
+      "size": 218
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/About-Dixznc_F.js",
-      "sha256": "981d20b90dcfb641cbbda9baa5cf0de138c2ea89d20cab856c7ab5642408ee0a",
-      "size": 1228
+      "sha256": "105d32791972b172dbf2aea7115e21d904f3c38f07bf88da05cc67392af6df15",
+      "size": 1227
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Achievements-D79TG4Zw.css",
-      "sha256": "af37e9b97af4ee2735ac15c662e3252c8b82572a8d447f2bbceb09401288aa4b",
-      "size": 4066
+      "sha256": "b2f928e0cf2b4d22f6cf855a768116fb52644299ca34a6a56352e32ddb3227ee",
+      "size": 4065
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Achievements-DsMEYSvS.js",
-      "sha256": "ed35b771147bf883e9c051f2005c13af6c681e99e11bbbdd315af717d5aa54bf",
-      "size": 4717
+      "sha256": "e15585876f165229fe17a84af4347a8fd8b4a4d2f7077bc96ce26adbc6010339",
+      "size": 4716
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Admin-BXBQeNlG.css",
-      "sha256": "ab124aa1f90fbfc143430b48255f7bcfbb637d55df79f0ef189eb435ad2766bd",
-      "size": 2928
+      "sha256": "5a5c045a0fe640c052c53cb112b1e8937503f7a1ee82951a6c9e0761c2d04335",
+      "size": 2927
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Admin-D5gj0Adb.js",
-      "sha256": "eff60dbbe9d0fef1aa4e28507613f2a253c562cab7a2255ffd2bdc0d2a91bef2",
-      "size": 5889
+      "sha256": "0f0555b720ce1a592d81e571ad505a9c8b7fb5309910f64442ab42c1ba9e76eb",
+      "size": 5888
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/BugAntIcon-D-uyQuv9.js",
-      "sha256": "94ed3ea4247c10f3359e53bf876aa1d6d180c824ec939d7e3535fe01c962918e",
-      "size": 1734
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Bugs-B4pZ1KqA.css",
-      "sha256": "12c6dbaadfa51def8ded94bc7dfb2bb1e0e80c75859e2c35db26d8ac376b4bcb",
-      "size": 2725
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Bugs-BuMItJNU.js",
-      "sha256": "4e8c1075432088315b06bbec6aeef18de8e1838381ee726f2f6eada26056ec87",
-      "size": 5649
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-CMseA8fz.css",
-      "sha256": "e9f1843e73e874ea48c8508934df8ac11a6b022d8e75cb6b20542f31d9a63781",
-      "size": 29833
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-D485HKOL.css",
-      "sha256": "b3514a86ec38a15cf3e1f0ac30e5815d4baa22b8e34b6ef816a332bdccf57b30",
-      "size": 686
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-D6ZDGPjb.js",
-      "sha256": "5c99c5c35dc16f91d284fbd597904ce031269fe9d070629ba6c2954afe3c6e35",
-      "size": 1402
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-DbVbJU5c.js",
-      "sha256": "282fc8476bf3b1cb8c1dd13eb81124ec23e9990ff310171b5f0cdbef2377cd75",
-      "size": 47867
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CardImage-BdqFipXe.css",
-      "sha256": "550eecd6b01c04a94ed226e795081412daa0fbcfd69a5095a14529ffc5213cff",
-      "size": 1323
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CardImage-Y1BpCO6s.js",
-      "sha256": "b0628077243b1b51939a1c9a76f4d77c43182217147d558addd4b63a7ee9c580",
-      "size": 12773
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ClaimSeat-Cw6pQ7UJ.js",
-      "sha256": "6dbf664a5078ed99b19ad8ef2af8511e18ad728d841dc0aad11c828013733b7b",
-      "size": 1088
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ClaimSeat-DNuYPigB.css",
-      "sha256": "acef4226810b2c2d1014857b71366ad20cc59cdbe83a1af545831165a6545053",
-      "size": 176
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Deck-B6uNKzrR.css",
-      "sha256": "9a6e42a7b3c8aff5eb50b0658265717b62bad388780a07cf8c91ffe4adcb34ab",
-      "size": 10616
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Deck-D0BRuFxA.js",
-      "sha256": "60edfb376a3283ce368f1e768f26f298458d1f705254079685303aa48413c775",
-      "size": 12729
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/DeckToolbar-DV4QGNTP.css",
-      "sha256": "c6255297b1f24dee5b44487738d23797c59b294d3b94a7ae665b3a6855606fc4",
-      "size": 8618
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/DeckToolbar-DpzbA97f.js",
-      "sha256": "34291c1532962dd515dbbd67525cfc43e41df0d71836939135ab65bb5f4d3278",
-      "size": 8271
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Decks-BVdDG5w6.js",
-      "sha256": "751bcdf75d9a6ee87be3ec326cfd9112c1e1ef88a7830c1dcdae2ae6a1a7fb58",
-      "size": 5337
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Decks-C6gRxN6q.css",
-      "sha256": "021ff0646c2ed506585d35a88113dd170575bbdc7f18bfcb7b60b8e9eb5b2e60",
-      "size": 4100
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/EventCountdown-CJHiwgcq.css",
-      "sha256": "6f3014f4992d2844afa59b555ecbf434f11080c219352a66414ea1d6d9994fa9",
-      "size": 491
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/EventCountdown-CdHATDw6.js",
-      "sha256": "26d81d75279c604ddc7a36b4753c15609d192a61bb6bb87d9fcd72989d07915d",
-      "size": 1332
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Game-C7Yx_z7t.css",
-      "sha256": "482fef208e8940bdde04a481aefedf62d2daac0d6d7737982e829ef7d30b940c",
-      "size": 62590
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Game-UD6Kvl9c.js",
-      "sha256": "cbe7e6c7d051f05b0d6cf55548c897fbf7791ba979eb692beba29a2da229c2d6",
-      "size": 151702
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameLog-CaFgbZsU.css",
-      "sha256": "41e6eec06790b645dd6d484cc7664221cd6fd48d22ae92fd3a972ab47e15b112",
-      "size": 229805
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameLog-Cf4LRTFm.js",
-      "sha256": "f27337ba0fb3ac1e0f74b50695b53c807abfe6f6977605086d5fe6418fba247a",
-      "size": 1089456
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameRow-C7MWApJk.css",
-      "sha256": "a7c4565ad365812993861a6a9b447e2788d0a4efb3acff2f2f3975dffb3802a4",
-      "size": 4962
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameRow-Dirm2Sfr.js",
-      "sha256": "f4287b0c1ec56f75e1e4502f93f17bb85697fb406e544121a86eeee9f5557be5",
-      "size": 3821
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Home-CdlGhleg.js",
-      "sha256": "3cc63190117a32c479f61d883b4e369eb1e299f37794423aca554df8579cd853",
-      "size": 11461
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Home-izWRFNZB.css",
-      "sha256": "fbbcf873bbfbd2372c6056f96fc06037699e9ff322fdc87cae0e30ca1c89283a",
-      "size": 12199
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/JoinGame-B6rUNcO7.css",
-      "sha256": "ac89a57cb87f9bdd66a5e51cb3382afc29df57f2379b084bf1e6ec64ed5188e9",
-      "size": 4543
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/JoinGame-CXEQB70B.js",
-      "sha256": "a948e6ff9e140d02dda877ba108c3f5035f2f7fd7139a827dd357dfe9e847917",
-      "size": 2284
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/LogIcons-D_X_CtUD.js",
-      "sha256": "c54896aef5525216232cb362b9b59cd5607199e5d6ae5afdaa248b576e145fff",
-      "size": 47198
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/LogIcons-ML2rWupL.css",
-      "sha256": "b39e5d231ac8ba8d46658006ed9f340c85ec9d51201a6af3741cd4737bc529d7",
-      "size": 18657
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/MultiplayerLobby-Ba0O6Duh.css",
-      "sha256": "fbe1543a47fb26ef62978eb8ec5395578983f114ce7e659ac15b6e102e9882df",
-      "size": 3235
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/MultiplayerLobby-Bx7ji2OI.js",
-      "sha256": "7101f0f188ddf82d1f59e666b641774188d9faba1813ad38862b90ceb1a2b1b4",
-      "size": 4547
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/NewCampaign-CP-MK6Nh.js",
-      "sha256": "d8374fbb8c7afda45fb5bb4517b824afb5c27e5f96ba7277ac8208e8d3febef5",
-      "size": 38561
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/NewCampaign-DrlCgSBf.css",
-      "sha256": "3e114ae7da7c4549cb3f44542438910ab20875cf560b1508eb9f3f1d59a28474",
-      "size": 21879
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/NewGame-Kv1DVrm_.js",
-      "sha256": "d252d24eb6237276488884ffcf3524a62419b896ce00ea63317040808e115625",
-      "size": 85
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/OrganizerDashboard-BJl9woQf.js",
-      "sha256": "a05f05db46b1a558333acad65414f886514bbcfd7fca53cb02c326b085da1643",
-      "size": 6985
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/OrganizerDashboard-eppGs2eI.css",
-      "sha256": "57f7f8feb87edd2e939ac939f8c08d53a0222bbd2bd5153b3cb8613ded0d5a98",
-      "size": 6550
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PasswordReset-BhRzwKPT.css",
-      "sha256": "d528abd80fc391cc3f10e5834e04450a5a05e30e8ae080c53b08b4afb936144d",
-      "size": 835
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PasswordReset-CKyo6eeQ.js",
-      "sha256": "3dedf8ee83db770de6fdeab9a8951aaf037b7586afbf142dff01785edb6fc2f0",
-      "size": 968
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PrimaryButton-ho8CUvJD.css",
-      "sha256": "3e2e5db11de1fbf0ceecb6ed1f0c982a4b4f616be600023defcc0f4fe7bcf45b",
-      "size": 555
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PrimaryButton-jBVc-NU3.js",
-      "sha256": "2c966c9a4dcf4d1314acde07e8416d6ad61992bdbb460b4ad11c3a5b71954b1c",
-      "size": 375
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Prompt-C_jp50Cw.css",
-      "sha256": "d09050831d1865257c633c6c751bd08ba789c5bb0a88f8956632a282d1a6b104",
-      "size": 1789
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Prompt-DgDb1acA.js",
-      "sha256": "932cd5cbfa707cd08b8bcff1d6777c930f4eb1730b56c0a03f4ccc210172f0e8",
-      "size": 1130
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ReplayGame-DaayaHvs.css",
-      "sha256": "969d453140ddc62d30dff64025cdbcea975bbe4d67ee471928f6ba51218c000c",
-      "size": 1154
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ReplayGame-IGwWmpz8.js",
-      "sha256": "95e99bc3b86a9b2a535158dd6123fab016a9fae7201547c986d289a50a9004cf",
-      "size": 4167
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Rooms-BHobnMkr.css",
-      "sha256": "00f9aa6a258cfc06f21768f4c35faecacebb4f24615b3fe223adcd82cab61f92",
-      "size": 2215
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Rooms-Dms5Xatq.js",
-      "sha256": "c935f4ecbf76149b31ee85fa4028460d7306f83677b2e076e820e56703f5dde7",
-      "size": 1710
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Settings-CWHSL3h1.css",
-      "sha256": "6705aa6f4e66abc2ccde059740503436e8747774394ddc398787c9fc9a255e82",
-      "size": 2009
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Settings-CgeLv4OZ.js",
-      "sha256": "4118817bcccf20740fdb8896c8e3463c5a9fae84ef419ecf087c4bb099bd016e",
-      "size": 11106
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignIn-JK0q-LgB.css",
-      "sha256": "15b7f8a09d539dc498208fb024597cb75e2123f9daa51bc283ba72d7ff3f3670",
-      "size": 1447
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignIn-e2JXxroM.js",
-      "sha256": "8642bc4102b55dce75457315b73b30cf092f06c3221d20c401a6338ccf736e1d",
-      "size": 1704
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignUp-CfmE3eR_.js",
-      "sha256": "c330086f6cd0fed1899058f855c1def3e5fdb4063022d71bf13d61722f187148",
-      "size": 2117
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignUp-D7TUbFIu.css",
-      "sha256": "757d63980bdf53369c51cd9b26e14055a092028e4f5f3702f265b889b7b07b19",
-      "size": 934
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UI-DYf75t_Z.js",
-      "sha256": "b0ba009125b832593f84811da81bc9c60c79ce2b6637b02d3603d67d97bdc1d6",
-      "size": 2059
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UI-DqzfJiQb.css",
-      "sha256": "cb22ef70cb14720198f51ba5a8c62dc23fe6b9531b07f240819fa9519e0c642c",
-      "size": 4542
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UpdatePassword-BpN9dGl7.css",
-      "sha256": "b0d3b4d7bcb3c5e5bd93d0fc04c45f67c8e04fed3d4a8a8c01305309f8898413",
-      "size": 886
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UpdatePassword-Z5V6dp7d.js",
-      "sha256": "7e5d02b5148ed6f0b6192977602bac2e331e8db1775a0b923b91ba23234c0604",
-      "size": 819
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/XpBreakdown-_9hRogLs.js",
-      "sha256": "43d495fa1696e40df527b357d782eaf9f4c40293c1f54eadb70d07c28df927bf",
-      "size": 109119
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/XpBreakdown-okREq0Ez.css",
-      "sha256": "ba71a71574983b4bfc134a90a80885bef0489693a3fa0b669f1004fd134491d1",
-      "size": 38352
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/achievements-DJaAemtM.js",
-      "sha256": "5bc041d0397bdadd7ee0c3e0cc0ff38117082994e3f23742a814c7fe4ae7514b",
-      "size": 11399
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/api-BQ1BYW-_.js",
-      "sha256": "ec725189b237297051809b39a7613f292c92ffb827240c5b99d69b1cf8c0de03",
-      "size": 123858
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/campaigns-uKlnaEBi.js",
-      "sha256": "a2d484d647ad8a466836a11e3dc45e172a455f45943e9067cea422a7280c09f4",
-      "size": 33364
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/cards-CChhgmQ0.js",
-      "sha256": "3a2380f2138c4f7edfde048f412ff672c5f85a1f9cc4ab75119706a4459f1eaa",
-      "size": 311
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/create-Ch3ewwZl.js",
-      "sha256": "bfe3414765231c190f0c7eef5d259b8c259f521e6a650ba8caf49733fa8c265e",
-      "size": 15388
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/dbCards-BLc3HiQX.js",
-      "sha256": "a538eceb4c757a2941075991b687078848c9e3abbffb93f7091b9beb8a3b579f",
-      "size": 1298
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/en-Ci2ZxBe9.js",
-      "sha256": "9e216dde6e94bfe3dd0eb3704d2ff4fb9f3ba291cc803d6cb3c73ac7e604034a",
-      "size": 2314182
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/es-4vMZmUxF.js",
-      "sha256": "a6e9b13a56cdfe87ab8b111eb87ebdcfe790f1eb2d142a18b84433ba59c8d508",
-      "size": 11649
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/es-hQflf9v4.js",
-      "sha256": "a5d051ef765223b69f33dddb4f495c02ad726f14e5c06086bf5adc4fb4627800",
-      "size": 64117
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/event-DQvC98EN.js",
-      "sha256": "3b38b0d4f4e50f006af74510701416f9a7ec3800c79639cbfac695e02cf8fc51",
-      "size": 1120
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/fr-Ca0EmoOs.js",
-      "sha256": "d8efe315fc36d2665fc8f8365f9f1b5c165e683cef16eb5adb6fe09c1d167291",
-      "size": 1341036
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/fr-DsOAPvhE.js",
-      "sha256": "04c29ab39cb4b9046fed0082c86b8456d945705051306c489ad64bf5ba0e6fc5",
-      "size": 149414
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/i18n-CYsallPH.js",
-      "sha256": "219da869b0fb022ac17728582cd803555a07a23086ba8debf0a2fca95952c435",
+      "sha256": "8975feeea3295cb9128f14d3cae6815c9e32c88d2290dc81c30d7e903024c08a",
       "size": 1733
     },
     {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Bugs-B4pZ1KqA.css",
+      "sha256": "e1bcbc70b09b185f954051af8eda6b119921067f47aa37775524813f26d75b55",
+      "size": 2724
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Bugs-BuMItJNU.js",
+      "sha256": "49e00f02dbfa20386847dbe08f017ce2538a2dffc5b55f08c986020db212f4d3",
+      "size": 5647
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-CMseA8fz.css",
+      "sha256": "1823ae414da5287f35f6be103852796ad19077722d7967dccb2682f15795b5a7",
+      "size": 29832
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-D485HKOL.css",
+      "sha256": "e11a7697bae60d93d75860af06914eda447b3bc0d7f62a2742e2d24915543885",
+      "size": 685
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-D6ZDGPjb.js",
+      "sha256": "0fb3ce12591bc183e15b7d52c067547d001629f62c1a940b00d3f6a4562e1d80",
+      "size": 1401
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CampaignLog-DbVbJU5c.js",
+      "sha256": "c6410394136220680848351e8e53211663db6d8856bf098cde05a5faec8dabb9",
+      "size": 47865
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CardImage-BdqFipXe.css",
+      "sha256": "49920ce93df6f3448036fd357f18fa55b7ea978fbc617443d2dfbf3c0add6ce2",
+      "size": 1322
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/CardImage-Y1BpCO6s.js",
+      "sha256": "6a0c05de5b275ce15742d24e03bd1a496300d93c2719d145075a66681946d6cc",
+      "size": 12772
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ClaimSeat-Cw6pQ7UJ.js",
+      "sha256": "c84f3c7c73e190ac21f5308ff96d3cff73116c0c2d7222afe05de88825a42920",
+      "size": 1087
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ClaimSeat-DNuYPigB.css",
+      "sha256": "30036c15a08350c33b7faf25c7edf80c530aaac3fbfcd69260ed9b196f1b62cb",
+      "size": 175
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Deck-B6uNKzrR.css",
+      "sha256": "f2351e42457e53937c8e4e238ec3765e0eb5753984c239f333c6a277d43a207b",
+      "size": 10615
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Deck-D0BRuFxA.js",
+      "sha256": "32af29c2f058b1544386c515783b98ddda3a1682c3de4f513756d66cac59f239",
+      "size": 12728
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/DeckToolbar-DV4QGNTP.css",
+      "sha256": "1b2a55a62aef147500c7ee87e46afb231e886736bad73981f2ab0fc316e49be1",
+      "size": 8617
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/DeckToolbar-DpzbA97f.js",
+      "sha256": "860a9ae3e113ab74d6ea5983ff67e83deb21c7e295e02d052b7f60d08c55cd69",
+      "size": 8270
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Decks-BVdDG5w6.js",
+      "sha256": "54a161e65f145120f0ec453be2661b5f38677465c26a6358c6204efd844c45dd",
+      "size": 5336
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Decks-C6gRxN6q.css",
+      "sha256": "e43b2313de1faaabca42cc84bf98a66f8a0cab867a444085dda045f992afa712",
+      "size": 4099
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/EventCountdown-CJHiwgcq.css",
+      "sha256": "c83ba96e992282821c05ab79682917b2c8e93713db257cf786c4841b0a108480",
+      "size": 490
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/EventCountdown-CdHATDw6.js",
+      "sha256": "822bac3f91c06b8d5b95e0bfac7e6d001b9d867431a1916a338bb18c5f99ec39",
+      "size": 1331
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Game-C7Yx_z7t.css",
+      "sha256": "0db16b66000a70541211dcbd945bd84c175afb244101370e512c1e8bcff66ecd",
+      "size": 62589
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Game-UD6Kvl9c.js",
+      "sha256": "7845d0debf4a432c71bd940b8ce57d6383b8f1cdf78962512841be442a49a7b7",
+      "size": 151697
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameLog-CaFgbZsU.css",
+      "sha256": "78dba28bde38c1402815968f4fdd9ae9108d857fee6de5183aaccb447461200f",
+      "size": 229804
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameLog-Cf4LRTFm.js",
+      "sha256": "181ada5d6004028654a4be3041199921c09833a7973f0ccfb8f0b10c64167542",
+      "size": 1089424
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameRow-C7MWApJk.css",
+      "sha256": "699bb6181724de7695ff9dbd675f22674970b5aa11a8fab45609de0b6473d911",
+      "size": 4961
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/GameRow-Dirm2Sfr.js",
+      "sha256": "eb03ecb2887dfdd376c4ec846ea2394ba6711ce96838f7370df20c174cbaefec",
+      "size": 3820
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Home-CdlGhleg.js",
+      "sha256": "3b78c360096f6340de1caf1ac53a837ae4cfb05d6f54b57ebf3c8e6a48e7bdc6",
+      "size": 11460
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Home-izWRFNZB.css",
+      "sha256": "fa761b4dcd4a251af9953b24d7954f40493585cff23edca6135e3af22584d095",
+      "size": 12198
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/JoinGame-B6rUNcO7.css",
+      "sha256": "46584cd21bb512b5ef113dc88e0641d678d82c89cc17acbfcb3d32072c9de8e8",
+      "size": 4542
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/JoinGame-CXEQB70B.js",
+      "sha256": "de09f6606ed2e406794bc74fbac50929fb48db1ced76ad2e8a839765e55da44d",
+      "size": 2283
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/LogIcons-D_X_CtUD.js",
+      "sha256": "95a1e12eaa525a4fdad1952174d55858bb349e653c6c299e4a128deba6477088",
+      "size": 47197
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/LogIcons-ML2rWupL.css",
+      "sha256": "f742dd297a6cbc9be5c55be207c5680f4920ded1b33acfd4dcdd8235e94ef279",
+      "size": 18656
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/MultiplayerLobby-Ba0O6Duh.css",
+      "sha256": "d287bacd74864805f9d6dcda05188a086bc8678e9883ecc1bf624249431c44d3",
+      "size": 3234
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/MultiplayerLobby-Bx7ji2OI.js",
+      "sha256": "6b271f39876155cba6bee7229ae7ba70631ee8778102d40eea8e823bbaffec96",
+      "size": 4546
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/NewCampaign-CP-MK6Nh.js",
+      "sha256": "9e5e08435033d8441e60df72f36e4f6c4500799630e8d355b03e8e1b4d9164b4",
+      "size": 38560
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/NewCampaign-DrlCgSBf.css",
+      "sha256": "a3f97f7a3f2b049c152135c28b0c6018449999e65582ffa5cdddac05380f1810",
+      "size": 21878
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/NewGame-Kv1DVrm_.js",
+      "sha256": "5180486059bbfeb1da2b07eefee095ba303a763b623278ccfa552821e7fa72cf",
+      "size": 84
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/OrganizerDashboard-BJl9woQf.js",
+      "sha256": "4aae7caf9031cbc5842b5d79907799316f1d2570e8c1c959483cc53c25a216ad",
+      "size": 6984
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/OrganizerDashboard-eppGs2eI.css",
+      "sha256": "17282c0731c53aad78581120dcba7a242f1e89b65e6f6f06028fbf76e2f279f3",
+      "size": 6549
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PasswordReset-BhRzwKPT.css",
+      "sha256": "8dd6784c892212d85077f706cde56dbe698e176b518ab48c6345ae90f48227e7",
+      "size": 834
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PasswordReset-CKyo6eeQ.js",
+      "sha256": "86dfef2d04ebded4e99b3a3af97e72fa457283d03651a885f94a1dae8d94e3be",
+      "size": 967
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PrimaryButton-ho8CUvJD.css",
+      "sha256": "52282fc3eee22d9b5cc57717431503a8259c17759fefb0556370d3efe712b33d",
+      "size": 554
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/PrimaryButton-jBVc-NU3.js",
+      "sha256": "36da79c6b3fa9bd10b3fcf9f51360f25ea5e9faa8dfb95a043ebcefdeac89821",
+      "size": 374
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Prompt-C_jp50Cw.css",
+      "sha256": "bb14119389fdca4c1074f6472b1e5b1a6bf7924f39f8d397ccf204a7e20abae0",
+      "size": 1788
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Prompt-DgDb1acA.js",
+      "sha256": "b13c29587775ee5381ff9a2c73a1bb8a5caaa940e8ce20bbaeb5bf56bcf5f18f",
+      "size": 1129
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ReplayGame-DaayaHvs.css",
+      "sha256": "dedce8851fddd5b69ab9a40e1fc6cf07db92de7ef26d4c2b9e143b098f80afec",
+      "size": 1153
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ReplayGame-IGwWmpz8.js",
+      "sha256": "2d12f55536d467ea39ad3368fb0532ed52664bc8212ff5085a3c3c3a7f7d49cf",
+      "size": 4166
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Rooms-BHobnMkr.css",
+      "sha256": "15a75329d6a320fdb3d22743dcd11b8216cdad1a68a4eac9c9d51edc14750077",
+      "size": 2214
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Rooms-Dms5Xatq.js",
+      "sha256": "f595dc4ddce593ce6c1709fdaf06826870d471cf3a4cdeebd744e76652ebf852",
+      "size": 1709
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Settings-CWHSL3h1.css",
+      "sha256": "67d6db75bcd627fbacda3bf1b6535e2e2f29546bcbaebabdb977cf9791d80ad8",
+      "size": 2008
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/Settings-CgeLv4OZ.js",
+      "sha256": "ad0558180ddfd5e7a85cd71290ca1dbcbe47bd1b33a09ebb6f21987bd99c4abb",
+      "size": 11105
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignIn-JK0q-LgB.css",
+      "sha256": "3d3fbdaeca7320319cd27ab778029189f5bf764b8609def8c1d8d16738e80338",
+      "size": 1446
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignIn-e2JXxroM.js",
+      "sha256": "bac495098cd5a46857d98933561a4ef5b70e532f6b90d06dd89545f5d151b1e0",
+      "size": 1703
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignUp-CfmE3eR_.js",
+      "sha256": "9f5ccdca2c398f7fe413515f83dba5b2383ab15c59f9e49203f88f77f31d6f32",
+      "size": 2116
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/SignUp-D7TUbFIu.css",
+      "sha256": "003fc52e00e72bd910fbd0b70f19b03b5fb79e12f2b00b8eb5cafb72023a5b87",
+      "size": 933
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UI-DYf75t_Z.js",
+      "sha256": "45aceb8295d20251b16a95a6b1079bb1b3fd45a7c5b331a8bb814210e10ee1cb",
+      "size": 2058
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UI-DqzfJiQb.css",
+      "sha256": "7c410229748a1c261897b9a8df3a223485d98822339d3ba06879d41f85b662b3",
+      "size": 4541
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UpdatePassword-BpN9dGl7.css",
+      "sha256": "4d54b4e1a34ca5c1f3e6b44f6b004e9a914aa636e00febd11da6b15b7c0b9da6",
+      "size": 885
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/UpdatePassword-Z5V6dp7d.js",
+      "sha256": "009b9d03c8065ddf977fdd2e89adc5c4ec9f5bb91d7104352e7791157f3a2684",
+      "size": 818
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/XpBreakdown-_9hRogLs.js",
+      "sha256": "2a4fd5462fb61dad2d6138e86b52ccfd905e8f232bf4d4517d63a263f13cb6e7",
+      "size": 109049
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/XpBreakdown-okREq0Ez.css",
+      "sha256": "277686ef8d9039bcc0a69b9340378d1f68ad63a840a4f1489004d6ff1bfb3a93",
+      "size": 38351
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/achievements-DJaAemtM.js",
+      "sha256": "0364e8b84d220e866ae710ef5650bbc13035dbdd83c56cd3645f1980db153183",
+      "size": 11398
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/api-BQ1BYW-_.js",
+      "sha256": "a3bb21c5fde6c1e8709e1b44015daf02750b472d831a5e6aa12e618c6a27194a",
+      "size": 123857
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/campaigns-uKlnaEBi.js",
+      "sha256": "fded733354b587fc16fe8d6b4f13ed4e72aff9314decabd8aee69bd720ec45fc",
+      "size": 33363
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/cards-CChhgmQ0.js",
+      "sha256": "aed589d76adc9407b8ca809eed65b1c046cc1a9867499c34160e034df0f8c5e5",
+      "size": 310
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/create-Ch3ewwZl.js",
+      "sha256": "f4ccd7e51994ceff1efd83aab5d0981f5405de28732a2ea7b79820c9eb462c38",
+      "size": 15387
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/dbCards-BLc3HiQX.js",
+      "sha256": "e8183ed487f33754ff6d4e713f30d3b163d6429f008735ba027b8a82b032bbb5",
+      "size": 1297
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/en-Ci2ZxBe9.js",
+      "sha256": "aa97f584c306f7bca651c97d670c4163200da426daf7da6e4a130d44ded53fc4",
+      "size": 2314181
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/es-4vMZmUxF.js",
+      "sha256": "1a6812668acbf642e036f97c85cfcd7054c895e181b023be4aa861a81b48adde",
+      "size": 11648
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/es-hQflf9v4.js",
+      "sha256": "ce9f518886539d6ac80655995fa2e1ff9d3f2c2cba70e19c3cef39f529f9580f",
+      "size": 64116
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/event-DQvC98EN.js",
+      "sha256": "0d8d693ec0d6cb8eb9145a6668bc5ca285972325ae070e2edeca9de0db7160d4",
+      "size": 1119
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/fr-Ca0EmoOs.js",
+      "sha256": "f9c0d492dfa334a0a041749f88a512e2f7ff474559dca9fc456fbd76c98c8c9a",
+      "size": 1341035
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/fr-DsOAPvhE.js",
+      "sha256": "07fb503c8df7eba7064525d7955bfd347b8cbfd386e904407a8ebb10f814b3a8",
+      "size": 149413
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/i18n-CYsallPH.js",
+      "sha256": "350aa82979bfb171f89482ab5aad7c920ed83926e4cf97f6a77feefa5299d561",
+      "size": 1729
+    },
+    {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/index-BQrQvsth.js",
-      "sha256": "097e550c00ff51e0522444d84ff9ec574e20b6563e572c82ed37e0511238ea9c",
-      "size": 436422
+      "sha256": "47e332d8c1d115e4716bb0bcfa9aaadf78a45afdcd64dbc96da7829baa7c2d55",
+      "size": 435791
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/index-QHQq6zrS.css",
-      "sha256": "920c3999a01135e3c7909cfe9b48e1864b965132302cb4d7e9f549fb70f483e4",
-      "size": 35062
+      "sha256": "a9cd034af5b01f8072852901904f8119dec2605cdab146e13349e8fbc21ac1a0",
+      "size": 35061
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/it-BuPRNYDF.js",
-      "sha256": "ba1a1863913291b733f002de48f148367ca7b5793a5f4a78170a826838149091",
-      "size": 191
+      "sha256": "03db16ad1f20463077f9d6a3a9a0baa003aaf950c4b18b8e407a088cc6bd3082",
+      "size": 190
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ita--S96PIbn.js",
-      "sha256": "9a5b523558e9e47b0e0acc0d81d8e93da883042df62833cf31a09c2dfa63b96a",
-      "size": 48767
+      "sha256": "d7190f643a44d74dcd9be805052d4d0aef3bc99d2bb7416c6188e7cdfdd0dc40",
+      "size": 48766
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ko-C3daKE3O.js",
-      "sha256": "23555980b4e7899984deb99939bd8e87faede64093e2e262afb3e3d9c999b7aa",
-      "size": 34
+      "sha256": "c1e5a21188845d4a1baf8531238547f21783aefb4352bb622ddeb8bf880a256a",
+      "size": 33
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/ko-Dj0uAwER.js",
-      "sha256": "90d6ceef325b536f4d2c5658328700ae4317f0ac87c440ec997984f10ef3c70d",
-      "size": 980482
+      "sha256": "7edeb8107f9dd4c6a841898dfe26f10979eed4e0cec68b226936af46076eef86",
+      "size": 980481
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/localStorage-rETqQM3q.js",
-      "sha256": "93e5addd59061f4bb51a5c543681a494fee9d10cb0885666ea57b83196e1f99d",
-      "size": 1013
+      "sha256": "7c37ce1ca30dad0816c849ebee2afffa0bdd8d982ef44d00f7e5d7c74c872ace",
+      "size": 1012
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/settings-C-p0xpSK.js",
-      "sha256": "df2b0a12fa328a4dba54608ac3271c73f7a132633626594d2a44c367bfdcfb92",
-      "size": 1095
+      "sha256": "f4e3632b9d2ff6a743fe15b951efeb6e047c62bb4f12cfcb0083062c1e56fbba",
+      "size": 1094
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/taboo-B4t5Y6Ff.js",
-      "sha256": "39ab70c24f87c8ab14edd0b9e34fc9a5a5673609cd4e73c2a0ec8f4681957531",
-      "size": 907
+      "sha256": "9dea017003a69b45195c64398a125b4692bc7db68a026563a7dc514017cb4bdc",
+      "size": 906
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/theFeastOfHemlockVale-_Yt--kzo.js",
-      "sha256": "8c8154b041a65db6151470f5b8654099f8a18ef9b99b661a9c874bda1a3a9344",
-      "size": 378181
+      "sha256": "d4888008cab8e6f5ae41f6c4bea7d44203496dff2c73e58aac09071fac7dcba1",
+      "size": 378180
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/useEpicHelpers-BgHLrRxS.js",
-      "sha256": "c8a05c3a8e204cedd1fe8b0f47c5ff1eec394366cf3b297af0611893d0a6015a",
-      "size": 383
+      "sha256": "f098d12aac15665127605ed9b0b070875a2a7c915bebde3ea80ee6a185463be7",
+      "size": 382
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/zh-DAG2tbjn.js",
-      "sha256": "7d19d126bef11f424197621fbdd87b1a32bb3710430ae459bc540fb34ed5c0a0",
-      "size": 2435844
+      "sha256": "d9b159b9a3e86a28ce5a4499e57592f14bd609b3fd5554ee5b9f2853a2f3d1ae",
+      "size": 2435830
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/assets/zh-DxvknHJq.js",
-      "sha256": "d242d86a50cd2a9cc1c33d42f2ac5aae8a4a7424538eb97d6c9867235d208c46",
-      "size": 164640
+      "sha256": "d321f062b349f76ee860b9089a021b1dfb6487a25b429d1730cb5c5b553f98db",
+      "size": 164639
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/basic-entry-zh-runtime.js",
-      "sha256": "ee47390b61eb0aa0c3cca4b9b982da11d9bcfb97602772b10972ae958b7c6792",
-      "size": 1272
+      "sha256": "7d6769174fd92aa391d76c5804b25a3b6cbf346a78e0b5553d1034f5623969cc",
+      "size": 1218
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260826.3/index.html",
-      "sha256": "1aaed6586719447328707de8b3053033d8f3958f0f26b85a9121844951215f0f",
-      "size": 912
+      "sha256": "a69c30e3103c6843bc8401ba99d5d54e513c3c628e2b66bf417d2e9c3e54b9ad",
+      "size": 891
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/About-DFYSRAOU.css",
-      "sha256": "06fc9310002a0170bc06cbbed28d7b9c34987da75993d434ec45c6c1944f92da",
-      "size": 219
+      "sha256": "fd56ffa88f0193fb82bc5393d626a13f90e2af6c736f9dbfb1c7a7fa1c2c30a5",
+      "size": 218
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/About-Dixznc_F.js",
@@ -53883,293 +53883,293 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Achievements-D79TG4Zw.css",
-      "sha256": "af37e9b97af4ee2735ac15c662e3252c8b82572a8d447f2bbceb09401288aa4b",
-      "size": 4066
+      "sha256": "b2f928e0cf2b4d22f6cf855a768116fb52644299ca34a6a56352e32ddb3227ee",
+      "size": 4065
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Achievements-DsMEYSvS.js",
-      "sha256": "ed35b771147bf883e9c051f2005c13af6c681e99e11bbbdd315af717d5aa54bf",
-      "size": 4717
+      "sha256": "e15585876f165229fe17a84af4347a8fd8b4a4d2f7077bc96ce26adbc6010339",
+      "size": 4716
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Admin-BXBQeNlG.css",
-      "sha256": "ab124aa1f90fbfc143430b48255f7bcfbb637d55df79f0ef189eb435ad2766bd",
-      "size": 2928
+      "sha256": "5a5c045a0fe640c052c53cb112b1e8937503f7a1ee82951a6c9e0761c2d04335",
+      "size": 2927
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Admin-D5gj0Adb.js",
-      "sha256": "eff60dbbe9d0fef1aa4e28507613f2a253c562cab7a2255ffd2bdc0d2a91bef2",
-      "size": 5889
+      "sha256": "0f0555b720ce1a592d81e571ad505a9c8b7fb5309910f64442ab42c1ba9e76eb",
+      "size": 5888
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/BugAntIcon-D-uyQuv9.js",
-      "sha256": "94ed3ea4247c10f3359e53bf876aa1d6d180c824ec939d7e3535fe01c962918e",
-      "size": 1734
+      "sha256": "8975feeea3295cb9128f14d3cae6815c9e32c88d2290dc81c30d7e903024c08a",
+      "size": 1733
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Bugs-B4pZ1KqA.css",
-      "sha256": "12c6dbaadfa51def8ded94bc7dfb2bb1e0e80c75859e2c35db26d8ac376b4bcb",
-      "size": 2725
+      "sha256": "e1bcbc70b09b185f954051af8eda6b119921067f47aa37775524813f26d75b55",
+      "size": 2724
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Bugs-BuMItJNU.js",
-      "sha256": "4e8c1075432088315b06bbec6aeef18de8e1838381ee726f2f6eada26056ec87",
-      "size": 5649
+      "sha256": "49e00f02dbfa20386847dbe08f017ce2538a2dffc5b55f08c986020db212f4d3",
+      "size": 5647
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/CampaignLog-CMseA8fz.css",
-      "sha256": "e9f1843e73e874ea48c8508934df8ac11a6b022d8e75cb6b20542f31d9a63781",
-      "size": 29833
+      "sha256": "1823ae414da5287f35f6be103852796ad19077722d7967dccb2682f15795b5a7",
+      "size": 29832
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/CampaignLog-D485HKOL.css",
-      "sha256": "b3514a86ec38a15cf3e1f0ac30e5815d4baa22b8e34b6ef816a332bdccf57b30",
-      "size": 686
+      "sha256": "e11a7697bae60d93d75860af06914eda447b3bc0d7f62a2742e2d24915543885",
+      "size": 685
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/CampaignLog-D6ZDGPjb.js",
-      "sha256": "5c99c5c35dc16f91d284fbd597904ce031269fe9d070629ba6c2954afe3c6e35",
-      "size": 1402
+      "sha256": "0fb3ce12591bc183e15b7d52c067547d001629f62c1a940b00d3f6a4562e1d80",
+      "size": 1401
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/CampaignLog-DbVbJU5c.js",
-      "sha256": "282fc8476bf3b1cb8c1dd13eb81124ec23e9990ff310171b5f0cdbef2377cd75",
-      "size": 47867
+      "sha256": "c6410394136220680848351e8e53211663db6d8856bf098cde05a5faec8dabb9",
+      "size": 47865
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/CardImage-BdqFipXe.css",
-      "sha256": "550eecd6b01c04a94ed226e795081412daa0fbcfd69a5095a14529ffc5213cff",
-      "size": 1323
+      "sha256": "49920ce93df6f3448036fd357f18fa55b7ea978fbc617443d2dfbf3c0add6ce2",
+      "size": 1322
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/CardImage-Y1BpCO6s.js",
-      "sha256": "b0628077243b1b51939a1c9a76f4d77c43182217147d558addd4b63a7ee9c580",
-      "size": 12773
+      "sha256": "6a0c05de5b275ce15742d24e03bd1a496300d93c2719d145075a66681946d6cc",
+      "size": 12772
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/ClaimSeat-Cw6pQ7UJ.js",
-      "sha256": "6dbf664a5078ed99b19ad8ef2af8511e18ad728d841dc0aad11c828013733b7b",
-      "size": 1088
+      "sha256": "c84f3c7c73e190ac21f5308ff96d3cff73116c0c2d7222afe05de88825a42920",
+      "size": 1087
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/ClaimSeat-DNuYPigB.css",
-      "sha256": "acef4226810b2c2d1014857b71366ad20cc59cdbe83a1af545831165a6545053",
-      "size": 176
+      "sha256": "30036c15a08350c33b7faf25c7edf80c530aaac3fbfcd69260ed9b196f1b62cb",
+      "size": 175
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Deck-B6uNKzrR.css",
-      "sha256": "9a6e42a7b3c8aff5eb50b0658265717b62bad388780a07cf8c91ffe4adcb34ab",
-      "size": 10616
+      "sha256": "f2351e42457e53937c8e4e238ec3765e0eb5753984c239f333c6a277d43a207b",
+      "size": 10615
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Deck-D0BRuFxA.js",
-      "sha256": "60edfb376a3283ce368f1e768f26f298458d1f705254079685303aa48413c775",
-      "size": 12729
+      "sha256": "32af29c2f058b1544386c515783b98ddda3a1682c3de4f513756d66cac59f239",
+      "size": 12728
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/DeckToolbar-DV4QGNTP.css",
-      "sha256": "c6255297b1f24dee5b44487738d23797c59b294d3b94a7ae665b3a6855606fc4",
-      "size": 8618
+      "sha256": "1b2a55a62aef147500c7ee87e46afb231e886736bad73981f2ab0fc316e49be1",
+      "size": 8617
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/DeckToolbar-DpzbA97f.js",
-      "sha256": "34291c1532962dd515dbbd67525cfc43e41df0d71836939135ab65bb5f4d3278",
-      "size": 8271
+      "sha256": "860a9ae3e113ab74d6ea5983ff67e83deb21c7e295e02d052b7f60d08c55cd69",
+      "size": 8270
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Decks-BVdDG5w6.js",
-      "sha256": "751bcdf75d9a6ee87be3ec326cfd9112c1e1ef88a7830c1dcdae2ae6a1a7fb58",
-      "size": 5337
+      "sha256": "54a161e65f145120f0ec453be2661b5f38677465c26a6358c6204efd844c45dd",
+      "size": 5336
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Decks-C6gRxN6q.css",
-      "sha256": "021ff0646c2ed506585d35a88113dd170575bbdc7f18bfcb7b60b8e9eb5b2e60",
-      "size": 4100
+      "sha256": "e43b2313de1faaabca42cc84bf98a66f8a0cab867a444085dda045f992afa712",
+      "size": 4099
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/EventCountdown-CJHiwgcq.css",
-      "sha256": "6f3014f4992d2844afa59b555ecbf434f11080c219352a66414ea1d6d9994fa9",
-      "size": 491
+      "sha256": "c83ba96e992282821c05ab79682917b2c8e93713db257cf786c4841b0a108480",
+      "size": 490
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/EventCountdown-CdHATDw6.js",
-      "sha256": "26d81d75279c604ddc7a36b4753c15609d192a61bb6bb87d9fcd72989d07915d",
-      "size": 1332
+      "sha256": "822bac3f91c06b8d5b95e0bfac7e6d001b9d867431a1916a338bb18c5f99ec39",
+      "size": 1331
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Game-C7Yx_z7t.css",
-      "sha256": "482fef208e8940bdde04a481aefedf62d2daac0d6d7737982e829ef7d30b940c",
-      "size": 62590
+      "sha256": "0db16b66000a70541211dcbd945bd84c175afb244101370e512c1e8bcff66ecd",
+      "size": 62589
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Game-UD6Kvl9c.js",
-      "sha256": "cbe7e6c7d051f05b0d6cf55548c897fbf7791ba979eb692beba29a2da229c2d6",
-      "size": 151702
+      "sha256": "7845d0debf4a432c71bd940b8ce57d6383b8f1cdf78962512841be442a49a7b7",
+      "size": 151697
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/GameLog-CaFgbZsU.css",
-      "sha256": "41e6eec06790b645dd6d484cc7664221cd6fd48d22ae92fd3a972ab47e15b112",
-      "size": 229805
+      "sha256": "78dba28bde38c1402815968f4fdd9ae9108d857fee6de5183aaccb447461200f",
+      "size": 229804
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/GameLog-Cf4LRTFm.js",
-      "sha256": "f27337ba0fb3ac1e0f74b50695b53c807abfe6f6977605086d5fe6418fba247a",
-      "size": 1089456
+      "sha256": "181ada5d6004028654a4be3041199921c09833a7973f0ccfb8f0b10c64167542",
+      "size": 1089424
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/GameRow-C7MWApJk.css",
-      "sha256": "a7c4565ad365812993861a6a9b447e2788d0a4efb3acff2f2f3975dffb3802a4",
-      "size": 4962
+      "sha256": "699bb6181724de7695ff9dbd675f22674970b5aa11a8fab45609de0b6473d911",
+      "size": 4961
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/GameRow-Dirm2Sfr.js",
-      "sha256": "f4287b0c1ec56f75e1e4502f93f17bb85697fb406e544121a86eeee9f5557be5",
-      "size": 3821
+      "sha256": "eb03ecb2887dfdd376c4ec846ea2394ba6711ce96838f7370df20c174cbaefec",
+      "size": 3820
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Home-CdlGhleg.js",
-      "sha256": "3cc63190117a32c479f61d883b4e369eb1e299f37794423aca554df8579cd853",
-      "size": 11461
+      "sha256": "3b78c360096f6340de1caf1ac53a837ae4cfb05d6f54b57ebf3c8e6a48e7bdc6",
+      "size": 11460
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Home-izWRFNZB.css",
-      "sha256": "fbbcf873bbfbd2372c6056f96fc06037699e9ff322fdc87cae0e30ca1c89283a",
-      "size": 12199
+      "sha256": "fa761b4dcd4a251af9953b24d7954f40493585cff23edca6135e3af22584d095",
+      "size": 12198
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/JoinGame-B6rUNcO7.css",
-      "sha256": "ac89a57cb87f9bdd66a5e51cb3382afc29df57f2379b084bf1e6ec64ed5188e9",
-      "size": 4543
+      "sha256": "46584cd21bb512b5ef113dc88e0641d678d82c89cc17acbfcb3d32072c9de8e8",
+      "size": 4542
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/JoinGame-CXEQB70B.js",
-      "sha256": "a948e6ff9e140d02dda877ba108c3f5035f2f7fd7139a827dd357dfe9e847917",
-      "size": 2284
+      "sha256": "de09f6606ed2e406794bc74fbac50929fb48db1ced76ad2e8a839765e55da44d",
+      "size": 2283
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/LogIcons-D_X_CtUD.js",
-      "sha256": "c54896aef5525216232cb362b9b59cd5607199e5d6ae5afdaa248b576e145fff",
-      "size": 47198
+      "sha256": "95a1e12eaa525a4fdad1952174d55858bb349e653c6c299e4a128deba6477088",
+      "size": 47197
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/LogIcons-ML2rWupL.css",
-      "sha256": "b39e5d231ac8ba8d46658006ed9f340c85ec9d51201a6af3741cd4737bc529d7",
-      "size": 18657
+      "sha256": "f742dd297a6cbc9be5c55be207c5680f4920ded1b33acfd4dcdd8235e94ef279",
+      "size": 18656
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/MultiplayerLobby-Ba0O6Duh.css",
-      "sha256": "fbe1543a47fb26ef62978eb8ec5395578983f114ce7e659ac15b6e102e9882df",
-      "size": 3235
+      "sha256": "d287bacd74864805f9d6dcda05188a086bc8678e9883ecc1bf624249431c44d3",
+      "size": 3234
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/MultiplayerLobby-Bx7ji2OI.js",
-      "sha256": "7101f0f188ddf82d1f59e666b641774188d9faba1813ad38862b90ceb1a2b1b4",
-      "size": 4547
+      "sha256": "6b271f39876155cba6bee7229ae7ba70631ee8778102d40eea8e823bbaffec96",
+      "size": 4546
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/NewCampaign-CP-MK6Nh.js",
-      "sha256": "d8374fbb8c7afda45fb5bb4517b824afb5c27e5f96ba7277ac8208e8d3febef5",
-      "size": 38561
+      "sha256": "9e5e08435033d8441e60df72f36e4f6c4500799630e8d355b03e8e1b4d9164b4",
+      "size": 38560
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/NewCampaign-DrlCgSBf.css",
-      "sha256": "3e114ae7da7c4549cb3f44542438910ab20875cf560b1508eb9f3f1d59a28474",
-      "size": 21879
+      "sha256": "a3f97f7a3f2b049c152135c28b0c6018449999e65582ffa5cdddac05380f1810",
+      "size": 21878
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/NewGame-Kv1DVrm_.js",
-      "sha256": "d252d24eb6237276488884ffcf3524a62419b896ce00ea63317040808e115625",
-      "size": 85
+      "sha256": "5180486059bbfeb1da2b07eefee095ba303a763b623278ccfa552821e7fa72cf",
+      "size": 84
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/OrganizerDashboard-BJl9woQf.js",
-      "sha256": "a05f05db46b1a558333acad65414f886514bbcfd7fca53cb02c326b085da1643",
-      "size": 6985
+      "sha256": "4aae7caf9031cbc5842b5d79907799316f1d2570e8c1c959483cc53c25a216ad",
+      "size": 6984
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/OrganizerDashboard-eppGs2eI.css",
-      "sha256": "57f7f8feb87edd2e939ac939f8c08d53a0222bbd2bd5153b3cb8613ded0d5a98",
-      "size": 6550
+      "sha256": "17282c0731c53aad78581120dcba7a242f1e89b65e6f6f06028fbf76e2f279f3",
+      "size": 6549
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/PasswordReset-BhRzwKPT.css",
-      "sha256": "d528abd80fc391cc3f10e5834e04450a5a05e30e8ae080c53b08b4afb936144d",
-      "size": 835
+      "sha256": "8dd6784c892212d85077f706cde56dbe698e176b518ab48c6345ae90f48227e7",
+      "size": 834
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/PasswordReset-CKyo6eeQ.js",
-      "sha256": "3dedf8ee83db770de6fdeab9a8951aaf037b7586afbf142dff01785edb6fc2f0",
-      "size": 968
+      "sha256": "86dfef2d04ebded4e99b3a3af97e72fa457283d03651a885f94a1dae8d94e3be",
+      "size": 967
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/PrimaryButton-ho8CUvJD.css",
-      "sha256": "3e2e5db11de1fbf0ceecb6ed1f0c982a4b4f616be600023defcc0f4fe7bcf45b",
-      "size": 555
+      "sha256": "52282fc3eee22d9b5cc57717431503a8259c17759fefb0556370d3efe712b33d",
+      "size": 554
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/PrimaryButton-jBVc-NU3.js",
-      "sha256": "2c966c9a4dcf4d1314acde07e8416d6ad61992bdbb460b4ad11c3a5b71954b1c",
-      "size": 375
+      "sha256": "36da79c6b3fa9bd10b3fcf9f51360f25ea5e9faa8dfb95a043ebcefdeac89821",
+      "size": 374
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Prompt-C_jp50Cw.css",
-      "sha256": "d09050831d1865257c633c6c751bd08ba789c5bb0a88f8956632a282d1a6b104",
-      "size": 1789
+      "sha256": "bb14119389fdca4c1074f6472b1e5b1a6bf7924f39f8d397ccf204a7e20abae0",
+      "size": 1788
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Prompt-DgDb1acA.js",
-      "sha256": "932cd5cbfa707cd08b8bcff1d6777c930f4eb1730b56c0a03f4ccc210172f0e8",
-      "size": 1130
+      "sha256": "b13c29587775ee5381ff9a2c73a1bb8a5caaa940e8ce20bbaeb5bf56bcf5f18f",
+      "size": 1129
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/ReplayGame-DaayaHvs.css",
-      "sha256": "969d453140ddc62d30dff64025cdbcea975bbe4d67ee471928f6ba51218c000c",
-      "size": 1154
+      "sha256": "dedce8851fddd5b69ab9a40e1fc6cf07db92de7ef26d4c2b9e143b098f80afec",
+      "size": 1153
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/ReplayGame-IGwWmpz8.js",
-      "sha256": "95e99bc3b86a9b2a535158dd6123fab016a9fae7201547c986d289a50a9004cf",
-      "size": 4167
+      "sha256": "2d12f55536d467ea39ad3368fb0532ed52664bc8212ff5085a3c3c3a7f7d49cf",
+      "size": 4166
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Rooms-BHobnMkr.css",
-      "sha256": "00f9aa6a258cfc06f21768f4c35faecacebb4f24615b3fe223adcd82cab61f92",
-      "size": 2215
+      "sha256": "15a75329d6a320fdb3d22743dcd11b8216cdad1a68a4eac9c9d51edc14750077",
+      "size": 2214
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Rooms-Dms5Xatq.js",
-      "sha256": "c935f4ecbf76149b31ee85fa4028460d7306f83677b2e076e820e56703f5dde7",
-      "size": 1710
+      "sha256": "f595dc4ddce593ce6c1709fdaf06826870d471cf3a4cdeebd744e76652ebf852",
+      "size": 1709
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Settings-CWHSL3h1.css",
-      "sha256": "6705aa6f4e66abc2ccde059740503436e8747774394ddc398787c9fc9a255e82",
-      "size": 2009
+      "sha256": "67d6db75bcd627fbacda3bf1b6535e2e2f29546bcbaebabdb977cf9791d80ad8",
+      "size": 2008
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/Settings-CgeLv4OZ.js",
-      "sha256": "4118817bcccf20740fdb8896c8e3463c5a9fae84ef419ecf087c4bb099bd016e",
-      "size": 11106
+      "sha256": "ad0558180ddfd5e7a85cd71290ca1dbcbe47bd1b33a09ebb6f21987bd99c4abb",
+      "size": 11105
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/SignIn-JK0q-LgB.css",
-      "sha256": "15b7f8a09d539dc498208fb024597cb75e2123f9daa51bc283ba72d7ff3f3670",
-      "size": 1447
+      "sha256": "3d3fbdaeca7320319cd27ab778029189f5bf764b8609def8c1d8d16738e80338",
+      "size": 1446
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/SignIn-e2JXxroM.js",
-      "sha256": "8642bc4102b55dce75457315b73b30cf092f06c3221d20c401a6338ccf736e1d",
-      "size": 1704
+      "sha256": "bac495098cd5a46857d98933561a4ef5b70e532f6b90d06dd89545f5d151b1e0",
+      "size": 1703
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/SignUp-CfmE3eR_.js",
-      "sha256": "c330086f6cd0fed1899058f855c1def3e5fdb4063022d71bf13d61722f187148",
-      "size": 2117
+      "sha256": "9f5ccdca2c398f7fe413515f83dba5b2383ab15c59f9e49203f88f77f31d6f32",
+      "size": 2116
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/SignUp-D7TUbFIu.css",
-      "sha256": "757d63980bdf53369c51cd9b26e14055a092028e4f5f3702f265b889b7b07b19",
-      "size": 934
+      "sha256": "003fc52e00e72bd910fbd0b70f19b03b5fb79e12f2b00b8eb5cafb72023a5b87",
+      "size": 933
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/UI-DYf75t_Z.js",
@@ -54178,143 +54178,143 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/UI-DqzfJiQb.css",
-      "sha256": "cb22ef70cb14720198f51ba5a8c62dc23fe6b9531b07f240819fa9519e0c642c",
-      "size": 4542
+      "sha256": "7c410229748a1c261897b9a8df3a223485d98822339d3ba06879d41f85b662b3",
+      "size": 4541
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/UpdatePassword-BpN9dGl7.css",
-      "sha256": "b0d3b4d7bcb3c5e5bd93d0fc04c45f67c8e04fed3d4a8a8c01305309f8898413",
-      "size": 886
+      "sha256": "4d54b4e1a34ca5c1f3e6b44f6b004e9a914aa636e00febd11da6b15b7c0b9da6",
+      "size": 885
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/UpdatePassword-Z5V6dp7d.js",
-      "sha256": "7e5d02b5148ed6f0b6192977602bac2e331e8db1775a0b923b91ba23234c0604",
-      "size": 819
+      "sha256": "009b9d03c8065ddf977fdd2e89adc5c4ec9f5bb91d7104352e7791157f3a2684",
+      "size": 818
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/XpBreakdown-_9hRogLs.js",
-      "sha256": "43d495fa1696e40df527b357d782eaf9f4c40293c1f54eadb70d07c28df927bf",
-      "size": 109119
+      "sha256": "2a4fd5462fb61dad2d6138e86b52ccfd905e8f232bf4d4517d63a263f13cb6e7",
+      "size": 109049
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/XpBreakdown-okREq0Ez.css",
-      "sha256": "ba71a71574983b4bfc134a90a80885bef0489693a3fa0b669f1004fd134491d1",
-      "size": 38352
+      "sha256": "277686ef8d9039bcc0a69b9340378d1f68ad63a840a4f1489004d6ff1bfb3a93",
+      "size": 38351
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/achievements-DJaAemtM.js",
-      "sha256": "5bc041d0397bdadd7ee0c3e0cc0ff38117082994e3f23742a814c7fe4ae7514b",
-      "size": 11399
+      "sha256": "0364e8b84d220e866ae710ef5650bbc13035dbdd83c56cd3645f1980db153183",
+      "size": 11398
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/api-BQ1BYW-_.js",
-      "sha256": "ec725189b237297051809b39a7613f292c92ffb827240c5b99d69b1cf8c0de03",
-      "size": 123858
+      "sha256": "a3bb21c5fde6c1e8709e1b44015daf02750b472d831a5e6aa12e618c6a27194a",
+      "size": 123857
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/campaigns-uKlnaEBi.js",
-      "sha256": "a2d484d647ad8a466836a11e3dc45e172a455f45943e9067cea422a7280c09f4",
-      "size": 33364
+      "sha256": "fded733354b587fc16fe8d6b4f13ed4e72aff9314decabd8aee69bd720ec45fc",
+      "size": 33363
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/cards-CChhgmQ0.js",
-      "sha256": "3a2380f2138c4f7edfde048f412ff672c5f85a1f9cc4ab75119706a4459f1eaa",
-      "size": 311
+      "sha256": "aed589d76adc9407b8ca809eed65b1c046cc1a9867499c34160e034df0f8c5e5",
+      "size": 310
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/create-Ch3ewwZl.js",
-      "sha256": "bfe3414765231c190f0c7eef5d259b8c259f521e6a650ba8caf49733fa8c265e",
-      "size": 15388
+      "sha256": "f4ccd7e51994ceff1efd83aab5d0981f5405de28732a2ea7b79820c9eb462c38",
+      "size": 15387
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/dbCards-BLc3HiQX.js",
-      "sha256": "a538eceb4c757a2941075991b687078848c9e3abbffb93f7091b9beb8a3b579f",
-      "size": 1298
+      "sha256": "e8183ed487f33754ff6d4e713f30d3b163d6429f008735ba027b8a82b032bbb5",
+      "size": 1297
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/en-Ci2ZxBe9.js",
-      "sha256": "9e216dde6e94bfe3dd0eb3704d2ff4fb9f3ba291cc803d6cb3c73ac7e604034a",
-      "size": 2314182
+      "sha256": "aa97f584c306f7bca651c97d670c4163200da426daf7da6e4a130d44ded53fc4",
+      "size": 2314181
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/es-4vMZmUxF.js",
-      "sha256": "a6e9b13a56cdfe87ab8b111eb87ebdcfe790f1eb2d142a18b84433ba59c8d508",
-      "size": 11649
+      "sha256": "1a6812668acbf642e036f97c85cfcd7054c895e181b023be4aa861a81b48adde",
+      "size": 11648
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/es-hQflf9v4.js",
-      "sha256": "a5d051ef765223b69f33dddb4f495c02ad726f14e5c06086bf5adc4fb4627800",
-      "size": 64117
+      "sha256": "ce9f518886539d6ac80655995fa2e1ff9d3f2c2cba70e19c3cef39f529f9580f",
+      "size": 64116
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/event-DQvC98EN.js",
-      "sha256": "3b38b0d4f4e50f006af74510701416f9a7ec3800c79639cbfac695e02cf8fc51",
-      "size": 1120
+      "sha256": "0d8d693ec0d6cb8eb9145a6668bc5ca285972325ae070e2edeca9de0db7160d4",
+      "size": 1119
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/fr-Ca0EmoOs.js",
-      "sha256": "d8efe315fc36d2665fc8f8365f9f1b5c165e683cef16eb5adb6fe09c1d167291",
-      "size": 1341036
+      "sha256": "f9c0d492dfa334a0a041749f88a512e2f7ff474559dca9fc456fbd76c98c8c9a",
+      "size": 1341035
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/fr-DsOAPvhE.js",
-      "sha256": "04c29ab39cb4b9046fed0082c86b8456d945705051306c489ad64bf5ba0e6fc5",
-      "size": 149414
+      "sha256": "07fb503c8df7eba7064525d7955bfd347b8cbfd386e904407a8ebb10f814b3a8",
+      "size": 149413
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/i18n-CYsallPH.js",
-      "sha256": "219da869b0fb022ac17728582cd803555a07a23086ba8debf0a2fca95952c435",
-      "size": 1733
+      "sha256": "350aa82979bfb171f89482ab5aad7c920ed83926e4cf97f6a77feefa5299d561",
+      "size": 1729
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/index-BQrQvsth.js",
-      "sha256": "86a1fbe4214c2dbbbe1c01e7493b2bbc767ecb5a495fdf8ea391e30bc1dbcc67",
-      "size": 436422
+      "sha256": "ba187719834987fe3d471425f3e3be82b710ee078c165d11456e47999737b78a",
+      "size": 435791
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/index-QHQq6zrS.css",
-      "sha256": "920c3999a01135e3c7909cfe9b48e1864b965132302cb4d7e9f549fb70f483e4",
-      "size": 35062
+      "sha256": "a9cd034af5b01f8072852901904f8119dec2605cdab146e13349e8fbc21ac1a0",
+      "size": 35061
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/it-BuPRNYDF.js",
-      "sha256": "ba1a1863913291b733f002de48f148367ca7b5793a5f4a78170a826838149091",
-      "size": 191
+      "sha256": "03db16ad1f20463077f9d6a3a9a0baa003aaf950c4b18b8e407a088cc6bd3082",
+      "size": 190
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/ita--S96PIbn.js",
-      "sha256": "9a5b523558e9e47b0e0acc0d81d8e93da883042df62833cf31a09c2dfa63b96a",
-      "size": 48767
+      "sha256": "d7190f643a44d74dcd9be805052d4d0aef3bc99d2bb7416c6188e7cdfdd0dc40",
+      "size": 48766
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/ko-C3daKE3O.js",
-      "sha256": "23555980b4e7899984deb99939bd8e87faede64093e2e262afb3e3d9c999b7aa",
-      "size": 34
+      "sha256": "c1e5a21188845d4a1baf8531238547f21783aefb4352bb622ddeb8bf880a256a",
+      "size": 33
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/ko-Dj0uAwER.js",
-      "sha256": "90d6ceef325b536f4d2c5658328700ae4317f0ac87c440ec997984f10ef3c70d",
-      "size": 980482
+      "sha256": "7edeb8107f9dd4c6a841898dfe26f10979eed4e0cec68b226936af46076eef86",
+      "size": 980481
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/localStorage-rETqQM3q.js",
-      "sha256": "93e5addd59061f4bb51a5c543681a494fee9d10cb0885666ea57b83196e1f99d",
-      "size": 1013
+      "sha256": "7c37ce1ca30dad0816c849ebee2afffa0bdd8d982ef44d00f7e5d7c74c872ace",
+      "size": 1012
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/settings-C-p0xpSK.js",
-      "sha256": "df2b0a12fa328a4dba54608ac3271c73f7a132633626594d2a44c367bfdcfb92",
-      "size": 1095
+      "sha256": "f4e3632b9d2ff6a743fe15b951efeb6e047c62bb4f12cfcb0083062c1e56fbba",
+      "size": 1094
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/taboo-B4t5Y6Ff.js",
-      "sha256": "39ab70c24f87c8ab14edd0b9e34fc9a5a5673609cd4e73c2a0ec8f4681957531",
-      "size": 907
+      "sha256": "9dea017003a69b45195c64398a125b4692bc7db68a026563a7dc514017cb4bdc",
+      "size": 906
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/theFeastOfHemlockVale-_Yt--kzo.js",
-      "sha256": "8c8154b041a65db6151470f5b8654099f8a18ef9b99b661a9c874bda1a3a9344",
-      "size": 378181
+      "sha256": "d4888008cab8e6f5ae41f6c4bea7d44203496dff2c73e58aac09071fac7dcba1",
+      "size": 378180
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/useEpicHelpers-BgHLrRxS.js",
@@ -54323,493 +54323,493 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/zh-DAG2tbjn.js",
-      "sha256": "501a7849e40cb27180e759b92e3cb5d68f27ff8925dc08935f6ae13003d0b152",
-      "size": 3212248
+      "sha256": "1c837432a8a1766d887fc2f7c4553a7f003d162c7fc1e54b2548f64cbe6a2c1e",
+      "size": 3212234
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/assets/zh-DxvknHJq.js",
-      "sha256": "d242d86a50cd2a9cc1c33d42f2ac5aae8a4a7424538eb97d6c9867235d208c46",
-      "size": 164640
+      "sha256": "d321f062b349f76ee860b9089a021b1dfb6487a25b429d1730cb5c5b553f98db",
+      "size": 164639
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/basic-entry-zh-runtime.js",
-      "sha256": "ee47390b61eb0aa0c3cca4b9b982da11d9bcfb97602772b10972ae958b7c6792",
-      "size": 1272
+      "sha256": "7d6769174fd92aa391d76c5804b25a3b6cbf346a78e0b5553d1034f5623969cc",
+      "size": 1218
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.1/index.html",
-      "sha256": "ec6244c63af949fc0e7257c4a1d24c3442556e8779713126476b13d605aab787",
-      "size": 912
+      "sha256": "86065c0f82fe6c4325f0c081ad8e729e45dfc514c8a5edc634b5e17678bc9f06",
+      "size": 891
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/About-DFYSRAOU.css",
-      "sha256": "06fc9310002a0170bc06cbbed28d7b9c34987da75993d434ec45c6c1944f92da",
-      "size": 219
+      "sha256": "fd56ffa88f0193fb82bc5393d626a13f90e2af6c736f9dbfb1c7a7fa1c2c30a5",
+      "size": 218
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/About-Dixznc_F.js",
-      "sha256": "981d20b90dcfb641cbbda9baa5cf0de138c2ea89d20cab856c7ab5642408ee0a",
-      "size": 1228
+      "sha256": "105d32791972b172dbf2aea7115e21d904f3c38f07bf88da05cc67392af6df15",
+      "size": 1227
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Achievements-D79TG4Zw.css",
-      "sha256": "af37e9b97af4ee2735ac15c662e3252c8b82572a8d447f2bbceb09401288aa4b",
-      "size": 4066
+      "sha256": "b2f928e0cf2b4d22f6cf855a768116fb52644299ca34a6a56352e32ddb3227ee",
+      "size": 4065
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Achievements-DsMEYSvS.js",
-      "sha256": "ed35b771147bf883e9c051f2005c13af6c681e99e11bbbdd315af717d5aa54bf",
-      "size": 4717
+      "sha256": "e15585876f165229fe17a84af4347a8fd8b4a4d2f7077bc96ce26adbc6010339",
+      "size": 4716
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Admin-BXBQeNlG.css",
-      "sha256": "ab124aa1f90fbfc143430b48255f7bcfbb637d55df79f0ef189eb435ad2766bd",
-      "size": 2928
+      "sha256": "5a5c045a0fe640c052c53cb112b1e8937503f7a1ee82951a6c9e0761c2d04335",
+      "size": 2927
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Admin-D5gj0Adb.js",
-      "sha256": "eff60dbbe9d0fef1aa4e28507613f2a253c562cab7a2255ffd2bdc0d2a91bef2",
-      "size": 5889
+      "sha256": "0f0555b720ce1a592d81e571ad505a9c8b7fb5309910f64442ab42c1ba9e76eb",
+      "size": 5888
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/BugAntIcon-D-uyQuv9.js",
-      "sha256": "94ed3ea4247c10f3359e53bf876aa1d6d180c824ec939d7e3535fe01c962918e",
-      "size": 1734
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Bugs-B4pZ1KqA.css",
-      "sha256": "12c6dbaadfa51def8ded94bc7dfb2bb1e0e80c75859e2c35db26d8ac376b4bcb",
-      "size": 2725
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Bugs-BuMItJNU.js",
-      "sha256": "4e8c1075432088315b06bbec6aeef18de8e1838381ee726f2f6eada26056ec87",
-      "size": 5649
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-CMseA8fz.css",
-      "sha256": "e9f1843e73e874ea48c8508934df8ac11a6b022d8e75cb6b20542f31d9a63781",
-      "size": 29833
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-D485HKOL.css",
-      "sha256": "b3514a86ec38a15cf3e1f0ac30e5815d4baa22b8e34b6ef816a332bdccf57b30",
-      "size": 686
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-D6ZDGPjb.js",
-      "sha256": "5c99c5c35dc16f91d284fbd597904ce031269fe9d070629ba6c2954afe3c6e35",
-      "size": 1402
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-DbVbJU5c.js",
-      "sha256": "282fc8476bf3b1cb8c1dd13eb81124ec23e9990ff310171b5f0cdbef2377cd75",
-      "size": 47867
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CardImage-BdqFipXe.css",
-      "sha256": "550eecd6b01c04a94ed226e795081412daa0fbcfd69a5095a14529ffc5213cff",
-      "size": 1323
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CardImage-Y1BpCO6s.js",
-      "sha256": "b0628077243b1b51939a1c9a76f4d77c43182217147d558addd4b63a7ee9c580",
-      "size": 12773
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ClaimSeat-Cw6pQ7UJ.js",
-      "sha256": "6dbf664a5078ed99b19ad8ef2af8511e18ad728d841dc0aad11c828013733b7b",
-      "size": 1088
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ClaimSeat-DNuYPigB.css",
-      "sha256": "acef4226810b2c2d1014857b71366ad20cc59cdbe83a1af545831165a6545053",
-      "size": 176
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Deck-B6uNKzrR.css",
-      "sha256": "9a6e42a7b3c8aff5eb50b0658265717b62bad388780a07cf8c91ffe4adcb34ab",
-      "size": 10616
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Deck-D0BRuFxA.js",
-      "sha256": "60edfb376a3283ce368f1e768f26f298458d1f705254079685303aa48413c775",
-      "size": 12729
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/DeckToolbar-DV4QGNTP.css",
-      "sha256": "c6255297b1f24dee5b44487738d23797c59b294d3b94a7ae665b3a6855606fc4",
-      "size": 8618
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/DeckToolbar-DpzbA97f.js",
-      "sha256": "34291c1532962dd515dbbd67525cfc43e41df0d71836939135ab65bb5f4d3278",
-      "size": 8271
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Decks-BVdDG5w6.js",
-      "sha256": "751bcdf75d9a6ee87be3ec326cfd9112c1e1ef88a7830c1dcdae2ae6a1a7fb58",
-      "size": 5337
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Decks-C6gRxN6q.css",
-      "sha256": "021ff0646c2ed506585d35a88113dd170575bbdc7f18bfcb7b60b8e9eb5b2e60",
-      "size": 4100
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/EventCountdown-CJHiwgcq.css",
-      "sha256": "6f3014f4992d2844afa59b555ecbf434f11080c219352a66414ea1d6d9994fa9",
-      "size": 491
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/EventCountdown-CdHATDw6.js",
-      "sha256": "26d81d75279c604ddc7a36b4753c15609d192a61bb6bb87d9fcd72989d07915d",
-      "size": 1332
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Game-C7Yx_z7t.css",
-      "sha256": "482fef208e8940bdde04a481aefedf62d2daac0d6d7737982e829ef7d30b940c",
-      "size": 62590
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Game-UD6Kvl9c.js",
-      "sha256": "cbe7e6c7d051f05b0d6cf55548c897fbf7791ba979eb692beba29a2da229c2d6",
-      "size": 151702
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameLog-CaFgbZsU.css",
-      "sha256": "41e6eec06790b645dd6d484cc7664221cd6fd48d22ae92fd3a972ab47e15b112",
-      "size": 229805
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameLog-Cf4LRTFm.js",
-      "sha256": "e7fa589a795078ad726ad8d66952bd12853a64f59c22090297c864c05137c289",
-      "size": 1092335
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameRow-C7MWApJk.css",
-      "sha256": "a7c4565ad365812993861a6a9b447e2788d0a4efb3acff2f2f3975dffb3802a4",
-      "size": 4962
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameRow-Dirm2Sfr.js",
-      "sha256": "f4287b0c1ec56f75e1e4502f93f17bb85697fb406e544121a86eeee9f5557be5",
-      "size": 3821
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Home-CdlGhleg.js",
-      "sha256": "3cc63190117a32c479f61d883b4e369eb1e299f37794423aca554df8579cd853",
-      "size": 11461
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Home-izWRFNZB.css",
-      "sha256": "fbbcf873bbfbd2372c6056f96fc06037699e9ff322fdc87cae0e30ca1c89283a",
-      "size": 12199
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/JoinGame-B6rUNcO7.css",
-      "sha256": "ac89a57cb87f9bdd66a5e51cb3382afc29df57f2379b084bf1e6ec64ed5188e9",
-      "size": 4543
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/JoinGame-CXEQB70B.js",
-      "sha256": "a948e6ff9e140d02dda877ba108c3f5035f2f7fd7139a827dd357dfe9e847917",
-      "size": 2284
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/LogIcons-D_X_CtUD.js",
-      "sha256": "c54896aef5525216232cb362b9b59cd5607199e5d6ae5afdaa248b576e145fff",
-      "size": 47198
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/LogIcons-ML2rWupL.css",
-      "sha256": "b39e5d231ac8ba8d46658006ed9f340c85ec9d51201a6af3741cd4737bc529d7",
-      "size": 18657
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/MultiplayerLobby-Ba0O6Duh.css",
-      "sha256": "fbe1543a47fb26ef62978eb8ec5395578983f114ce7e659ac15b6e102e9882df",
-      "size": 3235
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/MultiplayerLobby-Bx7ji2OI.js",
-      "sha256": "7101f0f188ddf82d1f59e666b641774188d9faba1813ad38862b90ceb1a2b1b4",
-      "size": 4547
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/NewCampaign-CP-MK6Nh.js",
-      "sha256": "d8374fbb8c7afda45fb5bb4517b824afb5c27e5f96ba7277ac8208e8d3febef5",
-      "size": 38561
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/NewCampaign-DrlCgSBf.css",
-      "sha256": "3e114ae7da7c4549cb3f44542438910ab20875cf560b1508eb9f3f1d59a28474",
-      "size": 21879
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/NewGame-Kv1DVrm_.js",
-      "sha256": "d252d24eb6237276488884ffcf3524a62419b896ce00ea63317040808e115625",
-      "size": 85
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/OrganizerDashboard-BJl9woQf.js",
-      "sha256": "a05f05db46b1a558333acad65414f886514bbcfd7fca53cb02c326b085da1643",
-      "size": 6985
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/OrganizerDashboard-eppGs2eI.css",
-      "sha256": "57f7f8feb87edd2e939ac939f8c08d53a0222bbd2bd5153b3cb8613ded0d5a98",
-      "size": 6550
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PasswordReset-BhRzwKPT.css",
-      "sha256": "d528abd80fc391cc3f10e5834e04450a5a05e30e8ae080c53b08b4afb936144d",
-      "size": 835
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PasswordReset-CKyo6eeQ.js",
-      "sha256": "3dedf8ee83db770de6fdeab9a8951aaf037b7586afbf142dff01785edb6fc2f0",
-      "size": 968
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PrimaryButton-ho8CUvJD.css",
-      "sha256": "3e2e5db11de1fbf0ceecb6ed1f0c982a4b4f616be600023defcc0f4fe7bcf45b",
-      "size": 555
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PrimaryButton-jBVc-NU3.js",
-      "sha256": "2c966c9a4dcf4d1314acde07e8416d6ad61992bdbb460b4ad11c3a5b71954b1c",
-      "size": 375
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Prompt-C_jp50Cw.css",
-      "sha256": "d09050831d1865257c633c6c751bd08ba789c5bb0a88f8956632a282d1a6b104",
-      "size": 1789
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Prompt-DgDb1acA.js",
-      "sha256": "932cd5cbfa707cd08b8bcff1d6777c930f4eb1730b56c0a03f4ccc210172f0e8",
-      "size": 1130
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ReplayGame-DaayaHvs.css",
-      "sha256": "969d453140ddc62d30dff64025cdbcea975bbe4d67ee471928f6ba51218c000c",
-      "size": 1154
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ReplayGame-IGwWmpz8.js",
-      "sha256": "95e99bc3b86a9b2a535158dd6123fab016a9fae7201547c986d289a50a9004cf",
-      "size": 4167
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Rooms-BHobnMkr.css",
-      "sha256": "00f9aa6a258cfc06f21768f4c35faecacebb4f24615b3fe223adcd82cab61f92",
-      "size": 2215
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Rooms-Dms5Xatq.js",
-      "sha256": "c935f4ecbf76149b31ee85fa4028460d7306f83677b2e076e820e56703f5dde7",
-      "size": 1710
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Settings-CWHSL3h1.css",
-      "sha256": "6705aa6f4e66abc2ccde059740503436e8747774394ddc398787c9fc9a255e82",
-      "size": 2009
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Settings-CgeLv4OZ.js",
-      "sha256": "4118817bcccf20740fdb8896c8e3463c5a9fae84ef419ecf087c4bb099bd016e",
-      "size": 11106
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignIn-JK0q-LgB.css",
-      "sha256": "15b7f8a09d539dc498208fb024597cb75e2123f9daa51bc283ba72d7ff3f3670",
-      "size": 1447
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignIn-e2JXxroM.js",
-      "sha256": "8642bc4102b55dce75457315b73b30cf092f06c3221d20c401a6338ccf736e1d",
-      "size": 1704
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignUp-CfmE3eR_.js",
-      "sha256": "c330086f6cd0fed1899058f855c1def3e5fdb4063022d71bf13d61722f187148",
-      "size": 2117
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignUp-D7TUbFIu.css",
-      "sha256": "757d63980bdf53369c51cd9b26e14055a092028e4f5f3702f265b889b7b07b19",
-      "size": 934
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UI-DYf75t_Z.js",
-      "sha256": "b0ba009125b832593f84811da81bc9c60c79ce2b6637b02d3603d67d97bdc1d6",
-      "size": 2059
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UI-DqzfJiQb.css",
-      "sha256": "cb22ef70cb14720198f51ba5a8c62dc23fe6b9531b07f240819fa9519e0c642c",
-      "size": 4542
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UpdatePassword-BpN9dGl7.css",
-      "sha256": "b0d3b4d7bcb3c5e5bd93d0fc04c45f67c8e04fed3d4a8a8c01305309f8898413",
-      "size": 886
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UpdatePassword-Z5V6dp7d.js",
-      "sha256": "7e5d02b5148ed6f0b6192977602bac2e331e8db1775a0b923b91ba23234c0604",
-      "size": 819
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/XpBreakdown-_9hRogLs.js",
-      "sha256": "43d495fa1696e40df527b357d782eaf9f4c40293c1f54eadb70d07c28df927bf",
-      "size": 109119
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/XpBreakdown-okREq0Ez.css",
-      "sha256": "ba71a71574983b4bfc134a90a80885bef0489693a3fa0b669f1004fd134491d1",
-      "size": 38352
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/achievements-DJaAemtM.js",
-      "sha256": "5bc041d0397bdadd7ee0c3e0cc0ff38117082994e3f23742a814c7fe4ae7514b",
-      "size": 11399
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/api-BQ1BYW-_.js",
-      "sha256": "ec725189b237297051809b39a7613f292c92ffb827240c5b99d69b1cf8c0de03",
-      "size": 123858
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/campaigns-uKlnaEBi.js",
-      "sha256": "a2d484d647ad8a466836a11e3dc45e172a455f45943e9067cea422a7280c09f4",
-      "size": 33364
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/cards-CChhgmQ0.js",
-      "sha256": "3a2380f2138c4f7edfde048f412ff672c5f85a1f9cc4ab75119706a4459f1eaa",
-      "size": 311
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/create-Ch3ewwZl.js",
-      "sha256": "bfe3414765231c190f0c7eef5d259b8c259f521e6a650ba8caf49733fa8c265e",
-      "size": 15388
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/dbCards-BLc3HiQX.js",
-      "sha256": "a538eceb4c757a2941075991b687078848c9e3abbffb93f7091b9beb8a3b579f",
-      "size": 1298
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/en-Ci2ZxBe9.js",
-      "sha256": "db3f0c457d8e01d0e53c4d2664b0ffad176dd8b46b01142219f96d1d3b336881",
-      "size": 3153213
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/es-4vMZmUxF.js",
-      "sha256": "a6e9b13a56cdfe87ab8b111eb87ebdcfe790f1eb2d142a18b84433ba59c8d508",
-      "size": 11649
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/es-hQflf9v4.js",
-      "sha256": "a5d051ef765223b69f33dddb4f495c02ad726f14e5c06086bf5adc4fb4627800",
-      "size": 64117
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/event-DQvC98EN.js",
-      "sha256": "3b38b0d4f4e50f006af74510701416f9a7ec3800c79639cbfac695e02cf8fc51",
-      "size": 1120
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/fr-Ca0EmoOs.js",
-      "sha256": "d8efe315fc36d2665fc8f8365f9f1b5c165e683cef16eb5adb6fe09c1d167291",
-      "size": 1341036
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/fr-DsOAPvhE.js",
-      "sha256": "04c29ab39cb4b9046fed0082c86b8456d945705051306c489ad64bf5ba0e6fc5",
-      "size": 149414
-    },
-    {
-      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/i18n-CYsallPH.js",
-      "sha256": "219da869b0fb022ac17728582cd803555a07a23086ba8debf0a2fca95952c435",
+      "sha256": "8975feeea3295cb9128f14d3cae6815c9e32c88d2290dc81c30d7e903024c08a",
       "size": 1733
     },
     {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Bugs-B4pZ1KqA.css",
+      "sha256": "e1bcbc70b09b185f954051af8eda6b119921067f47aa37775524813f26d75b55",
+      "size": 2724
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Bugs-BuMItJNU.js",
+      "sha256": "49e00f02dbfa20386847dbe08f017ce2538a2dffc5b55f08c986020db212f4d3",
+      "size": 5647
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-CMseA8fz.css",
+      "sha256": "1823ae414da5287f35f6be103852796ad19077722d7967dccb2682f15795b5a7",
+      "size": 29832
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-D485HKOL.css",
+      "sha256": "e11a7697bae60d93d75860af06914eda447b3bc0d7f62a2742e2d24915543885",
+      "size": 685
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-D6ZDGPjb.js",
+      "sha256": "0fb3ce12591bc183e15b7d52c067547d001629f62c1a940b00d3f6a4562e1d80",
+      "size": 1401
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CampaignLog-DbVbJU5c.js",
+      "sha256": "c6410394136220680848351e8e53211663db6d8856bf098cde05a5faec8dabb9",
+      "size": 47865
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CardImage-BdqFipXe.css",
+      "sha256": "49920ce93df6f3448036fd357f18fa55b7ea978fbc617443d2dfbf3c0add6ce2",
+      "size": 1322
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/CardImage-Y1BpCO6s.js",
+      "sha256": "6a0c05de5b275ce15742d24e03bd1a496300d93c2719d145075a66681946d6cc",
+      "size": 12772
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ClaimSeat-Cw6pQ7UJ.js",
+      "sha256": "c84f3c7c73e190ac21f5308ff96d3cff73116c0c2d7222afe05de88825a42920",
+      "size": 1087
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ClaimSeat-DNuYPigB.css",
+      "sha256": "30036c15a08350c33b7faf25c7edf80c530aaac3fbfcd69260ed9b196f1b62cb",
+      "size": 175
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Deck-B6uNKzrR.css",
+      "sha256": "f2351e42457e53937c8e4e238ec3765e0eb5753984c239f333c6a277d43a207b",
+      "size": 10615
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Deck-D0BRuFxA.js",
+      "sha256": "32af29c2f058b1544386c515783b98ddda3a1682c3de4f513756d66cac59f239",
+      "size": 12728
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/DeckToolbar-DV4QGNTP.css",
+      "sha256": "1b2a55a62aef147500c7ee87e46afb231e886736bad73981f2ab0fc316e49be1",
+      "size": 8617
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/DeckToolbar-DpzbA97f.js",
+      "sha256": "860a9ae3e113ab74d6ea5983ff67e83deb21c7e295e02d052b7f60d08c55cd69",
+      "size": 8270
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Decks-BVdDG5w6.js",
+      "sha256": "54a161e65f145120f0ec453be2661b5f38677465c26a6358c6204efd844c45dd",
+      "size": 5336
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Decks-C6gRxN6q.css",
+      "sha256": "e43b2313de1faaabca42cc84bf98a66f8a0cab867a444085dda045f992afa712",
+      "size": 4099
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/EventCountdown-CJHiwgcq.css",
+      "sha256": "c83ba96e992282821c05ab79682917b2c8e93713db257cf786c4841b0a108480",
+      "size": 490
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/EventCountdown-CdHATDw6.js",
+      "sha256": "822bac3f91c06b8d5b95e0bfac7e6d001b9d867431a1916a338bb18c5f99ec39",
+      "size": 1331
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Game-C7Yx_z7t.css",
+      "sha256": "0db16b66000a70541211dcbd945bd84c175afb244101370e512c1e8bcff66ecd",
+      "size": 62589
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Game-UD6Kvl9c.js",
+      "sha256": "7845d0debf4a432c71bd940b8ce57d6383b8f1cdf78962512841be442a49a7b7",
+      "size": 151697
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameLog-CaFgbZsU.css",
+      "sha256": "78dba28bde38c1402815968f4fdd9ae9108d857fee6de5183aaccb447461200f",
+      "size": 229804
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameLog-Cf4LRTFm.js",
+      "sha256": "ef50b8f717adcaf42fd6cad03d3c8cfcf1f36aa546f9ff05451b82e1f64a1453",
+      "size": 1092303
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameRow-C7MWApJk.css",
+      "sha256": "699bb6181724de7695ff9dbd675f22674970b5aa11a8fab45609de0b6473d911",
+      "size": 4961
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/GameRow-Dirm2Sfr.js",
+      "sha256": "eb03ecb2887dfdd376c4ec846ea2394ba6711ce96838f7370df20c174cbaefec",
+      "size": 3820
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Home-CdlGhleg.js",
+      "sha256": "3b78c360096f6340de1caf1ac53a837ae4cfb05d6f54b57ebf3c8e6a48e7bdc6",
+      "size": 11460
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Home-izWRFNZB.css",
+      "sha256": "fa761b4dcd4a251af9953b24d7954f40493585cff23edca6135e3af22584d095",
+      "size": 12198
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/JoinGame-B6rUNcO7.css",
+      "sha256": "46584cd21bb512b5ef113dc88e0641d678d82c89cc17acbfcb3d32072c9de8e8",
+      "size": 4542
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/JoinGame-CXEQB70B.js",
+      "sha256": "de09f6606ed2e406794bc74fbac50929fb48db1ced76ad2e8a839765e55da44d",
+      "size": 2283
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/LogIcons-D_X_CtUD.js",
+      "sha256": "95a1e12eaa525a4fdad1952174d55858bb349e653c6c299e4a128deba6477088",
+      "size": 47197
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/LogIcons-ML2rWupL.css",
+      "sha256": "f742dd297a6cbc9be5c55be207c5680f4920ded1b33acfd4dcdd8235e94ef279",
+      "size": 18656
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/MultiplayerLobby-Ba0O6Duh.css",
+      "sha256": "d287bacd74864805f9d6dcda05188a086bc8678e9883ecc1bf624249431c44d3",
+      "size": 3234
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/MultiplayerLobby-Bx7ji2OI.js",
+      "sha256": "6b271f39876155cba6bee7229ae7ba70631ee8778102d40eea8e823bbaffec96",
+      "size": 4546
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/NewCampaign-CP-MK6Nh.js",
+      "sha256": "9e5e08435033d8441e60df72f36e4f6c4500799630e8d355b03e8e1b4d9164b4",
+      "size": 38560
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/NewCampaign-DrlCgSBf.css",
+      "sha256": "a3f97f7a3f2b049c152135c28b0c6018449999e65582ffa5cdddac05380f1810",
+      "size": 21878
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/NewGame-Kv1DVrm_.js",
+      "sha256": "5180486059bbfeb1da2b07eefee095ba303a763b623278ccfa552821e7fa72cf",
+      "size": 84
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/OrganizerDashboard-BJl9woQf.js",
+      "sha256": "4aae7caf9031cbc5842b5d79907799316f1d2570e8c1c959483cc53c25a216ad",
+      "size": 6984
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/OrganizerDashboard-eppGs2eI.css",
+      "sha256": "17282c0731c53aad78581120dcba7a242f1e89b65e6f6f06028fbf76e2f279f3",
+      "size": 6549
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PasswordReset-BhRzwKPT.css",
+      "sha256": "8dd6784c892212d85077f706cde56dbe698e176b518ab48c6345ae90f48227e7",
+      "size": 834
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PasswordReset-CKyo6eeQ.js",
+      "sha256": "86dfef2d04ebded4e99b3a3af97e72fa457283d03651a885f94a1dae8d94e3be",
+      "size": 967
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PrimaryButton-ho8CUvJD.css",
+      "sha256": "52282fc3eee22d9b5cc57717431503a8259c17759fefb0556370d3efe712b33d",
+      "size": 554
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/PrimaryButton-jBVc-NU3.js",
+      "sha256": "36da79c6b3fa9bd10b3fcf9f51360f25ea5e9faa8dfb95a043ebcefdeac89821",
+      "size": 374
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Prompt-C_jp50Cw.css",
+      "sha256": "bb14119389fdca4c1074f6472b1e5b1a6bf7924f39f8d397ccf204a7e20abae0",
+      "size": 1788
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Prompt-DgDb1acA.js",
+      "sha256": "b13c29587775ee5381ff9a2c73a1bb8a5caaa940e8ce20bbaeb5bf56bcf5f18f",
+      "size": 1129
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ReplayGame-DaayaHvs.css",
+      "sha256": "dedce8851fddd5b69ab9a40e1fc6cf07db92de7ef26d4c2b9e143b098f80afec",
+      "size": 1153
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ReplayGame-IGwWmpz8.js",
+      "sha256": "2d12f55536d467ea39ad3368fb0532ed52664bc8212ff5085a3c3c3a7f7d49cf",
+      "size": 4166
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Rooms-BHobnMkr.css",
+      "sha256": "15a75329d6a320fdb3d22743dcd11b8216cdad1a68a4eac9c9d51edc14750077",
+      "size": 2214
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Rooms-Dms5Xatq.js",
+      "sha256": "f595dc4ddce593ce6c1709fdaf06826870d471cf3a4cdeebd744e76652ebf852",
+      "size": 1709
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Settings-CWHSL3h1.css",
+      "sha256": "67d6db75bcd627fbacda3bf1b6535e2e2f29546bcbaebabdb977cf9791d80ad8",
+      "size": 2008
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/Settings-CgeLv4OZ.js",
+      "sha256": "ad0558180ddfd5e7a85cd71290ca1dbcbe47bd1b33a09ebb6f21987bd99c4abb",
+      "size": 11105
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignIn-JK0q-LgB.css",
+      "sha256": "3d3fbdaeca7320319cd27ab778029189f5bf764b8609def8c1d8d16738e80338",
+      "size": 1446
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignIn-e2JXxroM.js",
+      "sha256": "bac495098cd5a46857d98933561a4ef5b70e532f6b90d06dd89545f5d151b1e0",
+      "size": 1703
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignUp-CfmE3eR_.js",
+      "sha256": "9f5ccdca2c398f7fe413515f83dba5b2383ab15c59f9e49203f88f77f31d6f32",
+      "size": 2116
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/SignUp-D7TUbFIu.css",
+      "sha256": "003fc52e00e72bd910fbd0b70f19b03b5fb79e12f2b00b8eb5cafb72023a5b87",
+      "size": 933
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UI-DYf75t_Z.js",
+      "sha256": "45aceb8295d20251b16a95a6b1079bb1b3fd45a7c5b331a8bb814210e10ee1cb",
+      "size": 2058
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UI-DqzfJiQb.css",
+      "sha256": "7c410229748a1c261897b9a8df3a223485d98822339d3ba06879d41f85b662b3",
+      "size": 4541
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UpdatePassword-BpN9dGl7.css",
+      "sha256": "4d54b4e1a34ca5c1f3e6b44f6b004e9a914aa636e00febd11da6b15b7c0b9da6",
+      "size": 885
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/UpdatePassword-Z5V6dp7d.js",
+      "sha256": "009b9d03c8065ddf977fdd2e89adc5c4ec9f5bb91d7104352e7791157f3a2684",
+      "size": 818
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/XpBreakdown-_9hRogLs.js",
+      "sha256": "2a4fd5462fb61dad2d6138e86b52ccfd905e8f232bf4d4517d63a263f13cb6e7",
+      "size": 109049
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/XpBreakdown-okREq0Ez.css",
+      "sha256": "277686ef8d9039bcc0a69b9340378d1f68ad63a840a4f1489004d6ff1bfb3a93",
+      "size": 38351
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/achievements-DJaAemtM.js",
+      "sha256": "0364e8b84d220e866ae710ef5650bbc13035dbdd83c56cd3645f1980db153183",
+      "size": 11398
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/api-BQ1BYW-_.js",
+      "sha256": "a3bb21c5fde6c1e8709e1b44015daf02750b472d831a5e6aa12e618c6a27194a",
+      "size": 123857
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/campaigns-uKlnaEBi.js",
+      "sha256": "fded733354b587fc16fe8d6b4f13ed4e72aff9314decabd8aee69bd720ec45fc",
+      "size": 33363
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/cards-CChhgmQ0.js",
+      "sha256": "aed589d76adc9407b8ca809eed65b1c046cc1a9867499c34160e034df0f8c5e5",
+      "size": 310
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/create-Ch3ewwZl.js",
+      "sha256": "f4ccd7e51994ceff1efd83aab5d0981f5405de28732a2ea7b79820c9eb462c38",
+      "size": 15387
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/dbCards-BLc3HiQX.js",
+      "sha256": "e8183ed487f33754ff6d4e713f30d3b163d6429f008735ba027b8a82b032bbb5",
+      "size": 1297
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/en-Ci2ZxBe9.js",
+      "sha256": "f97c5fbadf0b98c586c5f2aeac3c64a593ccc77ca70511be662f67b9a825e2a7",
+      "size": 3153212
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/es-4vMZmUxF.js",
+      "sha256": "1a6812668acbf642e036f97c85cfcd7054c895e181b023be4aa861a81b48adde",
+      "size": 11648
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/es-hQflf9v4.js",
+      "sha256": "ce9f518886539d6ac80655995fa2e1ff9d3f2c2cba70e19c3cef39f529f9580f",
+      "size": 64116
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/event-DQvC98EN.js",
+      "sha256": "0d8d693ec0d6cb8eb9145a6668bc5ca285972325ae070e2edeca9de0db7160d4",
+      "size": 1119
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/fr-Ca0EmoOs.js",
+      "sha256": "f9c0d492dfa334a0a041749f88a512e2f7ff474559dca9fc456fbd76c98c8c9a",
+      "size": 1341035
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/fr-DsOAPvhE.js",
+      "sha256": "07fb503c8df7eba7064525d7955bfd347b8cbfd386e904407a8ebb10f814b3a8",
+      "size": 149413
+    },
+    {
+      "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/i18n-CYsallPH.js",
+      "sha256": "350aa82979bfb171f89482ab5aad7c920ed83926e4cf97f6a77feefa5299d561",
+      "size": 1729
+    },
+    {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/index-BQrQvsth.js",
-      "sha256": "f409f89e1d0545b185a9be5d8fcd40bd5bb88fa28563478554db19611b6dc6e5",
-      "size": 436422
+      "sha256": "5c6ba08b2d028e779b3e3dba3c501c55f79121f235ae821afce2a7eea7b6eae0",
+      "size": 435791
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/index-QHQq6zrS.css",
-      "sha256": "920c3999a01135e3c7909cfe9b48e1864b965132302cb4d7e9f549fb70f483e4",
-      "size": 35062
+      "sha256": "a9cd034af5b01f8072852901904f8119dec2605cdab146e13349e8fbc21ac1a0",
+      "size": 35061
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/it-BuPRNYDF.js",
-      "sha256": "ba1a1863913291b733f002de48f148367ca7b5793a5f4a78170a826838149091",
-      "size": 191
+      "sha256": "03db16ad1f20463077f9d6a3a9a0baa003aaf950c4b18b8e407a088cc6bd3082",
+      "size": 190
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ita--S96PIbn.js",
-      "sha256": "9a5b523558e9e47b0e0acc0d81d8e93da883042df62833cf31a09c2dfa63b96a",
-      "size": 48767
+      "sha256": "d7190f643a44d74dcd9be805052d4d0aef3bc99d2bb7416c6188e7cdfdd0dc40",
+      "size": 48766
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ko-C3daKE3O.js",
-      "sha256": "23555980b4e7899984deb99939bd8e87faede64093e2e262afb3e3d9c999b7aa",
-      "size": 34
+      "sha256": "c1e5a21188845d4a1baf8531238547f21783aefb4352bb622ddeb8bf880a256a",
+      "size": 33
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/ko-Dj0uAwER.js",
-      "sha256": "90d6ceef325b536f4d2c5658328700ae4317f0ac87c440ec997984f10ef3c70d",
-      "size": 980482
+      "sha256": "7edeb8107f9dd4c6a841898dfe26f10979eed4e0cec68b226936af46076eef86",
+      "size": 980481
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/localStorage-rETqQM3q.js",
-      "sha256": "93e5addd59061f4bb51a5c543681a494fee9d10cb0885666ea57b83196e1f99d",
-      "size": 1013
+      "sha256": "7c37ce1ca30dad0816c849ebee2afffa0bdd8d982ef44d00f7e5d7c74c872ace",
+      "size": 1012
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/settings-C-p0xpSK.js",
-      "sha256": "df2b0a12fa328a4dba54608ac3271c73f7a132633626594d2a44c367bfdcfb92",
-      "size": 1095
+      "sha256": "f4e3632b9d2ff6a743fe15b951efeb6e047c62bb4f12cfcb0083062c1e56fbba",
+      "size": 1094
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/taboo-B4t5Y6Ff.js",
-      "sha256": "39ab70c24f87c8ab14edd0b9e34fc9a5a5673609cd4e73c2a0ec8f4681957531",
-      "size": 907
+      "sha256": "9dea017003a69b45195c64398a125b4692bc7db68a026563a7dc514017cb4bdc",
+      "size": 906
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/theFeastOfHemlockVale-_Yt--kzo.js",
-      "sha256": "8c8154b041a65db6151470f5b8654099f8a18ef9b99b661a9c874bda1a3a9344",
-      "size": 378181
+      "sha256": "d4888008cab8e6f5ae41f6c4bea7d44203496dff2c73e58aac09071fac7dcba1",
+      "size": 378180
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/useEpicHelpers-BgHLrRxS.js",
-      "sha256": "c8a05c3a8e204cedd1fe8b0f47c5ff1eec394366cf3b297af0611893d0a6015a",
-      "size": 383
+      "sha256": "f098d12aac15665127605ed9b0b070875a2a7c915bebde3ea80ee6a185463be7",
+      "size": 382
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/zh-DAG2tbjn.js",
-      "sha256": "8709f9f590cde705247d7653c8de2d4ded49a663a0dbf2cabb1b3e7c9d63b832",
-      "size": 3246640
+      "sha256": "c1b9a13036ca429be5267129bedcf5d1bb7df6aed5eab0189db532e30bf92782",
+      "size": 3246626
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/assets/zh-DxvknHJq.js",
-      "sha256": "d242d86a50cd2a9cc1c33d42f2ac5aae8a4a7424538eb97d6c9867235d208c46",
-      "size": 164640
+      "sha256": "d321f062b349f76ee860b9089a021b1dfb6487a25b429d1730cb5c5b553f98db",
+      "size": 164639
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/basic-entry-zh-runtime.js",
-      "sha256": "ee47390b61eb0aa0c3cca4b9b982da11d9bcfb97602772b10972ae958b7c6792",
-      "size": 1272
+      "sha256": "7d6769174fd92aa391d76c5804b25a3b6cbf346a78e0b5553d1034f5623969cc",
+      "size": 1218
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/legacy-ui-20260918.2/index.html",
-      "sha256": "b9a52f6af33303b93773fab638e36bfcd2ea2ce8c9af055b165ebf2d3eced129",
-      "size": 913
+      "sha256": "5731b299a1ae663ea383418c05ee7e139478018f4891cb1db2313a097059abfb",
+      "size": 892
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/narration/zh-card-text.csv",
@@ -54838,8 +54838,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/ui-switch-v20260921.js",
-      "sha256": "a35338c94c9d2da3dec6faea1895980dd5c945245b14706900373b9c9aca48cf",
-      "size": 1982
+      "sha256": "cae4b0d67d67889e21fbe5358397b49ef2d62f14e60b4288deb8b3b91cb08a46",
+      "size": 2028
     },
     {
       "path": "server/source/ArkhamHorror/frontend/public/wechat_qr.png",
@@ -54903,7 +54903,7 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/scripts/prepare-legacy-ui.cjs",
-      "sha256": "f6cf587983f9bfa3060fcc8b63219d80ec7a898698ae45562c5d7cfe472cab30",
+      "sha256": "19b34e5d07e7ac8b69ef3b18cc351473e87c7789d0f0e7c0aa48bfa17ab06b6f",
       "size": 9977
     },
     {
@@ -55283,8 +55283,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/DeckRow.vue",
-      "sha256": "10abb0ae738bebd29c7df95839d4b8d726e61959ce208bf35d049c8b89dd9939",
-      "size": 7498
+      "sha256": "cd41824910292d42e7cab58290a6a70f5c5d28b745bbfeb729093c725d4d8474",
+      "size": 8087
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/components/DeckToolbar.vue",
@@ -56183,8 +56183,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/mobile/MobileGameHeader.vue",
-      "sha256": "81d06cea943bf4389ae8167a5cd3bb32c6368b0649a8ed9a4feddef986bc40e9",
-      "size": 1752
+      "sha256": "26e1f4eaf511952621e5c4e36b9f78fdaeb2a86b558a29d1554ef86c0dc903fb",
+      "size": 1919
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/mobile/MobileMapFold.vue",
@@ -56678,13 +56678,13 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/views/Decks.vue",
-      "sha256": "2812476c7e529ab3f8c0f17202e73b7231dbea98ca4b65c0362119c76943acc2",
-      "size": 6385
+      "sha256": "379055b2a56fcba135a88acd9877f219582eb3dd8164e7ad155744d8551b3413",
+      "size": 6864
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/views/Game.vue",
-      "sha256": "c05b8283076289c991e1e43dae154fa5b9e5f12b7ecf14f0bf904aff8da555c7",
-      "size": 131769
+      "sha256": "c23559872ce38623bb6faafa4c7592a8960c87895bafb3410b21a848db72e9e3",
+      "size": 131876
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/arkham/views/JoinGame.vue",
@@ -56747,6 +56747,11 @@
       "size": 858
     },
     {
+      "path": "server/source/ArkhamHorror/frontend/src/components/GameUiSwitch.vue",
+      "sha256": "24f77363937e71d86b04042b4e2edade9b0e73ec9b7e3acf8214e4424ca79ad2",
+      "size": 1421
+    },
+    {
       "path": "server/source/ArkhamHorror/frontend/src/components/Menu.vue",
       "sha256": "531dfa3951f1208c6ae04d3eb72c6bfc0da53dd25e34388e9d3620b38287c8a4",
       "size": 1099
@@ -56783,8 +56788,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/components/UiModeButton.vue",
-      "sha256": "ad2568f2a23213360696c5063e6b9e9eb1fec1203d4fcfe4cb9cdf29b4128cfb",
-      "size": 1288
+      "sha256": "025a05c55c1d5fae5b3cb83bee32c11b7a04fd2009c24fed4b1fa37070122532",
+      "size": 1417
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/components/admin/GameFinder.vue",
@@ -56853,8 +56858,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/legacy/customCards.ts",
-      "sha256": "06c3e476c60e15aab85b0f8bf85dfde982b880580e335bfd50656dddc98f574d",
-      "size": 8047
+      "sha256": "94ba4807dad97af6e3ff03b082c28d9f2978faa34c10c71a7fd7ec611b56a87e",
+      "size": 9050
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/legacy/editorMode.ts",
@@ -60743,13 +60748,13 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/styles/siteSurfaces.css",
-      "sha256": "ff96a547321caab0bfeea06e16ed570e715d4f6fc14aaaa6560fe517869aa10a",
-      "size": 6830
+      "sha256": "711e0257230bfe3539c4f4ac464ef8616d0b8b3305fffdef123a6f0a315270f7",
+      "size": 7348
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/styles/tabletop.css",
-      "sha256": "39a84dc84ce81b08562fcfc3462e1e3fce38dd605a1b6655f4d6566a9c7eaaa0",
-      "size": 36516
+      "sha256": "f01330a1bedc1f04b8fb0be63d867da04fd58f407fafc009c9f7439500e4ec10",
+      "size": 36728
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/styles/tabletopHome.css",
@@ -60803,8 +60808,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/version.ts",
-      "sha256": "83c1dabb349559f4bcdf69a93ec35a608d2e2b0e9492140ce9daa083c271213c",
-      "size": 65
+      "sha256": "723e681dd64091b7deaeb88344543994b8b70dc2a65c3989454ec9ca0415df04",
+      "size": 52
     },
     {
       "path": "server/source/ArkhamHorror/frontend/src/views/About.vue",
@@ -61218,8 +61223,8 @@
     },
     {
       "path": "server/source/ArkhamHorror/frontend/tests/ui-version-switch.test.mjs",
-      "sha256": "9b50b6f24b3f987a1a52877d0f6df4c3c012e3384de6a9b8907c3c30f1d4d27a",
-      "size": 6022
+      "sha256": "b6862d32bf4c543efae3ae40de32eeea7b79e10b737cbe5a1bf08ac76c31dcb9",
+      "size": 7525
     },
     {
       "path": "server/source/ArkhamHorror/frontend/tests/ultimatumsAndBoonsZh.test.mjs",
@@ -62381,5 +62386,6 @@
       "sha256": "34ed1ae86848c0f02075e891d17be67365502133cdc2252e7eec4345c6239165",
       "size": 1533
     }
-  ]
+  ],
+  "frontendOnly": true
 }
