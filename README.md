@@ -15,6 +15,10 @@ Arkham Companion is a Chinese-localized distribution of Arkham Horror: The Card 
 The default branch is `Companion`. The `Mac` and `Server` branches are complete snapshots for their respective environments.
 
 Latest source and prebuilt Server snapshot: **2026.09.23.3-investigator-alignment**.
+
+独立部署完整包：**[Linux amd64 v20260924.1（tar.gz）](server/packages/README.md)**。
+与 Windows v20260923.2 去重完整版游戏内容一致，保留全部音乐/卡图；提供独立数据目录、启动/备份及 systemd 安装入口。此自托管包使用 online=false，不替换下述 online 专用产物。
+
 This includes stable classic/current UI selection, five community starter decks
 with full notes, Cycle 5 Chinese text, 618 reviewed image updates, 52 music files,
 and the latest investigator/global-counter layout. The Linux rules engine retains

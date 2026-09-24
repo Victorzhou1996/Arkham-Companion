@@ -458,6 +458,8 @@ write_runtime_info() {
     {
         printf '{\n'
         printf '  "packageVersion": "%s",\n' "$(json_escape "$package_version")"
+        printf '  "version": "%s",\n' "$(json_escape "$package_version")"
+        printf '  "platform": "Linux",\n'
         printf '  "serverCommit": "%s",\n' "$(json_escape "$server_commit")"
         printf '  "generatedAt": "%s",\n' "$generated_at"
         printf '  "localUrl": "%s",\n' "$(json_escape "$local_url")"
@@ -467,6 +469,9 @@ write_runtime_info() {
         printf '  "services": {"postgresql": %s, "api": %s, "nginx": %s}\n' "$pg_state" "$api_state" "$nginx_state"
         printf '}\n'
     } > "$tmp_file" && mv "$tmp_file" "$RUNTIME_INFO_FILE"
+    # Keep the legacy management endpoint and provide the new Settings contract.
+    cp "$RUNTIME_INFO_FILE" "${RUNTIME_INFO_FILE%/*}/runtime-info.json.tmp.$$"
+    mv "${RUNTIME_INFO_FILE%/*}/runtime-info.json.tmp.$$" "${RUNTIME_INFO_FILE%/*}/runtime-info.json"
 }
 
 is_wsl() {
@@ -620,10 +625,10 @@ frontend_static_assets_ready() {
     [ -s "$index_file" ] || { warn "Frontend index is missing or empty: $index_file"; return 1; }
     [ -s "$build_index" ] || { warn "Build index is missing or empty: $build_index"; return 1; }
 
-    entry_js="$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' "$index_file" 2>/dev/null | head -1 || true)"
-    entry_css="$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.css' "$index_file" 2>/dev/null | head -1 || true)"
-    build_js="$(grep -oE '/build/assets/index\.[A-Za-z0-9_-]+\.js' "$build_index" 2>/dev/null | head -1 || true)"
-    build_css="$(grep -oE '/build/assets/index\.[A-Za-z0-9_-]+\.css' "$build_index" 2>/dev/null | head -1 || true)"
+    entry_js="$(grep -oE '/assets/(index|app)-[A-Za-z0-9_-]+\.js' "$index_file" 2>/dev/null | head -1 || true)"
+    entry_css="$(grep -oE '/assets/(index|app)-[A-Za-z0-9_-]+\.css' "$index_file" 2>/dev/null | head -1 || true)"
+    build_js="$(grep -oE '/build/assets(-v[0-9]+)?/index\.[A-Za-z0-9_-]+\.js' "$build_index" 2>/dev/null | head -1 || true)"
+    build_css="$(grep -oE '/build/assets(-v[0-9]+)?/index\.[A-Za-z0-9_-]+\.css' "$build_index" 2>/dev/null | head -1 || true)"
 
     [ -n "$entry_js" ] || { warn "Frontend JavaScript entry was not found in index.html"; return 1; }
     [ -n "$entry_css" ] || { warn "Frontend stylesheet entry was not found in index.html"; return 1; }
@@ -897,11 +902,11 @@ SQL
         local receipt_table receipt_count=0 migration_backup
         receipt_table="$(psql_cmd -d "$PG_DB" -tAc "SELECT to_regclass('public.arkham_schema_migrations')" 2>> "$DATA_DIR/psql.log")" || return 1
         if [ -n "$receipt_table" ]; then
-            receipt_count="$(psql_cmd -d "$PG_DB" -tAc "SELECT count(*) FROM public.arkham_schema_migrations WHERE name IN ('arkham_game_undo_floors','arkham_custom_cards','arkham_deck_overlay','arkham_custom_card_sets','arkham_published_card_sets','arkham_published_card_set_likes','add_last_used_at_to_decks')" 2>> "$DATA_DIR/psql.log")" || return 1
+            receipt_count="$(psql_cmd -d "$PG_DB" -tAc "SELECT count(*) FROM public.arkham_schema_migrations WHERE name IN ('arkham_game_undo_floors','arkham_custom_cards','arkham_deck_overlay','arkham_custom_card_sets','arkham_published_card_sets','arkham_published_card_set_likes','add_last_used_at_to_decks','add_phase_transition_notifications_to_users')" 2>> "$DATA_DIR/psql.log")" || return 1
         fi
-        [ "$receipt_count" = "7" ] && return 0
+        [ "$receipt_count" = "8" ] && return 0
         ensure_dir "$BACKUP_DIR"
-        migration_backup="$(mktemp "$BACKUP_DIR/before-pr9-migration.XXXXXX.dump")" || return 1
+        migration_backup="$(mktemp "$BACKUP_DIR/before-20260923-migration.XXXXXX.dump")" || return 1
         pg_dump_cmd -d "$PG_DB" -Fc -f "$migration_backup" >> "$DATA_DIR/psql.log" 2>&1 || return 1
         dump_file_is_valid "$migration_backup" || return 1
         psql_cmd -d "$PG_DB" -v ON_ERROR_STOP=1 \
@@ -1868,6 +1873,23 @@ http {
     listen 127.0.0.1:$NGINX_PORT;
     server_name localhost 127.0.0.1;
     client_max_body_size 5M;
+    # Byte-identical Build resources are stored once. Keep old URLs usable for
+    # cached pages, while distinct compatibility bundles remain at their paths.
+    location ^~ /build/assets/ {
+      root "$SCRIPT_DIR";
+      add_header Cache-Control "no-store" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      try_files \$uri @current_build_assets;
+    }
+    location @current_build_assets {
+      rewrite ^/build/assets/(.*)\$ /build/assets-v20260923/\$1 last;
+    }
+    # Redirect retired classic entry points, preserving query and URL fragment.
+    # The latest classic UI remains fully bundled alongside the current UI.
+    location ~ ^/legacy-ui-(20260826[.]3|20260918[.]1|20260918[.]2)(/index[.]html|/)?\$ {
+      add_header Cache-Control "no-store" always;
+      return 302 /legacy-ui-20260923.1/\$is_args\$args;
+    }
     # Critical JS and CSS locations also carry route-local MIME maps. This is
     # deliberately redundant: a partial update must not produce a blank or
     # completely unstyled page in strict browsers.
@@ -1906,6 +1928,11 @@ http {
       add_header Expires "0" always;
       add_header X-Content-Type-Options "nosniff" always;
       try_files \$uri =404;
+    }
+    location = /runtime-info.json {
+      alias "$DATA_DIR/runtime-info.json";
+      default_type application/json;
+      add_header Cache-Control "no-store" always;
     }
     location = /local-runtime.json {
       alias "$DATA_DIR/local-runtime.json";
@@ -2090,6 +2117,14 @@ repair_running_frontend_assets() {
 
 # 鈹€鈹€ Stop 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 do_stop() {
+    # The headless supervisor and an explicit stop may arrive together. Keep
+    # backup rotation and database shutdown under the same per-instance lock.
+    # Do not unlink the lock file: waiters must share one stable inode.
+    local stop_lock_fd
+    if [ "${ARKHAM_HEADLESS:-0}" = 1 ]; then
+        exec {stop_lock_fd}>"$DATA_DIR/stop.lock"
+        flock -x "$stop_lock_fd"
+    fi
     info "Stopping services ..."
     stop_local_layout
 
@@ -2170,6 +2205,9 @@ do_stop() {
     fi
 
     info "All services stopped."
+    if [ "${ARKHAM_HEADLESS:-0}" = 1 ]; then
+        exec {stop_lock_fd}>&-
+    fi
 }
 
 # 鈹€鈹€ Status 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
@@ -2201,10 +2239,10 @@ do_repair_frontend() {
     else
         local frontend_root="$SCRIPT_DIR/frontend/dist" index_file="$SCRIPT_DIR/frontend/dist/index.html"
         local build_index="$SCRIPT_DIR/build/index.html" entry_js entry_css build_js build_css
-        entry_js="$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' "$index_file" 2>/dev/null | head -1 || true)"
-        entry_css="$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.css' "$index_file" 2>/dev/null | head -1 || true)"
-        build_js="$(grep -oE '/build/assets/index\.[A-Za-z0-9_-]+\.js' "$build_index" 2>/dev/null | head -1 || true)"
-        build_css="$(grep -oE '/build/assets/index\.[A-Za-z0-9_-]+\.css' "$build_index" 2>/dev/null | head -1 || true)"
+        entry_js="$(grep -oE '/assets/(index|app)-[A-Za-z0-9_-]+\.js' "$index_file" 2>/dev/null | head -1 || true)"
+        entry_css="$(grep -oE '/assets/(index|app)-[A-Za-z0-9_-]+\.css' "$index_file" 2>/dev/null | head -1 || true)"
+        build_js="$(grep -oE '/build/assets(-v[0-9]+)?/index\.[A-Za-z0-9_-]+\.js' "$build_index" 2>/dev/null | head -1 || true)"
+        build_css="$(grep -oE '/build/assets(-v[0-9]+)?/index\.[A-Za-z0-9_-]+\.css' "$build_index" 2>/dev/null | head -1 || true)"
         [ -s "$index_file" ] && [ -s "$frontend_root$entry_js" ] && [ -s "$frontend_root$entry_css" ] \
             && [ -s "$SCRIPT_DIR$build_js" ] && [ -s "$SCRIPT_DIR$build_css" ] \
             || die 4181 "Frontend resources are missing or incomplete"

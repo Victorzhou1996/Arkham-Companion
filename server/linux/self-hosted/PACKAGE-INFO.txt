@@ -1,0 +1,21 @@
+Arkham Horror Server Linux amd64 v20260924.1
+Content baseline: Windows v20260923.2 deduplicated full package
+Frontend version: 2026.09.23.3-investigator-alignment
+Server commit: 67b8f2a1aae9cf4e2b4c64f8895dd4fc20743e0c
+Repository: https://github.com/Victorzhou1996/Arkham-Companion
+Merged updates: PR12 / PR13
+Frontend build: VITE_ONLINE_MODE=false; VITE_LOCAL_LAYOUT_ONLY=true; VITE_DISABLE_COMPANION=true; same-origin API/assets
+Backend: Linux amd64; upstream through ffb6d5e80b5cfdc88d45fff59d38744454347ccf
+Backend SHA256: 3875421b660e9cf32b77aaeff2bbf99ec287d35efa09fa668d734fecf6f6bf39
+Classic UI: legacy-ui-20260923.1
+Main card library: 8928 AVIF files; 618 reviewed changes; original 10531b retained
+Portraits: 214
+Music: 52 MP3 files
+Starter decks: 7, complete notes
+Runtime: Linux v20260919.1 external-state/SCRAM/headless/stop-lock baseline
+Adaptations: eight guarded migrations; current entry checks; both runtime-info endpoints
+Requires: Ubuntu 24.04 x86-64 or compatible glibc >= 2.39; Python 3.11+; flock
+Repack: removed 419 byte-identical old Build files with URL fallback to assets-v20260923; retired 3 historical classic UI folders with entry redirects. All card aliases and distinct compatibility bundles retained.
+No Companion, personal accounts, saves or runtime secrets bundled.
+Old packages retained. No production deployment performed by packaging or publication.
+Older release notes are historical. README.md describes this version.

@@ -1,8 +1,14 @@
-# Arkham Horror · Linux 服务器纯净版 v20260915.3
+# Arkham Horror · Linux 服务器纯净版 v20260924.1
 
-用于给其他用户部署独立游戏服务器。与 Windows v20260915.5 使用同一份游戏内容和最新绿色前端，包含截至 2026 年 9 月 15 日 12:14 的前端修复、完整卡图、Build、调查员视角/触控操作、撤回和按账号保存的分隔线。Build 原界面未改动。无个人账号、存档、密钥、测试数据、Windows 工具或 WSL/Ubuntu 安装镜像。
+> 本仓库目录保存启动层源码和说明，不是可直接启动的完整文件夹。请先下载 [完整 tar.gz 及校验文件](../../packages/README.md)，以下命令在完整包内执行。
 
-本次包含游戏进入时的登录恢复及加载失败提示，避免只显示背景；手机手牌边框保持完整圆角尺寸并随卡牌叠放，轻微向外放大（100%→104%→100%，三次后静止）；撤回入口初始化修复。点按、长按和既有服务器管理/备份功能不变，没有新增持续动画或轮询。
+本次与 Windows v20260923.2 精简完整版的游戏内容逐文件对齐：包含合并 PR #12/#13 后的规则、汉化、新旧界面、7 套预组卡组、52 首音乐、8,928 张主卡图及 214 张人物头像。保留全部音乐和卡图，不是增量补丁。
+
+用于给其他用户部署独立游戏服务器。游戏基于固定提交 `67b8f2a1aae9cf4e2b4c64f8895dd4fc20743e0c`，界面版本 `2026.09.23.3-investigator-alignment`，经典界面 `legacy-ui-20260923.1`。无个人账号、存档、密钥、测试数据、Windows 工具或 WSL/Ubuntu 安装镜像。
+
+相较 Linux v20260919.1，后端、迁移、前端及 Build 均已同步更新；八项数据库迁移有执行记录保护，升级前自动导出逻辑备份。原有非 root 启动、SCRAM 数据库认证、外部数据目录、systemd 入口和停服互斥保护保留。系统需提供 `flock`（Ubuntu 24.04 的 util-linux 提供）。
+
+精简内容：移除 419 个与新版完全相同的旧 Build 文件，以及三套过期经典界面。旧 Build URL 内部兼容到新版资源；旧经典入口跳转到最新经典界面。当前新旧界面均保留。必须解压到新目录，不要覆盖旧目录，否则旧冗余文件仍会留下。其他带旧日期的更新说明仅供历史参考，以本文件和 PACKAGE-INFO.txt 为准。
 
 ## 环境与版本
 
@@ -10,7 +16,7 @@
 - 建议至少 2 核、4 GB 内存，预留至少 10 GB 磁盘并给存档/备份留出额外空间。这是部署建议，不是高并发容量承诺。
 - 游戏后端、PostgreSQL 14、内部 nginx 和编译好的前端已经包含，不依赖系统 PostgreSQL 服务。需要系统提供 `bash`、`python3`（3.11+，Ubuntu 24.04 自带版本满足）、`curl`、`tar`、`gzip`、`coreutils`、`iproute2`；开机自启需要 systemd。
 - 基础依赖可由管理员运行 `sudo apt update && sudo apt install python3 curl ca-certificates iproute2` 安装。安装脚本不会自动修改防火墙、系统 nginx 或其他网站。
-- 本包是**普通自托管模式**（与本地包一致，`VITE_ONLINE_MODE=false`），可多人注册、导入卡组和开局。不包含公网运营站专用的邮件验证码、Bug 工单及归档 Sidecar；这些需要另外配置邮件服务和权限，不能直接套用原服务器的密钥。没有默认测试账号，注册后会建立原版提供的两个预组卡组。
+- 本包是**普通自托管模式**（与本地包一致，`VITE_ONLINE_MODE=false`），可多人注册、导入卡组和开局。不包含公网运营站专用的邮件验证码、Bug 工单及归档 Sidecar；这些需要另外配置邮件服务和权限，不能直接套用原服务器的密钥。没有默认测试账号，注册后会建立七个预组卡组；已有玩家可添加缺失预组，不覆盖已编辑卡组。
 - 这是已编译的固定版本包，不要为了部署而自动拉取上游最新版替换本包。
 
 ## 1. 解压与核验
@@ -19,10 +25,10 @@
 
 ```bash
 # 先在压缩包所在目录校验随包的 .sha256 文件
-sha256sum -c ArkhamHorror-Server-Linux-amd64-v20260915.3.tar.gz.sha256
+sha256sum -c ArkhamHorror-Server-Linux-amd64-v20260924.1.tar.gz.sha256
 sudo mkdir -p /opt/arkham-releases
-sudo tar -xzf ArkhamHorror-Server-Linux-amd64-v20260915.3.tar.gz -C /opt/arkham-releases
-cd /opt/arkham-releases/ArkhamHorror-Server-Linux-amd64-v20260915.3
+sudo tar -xzf ArkhamHorror-Server-Linux-amd64-v20260924.1.tar.gz -C /opt/arkham-releases
+cd /opt/arkham-releases/ArkhamHorror-Server-Linux-amd64-v20260924.1
 sha256sum -c SHA256SUMS
 ```
 
@@ -100,4 +106,4 @@ sudo systemctl start arkham-horror-server
 
 可以把本包的 AI-DEPLOYMENT.md 和服务器连接信息交给 AI 协助部署；私钥只用于认证，不能打进包或传到服务器。
 
-发行验证使用本机 Ubuntu 24.04 / WSL2 的原生 Linux 文件系统和独立测试账号，覆盖注册、登录、开局、Build、1177 张更新卡图、117 个前端资源、WebSocket 升级、数据库认证和重启后布局保存。systemd unit 已通过静态校验；真实云服务器的开机自启、域名/证书、公网多人连通及容量仍需在部署时验收。分发目录本身未启动过，不含这些测试数据。
+前端与 Windows v20260923.2 字节相同，沿用已完成的 345 项测试、类型检查和构建验证；这不代表本次重新运行了前端测试。Linux 发行验证使用本机 Ubuntu 24.04 / WSL2 的原生 Linux 文件系统和独立测试账号，实际结果随交付记录公布。真实云服务器开机自启、域名/证书、公网多人连通及容量仍需在部署时验收，不宣称完整战役通关。分发目录本身未启动过，不含测试数据。

@@ -17,7 +17,7 @@ esac
 [ "$(uname -s)" = Linux ] && [ "$(uname -m)" = x86_64 ] || fail 'Requires Linux x86-64 (amd64), not ARM64.'
 [ "$(id -u)" != 0 ] || fail 'Run as a dedicated non-root service user. Use sudo only for install-service.sh.'
 command -v python3 >/dev/null || fail 'Install python3 (Ubuntu 24.04).'
-for tool in bash tar gzip curl getconf realpath; do command -v "$tool" >/dev/null || fail "Missing dependency: $tool"; done
+for tool in bash tar gzip curl getconf realpath flock; do command -v "$tool" >/dev/null || fail "Missing dependency: $tool"; done
 glibc="$(getconf GNU_LIBC_VERSION | awk '{print $2}')"
 printf '%s\n' 2.39 "$glibc" | sort -VC || fail 'glibc >= 2.39 required; use Ubuntu 24.04. Do not replace system libc manually.'
 for file in game/bin/arkham-api game/bin/nginx game/pgsql/bin/initdb game/pgsql/bin/pg_ctl game/pgsql/bin/psql; do

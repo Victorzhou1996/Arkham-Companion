@@ -1,0 +1,20 @@
+{
+  "version": "v20260924.1",
+  "file": "ArkhamHorror-Server-Linux-amd64-v20260924.1.tar.gz",
+  "bytes": 1723822865,
+  "sha256": "52a3593998b8cb836cae2f37af2ebd459ad3d11f07805cbbb289fccdd85873f7",
+  "archivedFiles": 14542,
+  "payloadFiles": 14540,
+  "windowsContentBaseline": "v20260923.2",
+  "gameSourceCommit": "67b8f2a1aae9cf4e2b4c64f8895dd4fc20743e0c",
+  "frontendVersion": "2026.09.23.3-investigator-alignment",
+  "onlineMode": false,
+  "classicUi": "legacy-ui-20260923.1",
+  "backendSha256": "3875421b660e9cf32b77aaeff2bbf99ec287d35efa09fa668d734fecf6f6bf39",
+  "platform": "linux-amd64",
+  "minimumGlibc": "2.39",
+  "musicFiles": 52,
+  "mainCardFaces": 8928,
+  "portraits": 214,
+  "liveServerDeployment": false
+}

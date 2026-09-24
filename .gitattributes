@@ -21,3 +21,6 @@ server/linux/self-hosted/*.sh text eol=lf
 # Release/source manifests describe exact bytes, including the pinned classic UI.
 server/release/** -text
 server/source/ArkhamHorror/** -text
+
+# Complete standalone Linux packages are LFS objects, never ordinary Git blobs.
+server/packages/**/*.tar.gz filter=lfs diff=lfs merge=lfs -text

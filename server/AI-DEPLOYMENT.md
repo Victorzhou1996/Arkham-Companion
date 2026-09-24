@@ -1,5 +1,11 @@
 # Arkham Companion Server：AI 部署指南
 
+## 独立完整包优先入口 · 2026-09-24
+
+需要直接部署独立服务器时，使用 [Linux amd64 v20260924.1 完整 tar.gz](packages/README.md)，并先阅读其 [专用说明](linux/self-hosted/README.md) 和 [更新/回滚说明](linux/self-hosted/UPDATE.md)。游戏内容与 Windows v20260923.2 一致，采用 false-mode，内置数据库和内部 nginx，外部持久数据目录，非 root 运行。本次只发布包，没有部署任何线上实例。
+
+`server/release/` 的既有 online 产物、源码及清单本次不变；不能用这个独立包直接覆盖运营站配置或 Sidecar。下文 9 月 16 日说明是历史版本说明，不代表当前后端哈希。独立包的准确版本和校验值见 `server/packages/v20260924.1/`。
+
 ## 当前版本优先说明 · 2026-09-16
 
 当前默认产物为 `2026.09.16-edge-fixes`，前端 `VITE_ONLINE_MODE=true`，与 online 的最新修复版逐文件校验；不再是下文旧发布说明中的9月9日快照。先阅读 [RELEASE-20260916.md](RELEASE-20260916.md)，执行 `git lfs pull` 和 `python3 server/packaging/verify-server-release.py`，通过后才允许打包/部署。该验证器不改数据库或配置。本次只发布 Linux 服务器材料，Windows、Mac 保持原样。
