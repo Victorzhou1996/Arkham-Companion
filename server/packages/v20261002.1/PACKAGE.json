@@ -1,0 +1,22 @@
+{
+  "version": "v20261002.1",
+  "file": "ArkhamHorror-Server-Linux-amd64-v20261002.1.tar.gz",
+  "bytes": 1827717962,
+  "sha256": "28b7604c14dbc5ba79a0b978490511aba7670782319c90a937a191a48cc5f0da",
+  "archivedFiles": 15539,
+  "payloadFiles": 15537,
+  "windowsContentBaseline": "v20261002.1",
+  "frontendVersion": "2026.10.02.1-text-dialog",
+  "onlineMode": false,
+  "localLayoutOnly": true,
+  "companionDisabled": true,
+  "classicUi": "legacy-ui-20260930.1",
+  "languagePack": "zh-20261001-r1",
+  "backendSha256": "0e13c1a6e7dabd1925bbd38facfd52797b6a2f10739a745efab4077f748e9fec",
+  "platform": "linux-amd64",
+  "minimumGlibc": "2.39",
+  "musicFiles": 52,
+  "mainCardFaces": 8928,
+  "liveServerDeployment": false,
+  "sourceSnapshotUpdatedByThisPR": false
+}

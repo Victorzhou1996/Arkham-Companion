@@ -1,0 +1,18 @@
+{
+  "version": "v20261002.1",
+  "file": "ArkhamHorrorLocal-Windows-v20261002.1.zip",
+  "bytes": 1828204998,
+  "sha256": "5d73373c048610b4211c2b5be40358942af82b96aba5014a2aaf2f8ce01bd513",
+  "archivedFiles": 15537,
+  "payloadFiles": 15536,
+  "frontendVersion": "2026.10.02.1-text-dialog",
+  "onlineMode": false,
+  "localLayoutOnly": true,
+  "companionDisabled": true,
+  "classicUi": "legacy-ui-20260930.1",
+  "languagePack": "zh-20261001-r1",
+  "backendSha256": "0e13c1a6e7dabd1925bbd38facfd52797b6a2f10739a745efab4077f748e9fec",
+  "platform": "windows-wsl2-amd64",
+  "accountManagerFixIncluded": true,
+  "sourceSnapshotUpdatedByThisPR": false
+}
