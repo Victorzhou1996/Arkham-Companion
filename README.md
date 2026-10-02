@@ -16,8 +16,8 @@ The default branch is `Companion`. The `Mac` and `Server` branches are complete 
 
 Latest source and prebuilt Server snapshot: **2026.09.23.3-investigator-alignment**.
 
-独立部署完整包：**[Linux amd64 v20260924.1（tar.gz）](server/packages/README.md)**。
-与 Windows v20260923.2 去重完整版游戏内容一致，保留全部音乐/卡图；提供独立数据目录、启动/备份及 systemd 安装入口。此自托管包使用 online=false，不替换下述 online 专用产物。
+最新独立部署完整包：**[Windows ZIP / Linux amd64 tar.gz v20261002.1](server/packages/README.md)**。
+包含中文定制表勾选和文字坐标、触摸“在卡牌下方”弹窗修复及 Windows 账号管理器修复。此自托管包使用 online=false；本次只发布成品包，不替换旧源码快照及 online 专用产物。详见 [发布说明](server/RELEASE-20261002.md)。
 
 This includes stable classic/current UI selection, five community starter decks
 with full notes, Cycle 5 Chinese text, 618 reviewed image updates, 52 music files,
