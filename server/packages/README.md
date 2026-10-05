@@ -1,6 +1,16 @@
 # Windows / Linux 独立完整包
 
-当前版本：**v20261002.1**，Windows 与 Linux 使用相同游戏内容。[更新内容及验证限制](../RELEASE-20261002.md)。
+当前游戏版本：**2026.10.04.3-clue-load-decks**。Windows **v20261004.1** 与 Linux **v20261005.1** 游戏内容相同。[更新内容及验证限制](../RELEASE-20261005.md)。
+
+- [Linux v20261005.1 完整 tar.gz](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261005.1/ArkhamHorror-Server-Linux-amd64-v20261005.1.tar.gz) · [SHA-256](v20261005.1/ArkhamHorror-Server-Linux-amd64-v20261005.1.tar.gz.sha256) · [元数据](v20261005.1/PACKAGE.json)
+- [Windows v20261004.1 完整 ZIP](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261005.1/ArkhamHorrorLocal-Windows-v20261004.1.zip) · [SHA-256](v20261005.1/ArkhamHorrorLocal-Windows-v20261004.1.zip.sha256) · [元数据](v20261005.1/WINDOWS.json)
+- [最新源码 tar.gz](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261005.1/ArkhamHorror-Sources-v20261005.1.tar.gz) · [SHA-256](v20261005.1/ArkhamHorror-Sources-v20261005.1.tar.gz.sha256) · [内容及边界](v20261005.1/SOURCE.json)
+
+经典 UI `legacy-ui-20261004.5`，前端语言包 `zh-20261004-r4`，固定上游 `23e8991b`。新版源码归档内包含当前后端源码、Kaho 前端及 Online 独立布局覆盖文件；旧 `server/source/` / `server/release/` 目录不替换，不能当成最新代码。Linux 已在隔离原生环境验证12局游戏、7副牌组及重启数据保留；所有15754个归档文件哈希和Unix权限已校验。Windows 继承10月4日已验证包，未在本次重新打包。
+
+新版校验：`python3 server/packaging/verify-self-hosted-package.py server/packages/v20261005.1/PACKAGE.json`。
+
+以下 v20261002.1 下载与示例保留作历史参考，不是当前最新版。
 
 - [Linux 完整 tar.gz](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261002.1/ArkhamHorror-Server-Linux-amd64-v20261002.1.tar.gz) · [SHA-256](v20261002.1/ArkhamHorror-Server-Linux-amd64-v20261002.1.tar.gz.sha256) · [元数据](v20261002.1/PACKAGE.json)
 - [Windows 完整 ZIP](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261002.1/ArkhamHorrorLocal-Windows-v20261002.1.zip) · [SHA-256](v20261002.1/ArkhamHorrorLocal-Windows-v20261002.1.zip.sha256) · [元数据](v20261002.1/WINDOWS.json)

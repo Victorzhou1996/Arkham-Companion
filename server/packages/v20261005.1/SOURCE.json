@@ -1,0 +1,12 @@
+{
+  "version": "v20261005.1",
+  "file": "ArkhamHorror-Sources-v20261005.1.tar.gz",
+  "bytes": 176315512,
+  "sha256": "211e1db19193c14b7e6db624f75242a9ed017cd58b5f24e016a5a2133f4b677e",
+  "sourceFiles": 11691,
+  "upstream": "23e8991baf24c34dcaabd21d3d9a4d9c3df3ff95",
+  "onlineOverrides": 11,
+  "credentialsOrUserDataIncluded": false,
+  "allMembersVerified": true,
+  "backendBuildDataIncluded": true
+}

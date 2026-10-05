@@ -1,0 +1,23 @@
+{
+  "frontendVersion": "2026.10.04.3-clue-load-decks",
+  "upstream": "23e8991baf24c34dcaabd21d3d9a4d9c3df3ff95",
+  "onlineMode": false,
+  "localLayoutOnly": true,
+  "companionDisabled": true,
+  "classicUi": "legacy-ui-20261004.5",
+  "languagePack": "zh-20261004-r4",
+  "backendSha256": "1100f1db498dc2c5c589d24cf56cd5c234772e86fd20a701e5d4576070d8a4f7",
+  "sourceArchive": "ArkhamHorror-Sources-v20261005.1.tar.gz",
+  "legacySourceSnapshotUnchanged": true,
+  "version": "v20261005.1",
+  "file": "ArkhamHorror-Server-Linux-amd64-v20261005.1.tar.gz",
+  "bytes": 1845343788,
+  "sha256": "31c32b53905efc2d6cb1880917588d5a6e7ce00e53d0c9846c0ef1b07f4f379e",
+  "archivedFiles": 15754,
+  "payloadFiles": 15752,
+  "windowsContentBaseline": "v20261004.1",
+  "platform": "linux-amd64",
+  "minimumGlibc": "2.39",
+  "musicFiles": 52,
+  "mainCardFaces": 8928
+}

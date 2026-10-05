@@ -1,0 +1,19 @@
+{
+  "frontendVersion": "2026.10.04.3-clue-load-decks",
+  "upstream": "23e8991baf24c34dcaabd21d3d9a4d9c3df3ff95",
+  "onlineMode": false,
+  "localLayoutOnly": true,
+  "companionDisabled": true,
+  "classicUi": "legacy-ui-20261004.5",
+  "languagePack": "zh-20261004-r4",
+  "backendSha256": "1100f1db498dc2c5c589d24cf56cd5c234772e86fd20a701e5d4576070d8a4f7",
+  "sourceArchive": "ArkhamHorror-Sources-v20261005.1.tar.gz",
+  "legacySourceSnapshotUnchanged": true,
+  "version": "v20261004.1",
+  "file": "ArkhamHorrorLocal-Windows-v20261004.1.zip",
+  "bytes": 1845796717,
+  "sha256": "04d626a9f4241142a64df5999545a78d83cfcedd6d31d2bf7e22720784521858",
+  "archivedFiles": 15752,
+  "platform": "windows-wsl2-amd64",
+  "accountManagerFixIncluded": true
+}
