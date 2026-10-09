@@ -1,5 +1,13 @@
 # Arkham Companion Server：AI 部署指南
 
+## 当前完整包优先说明 · 2026-10-09
+
+使用 [Windows/Linux v20261009.1 完整包和对应源码](packages/README.md)，先阅读[本次发布说明](RELEASE-20261009.md)。旧的 `server/source` 和 `server/release` 是历史快照，不代表最新版本。
+
+本包固定 f6ed09be 后端、新旧UI、Build、zh-20261009-r9及配套l10n运行时。Linux tar保留920处图片硬链接，Windows ZIP启动前自动恢复别名。修改图片必须使用独立临时文件加原子替换。数据库升级由启动器先验证备份再执行缺失迁移；禁止导入setup.sql覆盖旧存档。先停旧服、备份、解压到新目录，保留外置数据与秘密配置。Kaho此前已经部署；本次仅发布包和源码，没有部署Online。
+
+以下版本说明均为历史材料；版本/哈希以 `server/packages/v20261009.1` 清单为准。
+
 ## 独立完整包优先入口 · 2026-09-24
 
 需要直接部署独立服务器时，使用 [Linux amd64 v20260924.1 完整 tar.gz](packages/README.md)，并先阅读其 [专用说明](linux/self-hosted/README.md) 和 [更新/回滚说明](linux/self-hosted/UPDATE.md)。游戏内容与 Windows v20260923.2 一致，采用 false-mode，内置数据库和内部 nginx，外部持久数据目录，非 root 运行。本次只发布包，没有部署任何线上实例。

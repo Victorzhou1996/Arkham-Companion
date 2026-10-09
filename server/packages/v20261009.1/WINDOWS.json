@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "bytes": 1840213244,
+  "sha256": "c26be62cd02a305241ed7f7339d5441bfcf26b08a7362e55f324768a910ff6f4",
+  "members": 18897,
+  "hardlinks": 0,
+  "allMembersVerified": true,
+  "version": "v20261009.1",
+  "file": "ArkhamHorrorLocal-Windows-v20261009.1.zip",
+  "upstream": "f6ed09bec346ebc505ade739d34a7aea3305fa5c",
+  "language": "zh-20261009-r9",
+  "backendSha256": "1f2d32812cbcdf1bd1e5d24fecd2e7c32c6813d53281b131f72bb5ed9ee0336d"
+}

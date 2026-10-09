@@ -1,0 +1,34 @@
+{
+  "passed": true,
+  "platforms": [
+    "windows-wsl2-amd64",
+    "linux-amd64-glibc2.39"
+  ],
+  "nativeUpgradeAndRestart": {
+    "windows": {
+      "games": 13,
+      "existingDecks": 8
+    },
+    "linux": {
+      "games": 12,
+      "existingDecks": 7
+    }
+  },
+  "originalBusinessRowsUnchanged": true,
+  "freshStartupBothArchives": true,
+  "newRegistrationStarterDecks": 5,
+  "cardAliases": 920,
+  "httpResourcesPerPlatform": 1330,
+  "darkMatterFaces": 416,
+  "translatedFieldsPerLocale": 1306,
+  "allArchiveMembersSHA256Verified": true,
+  "noRealUserDataIncluded": true,
+  "notTested": [
+    "clean Windows WSL installation wizard",
+    "WinForms visual interaction",
+    "full campaign playthrough",
+    "native Safari"
+  ],
+  "onlineDeploymentPerformed": false,
+  "macChanged": false
+}

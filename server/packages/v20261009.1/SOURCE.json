@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "bytes": 409429808,
+  "sha256": "8915e8d62d80820553be17d66781603e7fd720646a074d96d8f1ee71955db8a4",
+  "files": 16066,
+  "allMembersVerified": true,
+  "backendBuildDataIncluded": true,
+  "embeddedBuildSourceIncluded": true,
+  "onlineSourceOverrideIncluded": false,
+  "version": "v20261009.1",
+  "file": "ArkhamHorror-Sources-v20261009.1.tar.gz",
+  "upstream": "f6ed09bec346ebc505ade739d34a7aea3305fa5c",
+  "language": "zh-20261009-r9",
+  "backendSha256": "1f2d32812cbcdf1bd1e5d24fecd2e7c32c6813d53281b131f72bb5ed9ee0336d"
+}

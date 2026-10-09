@@ -14,11 +14,13 @@ Arkham Companion is a Chinese-localized distribution of Arkham Horror: The Card 
 
 The default branch is `Companion`. The `Mac` and `Server` branches are complete snapshots for their respective environments.
 
-Latest source bundle and standalone packages: **[2026.10.04.3 / v20261005.1](server/RELEASE-20261005.md)**, pinned upstream `23e8991b`.
+Latest source bundle and standalone packages: **[2026.10.09.1 / v20261009.1](server/RELEASE-20261009.md)**, pinned upstream `f6ed09be`.
 The old `server/source/` and `server/release/` directories remain historical Sept23 snapshots. Use the versioned source bundle below for current code; do not mistake historical snapshots for the new release.
 
-最新完整包：**[Windows v20261004.1 ZIP / Linux amd64 v20261005.1 tar.gz](server/packages/README.md)**，游戏内容相同；另提供包含当前后端、Kaho 前端和 Online 布局覆盖文件的已校验源码归档。
-包含最新上游、汉化/定制表/触摸修复、牌库触发去重、本地自制战役图片、刷新加载时序、2倍线索及完整人物小卡。自托管采用 online=false，不含线上用户数据或运营站配置；Mac/Companion 本次未更新。详见 [发布说明](server/RELEASE-20261005.md)。
+最新完整包：**[Windows v20261009.1 ZIP / Linux amd64 v20261009.1 tar.gz](server/packages/README.md)**，共享19800个相同文件；另提供当前后端、游戏前端、新旧UI、汉化包和独立Build集成源码归档。
+包含82个上游提交、血之子/重返印斯茅斯/暗物质修复、结构化日志、Build内嵌自制规则编辑器与卡库同步、暗物质416卡面1306字段汉化、五套新账号预组和920处卡图存储去重。保留此前定制表/触摸/停模式/管理器等修复。自托管采用online=false，不含用户数据或秘密配置。本次没有部署Online或修改Mac/Companion。详见[发布说明](server/RELEASE-20261009.md)。
+
+下文9月23日描述为历史记录，不代表本次规则引擎版本：
 
 This includes stable classic/current UI selection, five community starter decks
 with full notes, Cycle 5 Chinese text, 618 reviewed image updates, 52 music files,

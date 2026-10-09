@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "bytes": 1839334830,
+  "sha256": "f188d98f6e2a46808036c83a400504dcd0dd822c247de416f7d96e81a5fc3965",
+  "members": 19819,
+  "hardlinks": 920,
+  "allMembersVerified": true,
+  "verification": "single-pass content SHA and prior verified hardlink identity",
+  "version": "v20261009.1",
+  "file": "ArkhamHorror-Server-Linux-amd64-v20261009.1.tar.gz",
+  "upstream": "f6ed09bec346ebc505ade739d34a7aea3305fa5c",
+  "language": "zh-20261009-r9",
+  "backendSha256": "1f2d32812cbcdf1bd1e5d24fecd2e7c32c6813d53281b131f72bb5ed9ee0336d"
+}

@@ -1,5 +1,18 @@
 # Windows / Linux 独立完整包
 
+## 最新版：2026-10-09 / v20261009.1
+
+- [Windows 完整 ZIP](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261009.1/ArkhamHorrorLocal-Windows-v20261009.1.zip)（1,840,213,244字节） · [SHA-256](v20261009.1/ArkhamHorrorLocal-Windows-v20261009.1.zip.sha256)
+- [Linux amd64 完整 tar.gz](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261009.1/ArkhamHorror-Server-Linux-amd64-v20261009.1.tar.gz)（1,839,334,830字节） · [SHA-256](v20261009.1/ArkhamHorror-Server-Linux-amd64-v20261009.1.tar.gz.sha256)
+- [对应完整源码材料](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261009.1/ArkhamHorror-Sources-v20261009.1.tar.gz) · [源码清单](v20261009.1/SOURCE.json)
+- [更新内容与升级说明](../RELEASE-20261009.md) · [验证范围](v20261009.1/VERIFICATION.json)
+
+两个包均为本次重新生成的完整独立包，固定上游f6ed09be，语言zh-20261009-r9。包含五套新账号预组、完整暗物质Build文本、内嵌原生自制卡规则编辑器和Build卡库同步；保留新旧UI及既有修复。920处完全相同卡图共享存储，但全部原路径仍可用。不要将纯卡图去重ZIP当安装补丁。
+
+Windows需WSL2；Linux需amd64、Ubuntu24.04/glibc≥2.39。升级先备份并正常停旧版，解压到新目录并沿用外置数据，不覆盖运行中的安装。Linux校验：`python3 server/packaging/verify-self-hosted-package.py server/packages/v20261009.1/PACKAGE.json`。使用Git克隆后需 `git lfs pull --include='server/packages/v20261009.1/*' --exclude=''` 下载真实文件，GitHub的仓库Download ZIP不是完整游戏包。
+
+## 历史版本（下文不是当前版本）
+
 当前游戏版本：**2026.10.04.3-clue-load-decks**。Windows **v20261004.1** 与 Linux **v20261005.1** 游戏内容相同。[更新内容及验证限制](../RELEASE-20261005.md)。
 
 - [Linux v20261005.1 完整 tar.gz](https://media.githubusercontent.com/media/Victorzhou1996/Arkham-Companion/Server/server/packages/v20261005.1/ArkhamHorror-Server-Linux-amd64-v20261005.1.tar.gz) · [SHA-256](v20261005.1/ArkhamHorror-Server-Linux-amd64-v20261005.1.tar.gz.sha256) · [元数据](v20261005.1/PACKAGE.json)

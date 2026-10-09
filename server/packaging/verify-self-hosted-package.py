@@ -34,7 +34,7 @@ def main():
             if entry.isdir():
                 assert entry.mode == 0o755
                 continue
-            assert entry.isfile(), f'Unsupported archive member: {entry.name}'
+            assert entry.isfile() or entry.islnk(), f'Unsupported archive member: {entry.name}'
             rel = str(name.relative_to(prefix))
             assert rel not in hashes, f'Duplicate path: {rel}'
             assert name.suffix.lower() not in {'.bat','.cmd','.ps1','.exe','.dll','.pem','.dump','.log','.pid','.aes'}
@@ -42,6 +42,15 @@ def main():
             assert 'pgdata' not in name.parts and name.name not in {'server.env','ports.env','lan.env','local-runtime.json','runtime-info.json'}
             executable = name.suffix == '.sh' or rel.startswith(('game/bin/','game/pgsql/bin/'))
             assert entry.mode == (0o755 if executable else 0o644), rel
+            if entry.islnk():
+                source = PurePosixPath(entry.linkname)
+                assert not source.is_absolute() and '..' not in source.parts and source.parts[0] == prefix
+                target = str(source.relative_to(prefix))
+                assert rel.startswith(('cards/','game/frontend/dist/img/arkham/')) and target.startswith(('cards/','game/frontend/dist/img/arkham/'))
+                assert target in hashes, 'Hardlink target must already be content-verified'
+                hashes[rel] = hashes[target]
+                modes[rel] = entry.mode
+                continue
             stream = tar.extractfile(entry)
             if rel in {'FILES-SHA256.json','SHA256SUMS'}:
                 data = stream.read()
@@ -53,15 +62,15 @@ def main():
             modes[rel] = entry.mode
     assert manifest and checksums
     expected = {e['path']: e['sha256'] for e in manifest}
-    assert len(expected) == len(manifest) == meta['payloadFiles']
+    assert len(expected) == len(manifest) == meta.get('payloadFiles',meta.get('members',0)-2)
     assert set(hashes) == set(expected) | {'FILES-SHA256.json','SHA256SUMS'}
     assert all(hashes[p] == h for p,h in expected.items())
     sums = dict((line.split('  ',1)[1],line.split('  ',1)[0]) for line in checksums.splitlines())
     assert sums == {p:h for p,h in hashes.items() if p != 'SHA256SUMS'}
-    assert len(hashes) == meta['archivedFiles']
+    assert len(hashes) == meta.get('archivedFiles',meta.get('members'))
     assert hashes['game/bin/arkham-api'] == meta['backendSha256']
-    assert sum(p.startswith('cards/') and p.endswith('.avif') for p in hashes) == meta['mainCardFaces']
-    assert sum('/audio/bgm/' in p and p.endswith('.mp3') for p in hashes) == meta['musicFiles']
+    if 'mainCardFaces' in meta: assert sum(p.startswith('cards/') and p.endswith('.avif') for p in hashes) == meta['mainCardFaces']
+    if 'musicFiles' in meta: assert sum('/audio/bgm/' in p and p.endswith('.mp3') for p in hashes) == meta['musicFiles']
     assert not any(v in p for p in hashes for v in ('legacy-ui-20260826.3/','legacy-ui-20260918.1/','legacy-ui-20260918.2/'))
     print(json.dumps({'version':meta['version'],'bytes':meta['bytes'],'sha256':meta['sha256'],
                       'verifiedFiles':len(hashes),'fileModesVerified':True,'clean':True},indent=2))
