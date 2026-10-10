@@ -75,10 +75,11 @@ body:has(.tabletop-game) #nav { background: #11271e; }
 /* Game selects this class for PCs AND iPads (including 768px portrait and
    Split View). Phones use mobile-game, so no width gate belongs here. */
   body:has(.tabletop-game) { --nav-height: 0px; background: #0b1d17; }
-  body:has(.tabletop-game) #nav { position: fixed; top: 4px; left: 4px; width: 32px; height: 28px; background: #0d211be8; border: 1px solid #897548; z-index: 250; box-shadow: none; }
+  body:has(.tabletop-game) #app #nav { position: fixed; top: 4px; left: 4px; width: 32px; height: 28px; box-sizing: border-box; padding: 0; gap: 0; background: #0d211be8; border: 1px solid #897548; z-index: 250; box-shadow: none; }
   body:has(.tabletop-game) #nav .main-links,
   body:has(.tabletop-game) #nav .user-links { display: none; }
-  body:has(.tabletop-game) #nav .mobile-menu-btn { display: flex; width: 30px; padding: 4px; color: #baa36b; }
+  body:has(.tabletop-game) #nav .mobile-menu-btn { display: flex; width: 100%; min-width: 0; height: 100%; box-sizing: border-box; margin: 0; padding: 4px; color: #baa36b; }
+  body:has(.tabletop-game) #nav .mobile-menu-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
   body:has(.tabletop-game) #nav .mobile-menu { display: flex; flex-direction: column; top: 32px; left: 0; width: 230px; max-height: 85dvh; overflow: auto; background: #102a23; border: 1px solid #8b7749; }
   body:has(.tabletop-game) .router-container { padding: 0; height: 100dvh; min-height: 0; }
   body:has(.tabletop-game) #app > footer { display: none; }

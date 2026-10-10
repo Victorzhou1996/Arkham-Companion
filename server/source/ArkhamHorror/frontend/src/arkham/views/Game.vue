@@ -114,6 +114,7 @@ import StandaloneScenario from '@/arkham/components/StandaloneScenario.vue'
 import AchievementToast from '@/arkham/components/AchievementToast.vue'
 import ResponseStatusBar from '@/arkham/components/ResponseStatusBar.vue'
 import NarrationMenu from '@/arkham/components/NarrationMenu.vue'
+import GameUiSwitch from '@/components/GameUiSwitch.vue'
 import { setMusicScenario } from '@/arkham/bgm'
 import { clearCurrentNarration, stopNarration } from '@/arkham/narration'
 import StoryQuestion from '@/arkham/components/StoryQuestion.vue'
@@ -499,7 +500,7 @@ watch(processing, (busy) => {
 const storyAnswerPending = ref(false)
 const oldQuestion = ref<Record<string, Question> | null>(null)
 const skipAllPending = ref<Set<string>>(new Set())
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const phaseNotification = ref<Phase | null>(null)
 const phaseNotificationQueue = ref<Phase[]>([])
 const standardPhases: Phase[] = ['MythosPhase', 'InvestigationPhase', 'EnemyPhase', 'UpkeepPhase']
@@ -2555,6 +2556,7 @@ onUnmounted(() => {
           <span v-if="unreadLogCount" class="log-unread-count">({{ unreadLogCount }})</span>
         </button>
         <NarrationMenu />
+        <GameUiSwitch :locale="locale" />
       </div>
     </div>
     </div>

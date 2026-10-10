@@ -56,7 +56,7 @@ const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
 
 <template>
   <div class="decklist box" :class="deckClass" role="link" tabindex="0" :aria-label="deck.name" @click="navigateToDeck" @keydown.enter.self="navigateToDeck">
-    <img class="portrait--decklist" :src="cardImg(deckInvestigator)" />
+    <img class="portrait--decklist" :src="cardImg(deckInvestigator)" alt="" />
     <div class="deck-details">
       <div class="deck-main">
         <div class="deck-name-row">
@@ -81,15 +81,15 @@ const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
         </div>
       </div>
       <div class="deck-actions" @click.stop>
-        <a v-if="deck.url" class="action-btn" :href="deckUrlToPage(deck.url)" target="_blank" rel="noreferrer noopener" :title="$t('deck.viewOnArkhamDb')">
+        <a v-if="deck.url" class="action-btn" :href="deckUrlToPage(deck.url)" target="_blank" rel="noreferrer noopener" :title="$t('deck.viewOnArkhamDb')" :aria-label="$t('deck.viewOnArkhamDb')">
           <font-awesome-icon icon="external-link" />
         </a>
-        <a v-if="deck.url && sync" class="action-btn" href="#" :title="$t('deck.syncDeck')" @click.prevent="sync">
+        <button v-if="deck.url && sync" type="button" class="action-btn" :title="$t('deck.syncDeck')" :aria-label="$t('deck.syncDeck')" @click="sync">
           <font-awesome-icon icon="refresh" />
-        </a>
-        <a v-if="markDelete" class="action-btn action-btn--delete" href="#" :title="$t('deck.deleteDeck')" @click.prevent="markDelete">
+        </button>
+        <button v-if="markDelete" type="button" class="action-btn action-btn--delete" :title="$t('deck.deleteDeck')" :aria-label="$t('deck.deleteDeck')" @click="markDelete">
           <font-awesome-icon icon="trash" />
-        </a>
+        </button>
       </div>
     </div>
   </div>
@@ -127,8 +127,9 @@ const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
 
 .deck-details {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: space-between;
+  gap: 16px;
   flex: 1;
   min-width: 0;
   padding: 4px 0;
@@ -138,9 +139,12 @@ const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .deck-name {
+  overflow-wrap: anywhere;
   font-size: 1.2em;
   font-weight: 800;
   color: var(--title);
@@ -206,10 +210,20 @@ const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
 .deck-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 1;
+  cursor: pointer;
   color: #8a93a8;
   font-size: 0.9em;
   text-decoration: none;
@@ -217,6 +231,12 @@ const campaignStatus = computed(() => Arkham.campaignDeckStatus(props.deck))
 
   &:hover { color: #fff; }
   &.action-btn--delete { &:hover { color: #ff6666; } }
+}
+
+@media (max-width: 600px) {
+  .deck-details { flex-direction: column; align-items: stretch; gap: 10px; }
+  .deck-actions { justify-content: flex-end; }
+  .last-played { white-space: normal; }
 }
 
 /* Sits before the name so a laid-over deck reads as such at a glance. The row

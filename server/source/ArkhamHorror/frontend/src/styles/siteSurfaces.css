@@ -36,6 +36,14 @@
 #app :is(.site-decks .deck-name, .site-deck-picker .deck-item-name) { color: #edf0de; font-size: 1rem; line-height: 1.4; }
 #app :is(.site-decks .last-played, .site-deck-picker .deck-item-taboo) { color: #c6cda9; font-size: .8rem; }
 #app :is(.site-decks .action-btn, .site-deck-picker .deck-item-use, .site-deck-picker .deck-item-overlay, .site-deck-picker .deck-item-weakness-button) { min-width: 36px; min-height: 36px; border: 1px solid #7f805c; border-radius: 5px; }
+#app .site-decks .decklist { align-items: center; box-sizing: border-box; }
+#app .site-decks .portrait--decklist { align-self: center; transform: none; }
+#app .site-decks .deck-actions .action-btn { background: var(--control-bg); color: var(--control-text); }
+#app .site-decks .deck-actions .action-btn:hover { background: var(--control-selected); }
+#app .site-decks .deck-actions .action-btn--delete { color: #ffb3a9; }
+@media (max-width: 600px) {
+  #app .site-decks .portrait--decklist { align-self: flex-start; }
+}
 #app .site-deck-picker .deck-main { background: #102b21; }
 
 #app .site-cards .sidebar { background: #102b21; border-color: #8b805966; }

@@ -20,7 +20,7 @@
     window.location.replace(next.href);
   }
   window.arkhamSwitchUi = function (mode) {
-    if (!/^#\/settings(?:\?|$)/.test(window.location.hash) || (mode !== 'legacy' && mode !== 'current')) return;
+    if ((!/^#\/settings(?:\?|$)/.test(window.location.hash) && !gamePage(new URL(window.location.href))) || (mode !== 'legacy' && mode !== 'current')) return;
     try { localStorage.setItem(key, mode); } catch (_) {}
     navigate(mode);
   };

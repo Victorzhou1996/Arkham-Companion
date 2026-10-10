@@ -10,6 +10,30 @@ import { setMusicScenario } from '@/arkham/bgm'
 let generation = 0
 let musicApp: App | null = null
 let musicHost: HTMLElement | null = null
+let switchApp: App | null = null
+let switchHost: HTMLElement | null = null
+async function mountUiSwitch() {
+  if (switchHost && !switchHost.isConnected) {
+    switchApp?.unmount()
+    switchApp = null
+    switchHost = null
+  }
+  const toolbar = document.querySelector('.game-bar .right')
+  if (!toolbar || switchHost) return
+  switchHost = document.createElement('span')
+  switchHost.style.cssText = 'display:inline-flex;align-items:center;flex-shrink:0;margin:0 4px;color:#f0f0e8'
+  toolbar.append(switchHost)
+  const host = switchHost
+  try {
+    // Dynamic import also loads the component CSS into the pinned classic page.
+    const { default: GameUiSwitch } = await import('@/components/GameUiSwitch.vue')
+    if (switchHost !== host || !host.isConnected) return
+    switchApp = createApp(GameUiSwitch, { classic: true, locale: localStorage.getItem('language') ?? 'en' })
+    switchApp.mount(host)
+  } catch (error) {
+    console.error('Unable to load the UI switch', error)
+  }
+}
 function mountMusic() {
   if (musicHost && !musicHost.isConnected) {
     musicApp?.unmount()
@@ -88,6 +112,7 @@ function unknownCards(game: any): boolean {
 }
 
 function mountNavigation() {
+  mountUiSwitch()
   mountMusic()
   if (!enabled()) for (const link of document.querySelectorAll('[data-custom-deck-link]')) link.remove()
   for (const deck of document.querySelectorAll<HTMLAnchorElement>('a[href*="#/deck/"]')) {

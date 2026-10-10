@@ -113,7 +113,7 @@ async function prepare() {
       const file = path.join(directory, entry.name);
       if (entry.isDirectory()) rebase(file);
       else if (/\.(js|css|html)$/.test(file)) {
-        fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('legacy-ui-20260826.3', 'legacy-ui-20260923.1').replaceAll('ui-switch-v20260916.js', 'ui-switch-v20260921.js?v=20260923.1'));
+        fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('legacy-ui-20260826.3', 'legacy-ui-20260923.1').replaceAll('ui-switch-v20260916.js', 'ui-switch-v20260921.js?v=20260924.1'));
       } else if (/\.(gz|br)$/.test(file)) fs.unlinkSync(file);
     }
   }
