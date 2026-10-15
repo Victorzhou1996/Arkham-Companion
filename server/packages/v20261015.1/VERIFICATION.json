@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "version": "v20261015.1",
+  "platforms": [
+    "windows-wsl2-amd64",
+    "linux-amd64-glibc2.39"
+  ],
+  "nativeUpgradeAndRestart": {
+    "windows": {
+      "games": 13,
+      "existingDecks": 8
+    },
+    "linux": {
+      "games": 12,
+      "existingDecks": 7
+    }
+  },
+  "originalBusinessRowsUnchanged": true,
+  "freshStartupBothArchives": true,
+  "newRegistrationStarterDecks": 5,
+  "sharedIdenticalFiles": 19867,
+  "originalImageFilesPreserved": 12401,
+  "cardAliases": 920,
+  "httpResourcesPerPlatform": 1331,
+  "darkMatterFaces": 416,
+  "translatedFieldsPerLocale": 1306,
+  "actualEdgeChecks": 24,
+  "allArchiveMembersSHA256Verified": true,
+  "noRealUserDataIncluded": true,
+  "notTested": [
+    "No clean-Windows WSL installation wizard or full WinForms UI acceptance",
+    "No full campaign or native Safari acceptance",
+    "Current targeted tests/typecheck/build rerun; prior Oct13 full suite is retained evidence, not rerun",
+    "Windows launcher native runtime tested in WSL; not a clean Windows installer wizard",
+    "Video workflow is a reusable checklist/template; dated scripts require adapting paths, versions and fixture IDs, not one-click automation",
+    "Native macOS compilation, installation and DMG packaging"
+  ],
+  "productionDeploymentPerformed": false,
+  "macChanged": false,
+  "evidenceScope": "Packaging acceptance completed October 15; publication rechecks artifact hashes and source archive members, not a new campaign playthrough."
+}
